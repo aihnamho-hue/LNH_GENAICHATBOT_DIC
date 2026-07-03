@@ -179,6 +179,7 @@ async def websocket_endpoint(websocket: WebSocket):
         if supplied_code != ACCESS_CODE:
             await websocket.send_text(json.dumps({
                 "type": "error",
+                "code": "bad_access_code",
                 "message": "접속 코드가 올바르지 않습니다.",
             }))
             await websocket.close()
@@ -190,6 +191,7 @@ async def websocket_endpoint(websocket: WebSocket):
         if _active_sessions >= MAX_CONCURRENT_SESSIONS:
             await websocket.send_text(json.dumps({
                 "type": "error",
+                "code": "server_full",
                 "message": "지금은 사용자가 많아요. 잠시 후 다시 시도해 주세요.",
             }))
             await websocket.close()

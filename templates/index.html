@@ -29,7 +29,9 @@
         @media (max-width: 820px) { .app { grid-template-columns: 1fr; } }
 
         /* ── 왼쪽 패널 ── */
-        .character-panel { background: var(--panel); border-radius: 24px; box-shadow: var(--shadow); padding: 20px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; overflow-y: auto; max-height: 92vh; }
+        .character-panel { position: relative; background: var(--panel); border-radius: 24px; box-shadow: var(--shadow); padding: 20px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; overflow-y: auto; max-height: 92vh; }
+        .lang-btn { position: absolute; top: 12px; right: 12px; z-index: 5; border: 1.5px solid var(--navy-soft); background: #fff; border-radius: 10px; width: 34px; height: 30px; font-size: 15px; cursor: pointer; transition: transform 0.12s; }
+        .lang-btn:hover { transform: translateY(-1px); }
         .title { text-align: center; }
         .title h1 { font-size: 16px; font-weight: 800; margin: 0 0 2px; }
         .title p { font-size: 11px; color: var(--muted); margin: 0; line-height: 1.4; }
@@ -40,7 +42,7 @@
         .stage.surprised .stage-glow { background: radial-gradient(circle at 50% 60%, #FFD6D6, transparent 75%); opacity: 1; }
         .stage.paused .stage-glow { background: radial-gradient(circle at 50% 60%, #E0E0E0, transparent 75%); }
 
-        .hamster-wrap { position: relative; width: 88%; z-index: 1; transform-origin: 50% 92%; animation: breathe 3.2s ease-in-out infinite; }
+        .hamster-wrap { position: relative; width: 70%; z-index: 1; transform-origin: 50% 92%; animation: breathe 3.2s ease-in-out infinite; }
         #hamster { width: 100%; display: block; }
         @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.015) translateY(-1px); } }
         .stage.listening .hamster-wrap { animation: tilt 2.2s ease-in-out infinite; }
@@ -132,21 +134,54 @@
         .msg-row.user .bubble { background: var(--kakao-yellow); color: #1A1A1A; border-top-right-radius: 4px; }
         .bubble.interrupted-mark { opacity: 0.6; text-decoration: line-through; }
         .chat-footer { padding: 8px 14px; background: rgba(255,255,255,0.55); font-size: 11px; color: #5A6B7B; text-align: center; }
+
+        /* ── 언어 선택 오버레이 ── */
+        .lang-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(61,44,38,0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .lang-overlay.hidden { display: none; }
+        .lang-box { background: #fff; border-radius: 24px; padding: 26px 22px; max-width: 540px; width: 100%; box-shadow: var(--shadow); text-align: center; max-height: 90vh; overflow-y: auto; }
+        .lang-box h2 { margin: 0 0 4px; font-size: 17px; }
+        .lang-box p { margin: 0 0 16px; font-size: 12px; color: var(--muted); }
+        .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+        .lang-item { display: flex; align-items: center; gap: 9px; border: 1.5px solid #EEE3D8; background: #FFFBF6; border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 700; color: var(--ink); cursor: pointer; transition: transform 0.12s, border-color 0.2s, background 0.2s; text-align: left; }
+        .lang-item:hover { transform: translateY(-1px); border-color: var(--accent); background: #FFF6F0; }
+        .lang-item .flag { font-size: 20px; }
     </style>
 </head>
 <body>
+<!-- 언어 선택 오버레이 (첫 접속 시 표시) -->
+<div class="lang-overlay" id="langOverlay">
+    <div class="lang-box">
+        <h2>🌏 언어 선택 · Select Your Language</h2>
+        <p>한국어 학습 내용을 제외한 화면 언어가 바뀝니다</p>
+        <div class="lang-grid">
+            <button class="lang-item" data-lang="ko"><span class="flag">🇰🇷</span>한국어</button>
+            <button class="lang-item" data-lang="en"><span class="flag">🇺🇸</span>English</button>
+            <button class="lang-item" data-lang="zh"><span class="flag">🇨🇳</span>中文(简体)</button>
+            <button class="lang-item" data-lang="ja"><span class="flag">🇯🇵</span>日本語</button>
+            <button class="lang-item" data-lang="vi"><span class="flag">🇻🇳</span>Tiếng Việt</button>
+            <button class="lang-item" data-lang="th"><span class="flag">🇹🇭</span>ไทย</button>
+            <button class="lang-item" data-lang="id"><span class="flag">🇮🇩</span>Bahasa Indonesia</button>
+            <button class="lang-item" data-lang="mn"><span class="flag">🇲🇳</span>Монгол</button>
+            <button class="lang-item" data-lang="uz"><span class="flag">🇺🇿</span>Oʻzbekcha</button>
+            <button class="lang-item" data-lang="ru"><span class="flag">🇷🇺</span>Русский</button>
+            <button class="lang-item" data-lang="es"><span class="flag">🇪🇸</span>Español</button>
+            <button class="lang-item" data-lang="fr"><span class="flag">🇫🇷</span>Français</button>
+        </div>
+    </div>
+</div>
 <div class="app">
     <div class="character-panel">
+        <button class="lang-btn" id="langBtn" title="Language">🌐</button>
         <div class="title">
-            <h1>🐹 마사마사와 한국어 수다</h1>
-            <p>마이크를 켜고 마사마사와 자연스럽게 대화해 보세요</p>
+            <h1 id="appTitle">🐹 마사마사와 한국어 수다</h1>
+            <p id="appSubtitle">마이크를 켜고 마사마사와 자연스럽게 대화해 보세요</p>
         </div>
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
                 <img id="hamster" src="/static/hamster.png" alt="마사마사">
             </div>
-            <div class="speech-indicator">말하는 중...</div>
+            <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
         </div>
         <div class="status">
@@ -156,27 +191,27 @@
 
         <!-- 페이더 섹션 -->
         <div class="fader-section">
-            <p class="section-title">🎚️ 대화 스타일 조절</p>
+            <p class="section-title" id="styleTitle">🎚️ 대화 스타일 조절</p>
             <div class="fader-group">
                 <div class="fader-header">
-                    <span class="fader-label">친밀도 (Distance)</span>
+                    <span class="fader-label" id="distLabel">친밀도 (Distance)</span>
                     <span class="fader-value" id="distValue">70 · 친한 사이</span>
                 </div>
                 <div class="fader-row">
-                    <span class="end-label">낯선 사이</span>
+                    <span class="end-label" id="distLowLbl">낯선 사이</span>
                     <input type="range" id="distSlider" min="0" max="100" value="70" step="1">
-                    <span class="end-label">절친</span>
+                    <span class="end-label" id="distHighLbl">절친</span>
                 </div>
             </div>
             <div class="fader-group">
                 <div class="fader-header">
-                    <span class="fader-label">사용자 지위 (Power)</span>
+                    <span class="fader-label" id="powerLabel">사용자 지위 (Power)</span>
                     <span class="fader-value" id="powerValue">50 · 대등한 관계</span>
                 </div>
                 <div class="fader-row">
-                    <span class="end-label">하급자</span>
+                    <span class="end-label" id="powerLowLbl">하급자</span>
                     <input type="range" id="powerSlider" min="0" max="100" value="50" step="1">
-                    <span class="end-label">상급자</span>
+                    <span class="end-label" id="powerHighLbl">상급자</span>
                 </div>
             </div>
         </div>
@@ -206,7 +241,7 @@
                 <span class="emoji">🐹</span>대화를 시작하면<br>카카오톡처럼 대화가 표시됩니다
             </div>
         </div>
-        <div class="chat-footer">한국어로 자유롭게 말해보세요 · 마사마사가 말하는 중에 끼어들어도 됩니다</div>
+        <div class="chat-footer" id="chatFooter">한국어로 자유롭게 말해보세요 · 마사마사가 말하는 중에 끼어들어도 됩니다</div>
     </div>
 </div>
 <script>
@@ -237,24 +272,84 @@
     const distValue = document.getElementById("distValue");
     const powerValue = document.getElementById("powerValue");
 
+    /* ══════════ 다국어 UI (i18n) ══════════
+       빠른 요청 버튼(천천히/다시 한 번/쉽게/빨리빨리)과 실제 대화 내용은
+       한국어 학습 콘텐츠이므로 번역하지 않는다. */
+    const I18N = {
+        ko: { title:"🐹 마사마사와 한국어 수다", subtitle:"마이크를 켜고 마사마사와 자연스럽게 대화해 보세요", speaking:"말하는 중...", ready:"연결 준비 완료", waiting:"대기 중", styleTitle:"🎚️ 대화 스타일 조절", distLabel:"친밀도 (Distance)", powerLabel:"사용자 지위 (Power)", distLow:"낯선 사이", distHigh:"절친", powerLow:"하급자", powerHigh:"상급자", distLv:["낯선 사이","아는 사이","적당한 사이","친한 사이","절친 (BFF)"], powerLv:["하급자","약간 아래","대등한 관계","약간 위","상급자 (VIP)"], placeholder:"접속 코드 (필요한 경우에만 입력)", btnStart:"대화 시작하기", btnStop:"대화 종료하기", btnPause:"⏸️ 일시정지", btnResume:"▶️ 재개", btnExport:"📄 대화 내보내기 (.txt)", empty:"대화를 시작하면<br>카카오톡처럼 대화가 표시됩니다", footer:"한국어로 자유롭게 말해보세요 · 마사마사가 말하는 중에 끼어들어도 됩니다", stConnecting:"서버 연결 중...", stListening:"듣고 있어요... (마이크 활성)", stSpeaking:"마사마사가 말하고 있어요", stSpeakNow:"말씀하세요!", stClosed:"연결 종료됨", stPaused:"일시정지됨 — ▶️ 누르면 재개", errAccess:"접속 코드가 올바르지 않습니다.", errFull:"지금은 사용자가 많아요. 잠시 후 다시 시도해 주세요.", errGeneric:"연결에 실패했어요." },
+        en: { title:"🐹 Korean Chat with Masamasa", subtitle:"Turn on your mic and chat naturally with Masamasa", speaking:"Speaking...", ready:"Ready to connect", waiting:"Waiting", styleTitle:"🎚️ Conversation Style", distLabel:"Closeness (Distance)", powerLabel:"Your Status (Power)", distLow:"Strangers", distHigh:"Best friends", powerLow:"Junior", powerHigh:"Senior", distLv:["Strangers","Acquaintances","Casual","Close","Best friends (BFF)"], powerLv:["Junior","Slightly below","Equal","Slightly above","Senior (VIP)"], placeholder:"Access code (only if required)", btnStart:"Start Conversation", btnStop:"End Conversation", btnPause:"⏸️ Pause", btnResume:"▶️ Resume", btnExport:"📄 Export Transcript (.txt)", empty:"Start a conversation and<br>messages will appear here like a chat app", footer:"Speak freely in Korean · You can interrupt while Masamasa is talking", stConnecting:"Connecting to server...", stListening:"Listening... (mic on)", stSpeaking:"Masamasa is talking", stSpeakNow:"Go ahead, speak!", stClosed:"Disconnected", stPaused:"Paused — press ▶️ to resume", errAccess:"Incorrect access code.", errFull:"Too many users right now. Please try again later.", errGeneric:"Connection failed." },
+        zh: { title:"🐹 和Masamasa用韩语畅聊", subtitle:"打开麦克风，和Masamasa自然地用韩语聊天吧", speaking:"正在说话…", ready:"准备就绪", waiting:"等待中", styleTitle:"🎚️ 对话风格设置", distLabel:"亲密度 (Distance)", powerLabel:"用户地位 (Power)", distLow:"陌生人", distHigh:"挚友", powerLow:"下级", powerHigh:"上级", distLv:["陌生人","认识的人","普通关系","亲近的人","挚友 (BFF)"], powerLv:["下级","稍低","平等关系","稍高","上级 (VIP)"], placeholder:"访问码（仅在需要时输入）", btnStart:"开始对话", btnStop:"结束对话", btnPause:"⏸️ 暂停", btnResume:"▶️ 继续", btnExport:"📄 导出对话记录 (.txt)", empty:"开始对话后<br>消息会像聊天软件一样显示在这里", footer:"请用韩语自由交谈 · Masamasa说话时也可以随时插话", stConnecting:"正在连接服务器…", stListening:"正在聆听…（麦克风开启）", stSpeaking:"Masamasa正在说话", stSpeakNow:"请说吧！", stClosed:"连接已断开", stPaused:"已暂停 — 按▶️继续", errAccess:"访问码不正确。", errFull:"当前用户过多，请稍后再试。", errGeneric:"连接失败。" },
+        ja: { title:"🐹 マサマサと韓国語おしゃべり", subtitle:"マイクをオンにして、マサマサと自然に会話してみましょう", speaking:"話しています…", ready:"接続準備完了", waiting:"待機中", styleTitle:"🎚️ 会話スタイル設定", distLabel:"親密度 (Distance)", powerLabel:"ユーザーの地位 (Power)", distLow:"初対面", distHigh:"親友", powerLow:"目下", powerHigh:"目上", distLv:["初対面","知り合い","ほどほど","親しい仲","親友 (BFF)"], powerLv:["目下","やや下","対等な関係","やや上","目上 (VIP)"], placeholder:"アクセスコード（必要な場合のみ）", btnStart:"会話を始める", btnStop:"会話を終える", btnPause:"⏸️ 一時停止", btnResume:"▶️ 再開", btnExport:"📄 会話記録を保存 (.txt)", empty:"会話を始めると<br>チャットのように表示されます", footer:"韓国語で自由に話してみましょう · マサマサの話に割り込んでもOK", stConnecting:"サーバーに接続中…", stListening:"聞いています…（マイクON）", stSpeaking:"マサマサが話しています", stSpeakNow:"どうぞ話してください！", stClosed:"接続終了", stPaused:"一時停止中 — ▶️で再開", errAccess:"アクセスコードが正しくありません。", errFull:"現在利用者が多いため、しばらくしてからお試しください。", errGeneric:"接続に失敗しました。" },
+        vi: { title:"🐹 Trò chuyện tiếng Hàn cùng Masamasa", subtitle:"Bật micro và trò chuyện tự nhiên với Masamasa", speaking:"Đang nói...", ready:"Sẵn sàng kết nối", waiting:"Đang chờ", styleTitle:"🎚️ Phong cách hội thoại", distLabel:"Độ thân mật (Distance)", powerLabel:"Vị thế người dùng (Power)", distLow:"Người lạ", distHigh:"Bạn thân", powerLow:"Cấp dưới", powerHigh:"Cấp trên", distLv:["Người lạ","Người quen","Bình thường","Thân thiết","Bạn thân (BFF)"], powerLv:["Cấp dưới","Hơi thấp hơn","Ngang hàng","Hơi cao hơn","Cấp trên (VIP)"], placeholder:"Mã truy cập (chỉ khi cần)", btnStart:"Bắt đầu trò chuyện", btnStop:"Kết thúc trò chuyện", btnPause:"⏸️ Tạm dừng", btnResume:"▶️ Tiếp tục", btnExport:"📄 Xuất bản ghi hội thoại (.txt)", empty:"Bắt đầu trò chuyện và<br>tin nhắn sẽ hiển thị như ứng dụng chat", footer:"Hãy thoải mái nói tiếng Hàn · Bạn có thể ngắt lời khi Masamasa đang nói", stConnecting:"Đang kết nối máy chủ...", stListening:"Đang lắng nghe... (micro bật)", stSpeaking:"Masamasa đang nói", stSpeakNow:"Mời bạn nói!", stClosed:"Đã ngắt kết nối", stPaused:"Đã tạm dừng — nhấn ▶️ để tiếp tục", errAccess:"Mã truy cập không đúng.", errFull:"Hiện có quá nhiều người dùng. Vui lòng thử lại sau.", errGeneric:"Kết nối thất bại." },
+        th: { title:"🐹 คุยภาษาเกาหลีกับ Masamasa", subtitle:"เปิดไมค์แล้วคุยกับ Masamasa อย่างเป็นธรรมชาติ", speaking:"กำลังพูด...", ready:"พร้อมเชื่อมต่อ", waiting:"รอสักครู่", styleTitle:"🎚️ ปรับสไตล์การสนทนา", distLabel:"ความสนิท (Distance)", powerLabel:"สถานะผู้ใช้ (Power)", distLow:"คนแปลกหน้า", distHigh:"เพื่อนสนิท", powerLow:"ผู้น้อย", powerHigh:"ผู้ใหญ่", distLv:["คนแปลกหน้า","คนรู้จัก","ทั่วไป","สนิทกัน","เพื่อนสนิท (BFF)"], powerLv:["ผู้น้อย","ต่ำกว่าเล็กน้อย","เท่าเทียมกัน","สูงกว่าเล็กน้อย","ผู้ใหญ่ (VIP)"], placeholder:"รหัสเข้าใช้ (กรอกเมื่อจำเป็น)", btnStart:"เริ่มการสนทนา", btnStop:"จบการสนทนา", btnPause:"⏸️ หยุดชั่วคราว", btnResume:"▶️ เล่นต่อ", btnExport:"📄 บันทึกบทสนทนา (.txt)", empty:"เมื่อเริ่มสนทนา<br>ข้อความจะแสดงเหมือนแอปแชท", footer:"พูดภาษาเกาหลีได้อย่างอิสระ · ขัดจังหวะตอน Masamasa พูดได้", stConnecting:"กำลังเชื่อมต่อเซิร์ฟเวอร์...", stListening:"กำลังฟัง... (ไมค์เปิด)", stSpeaking:"Masamasa กำลังพูด", stSpeakNow:"เชิญพูดได้เลย!", stClosed:"ตัดการเชื่อมต่อแล้ว", stPaused:"หยุดชั่วคราว — กด ▶️ เพื่อเล่นต่อ", errAccess:"รหัสเข้าใช้ไม่ถูกต้อง", errFull:"ขณะนี้มีผู้ใช้จำนวนมาก กรุณาลองใหม่ภายหลัง", errGeneric:"การเชื่อมต่อล้มเหลว" },
+        id: { title:"🐹 Ngobrol Bahasa Korea dengan Masamasa", subtitle:"Nyalakan mikrofon dan mengobrol santai dengan Masamasa", speaking:"Sedang bicara...", ready:"Siap terhubung", waiting:"Menunggu", styleTitle:"🎚️ Gaya Percakapan", distLabel:"Keakraban (Distance)", powerLabel:"Status Pengguna (Power)", distLow:"Orang asing", distHigh:"Sahabat", powerLow:"Bawahan", powerHigh:"Atasan", distLv:["Orang asing","Kenalan","Biasa","Akrab","Sahabat (BFF)"], powerLv:["Bawahan","Sedikit di bawah","Setara","Sedikit di atas","Atasan (VIP)"], placeholder:"Kode akses (hanya jika diperlukan)", btnStart:"Mulai Percakapan", btnStop:"Akhiri Percakapan", btnPause:"⏸️ Jeda", btnResume:"▶️ Lanjut", btnExport:"📄 Ekspor Transkrip (.txt)", empty:"Mulai percakapan dan<br>pesan akan tampil seperti aplikasi chat", footer:"Bicaralah bebas dalam bahasa Korea · Boleh menyela saat Masamasa bicara", stConnecting:"Menghubungkan ke server...", stListening:"Mendengarkan... (mik aktif)", stSpeaking:"Masamasa sedang bicara", stSpeakNow:"Silakan bicara!", stClosed:"Koneksi terputus", stPaused:"Dijeda — tekan ▶️ untuk lanjut", errAccess:"Kode akses salah.", errFull:"Pengguna sedang banyak. Coba lagi nanti.", errGeneric:"Koneksi gagal." },
+        mn: { title:"🐹 Masamasa-тай солонгосоор ярилцъя", subtitle:"Микрофоноо асааж Masamasa-тай чөлөөтэй ярилцаарай", speaking:"Ярьж байна...", ready:"Холбогдоход бэлэн", waiting:"Хүлээж байна", styleTitle:"🎚️ Ярианы хэв маяг", distLabel:"Дотно байдал (Distance)", powerLabel:"Байр суурь (Power)", distLow:"Танихгүй", distHigh:"Дотны найз", powerLow:"Доод", powerHigh:"Дээд", distLv:["Танихгүй хүн","Танил","Энгийн","Дотно","Дотны найз (BFF)"], powerLv:["Доод","Арай доогуур","Тэгш харилцаа","Арай дээгүүр","Дээд (VIP)"], placeholder:"Нэвтрэх код (шаардлагатай үед)", btnStart:"Яриа эхлүүлэх", btnStop:"Яриа дуусгах", btnPause:"⏸️ Түр зогсоох", btnResume:"▶️ Үргэлжлүүлэх", btnExport:"📄 Яриаг хадгалах (.txt)", empty:"Яриа эхэлмэгц<br>мессеж чат шиг харагдана", footer:"Солонгосоор чөлөөтэй яриарай · Masamasa ярьж байхад таслаж болно", stConnecting:"Сервертэй холбогдож байна...", stListening:"Сонсож байна... (микрофон асаалттай)", stSpeaking:"Masamasa ярьж байна", stSpeakNow:"Яриарай!", stClosed:"Холболт тасарсан", stPaused:"Түр зогссон — ▶️ дарж үргэлжлүүлнэ", errAccess:"Нэвтрэх код буруу байна.", errFull:"Одоо хэрэглэгч олон байна. Дараа дахин оролдоно уу.", errGeneric:"Холболт амжилтгүй боллоо." },
+        uz: { title:"🐹 Masamasa bilan koreyscha suhbat", subtitle:"Mikrofonni yoqing va Masamasa bilan erkin suhbatlashing", speaking:"Gapiryapti...", ready:"Ulanishga tayyor", waiting:"Kutilmoqda", styleTitle:"🎚️ Suhbat uslubi", distLabel:"Yaqinlik (Distance)", powerLabel:"Foydalanuvchi mavqei (Power)", distLow:"Notanish", distHigh:"Eng yaqin doʻst", powerLow:"Quyi", powerHigh:"Yuqori", distLv:["Notanish","Tanish","Oʻrtacha","Yaqin","Eng yaqin doʻst (BFF)"], powerLv:["Quyi","Biroz past","Teng munosabat","Biroz yuqori","Yuqori (VIP)"], placeholder:"Kirish kodi (kerak boʻlsa)", btnStart:"Suhbatni boshlash", btnStop:"Suhbatni tugatish", btnPause:"⏸️ Pauza", btnResume:"▶️ Davom etish", btnExport:"📄 Suhbatni saqlash (.txt)", empty:"Suhbat boshlangach<br>xabarlar chat kabi koʻrinadi", footer:"Koreys tilida erkin gapiring · Masamasa gapirayotganda ham gapga aralashish mumkin", stConnecting:"Serverga ulanmoqda...", stListening:"Tinglayapman... (mikrofon yoniq)", stSpeaking:"Masamasa gapiryapti", stSpeakNow:"Marhamat, gapiring!", stClosed:"Ulanish uzildi", stPaused:"Pauza — davom etish uchun ▶️ bosing", errAccess:"Kirish kodi notoʻgʻri.", errFull:"Hozir foydalanuvchilar koʻp. Keyinroq urinib koʻring.", errGeneric:"Ulanish amalga oshmadi." },
+        ru: { title:"🐹 Болтаем по-корейски с Masamasa", subtitle:"Включите микрофон и свободно общайтесь с Masamasa", speaking:"Говорит...", ready:"Готов к подключению", waiting:"Ожидание", styleTitle:"🎚️ Стиль общения", distLabel:"Близость (Distance)", powerLabel:"Статус пользователя (Power)", distLow:"Незнакомцы", distHigh:"Лучшие друзья", powerLow:"Младший", powerHigh:"Старший", distLv:["Незнакомцы","Знакомые","Нейтрально","Близкие","Лучшие друзья (BFF)"], powerLv:["Младший","Чуть ниже","На равных","Чуть выше","Старший (VIP)"], placeholder:"Код доступа (если требуется)", btnStart:"Начать разговор", btnStop:"Завершить разговор", btnPause:"⏸️ Пауза", btnResume:"▶️ Продолжить", btnExport:"📄 Сохранить диалог (.txt)", empty:"Начните разговор —<br>сообщения появятся здесь, как в мессенджере", footer:"Говорите по-корейски свободно · Можно перебивать Masamasa", stConnecting:"Подключение к серверу...", stListening:"Слушаю... (микрофон включён)", stSpeaking:"Masamasa говорит", stSpeakNow:"Говорите!", stClosed:"Соединение закрыто", stPaused:"Пауза — нажмите ▶️ для продолжения", errAccess:"Неверный код доступа.", errFull:"Сейчас слишком много пользователей. Попробуйте позже.", errGeneric:"Не удалось подключиться." },
+        es: { title:"🐹 Charla en coreano con Masamasa", subtitle:"Enciende el micrófono y conversa con naturalidad con Masamasa", speaking:"Hablando...", ready:"Listo para conectar", waiting:"En espera", styleTitle:"🎚️ Estilo de conversación", distLabel:"Cercanía (Distance)", powerLabel:"Estatus del usuario (Power)", distLow:"Desconocidos", distHigh:"Mejores amigos", powerLow:"Subordinado", powerHigh:"Superior", distLv:["Desconocidos","Conocidos","Neutral","Cercanos","Mejores amigos (BFF)"], powerLv:["Subordinado","Algo inferior","De igual a igual","Algo superior","Superior (VIP)"], placeholder:"Código de acceso (solo si es necesario)", btnStart:"Iniciar conversación", btnStop:"Terminar conversación", btnPause:"⏸️ Pausa", btnResume:"▶️ Reanudar", btnExport:"📄 Exportar conversación (.txt)", empty:"Inicia una conversación y<br>los mensajes aparecerán como en un chat", footer:"Habla libremente en coreano · Puedes interrumpir a Masamasa mientras habla", stConnecting:"Conectando al servidor...", stListening:"Escuchando... (micrófono activo)", stSpeaking:"Masamasa está hablando", stSpeakNow:"¡Adelante, habla!", stClosed:"Conexión cerrada", stPaused:"En pausa — pulsa ▶️ para reanudar", errAccess:"Código de acceso incorrecto.", errFull:"Hay demasiados usuarios ahora. Inténtalo más tarde.", errGeneric:"Error de conexión." },
+        fr: { title:"🐹 Papoter en coréen avec Masamasa", subtitle:"Activez le micro et discutez naturellement avec Masamasa", speaking:"En train de parler...", ready:"Prêt à se connecter", waiting:"En attente", styleTitle:"🎚️ Style de conversation", distLabel:"Proximité (Distance)", powerLabel:"Statut de l'utilisateur (Power)", distLow:"Inconnus", distHigh:"Meilleurs amis", powerLow:"Subordonné", powerHigh:"Supérieur", distLv:["Inconnus","Connaissances","Neutre","Proches","Meilleurs amis (BFF)"], powerLv:["Subordonné","Un peu en dessous","D'égal à égal","Un peu au-dessus","Supérieur (VIP)"], placeholder:"Code d'accès (si nécessaire)", btnStart:"Commencer la conversation", btnStop:"Terminer la conversation", btnPause:"⏸️ Pause", btnResume:"▶️ Reprendre", btnExport:"📄 Exporter la conversation (.txt)", empty:"Commencez une conversation :<br>les messages s'affichent comme dans un chat", footer:"Parlez librement en coréen · Vous pouvez interrompre Masamasa", stConnecting:"Connexion au serveur...", stListening:"J'écoute... (micro activé)", stSpeaking:"Masamasa parle", stSpeakNow:"À vous de parler !", stClosed:"Connexion terminée", stPaused:"En pause — appuyez sur ▶️ pour reprendre", errAccess:"Code d'accès incorrect.", errFull:"Trop d'utilisateurs actuellement. Réessayez plus tard.", errGeneric:"Échec de la connexion." }
+    };
+    let uiLang = localStorage.getItem("uiLang") || null;
+    let lastStatus = null; // { state, key } — 언어 변경 시 상태 문구 갱신용
+    function t(key) {
+        const dict = I18N[uiLang] || I18N.ko;
+        return (key in dict) ? dict[key] : I18N.ko[key];
+    }
+    function applyLang() {
+        document.documentElement.lang = uiLang || "ko";
+        document.getElementById("appTitle").textContent = t("title");
+        document.getElementById("appSubtitle").textContent = t("subtitle");
+        document.getElementById("speechIndicator").textContent = t("speaking");
+        document.getElementById("styleTitle").textContent = t("styleTitle");
+        document.getElementById("distLabel").textContent = t("distLabel");
+        document.getElementById("powerLabel").textContent = t("powerLabel");
+        document.getElementById("distLowLbl").textContent = t("distLow");
+        document.getElementById("distHighLbl").textContent = t("distHigh");
+        document.getElementById("powerLowLbl").textContent = t("powerLow");
+        document.getElementById("powerHighLbl").textContent = t("powerHigh");
+        document.getElementById("accessCodeInput").placeholder = t("placeholder");
+        document.getElementById("chatFooter").innerHTML = t("footer");
+        if (emptyState) emptyState.innerHTML = '<span class="emoji">🐹</span>' + t("empty");
+        actionBtn.innerText = isConnected ? t("btnStop") : t("btnStart");
+        pauseBtn.textContent = isPaused ? t("btnResume") : t("btnPause");
+        exportBtn.textContent = t("btnExport");
+        distValue.textContent = getDistLabel(+distSlider.value);
+        powerValue.textContent = getPowerLabel(+powerSlider.value);
+        if (lastStatus) { setStatus(lastStatus.state, lastStatus.key); }
+        else { statusText.textContent = t("ready"); headerStatus.textContent = t("waiting"); }
+    }
+    const langOverlay = document.getElementById("langOverlay");
+    document.querySelectorAll(".lang-item").forEach(btn => btn.addEventListener("click", () => {
+        uiLang = btn.dataset.lang;
+        localStorage.setItem("uiLang", uiLang);
+        langOverlay.classList.add("hidden");
+        applyLang();
+    }));
+    document.getElementById("langBtn").addEventListener("click", () => langOverlay.classList.remove("hidden"));
+    langOverlay.addEventListener("click", (e) => { if (e.target === langOverlay && uiLang) langOverlay.classList.add("hidden"); });
+    if (uiLang) langOverlay.classList.add("hidden"); // 이미 선택한 적 있으면 바로 시작
+    applyLang();
+
     actionBtn.addEventListener("click", () => isConnected ? stopSession() : startSession());
     exportBtn.addEventListener("click", exportTranscript);
     pauseBtn.addEventListener("click", togglePause);
 
-    /* ── 페이더 라벨 업데이트 ── */
+    /* ── 페이더 라벨 업데이트 (다국어) ── */
     function getDistLabel(v) {
-        if (v <= 15) return v + " · 낯선 사이";
-        if (v <= 35) return v + " · 아는 사이";
-        if (v <= 65) return v + " · 적당한 사이";
-        if (v <= 85) return v + " · 친한 사이";
-        return v + " · 절친 (BFF)";
+        const L = t("distLv");
+        if (v <= 15) return v + " · " + L[0];
+        if (v <= 35) return v + " · " + L[1];
+        if (v <= 65) return v + " · " + L[2];
+        if (v <= 85) return v + " · " + L[3];
+        return v + " · " + L[4];
     }
     function getPowerLabel(v) {
-        if (v <= 15) return v + " · 하급자";
-        if (v <= 35) return v + " · 약간 아래";
-        if (v <= 65) return v + " · 대등한 관계";
-        if (v <= 85) return v + " · 약간 위";
-        return v + " · 상급자 (VIP)";
+        const L = t("powerLv");
+        if (v <= 15) return v + " · " + L[0];
+        if (v <= 35) return v + " · " + L[1];
+        if (v <= 65) return v + " · " + L[2];
+        if (v <= 85) return v + " · " + L[3];
+        return v + " · " + L[4];
     }
     distSlider.addEventListener("input", () => { distValue.textContent = getDistLabel(+distSlider.value); });
     powerSlider.addEventListener("input", () => { powerValue.textContent = getPowerLabel(+powerSlider.value); });
@@ -265,15 +360,15 @@
         if (isPaused) {
             audioContext.suspend();
             stage.classList.add("paused");
-            pauseBtn.textContent = "▶️ 재개";
+            pauseBtn.textContent = t("btnResume");
             pauseBtn.classList.add("pause-active");
-            setStatus("idle", "일시정지됨 — ▶️ 누르면 재개");
+            setStatus("idle", "stPaused");
         } else {
             audioContext.resume();
             stage.classList.remove("paused");
-            pauseBtn.textContent = "⏸️ 일시정지";
+            pauseBtn.textContent = t("btnPause");
             pauseBtn.classList.remove("pause-active");
-            setStatus("listening", "듣고 있어요... (마이크 활성)");
+            setStatus("listening", "stListening");
         }
     }
 
@@ -313,7 +408,7 @@
     }
 
     function startSession() {
-        setStatus("connecting", "서버 연결 중...");
+        setStatus("connecting", "stConnecting");
         const d = +distSlider.value;
         const p = +powerSlider.value;
         distSlider.disabled = true;
@@ -322,8 +417,8 @@
         const code = encodeURIComponent(document.getElementById("accessCodeInput").value.trim());
         ws = new WebSocket(proto + location.host + "/ws/live?d=" + d + "&p=" + p + "&code=" + code);
         ws.onopen = async () => {
-            setStatus("listening", "듣고 있어요... (마이크 활성)");
-            actionBtn.innerText = "대화 종료하기";
+            setStatus("listening", "stListening");
+            actionBtn.innerText = t("btnStop");
             actionBtn.classList.add("recording");
             isConnected = true;
             isPaused = false;
@@ -332,7 +427,7 @@
             sessionStartedAt = new Date();
             exportBtn.disabled = true;
             setControlsEnabled(true);
-            pauseBtn.textContent = "⏸️ 일시정지";
+            pauseBtn.textContent = t("btnPause");
             await initAudioCapture();
         };
         ws.onmessage = (event) => {
@@ -342,7 +437,7 @@
                 if (typeof msg.volume === "number") {
                     hamsterWrap.style.setProperty("--talk-scale", (1 + msg.volume * 0.06).toFixed(3));
                 }
-                if (!isPaused) setStatus("speaking", "마사마사가 말하고 있어요");
+                if (!isPaused) setStatus("speaking", "stSpeaking");
             } else if (msg.type === "user_text") {
                 appendTranscript("user", msg.text);
             } else if (msg.type === "ai_text") {
@@ -351,7 +446,7 @@
             } else if (msg.type === "turn_complete") {
                 finalizeBubbles();
                 hamsterWrap.style.setProperty("--talk-scale", "1");
-                if (!isPaused) setStatus("listening", "듣고 있어요... (마이크 활성)");
+                if (!isPaused) setStatus("listening", "stListening");
             } else if (msg.type === "interrupted") {
                 stopAllAudio();
                 if (currentAiBubble) {
@@ -360,9 +455,12 @@
                     currentAiBubble = null;
                 }
                 playSurprised();
-                if (!isPaused) setStatus("listening", "말씀하세요!");
+                if (!isPaused) setStatus("listening", "stSpeakNow");
             } else if (msg.type === "error") {
-                alert(msg.message || "연결에 실패했어요.");
+                // 서버가 보내는 에러 코드를 사용자 언어로 표시
+                if (msg.code === "bad_access_code") alert(t("errAccess"));
+                else if (msg.code === "server_full") alert(t("errFull"));
+                else alert(msg.message || t("errGeneric"));
             }
         };
         ws.onclose = () => stopSession();
@@ -372,11 +470,11 @@
     function stopSession() {
         isConnected = false;
         isPaused = false;
-        setStatus("idle", "연결 종료됨");
-        actionBtn.innerText = "대화 시작하기";
+        setStatus("idle", "stClosed");
+        actionBtn.innerText = t("btnStart");
         actionBtn.classList.remove("recording");
         stage.classList.remove("paused");
-        pauseBtn.textContent = "⏸️ 일시정지";
+        pauseBtn.textContent = t("btnPause");
         pauseBtn.classList.remove("pause-active");
         setControlsEnabled(false);
         distSlider.disabled = false;
@@ -435,9 +533,10 @@
         nextPlayTime = 0;
     }
 
-    function setStatus(state, text) {
-        statusText.textContent = text;
-        headerStatus.textContent = text;
+    function setStatus(state, key) {
+        lastStatus = { state: state, key: key };
+        statusText.textContent = t(key);
+        headerStatus.textContent = t(key);
         statusDot.className = "dot " + (state === "connecting" ? "idle" : state);
         if (!stage.classList.contains("surprised") && !stage.classList.contains("paused")) {
             stage.classList.remove("listening", "speaking");

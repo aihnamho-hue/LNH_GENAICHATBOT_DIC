@@ -2,9 +2,12 @@ import os
 import asyncio
 import json
 import base64
-import struct
+import time
+import datetime
+import re
+import numpy as np
 from dotenv import load_dotenv
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -30,13 +33,89 @@ client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 # ============================================================
 # 공개 배포 시 비용 남용 방지 장치
-# - ACCESS_CODE: 설정하면 이 코드를 아는 사람만 접속 가능 (미설정 시 누구나 접속)
 # - MAX_CONCURRENT_SESSIONS: 동시 접속 가능한 대화 세션 수 제한
 # ============================================================
-ACCESS_CODE = os.environ.get("ACCESS_CODE", "").strip()
 MAX_CONCURRENT_SESSIONS = int(os.environ.get("MAX_CONCURRENT_SESSIONS", "5"))
 _active_sessions = 0
 _session_lock = asyncio.Lock()
+
+# ============================================================
+# 대화 녹음 업로드 → Google Drive 저장
+# - Render 디스크는 ephemeral(재배포/재시작 시 삭제)이라 외부 저장소 필요
+# - 개인 구글 계정 OAuth(리프레시 토큰) 방식 사용
+#   ※ 서비스 계정은 2025년부터 My Drive에 파일 소유 불가(용량 0)라 사용 불가
+# - 설정 방법: GDRIVE_SETUP.md 참고
+# - 환경변수 미설정 시 서버 로컬 recordings/ 폴더에 저장 (임시 — 재배포 시 삭제)
+# ============================================================
+GDRIVE_CLIENT_ID = os.environ.get("GDRIVE_CLIENT_ID", "").strip()
+GDRIVE_CLIENT_SECRET = os.environ.get("GDRIVE_CLIENT_SECRET", "").strip()
+GDRIVE_REFRESH_TOKEN = os.environ.get("GDRIVE_REFRESH_TOKEN", "").strip()
+GDRIVE_FOLDER_NAME = os.environ.get("GDRIVE_FOLDER_NAME", "masamasa-recordings").strip()
+GDRIVE_ENABLED = bool(GDRIVE_CLIENT_ID and GDRIVE_CLIENT_SECRET and GDRIVE_REFRESH_TOKEN)
+MAX_UPLOAD_BYTES = 60 * 1024 * 1024  # 60MB
+
+_gdrive_token = {"access_token": None, "expires_at": 0.0}
+_gdrive_folder = {"id": None}
+
+
+def _gdrive_get_access_token() -> str:
+    """리프레시 토큰으로 액세스 토큰 발급 (만료 60초 전까지 캐시). 동기 — to_thread에서 호출."""
+    import requests
+    if _gdrive_token["access_token"] and time.time() < _gdrive_token["expires_at"] - 60:
+        return _gdrive_token["access_token"]
+    r = requests.post("https://oauth2.googleapis.com/token", data={
+        "client_id": GDRIVE_CLIENT_ID,
+        "client_secret": GDRIVE_CLIENT_SECRET,
+        "refresh_token": GDRIVE_REFRESH_TOKEN,
+        "grant_type": "refresh_token",
+    }, timeout=30)
+    r.raise_for_status()
+    tok = r.json()
+    _gdrive_token["access_token"] = tok["access_token"]
+    _gdrive_token["expires_at"] = time.time() + int(tok.get("expires_in", 3600))
+    return _gdrive_token["access_token"]
+
+
+def _gdrive_get_folder_id(token: str) -> str:
+    """녹음 저장 폴더를 찾고, 없으면 만든다 (drive.file 스코프: 이 앱이 만든 파일만 접근)."""
+    import requests
+    if _gdrive_folder["id"]:
+        return _gdrive_folder["id"]
+    headers = {"Authorization": f"Bearer {token}"}
+    q = (f"name = '{GDRIVE_FOLDER_NAME}' and "
+         "mimeType = 'application/vnd.google-apps.folder' and trashed = false")
+    r = requests.get("https://www.googleapis.com/drive/v3/files",
+                     params={"q": q, "fields": "files(id)"}, headers=headers, timeout=30)
+    r.raise_for_status()
+    files = r.json().get("files", [])
+    if files:
+        _gdrive_folder["id"] = files[0]["id"]
+    else:
+        r = requests.post("https://www.googleapis.com/drive/v3/files",
+                          json={"name": GDRIVE_FOLDER_NAME,
+                                "mimeType": "application/vnd.google-apps.folder"},
+                          headers=headers, timeout=30)
+        r.raise_for_status()
+        _gdrive_folder["id"] = r.json()["id"]
+        print(f"[녹음] Google Drive에 '{GDRIVE_FOLDER_NAME}' 폴더 생성")
+    return _gdrive_folder["id"]
+
+
+def _gdrive_upload_sync(filename: str, data: bytes, mime: str) -> str:
+    """Drive에 멀티파트 업로드. 파일 ID 반환. 동기 — 반드시 asyncio.to_thread로 호출."""
+    import requests
+    token = _gdrive_get_access_token()
+    folder_id = _gdrive_get_folder_id(token)
+    metadata = {"name": filename, "parents": [folder_id]}
+    files = {
+        "metadata": ("metadata", json.dumps(metadata), "application/json; charset=UTF-8"),
+        "file": (filename, data, mime),
+    }
+    r = requests.post(
+        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
+        headers={"Authorization": f"Bearer {token}"}, files=files, timeout=120)
+    r.raise_for_status()
+    return r.json().get("id", "")
 
 # ============================================================
 # 기본 정체성 — 페이더 값과 무관하게 항상 유지되는 코어
@@ -53,9 +132,16 @@ BASE_PERSONA = """
 - 리액션은 늘 살아있게. "그렇군요" 같은 영혼 없는 반응은 금지.
 - 슬픈 이야기엔 바로 해결책 대신 잠시 공감하며 머물러줘.
 
-# 한국어 선생님 역할 (몰래 수행 — 절대 티내지 마)
-- 사용자는 한국어 학습자야. 문법 오류는 직접 지적하지 말고, 자연스러운 표현으로 슬쩍 되받아줘 (Recast).
-  예) 사용자: "어제 친구 만났어서 좋았어" -> 너: "아 어제 친구 만나서 좋았구나! 뭐 했는데?"
+# 한국어 선생님 역할 (핵심 임무 — 다정한 과외 선생님처럼)
+- 사용자는 한국어 학습자야. 대화를 즐겁게 이어가되, 한국어를 바로잡아 주는 게 네 핵심 임무야.
+- [즉시 교정] 사용자의 발화에 어색하거나 틀린 어휘·문법·표현이 있으면 그냥 넘어가지 말고 그 자리에서 바로 교정해줘:
+  ① 자연스러운 표현을 짧게 알려주고 — 예) "아~ 그럴 땐 '어제 친구 만나서 좋았어'라고 하면 더 자연스러워요!"
+  ② 곧바로 다시 말해볼 기회를 줘 — 예) "한번 다시 말해볼래요?"
+  ③ 사용자가 다시 말하면 꼭 칭찬해주고, 원래 대화 주제로 자연스럽게 돌아가.
+- [모국어 대응] 사용자가 한국어가 아닌 언어(모국어)로 말하면, 그 내용을 한국어로 어떻게 말하는지 알려주고 따라 말하게 해줘.
+  예) "그건 한국어로 'OO'라고 해요. 같이 말해볼까요?"
+- 교정은 한 턴에 하나만, 짧게. 설명을 길게 늘어놓으면 대화 흐름이 죽어.
+- 완벽하게 자연스러운 발화에는 교정 없이 신나게 대화만 이어가.
 - 사용자가 말할 기회를 많이 갖도록 짧게 말하고 질문을 던져.
 
 # 발화 스타일 (공통)
@@ -116,6 +202,14 @@ P_RULES = {
 }
 
 
+# 화면 언어 코드 → 모국어 힌트용 언어 이름
+LANG_NAMES = {
+    "en": "영어", "zh": "중국어", "ja": "일본어", "vi": "베트남어",
+    "th": "태국어", "id": "인도네시아어", "mn": "몽골어", "uz": "우즈베크어",
+    "ru": "러시아어", "es": "스페인어", "fr": "프랑스어",
+}
+
+
 def _band(v: int) -> str:
     if v <= 33:
         return "low"
@@ -124,8 +218,17 @@ def _band(v: int) -> str:
     return "high"
 
 
-def build_system_prompt(d: int, p: int) -> str:
+def build_system_prompt(d: int, p: int, ui_lang: str = "") -> str:
     d_band, p_band = _band(d), _band(p)
+    native = LANG_NAMES.get(ui_lang, "")
+    native_hint = ""
+    if native:
+        native_hint = f"""
+# 사용자 모국어 정보
+- 사용자의 모국어(화면 언어)는 {native}야.
+- 사용자가 {native}로 말하면 반드시 그 내용을 한국어로 어떻게 말하는지 알려주고 따라 말하게 해줘.
+- 교정 내용을 사용자가 이해하지 못하는 눈치면, {native}로 아주 짧게 (한 문장 이내) 덧붙여 설명해도 좋아. 단, 대화의 기본 언어는 항상 한국어야.
+"""
     fusion = """
 # 두 페이더의 융합 연산
 - 위 D축과 P축 규칙이 충돌하면 우선순위는 '격식 수준 = D축', '대화 주도권/역할 = P축'으로 분리해 동시 적용한다.
@@ -143,17 +246,19 @@ def build_system_prompt(d: int, p: int) -> str:
     sep = """
 
 """
-    return BASE_PERSONA + coord + D_RULES[d_band] + sep + P_RULES[p_band] + sep + fusion
+    return BASE_PERSONA + native_hint + coord + D_RULES[d_band] + sep + P_RULES[p_band] + sep + fusion
 
 
 def calculate_rms_level(pcm_bytes: bytes) -> float:
-    if not pcm_bytes:
+    # numpy 벡터화 — 순수 파이썬 for문은 이벤트루프를 블로킹해서
+    # 사용자 음성 업로드(client_to_gemini)까지 지연시켰음
+    if not pcm_bytes or len(pcm_bytes) < 2:
         return 0.0
-    sample_count = len(pcm_bytes) // 2
-    if sample_count == 0:
+    usable = len(pcm_bytes) // 2 * 2
+    samples = np.frombuffer(pcm_bytes[:usable], dtype="<i2").astype(np.float32)
+    if samples.size == 0:
         return 0.0
-    samples = struct.unpack(f"<{sample_count}h", pcm_bytes[: sample_count * 2])
-    rms = (sum(s * s for s in samples) / sample_count) ** 0.5
+    rms = float(np.sqrt(np.mean(samples * samples)))
     return round(min(1.0, (rms / 32768.0) * 4.0), 3)
 
 
@@ -168,23 +273,77 @@ async def get_service_worker():
     return FileResponse("static/sw.js", media_type="application/javascript")
 
 
+_AUDIO_EXT = {
+    "audio/webm": "webm",
+    "audio/ogg": "ogg",
+    "audio/mp4": "m4a",
+    "audio/mpeg": "mp3",
+    "audio/wav": "wav",
+    "audio/x-wav": "wav",
+}
+
+
+@app.post("/upload-recording")
+async def upload_recording(
+    audio: UploadFile = File(default=None),
+    transcript: str = Form(default=""),
+    d: str = Form(default="0"),
+    p: str = Form(default="0"),
+):
+    """세션 종료 시 클라이언트가 보내는 대화 녹음(믹스 1파일) + 대화기록(txt) 저장."""
+    audio_bytes = b""
+    audio_mime = "application/octet-stream"
+    if audio is not None:
+        audio_bytes = await audio.read()
+        if len(audio_bytes) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="file_too_large")
+        audio_mime = (audio.content_type or "").split(";")[0].strip() or "application/octet-stream"
+
+    transcript = transcript.strip()
+    if not audio_bytes and not transcript:
+        raise HTTPException(status_code=400, detail="empty_upload")
+
+    d = re.sub(r"\D", "", d)[:3] or "0"
+    p = re.sub(r"\D", "", p)[:3] or "0"
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    base = f"마사마사대화_{ts}_D{d}_P{p}"
+    ext = _AUDIO_EXT.get(audio_mime, "webm")
+
+    to_save = []
+    if audio_bytes:
+        to_save.append((f"{base}.{ext}", audio_bytes, audio_mime))
+    if transcript:
+        # BOM 포함 UTF-8 — 윈도우 메모장에서도 깨지지 않게
+        to_save.append((f"{base}.txt", ("﻿" + transcript).encode("utf-8"), "text/plain"))
+
+    if GDRIVE_ENABLED:
+        try:
+            saved = []
+            for filename, data, mime in to_save:
+                # requests는 동기 라이브러리 — 이벤트루프 블로킹 방지를 위해 스레드로
+                file_id = await asyncio.to_thread(_gdrive_upload_sync, filename, data, mime)
+                saved.append({"name": filename, "id": file_id})
+            print(f"[녹음] Google Drive 저장 완료: {[s['name'] for s in saved]}")
+            return {"ok": True, "storage": "gdrive", "files": saved}
+        except Exception as e:
+            print(f"[녹음] Google Drive 업로드 실패 — 로컬 폴백: {e}")
+
+    # 폴백: 서버 로컬 저장 (Render에서는 재배포/재시작 시 삭제되는 임시 저장)
+    os.makedirs("recordings", exist_ok=True)
+    saved = []
+    for filename, data, _ in to_save:
+        path = os.path.join("recordings", filename)
+        with open(path, "wb") as f:
+            f.write(data)
+        saved.append({"name": filename})
+    print(f"[녹음] 서버 로컬 저장(임시): {[s['name'] for s in saved]}")
+    return {"ok": True, "storage": "local-ephemeral", "files": saved}
+
+
 @app.websocket("/ws/live")
 async def websocket_endpoint(websocket: WebSocket):
     global _active_sessions
     await websocket.accept()
-
-    # 접속 코드 검증 (ACCESS_CODE가 설정된 경우에만)
-    if ACCESS_CODE:
-        supplied_code = websocket.query_params.get("code", "")
-        if supplied_code != ACCESS_CODE:
-            await websocket.send_text(json.dumps({
-                "type": "error",
-                "code": "bad_access_code",
-                "message": "접속 코드가 올바르지 않습니다.",
-            }))
-            await websocket.close()
-            print("[서버] 접속 거부 — 잘못된 접속 코드")
-            return
 
     # 동시 세션 수 제한 (API 비용 폭주 방지)
     async with _session_lock:
@@ -215,9 +374,10 @@ async def _handle_session(websocket: WebSocket):
         d, p = 50, 50
     d = max(0, min(100, d))
     p = max(0, min(100, p))
+    ui_lang = websocket.query_params.get("lang", "").strip().lower()[:5]
 
-    system_prompt = build_system_prompt(d, p)
-    print(f"[서버] 클라이언트 연결 성공 — 친밀도(D)={d}, 지위(P)={p}")
+    system_prompt = build_system_prompt(d, p, ui_lang)
+    print(f"[서버] 클라이언트 연결 성공 — 친밀도(D)={d}, 지위(P)={p}, 언어={ui_lang or 'ko'}")
 
     config = types.LiveConnectConfig(
         response_modalities=[types.Modality.AUDIO],

@@ -3,12 +3,21 @@ services:
     name: masamasa-chatbot
     env: python
     plan: free
+    # 한국 사용자 왕복 지연 최소화 — 기본값(오리건)은 오디오 패킷마다 지연 누적
+    # ※ 이미 만들어진 서비스는 리전 변경이 안 됨: 대시보드에서 기존 서비스 삭제 후
+    #    Blueprint 재배포(또는 새 서비스 생성)해야 싱가포르로 옮겨짐
+    region: singapore
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: GEMINI_API_KEY
         sync: false
-      - key: ACCESS_CODE
-        sync: false
       - key: MAX_CONCURRENT_SESSIONS
         value: "5"
+      # ── 대화 녹음 Google Drive 저장용 (GDRIVE_SETUP.md 참고) ──
+      - key: GDRIVE_CLIENT_ID
+        sync: false
+      - key: GDRIVE_CLIENT_SECRET
+        sync: false
+      - key: GDRIVE_REFRESH_TOKEN
+        sync: false

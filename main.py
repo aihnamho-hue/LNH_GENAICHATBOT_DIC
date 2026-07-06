@@ -18,8 +18,12 @@ from google.genai import types
 # 플랫폼이 환경변수를 직접 주입하므로 .env 파일이 없어도 문제 없음)
 load_dotenv()
 
+# 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨
+APP_VERSION = "v6"
+
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+print(f"[서버] 마사마사 서버 시작 — 버전 {APP_VERSION}")
 
 # 햄스터 이미지 등 정적 파일 서빙
 os.makedirs("static", exist_ok=True)
@@ -262,7 +266,11 @@ def build_system_prompt(d: int, p: int, ui_lang: str = "", user_name: str = "") 
 
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
-    return templates.TemplateResponse(request=request, name="index.html")
+    resp = templates.TemplateResponse(request=request, name="index.html")
+    # 브라우저가 옛 index.html을 캐시해서 "고쳤는데 그대로"가 되는 것 방지
+    resp.headers["Cache-Control"] = "no-store"
+    resp.headers["X-App-Version"] = APP_VERSION
+    return resp
 
 
 # 서비스 워커는 루트 경로에서 서빙해야 전체 사이트를 제어(scope '/')할 수 있음
@@ -490,7 +498,10 @@ async def _handle_session(websocket: WebSocket):
                             )
                         elif message.get("text"):
                             event = json.loads(message["text"])
-                            if event.get("type") == "text" and event.get("text"):
+                            if event.get("type") == "ping":
+                                # 클라이언트 지연 진단용 왕복 측정
+                                await websocket.send_text(json.dumps({"type": "pong", "t": event.get("t")}))
+                            elif event.get("type") == "text" and event.get("text"):
                                 # 빠른 요청 버튼 등 텍스트 턴 주입 (대화 맥락 유지)
                                 await gemini_session.send(input=event["text"], end_of_turn=True)
                             elif event.get("type") == "audio" and "data" in event:

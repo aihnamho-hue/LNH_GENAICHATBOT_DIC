@@ -237,6 +237,8 @@
             <span class="dot idle" id="statusDot"></span>
             <span id="statusText">연결 준비 완료</span>
         </div>
+        <!-- 지연 진단: 📶왕복지연 · ⬆업로드적체 · ⏱최근 응답 소요 -->
+        <div id="netStat" style="font-size:10px; color:var(--muted); min-height:13px; text-align:center;"></div>
 
         <!-- 페이더 섹션 -->
         <div class="fader-section">
@@ -300,6 +302,30 @@
     let mixDest = null, recorder = null, recordedChunks = [], recorderMime = "";
     let footerNoteTimer = null;
     let sessionUploaded = false; // 세션당 1회 업로드 보장 (종료 버튼/탭 닫기 이중 전송 방지)
+
+    /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
+    const APP_VERSION = "v6";
+    console.log("마사마사 클라이언트 " + APP_VERSION);
+    let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
+    const netStatEl = document.getElementById("netStat");
+    function updateNetStat() {
+        if (!isConnected) { netStatEl.textContent = APP_VERSION; return; }
+        const parts = [APP_VERSION];
+        if (lastRtt != null) parts.push("📶 " + lastRtt + "ms");
+        if (ws) parts.push("⬆ " + Math.round(ws.bufferedAmount / 1024) + "KB");
+        if (lastTurnSec != null) parts.push("⏱ " + lastTurnSec.toFixed(1) + "s");
+        netStatEl.textContent = parts.join(" · ");
+    }
+    function startPinger() {
+        clearInterval(pingTimer);
+        pingTimer = setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                try { ws.send(JSON.stringify({ type: "ping", t: performance.now() })); } catch (e) {}
+                updateNetStat(); // bufferedAmount(업로드 적체)도 함께 갱신
+            }
+        }, 4000);
+    }
+    updateNetStat();
     const isKakao = /KAKAOTALK/i.test(navigator.userAgent);
     let isPaused = false;
     let playbackRate = 1.0;
@@ -575,6 +601,8 @@
             isPaused = false;
             nextPlayTime = 0;
             sessionUploaded = false;
+            lastRtt = null; lastTurnSec = null; userTextAt = null;
+            startPinger();
             transcriptLog = [];
             sessionStartedAt = new Date();
             exportBtn.disabled = true;
@@ -592,12 +620,22 @@
         ws.onmessage = (event) => {
             if (event.data instanceof ArrayBuffer) {
                 // 마사마사 음성 (24kHz PCM 바이너리)
+                if (userTextAt != null) {
+                    // 내 발화 인식(STT) → 첫 응답 오디오까지 걸린 시간 = Gemini 쪽 지연
+                    lastTurnSec = (performance.now() - userTextAt) / 1000;
+                    userTextAt = null;
+                    updateNetStat();
+                }
                 playReceivedPCM(event.data);
                 if (!isPaused) setStatus("speaking", "stSpeaking");
                 return;
             }
             const msg = JSON.parse(event.data);
-            if (msg.type === "user_text") {
+            if (msg.type === "pong") {
+                lastRtt = Math.round(performance.now() - msg.t);
+                updateNetStat();
+            } else if (msg.type === "user_text") {
+                userTextAt = performance.now();
                 appendTranscript("user", msg.text);
             } else if (msg.type === "ai_text") {
                 appendTranscript("ai", msg.text);
@@ -628,6 +666,8 @@
     function stopSession() {
         isConnected = false;
         isPaused = false;
+        clearInterval(pingTimer);
+        updateNetStat();
         setStatus("idle", "stClosed");
         actionBtn.innerText = t("btnStart");
         actionBtn.classList.remove("recording");

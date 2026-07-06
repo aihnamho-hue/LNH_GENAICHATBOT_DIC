@@ -566,6 +566,7 @@
         powerSlider.disabled = true;
         const proto = location.protocol === "https:" ? "wss://" : "ws://";
         ws = new WebSocket(proto + location.host + "/ws/live?d=" + d + "&p=" + p + "&lang=" + encodeURIComponent(uiLang || "ko") + "&name=" + encodeURIComponent(userName));
+        ws.binaryType = "arraybuffer"; // 오디오는 바이너리 프레임 (base64 오버헤드 제거)
         ws.onopen = async () => {
             setStatus("listening", "stListening");
             actionBtn.innerText = t("btnStop");
@@ -589,14 +590,14 @@
             }
         };
         ws.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
-            if (msg.type === "audio") {
-                playReceivedPCM(msg.data);
-                if (typeof msg.volume === "number") {
-                    hamsterWrap.style.setProperty("--talk-scale", (1 + msg.volume * 0.06).toFixed(3));
-                }
+            if (event.data instanceof ArrayBuffer) {
+                // 마사마사 음성 (24kHz PCM 바이너리)
+                playReceivedPCM(event.data);
                 if (!isPaused) setStatus("speaking", "stSpeaking");
-            } else if (msg.type === "user_text") {
+                return;
+            }
+            const msg = JSON.parse(event.data);
+            if (msg.type === "user_text") {
                 appendTranscript("user", msg.text);
             } else if (msg.type === "ai_text") {
                 appendTranscript("ai", msg.text);
@@ -815,18 +816,9 @@
         registerProcessor("pcm-capture", PCMCaptureProcessor);
     `;
 
-    // btoa + reduce(문자 하나씩)는 저사양 기기에서 느림 → 32K 단위 청크 변환
-    function bytesToBase64(u8) {
-        let bin = "";
-        for (let i = 0; i < u8.length; i += 0x8000) {
-            bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
-        }
-        return btoa(bin);
-    }
-
     function sendPcmChunk(u8) {
         if (!isConnected || isPaused || !ws || ws.readyState !== WebSocket.OPEN) return;
-        ws.send(JSON.stringify({ type: "audio", data: bytesToBase64(u8) }));
+        ws.send(u8); // 바이너리 프레임 전송 — base64/JSON 인코딩 오버헤드 없음
     }
 
     async function initAudioCapture() {
@@ -1001,10 +993,16 @@
         if (!sticky) footerNoteTimer = setTimeout(() => { chatFooterEl.innerHTML = t("footer"); }, 5000);
     }
 
-    function playReceivedPCM(base64Data) {
+    function playReceivedPCM(arrayBuffer) {
         if (!playbackCtx) return;
-        const bytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-        const int16 = new Int16Array(bytes.buffer);
+        const usable = arrayBuffer.byteLength - (arrayBuffer.byteLength % 2);
+        if (usable < 2) return;
+        const int16 = new Int16Array(arrayBuffer, 0, usable / 2);
+        // 볼륨(햄스터 talk-scale)은 클라이언트가 직접 계산 — 서버 부담 제거
+        let sum = 0, n = 0;
+        for (let i = 0; i < int16.length; i += 8) { const s = int16[i]; sum += s * s; n++; }
+        const vol = n ? Math.min(1, (Math.sqrt(sum / n) / 32768) * 4) : 0;
+        hamsterWrap.style.setProperty("--talk-scale", (1 + vol * 0.06).toFixed(3));
         const buf = playbackCtx.createBuffer(1, int16.length, 24000);
         const ch = buf.getChannelData(0);
         for (let i = 0; i < int16.length; i++) ch[i] = int16[i] / 32768.0;

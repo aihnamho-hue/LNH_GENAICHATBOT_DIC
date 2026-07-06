@@ -8,12 +8,16 @@ services:
     #    Blueprint 재배포(또는 새 서비스 생성)해야 싱가포르로 옮겨짐
     region: singapore
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    # --ws-per-message-deflate false: 오디오 프레임 압축은 0.1 vCPU에서 CPU만 낭비 → 지연 유발
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --ws-per-message-deflate false
     envVars:
       - key: GEMINI_API_KEY
         sync: false
       - key: MAX_CONCURRENT_SESSIONS
         value: "5"
+      # 로컬 임시 녹음 확인 페이지(/recordings?key=...) 활성화용 (선택)
+      - key: ADMIN_KEY
+        sync: false
       # ── 대화 녹음 Google Drive 저장용 (GDRIVE_SETUP.md 참고) ──
       - key: GDRIVE_CLIENT_ID
         sync: false

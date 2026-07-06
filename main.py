@@ -5,7 +5,6 @@ import base64
 import time
 import datetime
 import re
-import numpy as np
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
@@ -261,19 +260,6 @@ def build_system_prompt(d: int, p: int, ui_lang: str = "", user_name: str = "") 
     return BASE_PERSONA + name_hint + native_hint + coord + D_RULES[d_band] + sep + P_RULES[p_band] + sep + fusion
 
 
-def calculate_rms_level(pcm_bytes: bytes) -> float:
-    # numpy 벡터화 — 순수 파이썬 for문은 이벤트루프를 블로킹해서
-    # 사용자 음성 업로드(client_to_gemini)까지 지연시켰음
-    if not pcm_bytes or len(pcm_bytes) < 2:
-        return 0.0
-    usable = len(pcm_bytes) // 2 * 2
-    samples = np.frombuffer(pcm_bytes[:usable], dtype="<i2").astype(np.float32)
-    if samples.size == 0:
-        return 0.0
-    rms = float(np.sqrt(np.mean(samples * samples)))
-    return round(min(1.0, (rms / 32768.0) * 4.0), 3)
-
-
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
@@ -375,6 +361,49 @@ async def upload_recording(
     return {"ok": True, "storage": "local-ephemeral", "files": saved}
 
 
+# ============================================================
+# 로컬 저장분 확인용 관리자 페이지 (Google Drive 미설정 시 폴백 확인 경로)
+# - ADMIN_KEY 환경변수를 설정해야 활성화됨
+# - 접속: https://<앱주소>/recordings?key=<ADMIN_KEY>
+# - 주의: Render 디스크는 재배포/재시작 시 비워지므로 임시 확인용
+# ============================================================
+ADMIN_KEY = os.environ.get("ADMIN_KEY", "").strip()
+
+
+def _check_admin(key: str):
+    if not ADMIN_KEY or key != ADMIN_KEY:
+        raise HTTPException(status_code=403, detail="forbidden")
+
+
+@app.get("/recordings", response_class=HTMLResponse)
+async def list_recordings(key: str = ""):
+    _check_admin(key)
+    files = []
+    if os.path.isdir("recordings"):
+        files = sorted(os.listdir("recordings"), reverse=True)
+    rows = "".join(
+        f'<li><a href="/recordings/{f}?key={key}">{f}</a> '
+        f'({os.path.getsize(os.path.join("recordings", f)) // 1024} KB)</li>'
+        for f in files
+    )
+    storage_note = "Google Drive 연동 활성화됨 — 새 녹음은 Drive에 저장됩니다." if GDRIVE_ENABLED \
+        else "Google Drive 미설정 — 녹음이 서버 임시 디스크에 저장 중 (재배포 시 삭제됨!)"
+    return HTMLResponse(
+        f"<meta charset='utf-8'><h3>서버 로컬 녹음 파일 ({len(files)}개)</h3>"
+        f"<p>{storage_note}</p><ul>{rows or '<li>(없음)</li>'}</ul>"
+    )
+
+
+@app.get("/recordings/{filename}")
+async def download_recording(filename: str, key: str = ""):
+    _check_admin(key)
+    filename = os.path.basename(filename)  # 경로 탈출 방지
+    path = os.path.join("recordings", filename)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="not_found")
+    return FileResponse(path, filename=filename)
+
+
 @app.websocket("/ws/live")
 async def websocket_endpoint(websocket: WebSocket):
     global _active_sessions
@@ -416,7 +445,7 @@ async def _handle_session(websocket: WebSocket):
     system_prompt = build_system_prompt(d, p, ui_lang, user_name)
     print(f"[서버] 클라이언트 연결 성공 — 친밀도(D)={d}, 지위(P)={p}, 언어={ui_lang or 'ko'}, 이름={user_name or '(없음)'}")
 
-    config = types.LiveConnectConfig(
+    config_kwargs = dict(
         response_modalities=[types.Modality.AUDIO],
         system_instruction=types.Content(
             parts=[types.Part.from_text(text=system_prompt)]
@@ -424,6 +453,16 @@ async def _handle_session(websocket: WebSocket):
         input_audio_transcription=types.AudioTranscriptionConfig(),
         output_audio_transcription=types.AudioTranscriptionConfig(),
     )
+    # ★ 지연 해결 핵심: 2.5 네이티브 오디오 모델은 동적 사고(thinking)가 기본 활성화라
+    #   응답 전에 수 초씩 '생각'함 → thinking_budget=0으로 꺼서 즉답하게 만든다
+    try:
+        config = types.LiveConnectConfig(
+            **config_kwargs,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        )
+    except Exception as e:
+        print(f"[서버] thinking_config 미지원 SDK — 기본 설정으로 진행 (google-genai 업그레이드 권장): {e}")
+        config = types.LiveConnectConfig(**config_kwargs)
 
     model_id = "models/gemini-2.5-flash-native-audio-latest"
 
@@ -437,21 +476,31 @@ async def _handle_session(websocket: WebSocket):
             )
 
             async def client_to_gemini():
+                # 오디오는 바이너리 프레임으로 받는다 — base64+JSON 파싱은 0.1 vCPU에서
+                # 청크마다 CPU를 소모해 오디오가 밀리고 STT 지연으로 체감됐음
                 try:
                     while True:
-                        data = await websocket.receive_text()
-                        event = json.loads(data)
-                        if event.get("type") == "audio" and "data" in event:
-                            audio_bytes = base64.b64decode(event["data"])
+                        message = await websocket.receive()
+                        if message.get("type") == "websocket.disconnect":
+                            raise WebSocketDisconnect(int(message.get("code") or 1000))
+                        chunk = message.get("bytes")
+                        if chunk:
                             await gemini_session.send_realtime_input(
-                                audio=types.Blob(
-                                    data=audio_bytes,
-                                    mime_type="audio/pcm;rate=16000"
-                                )
+                                audio=types.Blob(data=chunk, mime_type="audio/pcm;rate=16000")
                             )
-                        elif event.get("type") == "text" and event.get("text"):
-                            # 빠른 요청 버튼 등 텍스트 턴 주입 (대화 맥락 유지)
-                            await gemini_session.send(input=event["text"], end_of_turn=True)
+                        elif message.get("text"):
+                            event = json.loads(message["text"])
+                            if event.get("type") == "text" and event.get("text"):
+                                # 빠른 요청 버튼 등 텍스트 턴 주입 (대화 맥락 유지)
+                                await gemini_session.send(input=event["text"], end_of_turn=True)
+                            elif event.get("type") == "audio" and "data" in event:
+                                # 구버전 클라이언트(base64) 호환
+                                await gemini_session.send_realtime_input(
+                                    audio=types.Blob(
+                                        data=base64.b64decode(event["data"]),
+                                        mime_type="audio/pcm;rate=16000"
+                                    )
+                                )
                 except WebSocketDisconnect:
                     print("[서버] 클라이언트가 연결을 끊었습니다")
                     raise
@@ -470,12 +519,9 @@ async def _handle_session(websocket: WebSocket):
                         if sc.model_turn:
                             for part in sc.model_turn.parts:
                                 if part.inline_data:
-                                    audio_bytes = part.inline_data.data
-                                    await websocket.send_text(json.dumps({
-                                        "type": "audio",
-                                        "data": base64.b64encode(audio_bytes).decode("utf-8"),
-                                        "volume": calculate_rms_level(audio_bytes),
-                                    }))
+                                    # 바이너리 프레임 그대로 전달 — base64 인코딩·RMS 계산 제거
+                                    # (볼륨은 이제 클라이언트가 재생 직전에 직접 계산)
+                                    await websocket.send_bytes(part.inline_data.data)
                         if sc.input_transcription and sc.input_transcription.text:
                             await websocket.send_text(json.dumps({
                                 "type": "user_text",

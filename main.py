@@ -148,10 +148,15 @@ BASE_PERSONA = """
 - 음성 대화니까 한 번에 2~3문장 이내로 짧게.
 - 문어체 금지. "그러나/하지만" 대신 "근데/아 그리고".
 
-# 발화 속도와 학습자 배려 (중요)
-- 기본은 자연스럽고 편안한 속도로 말해.
-- 학습자가 "천천히 말해 주세요", "조금만 천천히", "빨라요" 라고 하면 → 속도를 확 늦추고 또박또박, 한 어절씩 끊어서 발음해. 이게 한국어 연습의 중요한 전략이니 흔쾌히 응해줘.
-- "방금 뭐라고 했어요?", "다시 한 번만", "네?" 하면 → 짜증 없이 같은 말을 더 천천히, 또는 더 쉬운 표현으로 바꿔서 다시 말해줘 (rephrase).
+# 학습자 요청 대응 (중요 — 네 가지 요청을 정확히 구분해서 응해)
+- [천천히] "천천히 말해 주세요/말해 줘" → **속도만** 늦춰. 또박또박, 한 어절씩. 내용·어휘·문장 길이는 그대로.
+- [다시 한 번] "다시 말해 주세요/말해 봐" → 직전에 한 말을 그대로 한 번 더, 조금 천천히. 새로운 내용을 덧붙이지 마.
+- [쉽게] "쉽게 말해 주세요/얘기해" → **같은 내용**을 ①더 쉬운 어휘 ②더 단순한 문법 ③**더 적은 어절**로 바꿔 말해.
+  속도를 늦추라는 뜻이 절대 아니야. 문장을 늘리지 말고 오히려 짧게 줄여.
+  예) "주말은 잘 보냈어? 재밌는 일 있었어?" → (쉽게) "주말에 뭐 했어?"
+- [빨리/빨리빨리] → 자연스러운 원래 속도로 복귀.
+- ★공통 규칙: 이 요청들에 응할 때 사과나 사족("아 미안! 내가 너무 신났나 보다" 같은 말)을 붙이지 마.
+  기껏해야 "응!" 한 마디 정도로 짧게 받고 곧바로 요청대로 다시 말해. 요청에 응한다고 발화량이 늘어나면 실패다.
 - 학습자가 어려워하는 기색이면 먼저 "천천히 말할까요?" 하고 배려해줘.
 - 학습자가 편해 보이면 다시 자연스러운 속도로 돌아와도 좋아.
 
@@ -218,8 +223,15 @@ def _band(v: int) -> str:
     return "high"
 
 
-def build_system_prompt(d: int, p: int, ui_lang: str = "") -> str:
+def build_system_prompt(d: int, p: int, ui_lang: str = "", user_name: str = "") -> str:
     d_band, p_band = _band(d), _band(p)
+    name_hint = ""
+    if user_name:
+        name_hint = f"""
+# 사용자 이름
+- 사용자의 이름은 '{user_name}'(이)야. 대화 중 자연스럽게 이름을 불러줘.
+- 호칭은 페이더 좌표에 맞춰: 격식 관계면 '{user_name}님', 친한 반말 관계면 '{user_name}아/야' 식으로.
+"""
     native = LANG_NAMES.get(ui_lang, "")
     native_hint = ""
     if native:
@@ -246,7 +258,7 @@ def build_system_prompt(d: int, p: int, ui_lang: str = "") -> str:
     sep = """
 
 """
-    return BASE_PERSONA + native_hint + coord + D_RULES[d_band] + sep + P_RULES[p_band] + sep + fusion
+    return BASE_PERSONA + name_hint + native_hint + coord + D_RULES[d_band] + sep + P_RULES[p_band] + sep + fusion
 
 
 def calculate_rms_level(pcm_bytes: bytes) -> float:
@@ -289,8 +301,11 @@ async def upload_recording(
     transcript: str = Form(default=""),
     d: str = Form(default="0"),
     p: str = Form(default="0"),
+    name: str = Form(default=""),
+    meta: str = Form(default=""),
 ):
-    """세션 종료 시 클라이언트가 보내는 대화 녹음(믹스 1파일) + 대화기록(txt) 저장."""
+    """세션 종료 시 대화 녹음(믹스 1파일) + 대화기록(txt) + 대화 정보(json) 저장.
+    탭을 그냥 닫은 경우에도 클라이언트가 sendBeacon으로 txt+json은 보냄."""
     audio_bytes = b""
     audio_mime = "application/octet-stream"
     if audio is not None:
@@ -305,9 +320,26 @@ async def upload_recording(
 
     d = re.sub(r"\D", "", d)[:3] or "0"
     p = re.sub(r"\D", "", p)[:3] or "0"
+    # 파일명에 넣을 이름 (한글/영문/숫자만 허용)
+    safe_name = re.sub(r"[^0-9A-Za-z가-힣_-]", "", name)[:20]
     ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    base = f"마사마사대화_{ts}_D{d}_P{p}"
+    base = f"마사마사대화_{ts}" + (f"_{safe_name}" if safe_name else "") + f"_D{d}_P{p}"
     ext = _AUDIO_EXT.get(audio_mime, "webm")
+
+    # 대화 정보(메타데이터): 클라이언트 JSON + 서버 수신 정보 병합
+    meta_dict = {}
+    if meta:
+        try:
+            parsed = json.loads(meta)
+            if isinstance(parsed, dict):
+                meta_dict = parsed
+        except (ValueError, TypeError):
+            pass
+    meta_dict.setdefault("name", name[:20])
+    meta_dict.setdefault("d", d)
+    meta_dict.setdefault("p", p)
+    meta_dict["hasAudio"] = bool(audio_bytes)
+    meta_dict["serverReceivedAt"] = datetime.datetime.now().isoformat()
 
     to_save = []
     if audio_bytes:
@@ -315,6 +347,9 @@ async def upload_recording(
     if transcript:
         # BOM 포함 UTF-8 — 윈도우 메모장에서도 깨지지 않게
         to_save.append((f"{base}.txt", ("﻿" + transcript).encode("utf-8"), "text/plain"))
+    to_save.append((f"{base}.json",
+                    json.dumps(meta_dict, ensure_ascii=False, indent=2).encode("utf-8"),
+                    "application/json"))
 
     if GDRIVE_ENABLED:
         try:
@@ -375,9 +410,11 @@ async def _handle_session(websocket: WebSocket):
     d = max(0, min(100, d))
     p = max(0, min(100, p))
     ui_lang = websocket.query_params.get("lang", "").strip().lower()[:5]
+    # 이름은 시스템 프롬프트에 들어가므로 공백 정리 + 길이 제한 (프롬프트 주입 방지)
+    user_name = re.sub(r"\s+", " ", websocket.query_params.get("name", "")).strip()[:20]
 
-    system_prompt = build_system_prompt(d, p, ui_lang)
-    print(f"[서버] 클라이언트 연결 성공 — 친밀도(D)={d}, 지위(P)={p}, 언어={ui_lang or 'ko'}")
+    system_prompt = build_system_prompt(d, p, ui_lang, user_name)
+    print(f"[서버] 클라이언트 연결 성공 — 친밀도(D)={d}, 지위(P)={p}, 언어={ui_lang or 'ko'}, 이름={user_name or '(없음)'}")
 
     config = types.LiveConnectConfig(
         response_modalities=[types.Modality.AUDIO],

@@ -158,6 +158,44 @@
         .kakao-banner { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 200; background: #3D2C26; color: #fff; font-size: 12px; line-height: 1.5; padding: 10px 14px; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; text-align: center; }
         .kakao-banner.show { display: flex; }
         .kakao-banner button { border: none; border-radius: 8px; background: var(--kakao-yellow); color: #1A1A1A; font-weight: 800; font-size: 12px; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
+
+        /* ── 주제 대화(상황극) 모드 ── */
+        .mode-toggle { display: flex; width: 100%; gap: 6px; }
+        .mode-btn { flex: 1; border: 1.5px solid var(--navy-soft); background: #fff; color: var(--navy); border-radius: 12px; padding: 8px 4px; font-size: 12px; font-weight: 800; cursor: pointer; transition: background 0.2s, transform 0.12s; }
+        .mode-btn:hover:not(:disabled) { transform: translateY(-1px); }
+        .mode-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+        .mode-btn:disabled { opacity: 0.45; cursor: default; transform: none; }
+        .rp-field { text-align: left; margin-bottom: 10px; }
+        .rp-field label { display: block; font-size: 11px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+        .rp-input { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: 10px; border: 1.5px solid var(--accent-soft); font-size: 13px; background: #FFFBF6; color: var(--ink); }
+        .rp-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .style-seg { display: flex; gap: 6px; }
+        .seg-btn { flex: 1; border: 1.5px solid var(--navy-soft); background: #fff; border-radius: 10px; padding: 8px 4px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--ink); }
+        .seg-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+        .rp-note { font-size: 11px; color: var(--muted); margin: 2px 0 12px; }
+        .stage-list { text-align: left; display: flex; flex-direction: column; gap: 8px; margin: 12px 0 16px; max-height: 44vh; overflow-y: auto; }
+        .stage-item { border: 1.5px solid var(--navy-soft); border-radius: 12px; padding: 9px 12px; background: #FBFDFF; }
+        .stage-item .st-name { font-size: 13px; font-weight: 800; color: var(--navy); }
+        .stage-item .st-native { font-size: 11px; color: var(--muted); margin-left: 6px; font-weight: 600; }
+        .stage-item .st-desc { font-size: 11px; color: #5A6B7B; margin-top: 2px; }
+        .stage-item .st-expr { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .stage-item .st-expr span { font-size: 11px; background: var(--accent-soft); color: #8A4B2A; border-radius: 8px; padding: 2px 8px; }
+        .progress-wrap { padding: 8px 14px 6px; background: rgba(255,255,255,0.55); border-bottom: 1px solid rgba(0,0,0,0.04); }
+        .progress-wrap.hidden { display: none; }
+        .progress-top { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+        #progressPct { font-size: 13px; }
+        .progress-track { height: 10px; border-radius: 6px; background: #E8EDF3; overflow: hidden; }
+        .progress-bar { height: 100%; width: 0%; border-radius: 6px; background: linear-gradient(90deg, var(--navy), #5B7EA6); transition: width 0.6s ease; }
+        .progress-bar.over { background: linear-gradient(90deg, #F4A261, #E9C46A); }
+        .stage-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .stage-chip { font-size: 10px; font-weight: 700; border-radius: 8px; padding: 2px 7px; background: #EDF1F6; color: #7A8AA0; border: 1px solid #E0E7EF; }
+        .stage-chip.done { background: #DDF3E4; color: #2E7D4F; border-color: #BCE5CB; }
+        .score-big { font-size: 44px; font-weight: 900; color: var(--accent); margin: 6px 0 0; }
+        .score-sub { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+        .result-stages { text-align: left; margin: 0 0 14px; display: flex; flex-direction: column; gap: 5px; }
+        .result-stages div { font-size: 12px; font-weight: 700; }
+        .result-stages .ok { color: #2E7D4F; }
+        .result-stages .no { color: #B8A99E; }
     </style>
 </head>
 <body>
@@ -218,6 +256,56 @@
         </div>
     </div>
 </div>
+<!-- 주제 대화 설정 (모국어 입력 가능) -->
+<div class="lang-overlay hidden" id="rpSetupOverlay">
+    <div class="lang-box" style="max-width:460px;">
+        <h2 id="rpTitleEl">🎭</h2>
+        <p class="rp-note" id="rpIntroEl" style="text-align:center;"></p>
+        <div class="rp-field"><label id="rpTopicLbl"></label><input class="rp-input" id="rpTopic" maxlength="80" autocomplete="off"></div>
+        <div class="rp-field"><label id="rpGoalLbl"></label><input class="rp-input" id="rpGoal" maxlength="120" autocomplete="off"></div>
+        <div class="rp-field"><label id="rpPlaceLbl"></label><input class="rp-input" id="rpPlace" maxlength="60" autocomplete="off"></div>
+        <div class="rp-2col">
+            <div class="rp-field"><label id="rpMyRoleLbl"></label><input class="rp-input" id="rpMyRole" maxlength="40" autocomplete="off"></div>
+            <div class="rp-field"><label id="rpAiRoleLbl"></label><input class="rp-input" id="rpAiRole" maxlength="40" autocomplete="off"></div>
+        </div>
+        <div class="rp-field"><label id="rpStyleLbl"></label>
+            <div class="style-seg">
+                <button class="seg-btn" data-style="polite">존댓말</button>
+                <button class="seg-btn active" data-style="auto" id="segAutoBtn"></button>
+                <button class="seg-btn" data-style="banmal">반말</button>
+            </div>
+        </div>
+        <p class="rp-note" id="rpFaderNoteEl" style="text-align:center;"></p>
+        <div class="consent-actions">
+            <button class="action-btn" id="rpMakeBtn"></button>
+            <button class="export-btn" id="rpCancelBtn"></button>
+        </div>
+    </div>
+</div>
+<!-- 기능단계 브리핑 (대화 시작 전 안내) -->
+<div class="lang-overlay hidden" id="rpBriefOverlay">
+    <div class="lang-box" style="max-width:520px;">
+        <h2 id="rpBriefTitleEl">🗺️</h2>
+        <p id="rpBriefScenario" style="font-size:12px; color:#5A6B7B; margin:0 0 4px; font-weight:700;"></p>
+        <p class="rp-note" id="rpBriefGuideEl" style="text-align:center;"></p>
+        <div class="stage-list" id="rpStageList"></div>
+        <div class="consent-actions">
+            <button class="action-btn" id="rpBeginBtn"></button>
+            <button class="export-btn" id="rpEditBtn"></button>
+        </div>
+    </div>
+</div>
+<!-- 대화 결과 (진행률 → 점수 치환) -->
+<div class="lang-overlay hidden" id="rpResultOverlay">
+    <div class="lang-box consent-box">
+        <h2 id="rpResultTitleEl">🏆</h2>
+        <p class="score-big" id="rpScoreEl">0</p>
+        <p class="score-sub" id="rpScoreSubEl"></p>
+        <div class="result-stages" id="rpResultStages"></div>
+        <p class="rp-note" id="rpSavedNoteEl" style="text-align:center;"></p>
+        <div class="consent-actions"><button class="action-btn" id="rpCloseBtn"></button></div>
+    </div>
+</div>
 <div class="app">
     <div class="character-panel">
         <button class="lang-btn" id="langBtn" title="Language">🌐</button>
@@ -239,6 +327,12 @@
         </div>
         <!-- 지연 진단: 📶왕복지연 · ⬆업로드적체 · ⏱최근 응답 소요 -->
         <div id="netStat" style="font-size:10px; color:var(--muted); min-height:13px; text-align:center;"></div>
+
+        <!-- 모드 선택: 자유 수다 / 주제 대화(상황극) -->
+        <div class="mode-toggle">
+            <button class="mode-btn active" id="modeFreeBtn"></button>
+            <button class="mode-btn" id="modeRpBtn"></button>
+        </div>
 
         <!-- 페이더 섹션 -->
         <div class="fader-section">
@@ -278,6 +372,12 @@
             <div class="avatar"><img src="/static/hamster.png" alt=""></div>
             <div class="info"><h2>마사마사</h2><span id="headerStatus">대기 중</span></div>
         </div>
+        <!-- 주제 대화 진행률: 기능단계가 충족될 때마다 자동으로 차오름 (100% 초과 = 확장 대화) -->
+        <div class="progress-wrap hidden" id="progressWrap">
+            <div class="progress-top"><span id="progressLabel"></span><span id="progressPct">0%</span></div>
+            <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+            <div class="stage-chips" id="stageChips"></div>
+        </div>
         <div class="chat-log" id="chatLog">
             <div class="empty-state" id="emptyState">
                 <span class="emoji">🐹</span>대화를 시작하면<br>카카오톡처럼 대화가 표시됩니다
@@ -304,7 +404,7 @@
     let sessionUploaded = false; // 세션당 1회 업로드 보장 (종료 버튼/탭 닫기 이중 전송 방지)
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v6";
+    const APP_VERSION = "v8";
     console.log("마사마사 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -337,6 +437,13 @@
     let transcriptLog = [];
     let sessionStartedAt = null;
 
+    /* ── 주제 대화(상황극) 상태 ── */
+    let mode = "free";                 // "free" 자유 수다 | "rp" 주제 대화
+    let rpId = null, rpPlan = null, rpStyle = "auto";
+    let rpPercent = 0, rpStagesState = [];
+    let rpSessionActive = false;       // 현재(직전) 세션이 상황극인지
+    let rpEnding = false, rpFinal = null, finalScoreTimer = null;
+
     const actionBtn = document.getElementById("actionBtn");
     const exportBtn = document.getElementById("exportBtn");
     const pauseBtn = document.getElementById("pauseBtn");
@@ -353,13 +460,24 @@
     const distValue = document.getElementById("distValue");
     const powerValue = document.getElementById("powerValue");
 
+    const modeFreeBtn = document.getElementById("modeFreeBtn");
+    const modeRpBtn = document.getElementById("modeRpBtn");
+    const rpSetupOverlay = document.getElementById("rpSetupOverlay");
+    const rpBriefOverlay = document.getElementById("rpBriefOverlay");
+    const rpResultOverlay = document.getElementById("rpResultOverlay");
+    const progressWrap = document.getElementById("progressWrap");
+    const progressBar = document.getElementById("progressBar");
+    const progressPct = document.getElementById("progressPct");
+    const progressLabel = document.getElementById("progressLabel");
+    const stageChips = document.getElementById("stageChips");
+
     /* ══════════ 다국어 UI (i18n) ══════════
        빠른 요청 버튼(천천히/다시 한 번/쉽게/빨리빨리)과 실제 대화 내용은
        한국어 학습 콘텐츠이므로 번역하지 않는다. */
     const I18N = {
-        ko: { title:"🐹 마사마사와 한국어 수다", subtitle:"마이크를 켜고 마사마사와 자연스럽게 대화해 보세요", speaking:"말하는 중...", ready:"연결 준비 완료", waiting:"대기 중", styleTitle:"🎚️ 대화 스타일 조절", distLabel:"친밀도 (Distance)", powerLabel:"사용자 지위 (Power)", distLow:"낯선 사이", distHigh:"절친", powerLow:"하급자", powerHigh:"상급자", distLv:["낯선 사이","아는 사이","적당한 사이","친한 사이","절친 (BFF)"], powerLv:["하급자","약간 아래","대등한 관계","약간 위","상급자 (VIP)"], placeholder:"접속 코드 (필요한 경우에만 입력)", btnStart:"대화 시작하기", btnStop:"대화 종료하기", btnPause:"⏸️ 일시정지", btnResume:"▶️ 재개", btnExport:"📄 대화 내보내기 (.txt)", empty:"대화를 시작하면<br>카카오톡처럼 대화가 표시됩니다", footer:"한국어로 자유롭게 말해보세요 · 마사마사가 말하는 중에 끼어들어도 됩니다", stConnecting:"서버 연결 중...", stListening:"듣고 있어요... (마이크 활성)", stSpeaking:"마사마사가 말하고 있어요", stSpeakNow:"말씀하세요!", stClosed:"연결 종료됨", stPaused:"일시정지됨 — ▶️ 누르면 재개", errAccess:"접속 코드가 올바르지 않습니다.", errFull:"지금은 사용자가 많아요. 잠시 후 다시 시도해 주세요.", errGeneric:"연결에 실패했어요.", consentTitle:"🎙️ 녹음 안내", consentBody:"학습 기록 제공과 서비스 개선을 위해 대화 음성과 대화 내용이 자동으로 녹음되어 서버에 저장돼요. 동의하면 대화가 시작됩니다.", consentAgree:"동의하고 시작하기", consentCancel:"취소", upUploading:"🎙️ 대화 녹음 저장 중...", upDone:"✅ 대화 녹음이 저장되었어요", upFail:"⚠️ 녹음 저장에 실패했어요", kakaoNotice:"카카오톡 브라우저에서는 파일 저장 등 일부 기능이 제한돼요.", kakaoOpen:"기본 브라우저로 열기", kakaoExportMsg:"카카오톡 브라우저에서는 파일 저장이 지원되지 않아요. 대화 기록은 세션 종료 시 서버에 자동 저장되었어요. 파일로 받으려면 기본 브라우저(Chrome/Safari)로 열어주세요.", earTitle:"🎧 이어폰을 사용해 주세요", earBody:"스피커로 들으면 마사마사 목소리가 마이크로 들어가서 대화가 자꾸 끊길 수 있어요. 이어폰을 쓰면 훨씬 잘 들리고 대화도 매끄러워요!", earOk:"알겠어요!", qSlow:"천천히", qAgain:"다시 한 번", qEasy:"쉽게", qFast:"빨리빨리", nameTitle:"👋 이름이 뭐예요?", namePh:"이름 (별명도 좋아요)", nameOk:"확인" },
-        en: { title:"🐹 Korean Chat with Masamasa", subtitle:"Turn on your mic and chat naturally with Masamasa", speaking:"Speaking...", ready:"Ready to connect", waiting:"Waiting", styleTitle:"🎚️ Conversation Style", distLabel:"Closeness (Distance)", powerLabel:"Your Status (Power)", distLow:"Strangers", distHigh:"Best friends", powerLow:"Junior", powerHigh:"Senior", distLv:["Strangers","Acquaintances","Casual","Close","Best friends (BFF)"], powerLv:["Junior","Slightly below","Equal","Slightly above","Senior (VIP)"], placeholder:"Access code (only if required)", btnStart:"Start Conversation", btnStop:"End Conversation", btnPause:"⏸️ Pause", btnResume:"▶️ Resume", btnExport:"📄 Export Transcript (.txt)", empty:"Start a conversation and<br>messages will appear here like a chat app", footer:"Speak freely in Korean · You can interrupt while Masamasa is talking", stConnecting:"Connecting to server...", stListening:"Listening... (mic on)", stSpeaking:"Masamasa is talking", stSpeakNow:"Go ahead, speak!", stClosed:"Disconnected", stPaused:"Paused — press ▶️ to resume", errAccess:"Incorrect access code.", errFull:"Too many users right now. Please try again later.", errGeneric:"Connection failed.", consentTitle:"🎙️ Recording notice", consentBody:"To provide your learning records and improve the service, the conversation audio and transcript are automatically recorded and saved to our server. Agree to start the conversation.", consentAgree:"Agree & Start", consentCancel:"Cancel", upUploading:"🎙️ Saving recording...", upDone:"✅ Recording saved", upFail:"⚠️ Failed to save recording", kakaoNotice:"Some features (like file saving) are limited in the KakaoTalk browser.", kakaoOpen:"Open in browser", kakaoExportMsg:"File download is not supported in the KakaoTalk browser. Your transcript was saved to the server automatically. To download it as a file, open this page in Chrome/Safari.", earTitle:"🎧 Please use earphones", earBody:"With the speaker on, Masamasa's voice can leak into your mic and keep cutting the conversation off. Earphones make everything much smoother!", earOk:"Got it!", qSlow:"Slower", qAgain:"One more time", qEasy:"Simpler", qFast:"Full speed", nameTitle:"👋 What's your name?", namePh:"Your name (nickname is fine)", nameOk:"OK" },
-        zh: { title:"🐹 和Masamasa用韩语畅聊", subtitle:"打开麦克风，和Masamasa自然地用韩语聊天吧", speaking:"正在说话…", ready:"准备就绪", waiting:"等待中", styleTitle:"🎚️ 对话风格设置", distLabel:"亲密度 (Distance)", powerLabel:"用户地位 (Power)", distLow:"陌生人", distHigh:"挚友", powerLow:"下级", powerHigh:"上级", distLv:["陌生人","认识的人","普通关系","亲近的人","挚友 (BFF)"], powerLv:["下级","稍低","平等关系","稍高","上级 (VIP)"], placeholder:"访问码（仅在需要时输入）", btnStart:"开始对话", btnStop:"结束对话", btnPause:"⏸️ 暂停", btnResume:"▶️ 继续", btnExport:"📄 导出对话记录 (.txt)", empty:"开始对话后<br>消息会像聊天软件一样显示在这里", footer:"请用韩语自由交谈 · Masamasa说话时也可以随时插话", stConnecting:"正在连接服务器…", stListening:"正在聆听…（麦克风开启）", stSpeaking:"Masamasa正在说话", stSpeakNow:"请说吧！", stClosed:"连接已断开", stPaused:"已暂停 — 按▶️继续", errAccess:"访问码不正确。", errFull:"当前用户过多，请稍后再试。", errGeneric:"连接失败。", consentTitle:"🎙️ 录音提示", consentBody:"为保存学习记录并改进服务，对话语音和内容将被自动录制并保存到服务器。同意后即可开始对话。", consentAgree:"同意并开始", consentCancel:"取消", upUploading:"🎙️ 正在保存录音…", upDone:"✅ 录音已保存", upFail:"⚠️ 录音保存失败", kakaoNotice:"在KakaoTalk内置浏览器中，文件保存等部分功能受限。", kakaoOpen:"用默认浏览器打开", kakaoExportMsg:"KakaoTalk内置浏览器不支持文件下载。对话记录已自动保存到服务器。如需下载文件，请用Chrome/Safari打开本页。", earTitle:"🎧 建议使用耳机", earBody:"使用扬声器时，Masamasa的声音会进入麦克风，导致对话频繁中断。戴上耳机体验会好很多！", earOk:"知道了！", qSlow:"慢一点", qAgain:"再说一遍", qEasy:"简单点", qFast:"正常速度", nameTitle:"👋 你叫什么名字？", namePh:"姓名（昵称也可以）", nameOk:"确定" },
+        ko: { title:"🐹 마사마사와 한국어 수다", subtitle:"마이크를 켜고 마사마사와 자연스럽게 대화해 보세요", speaking:"말하는 중...", ready:"연결 준비 완료", waiting:"대기 중", styleTitle:"🎚️ 대화 스타일 조절", distLabel:"친밀도 (Distance)", powerLabel:"사용자 지위 (Power)", distLow:"낯선 사이", distHigh:"절친", powerLow:"하급자", powerHigh:"상급자", distLv:["낯선 사이","아는 사이","적당한 사이","친한 사이","절친 (BFF)"], powerLv:["하급자","약간 아래","대등한 관계","약간 위","상급자 (VIP)"], placeholder:"접속 코드 (필요한 경우에만 입력)", btnStart:"대화 시작하기", btnStop:"대화 종료하기", btnPause:"⏸️ 일시정지", btnResume:"▶️ 재개", btnExport:"📄 대화 내보내기 (.txt)", empty:"대화를 시작하면<br>카카오톡처럼 대화가 표시됩니다", footer:"한국어로 자유롭게 말해보세요 · 마사마사가 말하는 중에 끼어들어도 됩니다", stConnecting:"서버 연결 중...", stListening:"듣고 있어요... (마이크 활성)", stSpeaking:"마사마사가 말하고 있어요", stSpeakNow:"말씀하세요!", stClosed:"연결 종료됨", stPaused:"일시정지됨 — ▶️ 누르면 재개", errAccess:"접속 코드가 올바르지 않습니다.", errFull:"지금은 사용자가 많아요. 잠시 후 다시 시도해 주세요.", errGeneric:"연결에 실패했어요.", consentTitle:"🎙️ 녹음 안내", consentBody:"학습 기록 제공과 서비스 개선을 위해 대화 음성과 대화 내용이 자동으로 녹음되어 서버에 저장돼요. 동의하면 대화가 시작됩니다.", consentAgree:"동의하고 시작하기", consentCancel:"취소", upUploading:"🎙️ 대화 녹음 저장 중...", upDone:"✅ 대화 녹음이 저장되었어요", upFail:"⚠️ 녹음 저장에 실패했어요", kakaoNotice:"카카오톡 브라우저에서는 파일 저장 등 일부 기능이 제한돼요.", kakaoOpen:"기본 브라우저로 열기", kakaoExportMsg:"카카오톡 브라우저에서는 파일 저장이 지원되지 않아요. 대화 기록은 세션 종료 시 서버에 자동 저장되었어요. 파일로 받으려면 기본 브라우저(Chrome/Safari)로 열어주세요.", earTitle:"🎧 이어폰을 사용해 주세요", earBody:"스피커로 들으면 마사마사 목소리가 마이크로 들어가서 대화가 자꾸 끊길 수 있어요. 이어폰을 쓰면 훨씬 잘 들리고 대화도 매끄러워요!", earOk:"알겠어요!", qSlow:"천천히", qAgain:"다시 한 번", qEasy:"쉽게", qFast:"빨리빨리", nameTitle:"👋 이름이 뭐예요?", namePh:"이름 (별명도 좋아요)", nameOk:"확인", modeFree:"🗣️ 자유 수다", modeRp:"🎭 주제 대화", rpTitle:"🎭 주제 대화 설정", rpIntro:"모국어로 적어도 괜찮아요 — 마사마사가 알아들어요", rpTopicLbl:"주제 (필수)", rpTopicPh:"예) 옷 가게에서 물건 사기", rpGoalLbl:"대화의 달성 목적", rpGoalPh:"예) 마음에 드는 바지를 싸게 사기", rpPlaceLbl:"대화 장소", rpPlacePh:"예) 동네 옷 가게", rpMyRoleLbl:"내 역할", rpMyRolePh:"예) 손님", rpAiRoleLbl:"마사마사 역할", rpAiRolePh:"예) 점원", rpStyleLbl:"화계 (말투)", segAuto:"자동 (페이더)", rpFaderNote:"친밀도·지위는 왼쪽 페이더 값이 그대로 적용돼요", rpMake:"대화 계획 만들기", rpMaking:"계획을 만드는 중... ⏳", rpCancel:"취소", rpBriefTitle:"🗺️ 이 대화의 기능단계", rpBriefGuide:"아래 단계를 채우면서 대화해 보세요. 단계가 충족되면 진행 바가 자동으로 차올라요. 100%를 넘겨도 계속할 수 있어요!", rpBegin:"이 설정으로 대화 시작", rpEdit:"설정 고치기", progressLabel:"과업 진행률", rpOverLabel:"확장 중! 🔥", rpResultTitle:"🏆 오늘의 대화 결과", rpPts:"점", rpScoreSub:"과업 진행률이 그대로 점수가 되었어요", rpSavedNote:"대화 기록이 자동 저장되었어요", rpClose:"닫기", rpNeedTopic:"주제나 목적 중 하나는 적어 주세요!", rpPlanFail:"계획 만들기에 실패했어요. 잠시 후 다시 시도해 주세요.", rpScoring:"🧮 점수 계산 중..." },
+        en: { title:"🐹 Korean Chat with Masamasa", subtitle:"Turn on your mic and chat naturally with Masamasa", speaking:"Speaking...", ready:"Ready to connect", waiting:"Waiting", styleTitle:"🎚️ Conversation Style", distLabel:"Closeness (Distance)", powerLabel:"Your Status (Power)", distLow:"Strangers", distHigh:"Best friends", powerLow:"Junior", powerHigh:"Senior", distLv:["Strangers","Acquaintances","Casual","Close","Best friends (BFF)"], powerLv:["Junior","Slightly below","Equal","Slightly above","Senior (VIP)"], placeholder:"Access code (only if required)", btnStart:"Start Conversation", btnStop:"End Conversation", btnPause:"⏸️ Pause", btnResume:"▶️ Resume", btnExport:"📄 Export Transcript (.txt)", empty:"Start a conversation and<br>messages will appear here like a chat app", footer:"Speak freely in Korean · You can interrupt while Masamasa is talking", stConnecting:"Connecting to server...", stListening:"Listening... (mic on)", stSpeaking:"Masamasa is talking", stSpeakNow:"Go ahead, speak!", stClosed:"Disconnected", stPaused:"Paused — press ▶️ to resume", errAccess:"Incorrect access code.", errFull:"Too many users right now. Please try again later.", errGeneric:"Connection failed.", consentTitle:"🎙️ Recording notice", consentBody:"To provide your learning records and improve the service, the conversation audio and transcript are automatically recorded and saved to our server. Agree to start the conversation.", consentAgree:"Agree & Start", consentCancel:"Cancel", upUploading:"🎙️ Saving recording...", upDone:"✅ Recording saved", upFail:"⚠️ Failed to save recording", kakaoNotice:"Some features (like file saving) are limited in the KakaoTalk browser.", kakaoOpen:"Open in browser", kakaoExportMsg:"File download is not supported in the KakaoTalk browser. Your transcript was saved to the server automatically. To download it as a file, open this page in Chrome/Safari.", earTitle:"🎧 Please use earphones", earBody:"With the speaker on, Masamasa's voice can leak into your mic and keep cutting the conversation off. Earphones make everything much smoother!", earOk:"Got it!", qSlow:"Slower", qAgain:"One more time", qEasy:"Simpler", qFast:"Full speed", nameTitle:"👋 What's your name?", namePh:"Your name (nickname is fine)", nameOk:"OK", modeFree:"🗣️ Free Chat", modeRp:"🎭 Topic Practice", rpTitle:"🎭 Topic Practice Setup", rpIntro:"You can write in your own language — Masamasa will understand", rpTopicLbl:"Topic (required)", rpTopicPh:"e.g. Buying clothes at a store", rpGoalLbl:"Goal of the conversation", rpGoalPh:"e.g. Get nice pants at a discount", rpPlaceLbl:"Place", rpPlacePh:"e.g. A local clothing store", rpMyRoleLbl:"My role", rpMyRolePh:"e.g. Customer", rpAiRoleLbl:"Masamasa's role", rpAiRolePh:"e.g. Clerk", rpStyleLbl:"Speech level", segAuto:"Auto (faders)", rpFaderNote:"Closeness & status follow the fader values on the left", rpMake:"Create Conversation Plan", rpMaking:"Creating plan... ⏳", rpCancel:"Cancel", rpBriefTitle:"🗺️ Functional Stages of This Dialogue", rpBriefGuide:"Try to fulfill each stage as you talk. The bar fills automatically — and you can go past 100%!", rpBegin:"Start with These Settings", rpEdit:"Edit Settings", progressLabel:"Task Progress", rpOverLabel:"Extending! 🔥", rpResultTitle:"🏆 Today's Result", rpPts:" pts", rpScoreSub:"Your task progress became your score", rpSavedNote:"Transcript saved automatically", rpClose:"Close", rpNeedTopic:"Please fill in at least the topic or the goal!", rpPlanFail:"Failed to create the plan. Please try again.", rpScoring:"🧮 Calculating score..." },
+        zh: { title:"🐹 和Masamasa用韩语畅聊", subtitle:"打开麦克风，和Masamasa自然地用韩语聊天吧", speaking:"正在说话…", ready:"准备就绪", waiting:"等待中", styleTitle:"🎚️ 对话风格设置", distLabel:"亲密度 (Distance)", powerLabel:"用户地位 (Power)", distLow:"陌生人", distHigh:"挚友", powerLow:"下级", powerHigh:"上级", distLv:["陌生人","认识的人","普通关系","亲近的人","挚友 (BFF)"], powerLv:["下级","稍低","平等关系","稍高","上级 (VIP)"], placeholder:"访问码（仅在需要时输入）", btnStart:"开始对话", btnStop:"结束对话", btnPause:"⏸️ 暂停", btnResume:"▶️ 继续", btnExport:"📄 导出对话记录 (.txt)", empty:"开始对话后<br>消息会像聊天软件一样显示在这里", footer:"请用韩语自由交谈 · Masamasa说话时也可以随时插话", stConnecting:"正在连接服务器…", stListening:"正在聆听…（麦克风开启）", stSpeaking:"Masamasa正在说话", stSpeakNow:"请说吧！", stClosed:"连接已断开", stPaused:"已暂停 — 按▶️继续", errAccess:"访问码不正确。", errFull:"当前用户过多，请稍后再试。", errGeneric:"连接失败。", consentTitle:"🎙️ 录音提示", consentBody:"为保存学习记录并改进服务，对话语音和内容将被自动录制并保存到服务器。同意后即可开始对话。", consentAgree:"同意并开始", consentCancel:"取消", upUploading:"🎙️ 正在保存录音…", upDone:"✅ 录音已保存", upFail:"⚠️ 录音保存失败", kakaoNotice:"在KakaoTalk内置浏览器中，文件保存等部分功能受限。", kakaoOpen:"用默认浏览器打开", kakaoExportMsg:"KakaoTalk内置浏览器不支持文件下载。对话记录已自动保存到服务器。如需下载文件，请用Chrome/Safari打开本页。", earTitle:"🎧 建议使用耳机", earBody:"使用扬声器时，Masamasa的声音会进入麦克风，导致对话频繁中断。戴上耳机体验会好很多！", earOk:"知道了！", qSlow:"慢一点", qAgain:"再说一遍", qEasy:"简单点", qFast:"正常速度", nameTitle:"👋 你叫什么名字？", namePh:"姓名（昵称也可以）", nameOk:"确定", modeFree:"🗣️ 自由聊天", modeRp:"🎭 主题对话", rpTitle:"🎭 主题对话设置", rpIntro:"可以用母语填写 — Masamasa能听懂", rpTopicLbl:"主题（必填）", rpTopicPh:"例）在服装店买东西", rpGoalLbl:"对话目标", rpGoalPh:"例）便宜买到喜欢的裤子", rpPlaceLbl:"对话地点", rpPlacePh:"例）家附近的服装店", rpMyRoleLbl:"我的角色", rpMyRolePh:"例）顾客", rpAiRoleLbl:"Masamasa的角色", rpAiRolePh:"例）店员", rpStyleLbl:"敬语等级", segAuto:"自动（推子）", rpFaderNote:"亲密度和地位将沿用左侧推子的设置", rpMake:"生成对话计划", rpMaking:"正在生成计划... ⏳", rpCancel:"取消", rpBriefTitle:"🗺️ 本次对话的功能阶段", rpBriefGuide:"对话时尽量完成下列阶段。完成后进度条会自动上升，超过100%也可以继续！", rpBegin:"用此设置开始对话", rpEdit:"修改设置", progressLabel:"任务进度", rpOverLabel:"扩展中！🔥", rpResultTitle:"🏆 今日对话结果", rpPts:"分", rpScoreSub:"任务进度直接换算成了分数", rpSavedNote:"对话记录已自动保存", rpClose:"关闭", rpNeedTopic:"请至少填写主题或目标！", rpPlanFail:"计划生成失败，请稍后重试。", rpScoring:"🧮 正在计算分数..." },
         ja: { title:"🐹 マサマサと韓国語おしゃべり", subtitle:"マイクをオンにして、マサマサと自然に会話してみましょう", speaking:"話しています…", ready:"接続準備完了", waiting:"待機中", styleTitle:"🎚️ 会話スタイル設定", distLabel:"親密度 (Distance)", powerLabel:"ユーザーの地位 (Power)", distLow:"初対面", distHigh:"親友", powerLow:"目下", powerHigh:"目上", distLv:["初対面","知り合い","ほどほど","親しい仲","親友 (BFF)"], powerLv:["目下","やや下","対等な関係","やや上","目上 (VIP)"], placeholder:"アクセスコード（必要な場合のみ）", btnStart:"会話を始める", btnStop:"会話を終える", btnPause:"⏸️ 一時停止", btnResume:"▶️ 再開", btnExport:"📄 会話記録を保存 (.txt)", empty:"会話を始めると<br>チャットのように表示されます", footer:"韓国語で自由に話してみましょう · マサマサの話に割り込んでもOK", stConnecting:"サーバーに接続中…", stListening:"聞いています…（マイクON）", stSpeaking:"マサマサが話しています", stSpeakNow:"どうぞ話してください！", stClosed:"接続終了", stPaused:"一時停止中 — ▶️で再開", errAccess:"アクセスコードが正しくありません。", errFull:"現在利用者が多いため、しばらくしてからお試しください。", errGeneric:"接続に失敗しました。", consentTitle:"🎙️ 録音のお知らせ", consentBody:"学習記録の提供とサービス改善のため、会話の音声と内容が自動的に録音されサーバーに保存されます。同意すると会話が始まります。", consentAgree:"同意して開始", consentCancel:"キャンセル", upUploading:"🎙️ 録音を保存中…", upDone:"✅ 録音を保存しました", upFail:"⚠️ 録音の保存に失敗しました", kakaoNotice:"カカオトーク内ブラウザではファイル保存など一部機能が制限されます。", kakaoOpen:"既定のブラウザで開く", kakaoExportMsg:"カカオトーク内ブラウザではファイル保存ができません。会話記録はセッション終了時にサーバーへ自動保存されました。ファイルとして保存するにはChrome/Safariで開いてください。", earTitle:"🎧 イヤホンのご使用をおすすめします", earBody:"スピーカーだとマサマサの声がマイクに入り、会話が途切れやすくなります。イヤホンを使うとずっと快適です！", earOk:"わかった！", qSlow:"ゆっくり", qAgain:"もう一回", qEasy:"やさしく", qFast:"普通の速さ", nameTitle:"👋 お名前は？", namePh:"名前（ニックネームでもOK）", nameOk:"OK" },
         vi: { title:"🐹 Trò chuyện tiếng Hàn cùng Masamasa", subtitle:"Bật micro và trò chuyện tự nhiên với Masamasa", speaking:"Đang nói...", ready:"Sẵn sàng kết nối", waiting:"Đang chờ", styleTitle:"🎚️ Phong cách hội thoại", distLabel:"Độ thân mật (Distance)", powerLabel:"Vị thế người dùng (Power)", distLow:"Người lạ", distHigh:"Bạn thân", powerLow:"Cấp dưới", powerHigh:"Cấp trên", distLv:["Người lạ","Người quen","Bình thường","Thân thiết","Bạn thân (BFF)"], powerLv:["Cấp dưới","Hơi thấp hơn","Ngang hàng","Hơi cao hơn","Cấp trên (VIP)"], placeholder:"Mã truy cập (chỉ khi cần)", btnStart:"Bắt đầu trò chuyện", btnStop:"Kết thúc trò chuyện", btnPause:"⏸️ Tạm dừng", btnResume:"▶️ Tiếp tục", btnExport:"📄 Xuất bản ghi hội thoại (.txt)", empty:"Bắt đầu trò chuyện và<br>tin nhắn sẽ hiển thị như ứng dụng chat", footer:"Hãy thoải mái nói tiếng Hàn · Bạn có thể ngắt lời khi Masamasa đang nói", stConnecting:"Đang kết nối máy chủ...", stListening:"Đang lắng nghe... (micro bật)", stSpeaking:"Masamasa đang nói", stSpeakNow:"Mời bạn nói!", stClosed:"Đã ngắt kết nối", stPaused:"Đã tạm dừng — nhấn ▶️ để tiếp tục", errAccess:"Mã truy cập không đúng.", errFull:"Hiện có quá nhiều người dùng. Vui lòng thử lại sau.", errGeneric:"Kết nối thất bại.", consentTitle:"🎙️ Thông báo ghi âm", consentBody:"Để lưu hồ sơ học tập và cải thiện dịch vụ, âm thanh và nội dung hội thoại sẽ được tự động ghi lại và lưu trên máy chủ. Đồng ý để bắt đầu.", consentAgree:"Đồng ý và bắt đầu", consentCancel:"Hủy", upUploading:"🎙️ Đang lưu bản ghi...", upDone:"✅ Đã lưu bản ghi", upFail:"⚠️ Lưu bản ghi thất bại", kakaoNotice:"Một số tính năng (lưu tệp) bị hạn chế trong trình duyệt KakaoTalk.", kakaoOpen:"Mở bằng trình duyệt", kakaoExportMsg:"Trình duyệt KakaoTalk không hỗ trợ tải tệp. Bản ghi hội thoại đã được tự động lưu trên máy chủ. Để tải tệp, hãy mở trang này bằng Chrome/Safari.", earTitle:"🎧 Nên dùng tai nghe", earBody:"Nếu dùng loa ngoài, giọng của Masamasa có thể lọt vào micro và làm cuộc trò chuyện bị ngắt liên tục. Dùng tai nghe sẽ mượt hơn nhiều!", earOk:"Đã hiểu!", qSlow:"Chậm lại", qAgain:"Nhắc lại", qEasy:"Dễ hơn", qFast:"Tốc độ thường", nameTitle:"👋 Bạn tên gì?", namePh:"Tên của bạn (biệt danh cũng được)", nameOk:"OK" },
         th: { title:"🐹 คุยภาษาเกาหลีกับ Masamasa", subtitle:"เปิดไมค์แล้วคุยกับ Masamasa อย่างเป็นธรรมชาติ", speaking:"กำลังพูด...", ready:"พร้อมเชื่อมต่อ", waiting:"รอสักครู่", styleTitle:"🎚️ ปรับสไตล์การสนทนา", distLabel:"ความสนิท (Distance)", powerLabel:"สถานะผู้ใช้ (Power)", distLow:"คนแปลกหน้า", distHigh:"เพื่อนสนิท", powerLow:"ผู้น้อย", powerHigh:"ผู้ใหญ่", distLv:["คนแปลกหน้า","คนรู้จัก","ทั่วไป","สนิทกัน","เพื่อนสนิท (BFF)"], powerLv:["ผู้น้อย","ต่ำกว่าเล็กน้อย","เท่าเทียมกัน","สูงกว่าเล็กน้อย","ผู้ใหญ่ (VIP)"], placeholder:"รหัสเข้าใช้ (กรอกเมื่อจำเป็น)", btnStart:"เริ่มการสนทนา", btnStop:"จบการสนทนา", btnPause:"⏸️ หยุดชั่วคราว", btnResume:"▶️ เล่นต่อ", btnExport:"📄 บันทึกบทสนทนา (.txt)", empty:"เมื่อเริ่มสนทนา<br>ข้อความจะแสดงเหมือนแอปแชท", footer:"พูดภาษาเกาหลีได้อย่างอิสระ · ขัดจังหวะตอน Masamasa พูดได้", stConnecting:"กำลังเชื่อมต่อเซิร์ฟเวอร์...", stListening:"กำลังฟัง... (ไมค์เปิด)", stSpeaking:"Masamasa กำลังพูด", stSpeakNow:"เชิญพูดได้เลย!", stClosed:"ตัดการเชื่อมต่อแล้ว", stPaused:"หยุดชั่วคราว — กด ▶️ เพื่อเล่นต่อ", errAccess:"รหัสเข้าใช้ไม่ถูกต้อง", errFull:"ขณะนี้มีผู้ใช้จำนวนมาก กรุณาลองใหม่ภายหลัง", errGeneric:"การเชื่อมต่อล้มเหลว", consentTitle:"🎙️ แจ้งเตือนการบันทึกเสียง", consentBody:"เพื่อเก็บบันทึกการเรียนและปรับปรุงบริการ เสียงและเนื้อหาการสนทนาจะถูกบันทึกอัตโนมัติและจัดเก็บบนเซิร์ฟเวอร์ กดยอมรับเพื่อเริ่มสนทนา", consentAgree:"ยอมรับและเริ่ม", consentCancel:"ยกเลิก", upUploading:"🎙️ กำลังบันทึกเสียง...", upDone:"✅ บันทึกเสียงแล้ว", upFail:"⚠️ บันทึกเสียงล้มเหลว", kakaoNotice:"บางฟีเจอร์ (เช่น การบันทึกไฟล์) ถูกจำกัดในเบราว์เซอร์ KakaoTalk", kakaoOpen:"เปิดในเบราว์เซอร์", kakaoExportMsg:"เบราว์เซอร์ KakaoTalk ไม่รองรับการดาวน์โหลดไฟล์ บทสนทนาถูกบันทึกบนเซิร์ฟเวอร์โดยอัตโนมัติแล้ว หากต้องการไฟล์ กรุณาเปิดหน้านี้ใน Chrome/Safari", earTitle:"🎧 แนะนำให้ใช้หูฟัง", earBody:"ถ้าใช้ลำโพง เสียงของ Masamasa อาจเข้าไมค์และทำให้บทสนทนาสะดุดบ่อย ใช้หูฟังจะลื่นไหลกว่ามาก!", earOk:"เข้าใจแล้ว!", qSlow:"ช้าลงหน่อย", qAgain:"อีกครั้ง", qEasy:"ง่ายขึ้น", qFast:"ความเร็วปกติ", nameTitle:"👋 คุณชื่ออะไร?", namePh:"ชื่อของคุณ (ชื่อเล่นก็ได้)", nameOk:"ตกลง" },
@@ -406,6 +524,33 @@
         document.getElementById("nameTitleEl").textContent = t("nameTitle");
         document.getElementById("nameInput").placeholder = t("namePh");
         document.getElementById("nameOkBtn").textContent = t("nameOk");
+        /* 주제 대화 UI */
+        modeFreeBtn.textContent = t("modeFree");
+        modeRpBtn.textContent = t("modeRp");
+        document.getElementById("rpTitleEl").textContent = t("rpTitle");
+        document.getElementById("rpIntroEl").textContent = t("rpIntro");
+        document.getElementById("rpTopicLbl").textContent = t("rpTopicLbl");
+        document.getElementById("rpTopic").placeholder = t("rpTopicPh");
+        document.getElementById("rpGoalLbl").textContent = t("rpGoalLbl");
+        document.getElementById("rpGoal").placeholder = t("rpGoalPh");
+        document.getElementById("rpPlaceLbl").textContent = t("rpPlaceLbl");
+        document.getElementById("rpPlace").placeholder = t("rpPlacePh");
+        document.getElementById("rpMyRoleLbl").textContent = t("rpMyRoleLbl");
+        document.getElementById("rpMyRole").placeholder = t("rpMyRolePh");
+        document.getElementById("rpAiRoleLbl").textContent = t("rpAiRoleLbl");
+        document.getElementById("rpAiRole").placeholder = t("rpAiRolePh");
+        document.getElementById("rpStyleLbl").textContent = t("rpStyleLbl");
+        document.getElementById("segAutoBtn").textContent = t("segAuto");
+        document.getElementById("rpFaderNoteEl").textContent = t("rpFaderNote");
+        document.getElementById("rpMakeBtn").textContent = t("rpMake");
+        document.getElementById("rpCancelBtn").textContent = t("rpCancel");
+        document.getElementById("rpBriefTitleEl").textContent = t("rpBriefTitle");
+        document.getElementById("rpBriefGuideEl").textContent = t("rpBriefGuide");
+        document.getElementById("rpBeginBtn").textContent = t("rpBegin");
+        document.getElementById("rpEditBtn").textContent = t("rpEdit");
+        document.getElementById("rpResultTitleEl").textContent = t("rpResultTitle");
+        document.getElementById("rpCloseBtn").textContent = t("rpClose");
+        progressLabel.textContent = rpPercent > 100 ? t("rpOverLabel") : t("progressLabel");
         distValue.textContent = getDistLabel(+distSlider.value);
         powerValue.textContent = getPowerLabel(+powerSlider.value);
         if (lastStatus) { setStatus(lastStatus.state, lastStatus.key); }
@@ -461,7 +606,16 @@
     });
     applyLang(); // 언어 오버레이는 항상 열린 채로 시작 (uiLang은 이전 선택을 기본 강조용으로만 사용)
 
-    actionBtn.addEventListener("click", () => isConnected ? stopSession() : requestStartWithConsent());
+    actionBtn.addEventListener("click", () => {
+        if (isConnected) {
+            // 상황극이면 종료 전에 최종 분석 → 점수 치환을 기다린다
+            if (rpSessionActive) endRoleplaySession();
+            else stopSession();
+            return;
+        }
+        if (mode === "rp") { rpId ? showBriefing() : openRpSetup(); return; }
+        requestStartWithConsent();
+    });
     exportBtn.addEventListener("click", exportTranscript);
     pauseBtn.addEventListener("click", togglePause);
 
@@ -477,6 +631,161 @@
         startSession();
     });
     document.getElementById("consentCancelBtn").addEventListener("click", () => consentOverlay.classList.add("hidden"));
+
+    /* ══════════ 주제 대화(상황극) 모드 ══════════
+       ① 학습자가 주제·목적·장소·역할을 설정(모국어 가능) + 화계 선택
+       ② 서버가 기능단계와 단계별 표현을 생성 → 브리핑 화면
+       ③ 대화 중 단계 충족 → 진행 바 자동 상승 (100% 초과 = 확장 대화)
+       ④ 종료 버튼 → 진행률이 점수로 치환 + 대화 자동 저장 */
+    function setMode(m) {
+        mode = m;
+        modeFreeBtn.classList.toggle("active", m === "free");
+        modeRpBtn.classList.toggle("active", m === "rp");
+    }
+    modeFreeBtn.addEventListener("click", () => { if (!isConnected) setMode("free"); });
+    modeRpBtn.addEventListener("click", () => { if (isConnected) return; setMode("rp"); openRpSetup(); });
+
+    document.querySelectorAll(".seg-btn").forEach(b => b.addEventListener("click", () => {
+        document.querySelectorAll(".seg-btn").forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+        rpStyle = b.dataset.style;
+    }));
+
+    function openRpSetup() { rpSetupOverlay.classList.remove("hidden"); }
+    document.getElementById("rpCancelBtn").addEventListener("click", () => {
+        rpSetupOverlay.classList.add("hidden");
+        if (!rpId) setMode("free"); // 계획 없이 취소하면 자유 수다로 복귀
+    });
+
+    document.getElementById("rpMakeBtn").addEventListener("click", async () => {
+        const topic = document.getElementById("rpTopic").value.trim();
+        const goal = document.getElementById("rpGoal").value.trim();
+        if (!topic && !goal) { alert(t("rpNeedTopic")); return; }
+        const btn = document.getElementById("rpMakeBtn");
+        btn.disabled = true;
+        btn.textContent = t("rpMaking");
+        try {
+            const res = await fetch("/roleplay-setup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    topic: topic, goal: goal,
+                    place: document.getElementById("rpPlace").value.trim(),
+                    myRole: document.getElementById("rpMyRole").value.trim(),
+                    aiRole: document.getElementById("rpAiRole").value.trim(),
+                    style: rpStyle, lang: uiLang || "ko", name: userName,
+                }),
+            });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const data = await res.json();
+            rpId = data.id;
+            rpPlan = data.plan;
+            rpSetupOverlay.classList.add("hidden");
+            showBriefing();
+        } catch (e) {
+            console.warn("계획 생성 실패:", e);
+            alert(t("rpPlanFail"));
+        } finally {
+            btn.disabled = false;
+            btn.textContent = t("rpMake");
+        }
+    });
+
+    function showBriefing() {
+        if (!rpPlan) { openRpSetup(); return; }
+        document.getElementById("rpBriefScenario").textContent =
+            "🎭 " + rpPlan.topic_ko + " · 🎯 " + rpPlan.goal_ko + " · 📍 " + rpPlan.place_ko +
+            " · 🙋 " + rpPlan.user_role + " ↔ 🐹 " + rpPlan.ai_role;
+        const list = document.getElementById("rpStageList");
+        list.innerHTML = "";
+        rpPlan.stages.forEach((s, i) => {
+            const item = document.createElement("div");
+            item.className = "stage-item";
+            const name = document.createElement("div");
+            name.innerHTML = '<span class="st-name">' + (i + 1) + ". " + escapeHtml(s.name) + '</span>' +
+                (s.native ? '<span class="st-native">' + escapeHtml(s.native) + '</span>' : "");
+            item.appendChild(name);
+            if (s.desc) {
+                const d = document.createElement("div");
+                d.className = "st-desc";
+                d.textContent = s.desc;
+                item.appendChild(d);
+            }
+            if (s.expressions && s.expressions.length) {
+                const ex = document.createElement("div");
+                ex.className = "st-expr";
+                s.expressions.forEach(e => {
+                    const chip = document.createElement("span");
+                    chip.textContent = "💬 " + e;
+                    ex.appendChild(chip);
+                });
+                item.appendChild(ex);
+            }
+            list.appendChild(item);
+        });
+        rpBriefOverlay.classList.remove("hidden");
+    }
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+    document.getElementById("rpBeginBtn").addEventListener("click", () => {
+        rpBriefOverlay.classList.add("hidden");
+        requestStartWithConsent();
+    });
+    document.getElementById("rpEditBtn").addEventListener("click", () => {
+        rpBriefOverlay.classList.add("hidden");
+        openRpSetup();
+    });
+
+    function renderProgress() {
+        progressPct.textContent = rpPercent + "%";
+        progressBar.style.width = Math.min(100, rpPercent) + "%";
+        progressBar.classList.toggle("over", rpPercent > 100);
+        progressLabel.textContent = rpPercent > 100 ? t("rpOverLabel") : t("progressLabel");
+        stageChips.innerHTML = "";
+        rpStagesState.forEach(s => {
+            const c = document.createElement("span");
+            c.className = "stage-chip" + (s.done ? " done" : "");
+            c.textContent = (s.done ? "✓ " : "") + s.name;
+            stageChips.appendChild(c);
+        });
+    }
+
+    /* 종료 버튼: 서버에 최종 분석을 요청하고 점수를 받은 뒤 세션을 닫는다 */
+    function endRoleplaySession() {
+        if (rpEnding) return;
+        rpEnding = true;
+        actionBtn.disabled = true;
+        setFooterNote(t("rpScoring"), true);
+        try {
+            if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "end_session" }));
+        } catch (e) {}
+        finalScoreTimer = setTimeout(concludeRoleplay, 9000); // 서버 무응답 폴백: 마지막 진행률로 점수 확정
+    }
+    function concludeRoleplay() {
+        if (!rpEnding) return;
+        rpEnding = false;
+        clearTimeout(finalScoreTimer);
+        actionBtn.disabled = false;
+        if (!rpFinal) rpFinal = { percent: rpPercent, score: rpPercent, stages: rpStagesState };
+        stopSession(); // 대화 저장(녹음+기록+메타)은 여기서 자동 수행
+        showRpResult();
+    }
+    function showRpResult() {
+        document.getElementById("rpScoreEl").textContent = (rpFinal.score || 0) + t("rpPts");
+        document.getElementById("rpScoreSubEl").textContent = t("rpScoreSub") + " · " + (rpFinal.percent || 0) + "%";
+        const box = document.getElementById("rpResultStages");
+        box.innerHTML = "";
+        (rpFinal.stages || []).forEach(s => {
+            const d = document.createElement("div");
+            d.className = s.done ? "ok" : "no";
+            d.textContent = (s.done ? "✓ " : "— ") + s.name + (s.native ? " · " + s.native : "");
+            box.appendChild(d);
+        });
+        document.getElementById("rpSavedNoteEl").textContent = t("rpSavedNote");
+        rpResultOverlay.classList.remove("hidden");
+    }
+    document.getElementById("rpCloseBtn").addEventListener("click", () => rpResultOverlay.classList.add("hidden"));
 
     /* ── 카카오톡 인앱 브라우저: Blob 다운로드가 차단되므로 외부 브라우저 안내 ── */
     if (isKakao) {
@@ -591,9 +900,24 @@
         distSlider.disabled = true;
         powerSlider.disabled = true;
         const proto = location.protocol === "https:" ? "wss://" : "ws://";
-        ws = new WebSocket(proto + location.host + "/ws/live?d=" + d + "&p=" + p + "&lang=" + encodeURIComponent(uiLang || "ko") + "&name=" + encodeURIComponent(userName));
+        const rpParams = (mode === "rp" && rpId)
+            ? "&rp=" + encodeURIComponent(rpId) + "&style=" + encodeURIComponent(rpStyle)
+            : "";
+        ws = new WebSocket(proto + location.host + "/ws/live?d=" + d + "&p=" + p + "&lang=" + encodeURIComponent(uiLang || "ko") + "&name=" + encodeURIComponent(userName) + rpParams);
         ws.binaryType = "arraybuffer"; // 오디오는 바이너리 프레임 (base64 오버헤드 제거)
         ws.onopen = async () => {
+            /* 상황극 세션 초기화 */
+            rpSessionActive = (mode === "rp" && !!rpId);
+            rpEnding = false;
+            rpFinal = null;
+            rpPercent = 0;
+            rpStagesState = rpSessionActive && rpPlan
+                ? rpPlan.stages.map(s => ({ name: s.name, native: s.native || "", done: false }))
+                : [];
+            progressWrap.classList.toggle("hidden", !rpSessionActive);
+            if (rpSessionActive) renderProgress();
+            modeFreeBtn.disabled = true;
+            modeRpBtn.disabled = true;
             setStatus("listening", "stListening");
             actionBtn.innerText = t("btnStop");
             actionBtn.classList.add("recording");
@@ -653,14 +977,26 @@
                 }
                 playSurprised();
                 if (!isPaused) setStatus("listening", "stSpeakNow");
+            } else if (msg.type === "progress") {
+                // 기능단계 충족 → 진행 바 자동 상승 (100% 초과 허용)
+                rpPercent = msg.percent || 0;
+                rpStagesState = msg.stages || rpStagesState;
+                renderProgress();
+            } else if (msg.type === "final_score") {
+                // 종료 버튼에 대한 서버의 최종 분석 결과 — 퍼센트를 점수로 치환
+                rpFinal = { percent: msg.percent || 0, score: msg.score || 0, stages: msg.stages || rpStagesState };
+                rpPercent = rpFinal.percent;
+                rpStagesState = rpFinal.stages;
+                renderProgress();
+                if (rpEnding) concludeRoleplay();
             } else if (msg.type === "error") {
                 // 서버가 보내는 에러 코드를 사용자 언어로 표시
                 if (msg.code === "server_full") alert(t("errFull"));
                 else alert(msg.message || t("errGeneric"));
             }
         };
-        ws.onclose = () => stopSession();
-        ws.onerror = () => stopSession();
+        ws.onclose = () => { if (rpEnding) concludeRoleplay(); else stopSession(); };
+        ws.onerror = () => { if (rpEnding) concludeRoleplay(); else stopSession(); };
     }
 
     function stopSession() {
@@ -677,6 +1013,8 @@
         setControlsEnabled(false);
         distSlider.disabled = false;
         powerSlider.disabled = false;
+        modeFreeBtn.disabled = false;
+        modeRpBtn.disabled = false;
         stopAllAudio();
         if (workletNode) { try { workletNode.port.onmessage = null; workletNode.disconnect(); } catch (e) {} workletNode = null; }
         if (processor) { try { processor.disconnect(); } catch (e) {} processor = null; }
@@ -697,6 +1035,14 @@
         lines.push(" 학습자: " + (userName || "(이름 없음)") + " / 화면 언어: " + (uiLang || "ko"));
         lines.push(" 시작 시각: " + start);
         lines.push(" 친밀도(D): " + distSlider.value + " / 지위(P): " + powerSlider.value);
+        if (rpSessionActive && rpPlan) {
+            lines.push(" 모드: 주제 대화(상황극)");
+            lines.push(" 주제: " + rpPlan.topic_ko + " / 목적: " + rpPlan.goal_ko + " / 장소: " + rpPlan.place_ko);
+            lines.push(" 역할: " + rpPlan.user_role + "(학습자) ↔ " + rpPlan.ai_role + "(마사마사) / 화계: " + rpStyle);
+            const fin = rpFinal || { percent: rpPercent, score: rpPercent, stages: rpStagesState };
+            lines.push(" 과업 진행률: " + fin.percent + "% → 점수: " + fin.score + "점");
+            lines.push(" 기능단계: " + (fin.stages || []).map(s => (s.done ? "✓" : "✗") + s.name).join(", "));
+        }
         lines.push("=====================================");
         lines.push("");
         transcriptLog.forEach(item => {
@@ -980,7 +1326,14 @@
             userTurns: transcriptLog.filter(x => x.role === "user").length,
             aiTurns: transcriptLog.filter(x => x.role === "ai").length,
             interrupts: transcriptLog.filter(x => x.interrupted).length,
-            userAgent: navigator.userAgent
+            userAgent: navigator.userAgent,
+            roleplay: (rpSessionActive && rpPlan) ? {
+                topic: rpPlan.topic_ko, goal: rpPlan.goal_ko, place: rpPlan.place_ko,
+                userRole: rpPlan.user_role, aiRole: rpPlan.ai_role, style: rpStyle,
+                percent: (rpFinal || {}).percent != null ? rpFinal.percent : rpPercent,
+                score: (rpFinal || {}).score != null ? rpFinal.score : rpPercent,
+                stages: ((rpFinal && rpFinal.stages) || rpStagesState).map(s => ({ name: s.name, done: !!s.done })),
+            } : null
         };
     }
 

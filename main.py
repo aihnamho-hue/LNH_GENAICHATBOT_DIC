@@ -19,7 +19,7 @@ from google.genai import types
 load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨
-APP_VERSION = "v6"
+APP_VERSION = "v8"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -264,6 +264,212 @@ def build_system_prompt(d: int, p: int, ui_lang: str = "", user_name: str = "") 
     return BASE_PERSONA + name_hint + native_hint + coord + D_RULES[d_band] + sep + P_RULES[p_band] + sep + fusion
 
 
+# ============================================================
+# 주제 대화(상황극) 모드 — 기능단계 기반 대화 연습
+# 근거: 이남호·차준우(2023) 프롬프트 정보 구조, 이남호·이찬규(2024) 대화연습 모형,
+#       이남호·이찬규(2025) 기능단계 분석, 이남호(2025) 확장 검증
+# 흐름: ① 학습자가 주제·목적 등을 (모국어로도) 입력 → ② 서버가 기능단계+표현 생성
+#       → ③ 상황극 진행, 턴마다 단계 충족을 분석해 진행률 전송(100% 초과 허용)
+#       → ④ 학습자가 종료 버튼 → 진행률을 점수로 치환 + 대화 저장
+# ============================================================
+ANALYSIS_MODEL = os.environ.get("ANALYSIS_MODEL", "gemini-2.5-flash")
+_roleplay_plans = {}  # plan_id -> {"plan": dict, "style": str, "at": float}
+_RP_PLAN_TTL = 30 * 60  # 계획 보관 30분 (브리핑 화면에서 오래 머물러도 시작 가능)
+
+
+def _rp_cleanup():
+    now = time.time()
+    expired = [k for k, v in _roleplay_plans.items() if now - v["at"] > _RP_PLAN_TTL]
+    for k in expired:
+        _roleplay_plans.pop(k, None)
+    # 폭주 방지: 200개 초과 시 오래된 것부터 제거
+    if len(_roleplay_plans) > 200:
+        for k in sorted(_roleplay_plans, key=lambda x: _roleplay_plans[x]["at"])[:len(_roleplay_plans) - 200]:
+            _roleplay_plans.pop(k, None)
+
+
+def _parse_json_loose(text: str):
+    """모델 응답에서 JSON을 관대하게 추출 (```json 펜스, 앞뒤 잡담 허용)."""
+    if not text:
+        return None
+    text = text.strip()
+    m = re.search(r"```(?:json)?\s*(.+?)\s*```", text, re.DOTALL)
+    if m:
+        text = m.group(1)
+    try:
+        return json.loads(text)
+    except (ValueError, TypeError):
+        pass
+    m = re.search(r"\{.*\}", text, re.DOTALL)
+    if m:
+        try:
+            return json.loads(m.group(0))
+        except (ValueError, TypeError):
+            return None
+    return None
+
+
+async def _gen_json(prompt: str, timeout_s: float = 20.0):
+    """일회성 생성 호출 → JSON 파싱. 실패 시 None (호출부에서 처리)."""
+    async def _call():
+        try:
+            cfg = types.GenerateContentConfig(response_mime_type="application/json", temperature=0.3)
+            resp = await client.aio.models.generate_content(
+                model=ANALYSIS_MODEL, contents=prompt, config=cfg)
+        except (TypeError, AttributeError):
+            # 구버전 SDK 폴백 — JSON 모드 미지원이면 텍스트로 받고 관대 파싱
+            resp = await client.aio.models.generate_content(model=ANALYSIS_MODEL, contents=prompt)
+        return _parse_json_loose(getattr(resp, "text", "") or "")
+    try:
+        return await asyncio.wait_for(_call(), timeout=timeout_s)
+    except asyncio.TimeoutError:
+        print(f"[상황극] 생성 호출 타임아웃 ({timeout_s}s)")
+        return None
+    except Exception as e:
+        print(f"[상황극] 생성 호출 실패: {e}")
+        return None
+
+
+def _clean_str(v, limit: int) -> str:
+    if not isinstance(v, str):
+        return ""
+    return re.sub(r"\s+", " ", v).strip()[:limit]
+
+
+def _validate_plan(data) -> dict | None:
+    """모델이 만든 계획 JSON을 방어적으로 정리. 단계 4~6개 보장."""
+    if not isinstance(data, dict):
+        return None
+    stages = []
+    for s in (data.get("stages") or [])[:6]:
+        if not isinstance(s, dict):
+            continue
+        name = _clean_str(s.get("name"), 20)
+        if not name:
+            continue
+        exprs = [_clean_str(e, 60) for e in (s.get("expressions") or []) if _clean_str(e, 60)][:3]
+        stages.append({
+            "name": name,
+            "native": _clean_str(s.get("native"), 60),
+            "desc": _clean_str(s.get("desc"), 100),
+            "expressions": exprs,
+        })
+    if len(stages) < 3:
+        return None
+    return {
+        "topic_ko": _clean_str(data.get("topic_ko"), 60) or "자유 주제",
+        "goal_ko": _clean_str(data.get("goal_ko"), 100) or "대화 목적 달성",
+        "place_ko": _clean_str(data.get("place_ko"), 60) or "일상 공간",
+        "user_role": _clean_str(data.get("user_role"), 40) or "학습자",
+        "ai_role": _clean_str(data.get("ai_role"), 40) or "대화 상대",
+        "stages": stages,
+    }
+
+
+@app.post("/roleplay-setup")
+async def roleplay_setup(request: Request):
+    """학습자 설정(모국어 가능) → 한국어 정규화 + 기능단계·표현 생성."""
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="bad_json")
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="bad_json")
+
+    topic = _clean_str(body.get("topic"), 80)
+    goal = _clean_str(body.get("goal"), 120)
+    place = _clean_str(body.get("place"), 60)
+    my_role = _clean_str(body.get("myRole"), 40)
+    ai_role = _clean_str(body.get("aiRole"), 40)
+    style = body.get("style") if body.get("style") in ("polite", "banmal", "auto") else "auto"
+    ui_lang = _clean_str(body.get("lang"), 5).lower()
+    if not topic and not goal:
+        raise HTTPException(status_code=400, detail="topic_or_goal_required")
+
+    native = LANG_NAMES.get(ui_lang, "")
+    native_line = f"학습자의 모국어는 {native}다. 각 단계의 native 필드에 name의 {native} 번역을 넣어라." if native \
+        else "학습자 모국어가 한국어이므로 native 필드는 빈 문자열로 둔다."
+
+    prompt = f"""너는 한국어 교육 전문가이자 대화분석 연구자다.
+한국어 학습자가 음성 챗봇과 상황극(역할극) 대화 연습을 하려고 아래와 같이 과업을 설정했다.
+입력은 학습자의 모국어 등 어떤 언어로도 올 수 있다. 의미를 정확히 파악해 한국어로 정규화하라.
+
+[학습자 입력]
+- 주제: {topic or "(미입력)"}
+- 대화의 달성 목적: {goal or "(미입력 — 주제에서 추정)"}
+- 대화 장소: {place or "(미입력 — 목적에 맞게 추정)"}
+- 학습자 역할: {my_role or "(미입력 — 추정)"}
+- 챗봇(마사마사) 역할: {ai_role or "(미입력 — 학습자 역할의 상대역으로 추정)"}
+
+[요구사항]
+1) topic_ko, goal_ko, place_ko, user_role, ai_role — 모두 자연스러운 한국어로. 빈 항목은 목적에 맞게 합리적으로 추정.
+2) stages — 이 목적의 실제 대화가 거치는 기능단계 4~6개를 순서대로.
+   기능단계란 대화분석론에서 의사소통 목적 달성을 위해 거치는 단위다.
+   원형: 시작 단계(인사·주의 끌기) → 전개 단계들(목적에 따른 탐색·정보 교환·협상·요청 등, 목적별로 구체화) → 목적 달성 단계 → 마무리 단계(감사·인사).
+   각 단계는 대화문을 보고 충족 여부를 판정할 수 있을 만큼 구체적이어야 한다.
+3) 각 단계 필드:
+   - name: 한국어 단계명 (10자 이내, 예: "인사·용건 말하기")
+   - native: {native_line}
+   - desc: 이 단계에서 일어나는 일 한 문장.
+   - expressions: 학습자({my_role or "학습자"} 역할)가 이 단계에서 쓸 만한 자연스러운 한국어 표현 2~3개. 실제 구어체로.
+
+JSON만 출력하라. 스키마:
+{{"topic_ko":"","goal_ko":"","place_ko":"","user_role":"","ai_role":"","stages":[{{"name":"","native":"","desc":"","expressions":["",""]}}]}}"""
+
+    data = await _gen_json(prompt, timeout_s=25.0)
+    plan = _validate_plan(data)
+    if plan is None:
+        # 1회 재시도
+        data = await _gen_json(prompt, timeout_s=25.0)
+        plan = _validate_plan(data)
+    if plan is None:
+        raise HTTPException(status_code=502, detail="plan_generation_failed")
+
+    _rp_cleanup()
+    plan_id = base64.urlsafe_b64encode(os.urandom(9)).decode()
+    _roleplay_plans[plan_id] = {"plan": plan, "style": style, "at": time.time()}
+    print(f"[상황극] 계획 생성: {plan['topic_ko']} / 목적: {plan['goal_ko']} / 단계 {len(plan['stages'])}개")
+    return {"id": plan_id, "plan": plan}
+
+
+_STYLE_RULES = {
+    "polite": "화계: 존댓말(해요체) 고정. 아래 페이더 규칙과 충돌하면 이 화계 지시가 우선한다.",
+    "banmal": "화계: 반말(해체) 고정. 아래 페이더 규칙과 충돌하면 이 화계 지시가 우선한다.",
+    "auto": "화계: 페이더 좌표(D/P)를 따른다.",
+}
+
+
+def build_roleplay_prompt(d: int, p: int, ui_lang: str, user_name: str,
+                          plan: dict, style: str) -> str:
+    base = build_system_prompt(d, p, ui_lang, user_name)
+    stages_txt = "\n".join(
+        f"  {i + 1}. {s['name']} — {s['desc']}" for i, s in enumerate(plan["stages"]))
+    rp_block = f"""
+
+# ★★★ 상황극 모드 (자유 수다가 아님 — 이 블록이 최우선) ★★★
+지금은 '주제 대화 연습(상황극)'이다. 학습자가 직접 설정한 과업:
+- 주제: {plan['topic_ko']}
+- 대화의 달성 목적: {plan['goal_ko']}
+- 장소: {plan['place_ko']}
+- 학습자 역할: {plan['user_role']} / 너의 역할: {plan['ai_role']}
+너는 마사마사인 채로 '{plan['ai_role']}' 역할을 연기한다. 역할에 몰입하되 마사마사의 온기는 유지해.
+{_STYLE_RULES.get(style, _STYLE_RULES['auto'])}
+
+[대화의 기능단계 — 네 머릿속 지도]
+{stages_txt}
+
+[상황극 진행 규칙]
+- 위 단계들을 자연스럽게 밟아 가되, 단계 이름을 절대 입에 올리지 마라("이제 마무리 단계예요" 금지). 진행 상황 안내, 메타 발화 전부 금지.
+- 학습자가 대화를 주도하게 하라. 네 발화는 한 턴에 1~2문장. 네가 먼저 화제를 다 끌고 가지 마라.
+- 대화의 달성 목적이 이루어져도 바로 끝내지 말고, 역할에 맞는 자연스러운 확장(추가 제안, 관련 질문)을 한 번 시도해라. 학습자가 원치 않으면 마무리로 넘어간다.
+- 학습자가 마무리 인사를 하면 역할에 맞게 마무리(감사·인사·재방문 유도 등)로 응하라. 단, "대화를 종료합니다" 같은 세션 종료 선언은 절대 하지 마라. 종료는 학습자가 화면 버튼으로 한다. 마무리 인사가 끝났으면 학습자가 버튼을 누를 때까지 짧게 여운 있는 발화만 해.
+- [즉시 교정] 규칙은 상황극 중에도 유효하다. 단 더 짧게: 자연스러운 문장 하나 알려주고 다시 말해볼 기회를 준 뒤, 곧장 극으로 복귀.
+- 학습자가 침묵하거나 머뭇거리면 재촉하지 말고 잠시 기다렸다가, 역할 안에서 대답하기 쉬운 되물음 하나로 도와줘.
+- '천천히/다시/쉽게/빨리' 요청 대응 규칙은 상황극 중에도 그대로 유효하다.
+"""
+    return base + rp_block
+
+
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
     resp = templates.TemplateResponse(request=request, name="index.html")
@@ -450,8 +656,134 @@ async def _handle_session(websocket: WebSocket):
     # 이름은 시스템 프롬프트에 들어가므로 공백 정리 + 길이 제한 (프롬프트 주입 방지)
     user_name = re.sub(r"\s+", " ", websocket.query_params.get("name", "")).strip()[:20]
 
-    system_prompt = build_system_prompt(d, p, ui_lang, user_name)
-    print(f"[서버] 클라이언트 연결 성공 — 친밀도(D)={d}, 지위(P)={p}, 언어={ui_lang or 'ko'}, 이름={user_name or '(없음)'}")
+    # 주제 대화(상황극) 모드: /roleplay-setup에서 만든 계획 ID가 오면 상황극 프롬프트로 전환
+    rp_plan = None
+    rp_style = "auto"
+    rp_id = websocket.query_params.get("rp", "").strip()[:32]
+    if rp_id:
+        entry = _roleplay_plans.get(rp_id)
+        if entry and time.time() - entry["at"] <= _RP_PLAN_TTL:
+            rp_plan = entry["plan"]
+            rp_style = entry["style"]
+        else:
+            await websocket.send_text(json.dumps({
+                "type": "error", "code": "rp_expired",
+                "message": "대화 계획이 만료되었어요. 설정을 다시 만들어 주세요.",
+            }))
+
+    if rp_plan:
+        system_prompt = build_roleplay_prompt(d, p, ui_lang, user_name, rp_plan, rp_style)
+        print(f"[서버] 상황극 세션 — 주제={rp_plan['topic_ko']}, D={d}, P={p}, 화계={rp_style}, 이름={user_name or '(없음)'}")
+    else:
+        system_prompt = build_system_prompt(d, p, ui_lang, user_name)
+        print(f"[서버] 클라이언트 연결 성공 — 친밀도(D)={d}, 지위(P)={p}, 언어={ui_lang or 'ko'}, 이름={user_name or '(없음)'}")
+
+    # ── 상황극 진행 상태 (자유 수다에서는 사용 안 함) ──
+    convo = []           # [{"role":"user"|"ai","text":str}] — 같은 화자 연속 조각은 병합
+    rp_progress = {
+        "done": set(),                 # 충족된 단계 인덱스 (단조 증가)
+        "total": len(rp_plan["stages"]) if rp_plan else 0,
+        "completed_at_turns": None,    # 전 단계 충족 시점의 학습자 턴 수 (100% 초과 계산 기준)
+        "percent": 0,
+        "last_len": 0,                 # 마지막 분석 시점의 convo 길이
+        "last_at": 0.0,
+        "running": False,
+    }
+
+    def add_frag(role: str, text: str):
+        if convo and convo[-1]["role"] == role:
+            convo[-1]["text"] += text
+        else:
+            convo.append({"role": role, "text": text})
+
+    def _user_turns() -> int:
+        return sum(1 for m in convo if m["role"] == "user")
+
+    def _progress_payload() -> dict:
+        return {
+            "type": "progress",
+            "percent": rp_progress["percent"],
+            "stages": [
+                {"name": s["name"], "native": s.get("native", ""), "done": i in rp_progress["done"]}
+                for i, s in enumerate(rp_plan["stages"])
+            ],
+        }
+
+    async def run_analysis(final: bool = False):
+        """대화 로그를 보고 어떤 기능단계가 충족됐는지 판정 → 진행률 갱신·전송.
+        릴레이(오디오)와 별개의 백그라운드 태스크로 돌며 이벤트루프를 막지 않는다."""
+        if rp_plan is None or rp_progress["running"]:
+            return
+        if not final:
+            # 디바운스: 새 내용이 없거나 6초 안 지났으면 건너뜀
+            if len(convo) <= rp_progress["last_len"] or time.time() - rp_progress["last_at"] < 6:
+                return
+        elif len(convo) == rp_progress["last_len"]:
+            return  # 최종 분석도 새 내용 없으면 호출 생략 (마지막 결과 재사용)
+        if not convo:
+            return
+        rp_progress["running"] = True
+        try:
+            transcript = "\n".join(
+                f"{'학습자(' + rp_plan['user_role'] + ')' if m['role'] == 'user' else '상대(' + rp_plan['ai_role'] + ')'}: {m['text'].strip()}"
+                for m in convo[-60:] if m["text"].strip())
+            stages_txt = "\n".join(
+                f"{i}. {s['name']}: {s['desc']}" for i, s in enumerate(rp_plan["stages"]))
+            prompt = f"""다음은 한국어 학습자의 상황극 대화 기록이다.
+과업 — 주제: {rp_plan['topic_ko']} / 달성 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']}
+
+[기능단계 목록]
+{stages_txt}
+
+[대화 기록]
+{transcript}
+
+위 대화에서 이미 실현(충족)된 기능단계의 번호를 모두 골라라.
+판정 기준: 그 단계의 의사소통 기능이 대화에서 실제로 수행되었으면 충족이다. 표현이 서툴러도 기능이 이루어졌으면 인정한다. 아직 시도되지 않았거나 실패한 단계는 제외한다.
+JSON만 출력: {{"done":[번호,...]}}"""
+            data = await _gen_json(prompt, timeout_s=15.0)
+            if isinstance(data, dict):
+                for i in data.get("done") or []:
+                    try:
+                        idx = int(i)
+                    except (TypeError, ValueError):
+                        continue
+                    if 0 <= idx < rp_progress["total"]:
+                        rp_progress["done"].add(idx)
+            turns = _user_turns()
+            if rp_progress["total"] and len(rp_progress["done"]) == rp_progress["total"]:
+                if rp_progress["completed_at_turns"] is None:
+                    rp_progress["completed_at_turns"] = turns
+                # 100% 도달 후 화제를 이어가면 학습자 턴당 +5%
+                pct = 100 + max(0, turns - rp_progress["completed_at_turns"]) * 5
+            else:
+                pct = round(100 * len(rp_progress["done"]) / rp_progress["total"]) if rp_progress["total"] else 0
+            rp_progress["percent"] = max(pct, rp_progress["percent"])  # 단조 증가
+            rp_progress["last_len"] = len(convo)
+            rp_progress["last_at"] = time.time()
+            await websocket.send_text(json.dumps(_progress_payload()))
+            print(f"[상황극] 진행률 {rp_progress['percent']}% — 충족 {sorted(rp_progress['done'])}/{rp_progress['total']}")
+        except Exception as e:
+            print(f"[상황극] 단계 분석 실패: {e}")
+        finally:
+            rp_progress["running"] = False
+
+    async def send_final_score():
+        """종료 버튼 → 마지막 분석을 마치고 퍼센트를 점수로 치환해 전송."""
+        if rp_plan is not None:
+            for _ in range(40):  # 진행 중 분석이 있으면 최대 8초 대기
+                if not rp_progress["running"]:
+                    break
+                await asyncio.sleep(0.2)
+            await run_analysis(final=True)
+        payload = _progress_payload() if rp_plan else {"stages": [], "percent": 0}
+        await websocket.send_text(json.dumps({
+            "type": "final_score",
+            "percent": payload.get("percent", 0) if rp_plan else 0,
+            "score": rp_progress["percent"] if rp_plan else 0,
+            "stages": payload.get("stages", []),
+        }))
+        print(f"[상황극] 최종 점수 전송: {rp_progress['percent']}점")
 
     config_kwargs = dict(
         response_modalities=[types.Modality.AUDIO],
@@ -461,6 +793,20 @@ async def _handle_session(websocket: WebSocket):
         input_audio_transcription=types.AudioTranscriptionConfig(),
         output_audio_transcription=types.AudioTranscriptionConfig(),
     )
+    # 마사마사가 말하다 뚝 끊기는 문제 대응:
+    # 스피커 에코·주변 소음이 "사용자가 말했다"로 오판되어 barge-in이 발동하는 것.
+    # 발화 시작 감지 민감도를 낮춰(LOW) 진짜 목소리에만 끼어들기가 되게 한다.
+    # prefix_padding_ms=300: 발화 첫 음절이 잘리지 않게 앞쪽 여유를 둠.
+    try:
+        config_kwargs["realtime_input_config"] = types.RealtimeInputConfig(
+            automatic_activity_detection=types.AutomaticActivityDetection(
+                disabled=False,
+                start_of_speech_sensitivity=types.StartSensitivity.START_SENSITIVITY_LOW,
+                prefix_padding_ms=300,
+            )
+        )
+    except Exception as e:
+        print(f"[서버] VAD 민감도 설정 미지원 SDK — 기본 VAD로 진행: {e}")
     # ★ 지연 해결 핵심: 2.5 네이티브 오디오 모델은 동적 사고(thinking)가 기본 활성화라
     #   응답 전에 수 초씩 '생각'함 → thinking_budget=0으로 꺼서 즉답하게 만든다
     try:
@@ -478,10 +824,13 @@ async def _handle_session(websocket: WebSocket):
         async with client.aio.live.connect(model=model_id, config=config) as gemini_session:
             print("[서버] Gemini Live API 세션 연결 성공")
 
-            await gemini_session.send(
-                input="(대화 시작) 지금 설정된 친밀도·지위 페이더에 맞는 말투로 첫인사를 건네고, 가벼운 질문 하나로 대화를 열어줘.",
-                end_of_turn=True
-            )
+            if rp_plan:
+                first_msg = (f"(상황극 시작) 너는 지금 {rp_plan['place_ko']}의 {rp_plan['ai_role']}(이)야. "
+                             f"학습자({rp_plan['user_role']})에게 이 상황에 맞는 자연스러운 첫 발화를 건네라. "
+                             "설정된 화계와 페이더에 맞게, 1~2문장으로 짧게.")
+            else:
+                first_msg = "(대화 시작) 지금 설정된 친밀도·지위 페이더에 맞는 말투로 첫인사를 건네고, 가벼운 질문 하나로 대화를 열어줘."
+            await gemini_session.send(input=first_msg, end_of_turn=True)
 
             async def client_to_gemini():
                 # 오디오는 바이너리 프레임으로 받는다 — base64+JSON 파싱은 0.1 vCPU에서
@@ -501,6 +850,9 @@ async def _handle_session(websocket: WebSocket):
                             if event.get("type") == "ping":
                                 # 클라이언트 지연 진단용 왕복 측정
                                 await websocket.send_text(json.dumps({"type": "pong", "t": event.get("t")}))
+                            elif event.get("type") == "end_session":
+                                # 종료 버튼: 최종 분석 → 점수 치환 → 클라이언트가 받고 연결을 닫는다
+                                await send_final_score()
                             elif event.get("type") == "text" and event.get("text"):
                                 # 빠른 요청 버튼 등 텍스트 턴 주입 (대화 맥락 유지)
                                 await gemini_session.send(input=event["text"], end_of_turn=True)
@@ -534,11 +886,13 @@ async def _handle_session(websocket: WebSocket):
                                     # (볼륨은 이제 클라이언트가 재생 직전에 직접 계산)
                                     await websocket.send_bytes(part.inline_data.data)
                         if sc.input_transcription and sc.input_transcription.text:
+                            add_frag("user", sc.input_transcription.text)
                             await websocket.send_text(json.dumps({
                                 "type": "user_text",
                                 "text": sc.input_transcription.text,
                             }))
                         if sc.output_transcription and sc.output_transcription.text:
+                            add_frag("ai", sc.output_transcription.text)
                             await websocket.send_text(json.dumps({
                                 "type": "ai_text",
                                 "text": sc.output_transcription.text,
@@ -549,6 +903,9 @@ async def _handle_session(websocket: WebSocket):
                         if sc.turn_complete:
                             print(f"[서버] 턴 {turn_num} 완료")
                             await websocket.send_text(json.dumps({"type": "turn_complete"}))
+                            if rp_plan is not None:
+                                # 단계 충족 분석은 백그라운드로 — 오디오 릴레이를 막지 않음
+                                asyncio.create_task(run_analysis())
 
             send_task = asyncio.create_task(client_to_gemini())
             recv_task = asyncio.create_task(gemini_to_client())

@@ -793,16 +793,23 @@ JSON만 출력: {{"done":[번호,...]}}"""
         input_audio_transcription=types.AudioTranscriptionConfig(),
         output_audio_transcription=types.AudioTranscriptionConfig(),
     )
-    # 마사마사가 말하다 뚝 끊기는 문제 대응:
-    # 스피커 에코·주변 소음이 "사용자가 말했다"로 오판되어 barge-in이 발동하는 것.
-    # 발화 시작 감지 민감도를 낮춰(LOW) 진짜 목소리에만 끼어들기가 되게 한다.
-    # prefix_padding_ms=300: 발화 첫 음절이 잘리지 않게 앞쪽 여유를 둠.
+    # ── VAD(발화 감지) 민감도 ──
+    # 이전엔 스피커 에코 오탐(barge-in)을 줄이려고 start 민감도를 LOW로 낮췄는데,
+    # 그 부작용으로 "발화 시작/끝"을 늦게 잡아 STT가 수십 초씩 밀렸다(핸즈프리 지연의 주범).
+    # 이어폰 사용을 전제로 감지를 민감(HIGH)하게 돌려 발화 시작·끝을 즉시 잡게 한다.
+    #   · start HIGH: 말을 시작하면 곧바로 감지
+    #   · end   HIGH: 말을 멈추면 곧바로 턴 확정 → STT 즉시 반영 (텍스트 버튼처럼 빠름)
+    #   · silence_duration_ms=600: 이 정도 침묵이면 "발화 끝"으로 판단 (너무 짧으면 문장 중간에 끊김)
+    #   · prefix_padding_ms=300: 첫 음절이 잘리지 않게 앞쪽 여유
+    # ※ 스피커로 써서 에코 오탐이 다시 생기면 start만 LOW로 되돌리면 됨.
     try:
         config_kwargs["realtime_input_config"] = types.RealtimeInputConfig(
             automatic_activity_detection=types.AutomaticActivityDetection(
                 disabled=False,
-                start_of_speech_sensitivity=types.StartSensitivity.START_SENSITIVITY_LOW,
+                start_of_speech_sensitivity=types.StartSensitivity.START_SENSITIVITY_HIGH,
+                end_of_speech_sensitivity=types.EndSensitivity.END_SENSITIVITY_HIGH,
                 prefix_padding_ms=300,
+                silence_duration_ms=600,
             )
         )
     except Exception as e:

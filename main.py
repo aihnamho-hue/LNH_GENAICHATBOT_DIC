@@ -793,24 +793,14 @@ JSON만 출력: {{"done":[번호,...]}}"""
         input_audio_transcription=types.AudioTranscriptionConfig(),
         output_audio_transcription=types.AudioTranscriptionConfig(),
     )
-    # ── VAD(발화 감지) 민감도 ──
-    # 이전엔 스피커 에코 오탐(barge-in)을 줄이려고 start 민감도를 LOW로 낮췄는데,
-    # 그 부작용으로 "발화 시작/끝"을 늦게 잡아 STT가 수십 초씩 밀렸다(핸즈프리 지연의 주범).
-    # 이어폰 사용을 전제로 감지를 민감(HIGH)하게 돌려 발화 시작·끝을 즉시 잡게 한다.
-    #   · start HIGH: 말을 시작하면 곧바로 감지
-    #   · end   HIGH: 말을 멈추면 곧바로 턴 확정 → STT 즉시 반영 (텍스트 버튼처럼 빠름)
-    #   · silence_duration_ms=600: 이 정도 침묵이면 "발화 끝"으로 판단 (너무 짧으면 문장 중간에 끊김)
-    #   · prefix_padding_ms=300: 첫 음절이 잘리지 않게 앞쪽 여유
-    # ※ 스피커로 써서 에코 오탐이 다시 생기면 start만 LOW로 되돌리면 됨.
+    # ── 발화 감지: 수동 모드 (push-to-talk) ──
+    # 진단 결과(업로드 0KB·응답 1.4s인데도 STT가 30~60초 지연) → 오디오는 잘 도착하는데
+    # Gemini의 '자동 발화감지(VAD)'가 "말 끝났다"를 늦게 판단하는 게 병목이었다.
+    # 그래서 자동감지를 끄고(disabled=True), 클라이언트가 버튼으로 발화 시작/끝을
+    # activity_start / activity_end 신호로 '명시적으로' 보낸다. → 텍스트 버튼처럼 즉시 확정.
     try:
         config_kwargs["realtime_input_config"] = types.RealtimeInputConfig(
-            automatic_activity_detection=types.AutomaticActivityDetection(
-                disabled=False,
-                start_of_speech_sensitivity=types.StartSensitivity.START_SENSITIVITY_HIGH,
-                end_of_speech_sensitivity=types.EndSensitivity.END_SENSITIVITY_HIGH,
-                prefix_padding_ms=300,
-                silence_duration_ms=600,
-            )
+            automatic_activity_detection=types.AutomaticActivityDetection(disabled=True)
         )
     except Exception as e:
         print(f"[서버] VAD 민감도 설정 미지원 SDK — 기본 VAD로 진행: {e}")
@@ -857,6 +847,12 @@ JSON만 출력: {{"done":[번호,...]}}"""
                             if event.get("type") == "ping":
                                 # 클라이언트 지연 진단용 왕복 측정
                                 await websocket.send_text(json.dumps({"type": "pong", "t": event.get("t")}))
+                            elif event.get("type") == "activity_start":
+                                # push-to-talk: 버튼을 누른 순간 — "발화 시작" 명시
+                                await gemini_session.send_realtime_input(activity_start=types.ActivityStart())
+                            elif event.get("type") == "activity_end":
+                                # push-to-talk: 버튼을 뗀 순간 — "발화 끝" 명시 → 턴 즉시 확정
+                                await gemini_session.send_realtime_input(activity_end=types.ActivityEnd())
                             elif event.get("type") == "end_session":
                                 # 종료 버튼: 최종 분석 → 점수 치환 → 클라이언트가 받고 연결을 닫는다
                                 await send_final_score()

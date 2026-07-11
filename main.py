@@ -19,7 +19,7 @@ from google.genai import types
 load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨
-APP_VERSION = "v9"
+APP_VERSION = "v10"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -310,15 +310,25 @@ def _parse_json_loose(text: str):
 
 
 async def _gen_json(prompt: str, timeout_s: float = 20.0, temperature: float = 0.3):
-    """일회성 생성 호출 → JSON 파싱. 실패 시 None (호출부에서 처리)."""
+    """일회성 생성 호출 → JSON 파싱. 실패 시 None (호출부에서 처리).
+    ★ 2.5 모델은 '동적 사고(thinking)'가 기본 활성화라 복잡한 프롬프트에서
+      응답 전에 수십 초씩 생각하다 타임아웃될 수 있다 → thinking_budget=0으로 즉답."""
     async def _call():
         try:
-            cfg = types.GenerateContentConfig(response_mime_type="application/json", temperature=temperature)
+            cfg = types.GenerateContentConfig(
+                response_mime_type="application/json", temperature=temperature,
+                thinking_config=types.ThinkingConfig(thinking_budget=0))
             resp = await client.aio.models.generate_content(
                 model=ANALYSIS_MODEL, contents=prompt, config=cfg)
-        except (TypeError, AttributeError):
-            # 구버전 SDK 폴백 — JSON 모드 미지원이면 텍스트로 받고 관대 파싱
-            resp = await client.aio.models.generate_content(model=ANALYSIS_MODEL, contents=prompt)
+        except Exception as e1:
+            print(f"[상황극] thinking 끈 JSON 호출 실패 — 기본 설정 폴백: {e1}")
+            try:
+                cfg = types.GenerateContentConfig(response_mime_type="application/json", temperature=temperature)
+                resp = await client.aio.models.generate_content(
+                    model=ANALYSIS_MODEL, contents=prompt, config=cfg)
+            except (TypeError, AttributeError):
+                # 구버전 SDK 폴백 — JSON 모드 미지원이면 텍스트로 받고 관대 파싱
+                resp = await client.aio.models.generate_content(model=ANALYSIS_MODEL, contents=prompt)
         return _parse_json_loose(getattr(resp, "text", "") or "")
     try:
         return await asyncio.wait_for(_call(), timeout=timeout_s)
@@ -397,9 +407,9 @@ def _validate_suggest(data) -> dict | None:
 
 @app.post("/roleplay-suggest")
 async def roleplay_suggest(request: Request):
-    """주제(필수)만 입력하면 목적·장소·역할·화계를 '예)'로 자동 추천.
+    """장소나 목적 중 하나만 적으면 나머지(목적 3단계·장소·역할·화계)를 '예)'로 자동 추천.
     목적은 ①교재형(이상적) ②일상형(흔히 겪는) ③엉뚱형(뜻밖의 상황) 3단계 —
-    클라이언트가 랜덤으로 하나를 보여주고 🎲 버튼으로 순환한다."""
+    클라이언트가 랜덤으로 하나를 보여주고 🎲 버튼으로 순환·재추첨한다."""
     try:
         body = await request.json()
     except Exception:
@@ -407,22 +417,35 @@ async def roleplay_suggest(request: Request):
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="bad_json")
 
-    topic = _clean_str(body.get("topic"), 80)
-    if not topic:
-        raise HTTPException(status_code=400, detail="topic_required")
+    topic = _clean_str(body.get("topic"), 80)   # 구버전 호환
+    place = _clean_str(body.get("place"), 60)
+    goal = _clean_str(body.get("goal"), 120)
+    if not (topic or place or goal):
+        raise HTTPException(status_code=400, detail="input_required")
 
-    prompt = f"""너는 한국어 교육 전문가다. 한국어 학습자가 음성 챗봇과 상황극 대화 연습을 하려고 주제를 입력했다.
-주제는 학습자의 모국어 등 어떤 언어로도 올 수 있다. 의미를 파악해 아래 항목을 추천하라.
+    given_lines = []
+    if place:
+        given_lines.append(f"- 대화 장소: {place}")
+    if goal:
+        given_lines.append(f"- 대화의 달성 목적: {goal}")
+    if topic:
+        given_lines.append(f"- 주제: {topic}")
+    given = "\n".join(given_lines)
 
-[학습자가 입력한 주제] {topic}
+    prompt = f"""너는 한국어 교육 전문가다. 한국어 학습자가 음성 챗봇과 상황극 대화 연습을 하려고 아래 항목을 입력했다.
+입력은 학습자의 모국어 등 어떤 언어로도 올 수 있다. 의미를 파악해 빈 항목들을 추천하라.
+
+[학습자 입력]
+{given}
 
 [요구사항 — 모두 자연스러운 한국어로]
-1) goals: 이 주제로 도전할 만한 '대화의 달성 목적' 3개를 정확히 이 순서로.
+1) goals: 이 상황에서 도전할 만한 '대화의 달성 목적' 3개를 정확히 이 순서로.
    ① 교재형: 한국어 교재에 나올 법한 가장 이상적·전형적인 목적.
    ② 일상형: 실제 생활에서 흔히 부딪히는, 약간의 변수가 있는 목적.
-   ③ 엉뚱형: 같은 주제인데 뜻밖이고 재미있는 목적 (황당하지만 대화로는 성립해야 함).
+   ③ 엉뚱형: 같은 상황인데 뜻밖이고 재미있는 목적 (황당하지만 대화로는 성립해야 함).
    각 25자 이내, 명사형 종결(예: "~싸게 사기", "~환불 받기").
-2) place: 이 대화가 벌어질 전형적인 장소 (예: "동네 옷 가게").
+   학습자가 이미 목적을 적었다면 그 취지를 살리면서 세 단계로 변주하라.
+2) place: 이 대화가 벌어질 전형적인 장소 (예: "동네 옷 가게"). 학습자가 적었다면 그것을 자연스러운 한국어로 다듬어라.
 3) my_role: 학습자 역할 (예: "손님").
 4) ai_role: 상대(챗봇) 역할 (예: "점원").
 5) style: 이 관계에서 자연스러운 화계 — "polite"(존댓말) 또는 "banmal"(반말).
@@ -431,14 +454,14 @@ async def roleplay_suggest(request: Request):
 JSON만 출력: {{"goals":["","",""],"place":"","my_role":"","ai_role":"","style":"polite","style_reason":""}}"""
 
     # 엉뚱형의 다양성을 위해 온도를 높게 (호출마다 다른 추천)
-    data = await _gen_json(prompt, timeout_s=15.0, temperature=1.1)
+    data = await _gen_json(prompt, timeout_s=25.0, temperature=1.1)
     sug = _validate_suggest(data)
     if sug is None:
-        data = await _gen_json(prompt, timeout_s=15.0, temperature=1.1)
+        data = await _gen_json(prompt, timeout_s=25.0, temperature=1.1)
         sug = _validate_suggest(data)
     if sug is None:
         raise HTTPException(status_code=502, detail="suggest_failed")
-    print(f"[상황극] 추천 생성: 주제='{topic}' → 목적 {sug['goals']}")
+    print(f"[상황극] 추천 생성: 입력='{place or goal or topic}' → 목적 {sug['goals']}")
     return sug
 
 
@@ -459,8 +482,8 @@ async def roleplay_setup(request: Request):
     ai_role = _clean_str(body.get("aiRole"), 40)
     style = body.get("style") if body.get("style") in ("polite", "banmal", "auto") else "auto"
     ui_lang = _clean_str(body.get("lang"), 5).lower()
-    if not topic and not goal:
-        raise HTTPException(status_code=400, detail="topic_or_goal_required")
+    if not topic and not goal and not place:
+        raise HTTPException(status_code=400, detail="topic_goal_or_place_required")
 
     native = LANG_NAMES.get(ui_lang, "")
     native_line = f"학습자의 모국어는 {native}다. 각 단계의 native 필드에 name의 {native} 번역을 넣어라." if native \
@@ -495,11 +518,11 @@ async def roleplay_setup(request: Request):
 JSON만 출력하라. 스키마:
 {{"topic_ko":"","goal_ko":"","place_ko":"","user_role":"","ai_role":"","stages":[{{"name":"","native":"","desc":"","expressions":[{{"text":"","cue":""}}]}}]}}"""
 
-    data = await _gen_json(prompt, timeout_s=25.0)
+    data = await _gen_json(prompt, timeout_s=40.0)
     plan = _validate_plan(data)
     if plan is None:
         # 1회 재시도
-        data = await _gen_json(prompt, timeout_s=25.0)
+        data = await _gen_json(prompt, timeout_s=40.0)
         plan = _validate_plan(data)
     if plan is None:
         raise HTTPException(status_code=502, detail="plan_generation_failed")

@@ -19,7 +19,7 @@ from google.genai import types
 load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨
-APP_VERSION = "v11"
+APP_VERSION = "v12"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -272,7 +272,10 @@ def build_system_prompt(d: int, p: int, ui_lang: str = "", user_name: str = "") 
 #       → ③ 상황극 진행, 턴마다 단계 충족을 분석해 진행률 전송(100% 초과 허용)
 #       → ④ 학습자가 종료 버튼 → 진행률을 점수로 치환 + 대화 저장
 # ============================================================
-ANALYSIS_MODEL = os.environ.get("ANALYSIS_MODEL", "gemini-2.5-flash")
+# 계획 생성·추천·단계 분석용 모델 — flash-lite는 무료 등급 일일 쿼터가 flash보다
+# 훨씬 커서(수 배) 429 RESOURCE_EXHAUSTED를 피하기 쉽고, JSON 생성 품질도 충분하다.
+# Render 환경변수 ANALYSIS_MODEL로 언제든 교체 가능.
+ANALYSIS_MODEL = os.environ.get("ANALYSIS_MODEL", "gemini-2.5-flash-lite")
 _roleplay_plans = {}  # plan_id -> {"plan": dict, "style": str, "at": float}
 
 # 마지막 생성 호출 오류 기록 — 실패 원인을 클라이언트 팝업과 /rp-diag에 그대로 노출
@@ -282,6 +285,21 @@ LAST_GEN_ERROR = {"at": "", "msg": ""}
 def _note_gen_error(e) -> None:
     LAST_GEN_ERROR["at"] = datetime.datetime.now().isoformat(timespec="seconds")
     LAST_GEN_ERROR["msg"] = (f"{type(e).__name__}: {e}" if not isinstance(e, str) else e)[:300]
+
+
+def _quota_exhausted() -> bool:
+    """직전 실패가 API 쿼터 소진(429)이었는지 — 이때 재시도는 쿼터만 2배로 태운다."""
+    m = LAST_GEN_ERROR["msg"]
+    return "429" in m or "RESOURCE_EXHAUSTED" in m
+
+
+def _fail_reason(data) -> str:
+    """502 detail에 담을 사람이 읽을 수 있는 실패 원인."""
+    if data is not None:
+        return "모델이 형식에 맞지 않는 응답을 반환"
+    if _quota_exhausted():
+        return "Gemini API 무료 사용량(쿼터) 소진 — 잠시 후 또는 내일 다시 시도하거나 결제 설정 필요 (429)"
+    return LAST_GEN_ERROR["msg"] or "원인 미기록"
 _RP_PLAN_TTL = 30 * 60  # 계획 보관 30분 (브리핑 화면에서 오래 머물러도 시작 가능)
 
 
@@ -466,12 +484,12 @@ JSON만 출력: {{"goals":["","",""],"place":"","my_role":"","ai_role":"","style
     # 엉뚱형의 다양성을 위해 온도를 높게 (호출마다 다른 추천)
     data = await _gen_json(prompt, timeout_s=25.0, temperature=1.1)
     sug = _validate_suggest(data)
-    if sug is None:
+    if sug is None and not (data is None and _quota_exhausted()):
+        # 쿼터 소진이 아닐 때만 1회 재시도 (429에서 재시도는 쿼터 낭비)
         data = await _gen_json(prompt, timeout_s=25.0, temperature=1.1)
         sug = _validate_suggest(data)
     if sug is None:
-        reason = "모델이 형식에 맞지 않는 응답을 반환" if data is not None else (LAST_GEN_ERROR["msg"] or "원인 미기록")
-        raise HTTPException(status_code=502, detail=("suggest_failed | " + reason)[:250])
+        raise HTTPException(status_code=502, detail=("suggest_failed | " + _fail_reason(data))[:250])
     print(f"[상황극] 추천 생성: 입력='{place or goal or topic}' → 목적 {sug['goals']}")
     return sug
 
@@ -531,13 +549,12 @@ JSON만 출력하라. 스키마:
 
     data = await _gen_json(prompt, timeout_s=40.0)
     plan = _validate_plan(data)
-    if plan is None:
-        # 1회 재시도
+    if plan is None and not (data is None and _quota_exhausted()):
+        # 쿼터 소진이 아닐 때만 1회 재시도 (429에서 재시도는 쿼터 낭비)
         data = await _gen_json(prompt, timeout_s=40.0)
         plan = _validate_plan(data)
     if plan is None:
-        reason = "모델이 형식에 맞지 않는 응답을 반환" if data is not None else (LAST_GEN_ERROR["msg"] or "원인 미기록")
-        raise HTTPException(status_code=502, detail=("plan_generation_failed | " + reason)[:250])
+        raise HTTPException(status_code=502, detail=("plan_generation_failed | " + _fail_reason(data))[:250])
 
     _rp_cleanup()
     plan_id = base64.urlsafe_b64encode(os.urandom(9)).decode()

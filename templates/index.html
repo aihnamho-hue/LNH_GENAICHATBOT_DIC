@@ -502,7 +502,7 @@
     let sessionUploaded = false; // 세션당 1회 업로드 보장 (종료 버튼/탭 닫기 이중 전송 방지)
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v10";
+    const APP_VERSION = "v11";
     console.log("마사마사 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -830,7 +830,12 @@
                     style: rpStyle, lang: uiLang || "ko", name: userName,
                 }),
             });
-            if (!res.ok) throw new Error("HTTP " + res.status);
+            if (!res.ok) {
+                // 서버가 담아 보낸 실패 원인(detail)을 팝업에 그대로 노출 — 원인 추적용
+                let detail = "";
+                try { detail = ((await res.json()) || {}).detail || ""; } catch (e2) {}
+                throw new Error("HTTP " + res.status + (detail ? " — " + detail : ""));
+            }
             const data = await res.json();
             rpId = data.id;
             rpPlan = data.plan;
@@ -839,7 +844,7 @@
             showBriefing();
         } catch (e) {
             console.warn("계획 생성 실패:", e);
-            alert(t("rpPlanFail"));
+            alert(t("rpPlanFail") + "\n\n(" + (e && e.message ? e.message : e) + ")");
         } finally {
             btn.disabled = false;
             btn.textContent = t("rpMake");

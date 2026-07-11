@@ -19,7 +19,7 @@ from google.genai import types
 load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨
-APP_VERSION = "v10"
+APP_VERSION = "v11"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -274,6 +274,14 @@ def build_system_prompt(d: int, p: int, ui_lang: str = "", user_name: str = "") 
 # ============================================================
 ANALYSIS_MODEL = os.environ.get("ANALYSIS_MODEL", "gemini-2.5-flash")
 _roleplay_plans = {}  # plan_id -> {"plan": dict, "style": str, "at": float}
+
+# 마지막 생성 호출 오류 기록 — 실패 원인을 클라이언트 팝업과 /rp-diag에 그대로 노출
+LAST_GEN_ERROR = {"at": "", "msg": ""}
+
+
+def _note_gen_error(e) -> None:
+    LAST_GEN_ERROR["at"] = datetime.datetime.now().isoformat(timespec="seconds")
+    LAST_GEN_ERROR["msg"] = (f"{type(e).__name__}: {e}" if not isinstance(e, str) else e)[:300]
 _RP_PLAN_TTL = 30 * 60  # 계획 보관 30분 (브리핑 화면에서 오래 머물러도 시작 가능)
 
 
@@ -334,9 +342,11 @@ async def _gen_json(prompt: str, timeout_s: float = 20.0, temperature: float = 0
         return await asyncio.wait_for(_call(), timeout=timeout_s)
     except asyncio.TimeoutError:
         print(f"[상황극] 생성 호출 타임아웃 ({timeout_s}s)")
+        _note_gen_error(f"Timeout: 모델 응답이 {timeout_s:.0f}초를 초과")
         return None
     except Exception as e:
         print(f"[상황극] 생성 호출 실패: {e}")
+        _note_gen_error(e)
         return None
 
 
@@ -460,7 +470,8 @@ JSON만 출력: {{"goals":["","",""],"place":"","my_role":"","ai_role":"","style
         data = await _gen_json(prompt, timeout_s=25.0, temperature=1.1)
         sug = _validate_suggest(data)
     if sug is None:
-        raise HTTPException(status_code=502, detail="suggest_failed")
+        reason = "모델이 형식에 맞지 않는 응답을 반환" if data is not None else (LAST_GEN_ERROR["msg"] or "원인 미기록")
+        raise HTTPException(status_code=502, detail=("suggest_failed | " + reason)[:250])
     print(f"[상황극] 추천 생성: 입력='{place or goal or topic}' → 목적 {sug['goals']}")
     return sug
 
@@ -525,7 +536,8 @@ JSON만 출력하라. 스키마:
         data = await _gen_json(prompt, timeout_s=40.0)
         plan = _validate_plan(data)
     if plan is None:
-        raise HTTPException(status_code=502, detail="plan_generation_failed")
+        reason = "모델이 형식에 맞지 않는 응답을 반환" if data is not None else (LAST_GEN_ERROR["msg"] or "원인 미기록")
+        raise HTTPException(status_code=502, detail=("plan_generation_failed | " + reason)[:250])
 
     _rp_cleanup()
     plan_id = base64.urlsafe_b64encode(os.urandom(9)).decode()
@@ -570,6 +582,34 @@ def build_roleplay_prompt(d: int, p: int, ui_lang: str, user_name: str,
 - '천천히/다시/쉽게/빨리' 요청 대응 규칙은 상황극 중에도 그대로 유효하다.
 """
     return base + rp_block
+
+
+@app.get("/rp-diag")
+async def rp_diag(test: int = 0):
+    """상황극 생성 경로 진단 — 브라우저에서 /rp-diag?test=1 로 열면
+    실제 모델 호출 1회를 수행해 성공 여부·소요 시간·오류 원인을 보여준다."""
+    import sys
+    try:
+        import google.genai as _gg
+        sdk_ver = getattr(_gg, "__version__", "?")
+    except Exception:
+        sdk_ver = "?"
+    info = {
+        "app": APP_VERSION,
+        "python": sys.version.split()[0],
+        "google_genai": sdk_ver,
+        "analysis_model": ANALYSIS_MODEL,
+        "api_key_set": bool(os.environ.get("GEMINI_API_KEY")),
+        "last_gen_error": dict(LAST_GEN_ERROR),
+    }
+    if test:
+        t0 = time.time()
+        data = await _gen_json('JSON만 출력하라: {"pong": true}', timeout_s=20.0)
+        info["test_seconds"] = round(time.time() - t0, 1)
+        info["test_ok"] = isinstance(data, dict) and bool(data.get("pong"))
+        info["test_result"] = data
+        info["last_gen_error"] = dict(LAST_GEN_ERROR)
+    return info
 
 
 @app.get("/", response_class=HTMLResponse)

@@ -19,7 +19,7 @@ from google.genai import types
 load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨
-APP_VERSION = "v13"
+APP_VERSION = "v14"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -102,6 +102,18 @@ def _gdrive_get_folder_id(token: str) -> str:
         _gdrive_folder["id"] = r.json()["id"]
         print(f"[녹음] Google Drive에 '{GDRIVE_FOLDER_NAME}' 폴더 생성")
     return _gdrive_folder["id"]
+
+
+def _gdrive_update_sync(file_id: str, data: bytes, mime: str) -> str:
+    """기존 Drive 파일의 내용을 교체 — 대화 중 주기 저장(같은 파일 갱신)용."""
+    import requests
+    token = _gdrive_get_access_token()
+    r = requests.patch(
+        f"https://www.googleapis.com/upload/drive/v3/files/{file_id}?uploadType=media",
+        headers={"Authorization": f"Bearer {token}", "Content-Type": mime},
+        data=data, timeout=120)
+    r.raise_for_status()
+    return file_id
 
 
 def _gdrive_upload_sync(filename: str, data: bytes, mime: str) -> str:
@@ -218,6 +230,30 @@ LANG_NAMES = {
 }
 
 
+# ============================================================
+# 한국어 수준 제약 — '2017년 국제 통용 한국어 표준 교육과정 적용 연구(4단계)
+# 어휘, 문법 등급 목록' 준수. 마사마사의 모든 발화는 중급(4급 이하)로 제한.
+# 아래 문법 목록은 등급 목록 파일의 1~4급 문법 전체(224항)를 추출한 것.
+# ============================================================
+LEVEL_GRAMMAR_1_2 = """이/가 · 과/와 · 까지 · 께서 · 은/는, ㄴ · 도 · 을/를, ㄹ · 이랑/랑 · 으로/로 · 부터/에서부터 · 에/다가, 에다가(에다) · 에게/에게로, 에게서 · 에서/서 · 의 · 하고 · 만 · 이다 · 한테 · 보다 · -겠- · -었-/-았-, -였- · -으시-/-시- · -고 · -으니까/-니까 · -으러/-러 · -어서/-아서, -여서, -라서 · -지만 · -으려고/-려고 · -습니까/-ㅂ니까 · -습니다/-ㅂ니다 · -읍시다/-ㅂ시다 · -으세요/-세요, -으셔요, -셔요 · -으십시오/-십시오 · -고요 · -을까/-ㄹ까, -을까요, -ㄹ까요 · -어/-아, -여, -어요, -아요, -여요, -에요 · 이 아니다/가 아니다 · -고 싶다 · -고 있다 · -어야 되다/-아야 되다, -여야 되다, -어야 하다, -아야 하다 · -지 않다 · -을 수 있다/-ㄹ 수 있다, -을 수 없다, -ㄹ 수 없다 · -지 못하다 · -기 전에/-기 전 · -은 후에/-ㄴ 후, -은 뒤에, -ㄴ 뒤 · 께 · 마다 · 밖에 · 처럼 · 에서부터 · 에다가/에다 · 에게로 · 에게서 · 한테서 · 이나/나 · -거나 · -는데/-은데, -ㄴ데 · -으면/-면 · -으면서/-면서 · -게 · -다가 · -기 · -는/-은, -ㄴ · -을/-ㄹ · -음/-ㅁ · -는군/-군, -는군요, -군요 · -을게/-ㄹ게, -을게요, -ㄹ게요 · -지/-지요(-죠) · -는데요/-ㄴ데요, -은데요 · -네/-네요 · -을래/-을래요, -ㄹ래요 · -게 되다 · -기 때문에/-기 때문이다 · -기로 하다 · -는 것 같다/-ㄴ 것 같다, -은 것 같다, -ㄹ 것 같다, -을 것 같다 · -은 지/-ㄴ 지 · -는 것/-은 것, -ㄴ 것, -을 것, -ㄹ 것 · -는 동안에/-는 동안 · -은 적이 있다/-ㄴ 적이 있다, -은 적이 없다, -ㄴ 적이 없다 · -을 것/-ㄹ 것 · -을 때/-ㄹ 때 · -을까 보다/-ㄹ까 보다 · -어 보다/-아 보다, -여 보다 · -어 있다/-아 있다, -여 있다 · -어 주다/-아 주다, -여 주다 · -어도 되다/-아도 되다, -여도 되다 · -지 말다 · -을 수밖에 없다/-ㄹ 수밖에 없다"""
+
+LEVEL_GRAMMAR_3_4 = """같이 · 이고/고 · 대로 · 으로부터 · 만큼/만치 · 보고 · 뿐 · 아/야 · 요 · 이라고/라고, 이라 · -었었-/-았었-, -였었- · -거든/거들랑 · -는다거나/-ㄴ다거나, -다거나, -라거나 · -는다고/-다고, -라고, -으라고, -자고 · -으나/-나 · -느라고/-느라 · -도록 · -어다가/-아다가, -여다가, -어다 · -어도/-아도, -여도, -라도, 이라도 · -어야/-아야, -여야, -어야만 · -어야지/-아야지, -여야지 · -었더니/-았더니, -였더니 · -자마자/-자 · -으니/-니 · -으려면/-려면 · -던- · -거든요 · -는구나/-구나 · -는다/-ㄴ다, -다 · -던데/-던데요 · -잖아/-잖아요 · -자 · -게 하다/-게 만들다, -도록 하다 · -고 나다 · -고 말다 · -고 싶어 하다 · -은 결과/-ㄴ 결과 · -은 다음에/-ㄴ 다음에 · -는 대신에/-ㄴ 대신에, -은 대신에 · -는 만큼/-ㄴ 만큼, -은 만큼, -ㄹ 만큼, -을 만큼 · -는 반면/-ㄴ 반면에, -은 반면에 · -나 보다 · -을 텐데/-ㄹ 텐데, -을 텐데요 · -기 위해/-기 위해서, -기 위한, 을 위해, 를 위해 · 만 아니면 · -으면 안 되다/-면 안 되다, -으면 되다, -면 되다 · -으면 좋겠다/-면 좋겠다 · -어 가다/-아 가다, -여 가다 · -어 가지고/-아 가지고, -여 가지고 · -어 놓다/-아 놓다, -여 놓다 · -어 두다/-아 두다, -여 두다 · -어 드리다/-아 드리다, -여 드리다 · -어야겠-/-아야겠-, -여야겠- · -어지다/-아지다, -여지다 · 에 대하여/에 대해, 에 대해서, 에 대한 · -을 테니/-ㄹ 테니, -을 테니까, -ㄹ 테니까 · -어 오다/-아 오다, -여 오다 · -기는/-긴, -기는요, -긴요 · -는 모양이다/-ㄴ 모양이다, -은 모양이다 · -는 편이다 · -는가 보다 · -는 중이다 · -으려다가/-려다가, -으려다, 려다 · -어 보이다/-아 보이다, -여 보이다 · 커녕/ㄴ커녕, 는커녕, 은커녕 · 이나마/나마 · 이며/며, 이니, 니, 하며, 하고 · 이든/든, 이든지, 든지, 이든가, 든가 · 이란/란 · 이면/면 · 이야/야 · 치고 · 까지 · 이라도/라도 · 으로서/로서 · 으로써/로써 · 마저 · -거니와 · -고도 · -고자 · -기에 · -는지/-ㄴ지, -은지, -을지 · -다시피 · -더라도 · -든지/-든, -든가 · -으므로/-므로 · -을래야/-ㄹ래야 · -고서/-고서는, -고서야 · -는다면/-ㄴ다면, -다면, -라면 · -더니 · -던데 · -듯이 · -을수록/-ㄹ수록 · -으며/-며 · -는다니/-ㄴ다니, -다니, -라니 · -더군/-더군요 · -더라 · -어라/-아라, -여라 · -게요 · -는다면서/-ㄴ다면서, -다면서, -라면서, -는다면서요, -다면서요, -라면서요 · -나/-나요 · -을걸/-ㄹ걸, -을걸요, -ㄹ걸요 · -어야지요/-아야지요, -여야지요 · -다니요/-라니요 · -을 따름이다/-ㄹ 따름이다, -을 뿐이다, -ㄹ 뿐이다 · -고 들다 · -고 보다 · -고 해서 · -는 김에/-ㄴ 김에, -은 김에 · -는 대로/-ㄴ 대로, -은 대로 · -는 사이에/-는 사이 · -는 듯/-ㄴ 듯, -은 듯, -ㄹ 듯, -을 듯 · -는 줄/-ㄴ 줄, -은 줄, -ㄹ 줄, -을 줄 · -는 탓에/-ㄴ 탓에, -은 탓에, -는 덕분에 · -나 싶다 · -는 바람에 · -는 한 · 으로 인하여/로 인하여, 으로 인해, 로 인해 · 만 같아도 · -어 대다/-아 대다, -여 대다 · -어서인지/-아서인지, -여서인지 · 에 따라/에 따르면 · 에 비하여/에 비하면 · 에 의하여/에 의하면 · -어 버리다/-아 버리다, -여 버리다 · -을 모양이다/-ㄹ 모양이다 · -을 뻔하다/-ㄹ 뻔하다 · -는대/-ㄴ대, -는대요, -대, -대요, -래, -래요, -재, -재요 · -는 통에"""
+
+LEVEL_RULES = f"""
+# ★★ 한국어 수준 제약 (국제 통용 한국어 표준 교육과정 — 중급 기준) ★★
+- 너의 모든 발화는 한국어 '중급(4급 이하)' 수준에 맞춘다. 이것은 말투 규칙만큼 중요한 최우선 지침이다.
+- 어휘: 국제 통용 표준 교육과정 1~4급 범위의 고빈도 일상 어휘만 사용해.
+  5급 이상 수준의 저빈도 한자어·전문 용어·속담·사자성어·어려운 관용구는 쓰지 마.
+  꼭 필요한 어려운 단어가 나오면 바로 뒤에 쉬운 말로 짧게 풀어줘.
+- 문법: 아래 1~4급 문법 목록 안의 문형만 사용해. 목록에 없는 고급 문형(-건대, -노라면, -기 그지없다, -을진대 등)은 금지.
+[사용 가능 문법 — 초급(1·2급)]
+{LEVEL_GRAMMAR_1_2}
+[사용 가능 문법 — 중급(3·4급)]
+{LEVEL_GRAMMAR_3_4}
+- 한 문장은 짧게, 한 번에 한 가지 내용만. 중급 학습자가 한 번 듣고 이해할 수 있어야 한다.
+"""
+
+
 def _band(v: int) -> str:
     if v <= 33:
         return "low"
@@ -261,7 +297,7 @@ def build_system_prompt(d: int, p: int, ui_lang: str = "", user_name: str = "") 
     sep = """
 
 """
-    return BASE_PERSONA + name_hint + native_hint + coord + D_RULES[d_band] + sep + P_RULES[p_band] + sep + fusion
+    return BASE_PERSONA + LEVEL_RULES + name_hint + native_hint + coord + D_RULES[d_band] + sep + P_RULES[p_band] + sep + fusion
 
 
 # ============================================================
@@ -526,6 +562,7 @@ async def roleplay_suggest(request: Request):
    ② 일상형: 실제 생활에서 흔히 부딪히는, 약간의 변수가 있는 목적.
    ③ 엉뚱형: 같은 상황인데 뜻밖이고 재미있는 목적 (황당하지만 대화로는 성립해야 함).
    각 25자 이내, 명사형 종결(예: "~싸게 사기", "~환불 받기").
+   중급(4급 이하) 학습자가 이해할 수 있는 쉬운 어휘로 쓰라.
    학습자가 이미 목적을 적었다면 그 취지를 살리면서 세 단계로 변주하라.
 2) place: 이 대화가 벌어질 전형적인 장소 (예: "동네 옷 가게"). 학습자가 적었다면 그것을 자연스러운 한국어로 다듬어라.
 3) my_role: 학습자 역할 (예: "손님").
@@ -594,6 +631,7 @@ async def roleplay_setup(request: Request):
    - native: {native_line}
    - desc: 이 단계에서 일어나는 일 한 문장.
    - expressions: 학습자({my_role or '학습자'} 역할)가 이 단계에서 쓸 만한 자연스러운 한국어 표현 2~3개. 실제 구어체로.
+     표현과 cue는 모두 국제 통용 한국어 표준 교육과정 중급(4급 이하) 어휘·문법 범위로 작성하라.
      각 표현은 객체로: text = 학습자 발화, cue = 그 발화가 자연스러운 대답이 되는 상대방({ai_role or '상대'}) 발화.
      예) cue "어떻게 오셨어요?" → text "택배 좀 부치려고 하는데요".
      cue는 발화 연습(말차례 교환)에 쓰인다. text가 대화를 먼저 여는 발화면 cue는 빈 문자열로.
@@ -712,6 +750,17 @@ async def get_service_worker():
     return FileResponse("static/sw.js", media_type="application/javascript")
 
 
+# ── 대화 중 주기 저장: 세션 ID(sid)별로 파일 이름·Drive 파일 ID를 기억해
+#    같은 파일을 계속 갱신한다 → 앱을 강제 종료해도 마지막 저장분까지 보존 ──
+_session_uploads = {}  # sid -> {"base": str, "at": float, "ids": {filename: gdrive_id}}
+
+
+def _session_uploads_cleanup():
+    now = time.time()
+    for k in [k for k, v in _session_uploads.items() if now - v["at"] > 6 * 3600]:
+        _session_uploads.pop(k, None)
+
+
 _AUDIO_EXT = {
     "audio/webm": "webm",
     "audio/ogg": "ogg",
@@ -730,9 +779,12 @@ async def upload_recording(
     p: str = Form(default="0"),
     name: str = Form(default=""),
     meta: str = Form(default=""),
+    sid: str = Form(default=""),
 ):
-    """세션 종료 시 대화 녹음(믹스 1파일) + 대화기록(txt) + 대화 정보(json) 저장.
-    탭을 그냥 닫은 경우에도 클라이언트가 sendBeacon으로 txt+json은 보냄."""
+    """대화 녹음(믹스 1파일) + 대화기록(txt) + 대화 정보(json) 저장.
+    - 대화 중 60초마다 클라이언트가 같은 sid로 진행분을 보내면 같은 파일을 갱신
+      (앱 강제 종료에도 마지막 저장분까지 보존)
+    - 종료 시 최종본으로 마무리, 탭을 닫으면 sendBeacon으로 txt+json이라도 전송"""
     audio_bytes = b""
     audio_mime = "application/octet-stream"
     if audio is not None:
@@ -749,8 +801,19 @@ async def upload_recording(
     p = re.sub(r"\D", "", p)[:3] or "0"
     # 파일명에 넣을 이름 (한글/영문/숫자만 허용)
     safe_name = re.sub(r"[^0-9A-Za-z가-힣_-]", "", name)[:20]
-    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    base = f"마사마사대화_{ts}" + (f"_{safe_name}" if safe_name else "") + f"_D{d}_P{p}"
+    # 같은 세션(sid)의 반복 저장은 같은 파일 이름을 재사용 → 갱신
+    safe_sid = re.sub(r"[^0-9A-Za-z_-]", "", sid)[:24]
+    entry = _session_uploads.get(safe_sid) if safe_sid else None
+    if entry:
+        base = entry["base"]
+        entry["at"] = time.time()
+    else:
+        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        base = f"마사마사대화_{ts}" + (f"_{safe_name}" if safe_name else "") + f"_D{d}_P{p}"
+        if safe_sid:
+            _session_uploads_cleanup()
+            entry = {"base": base, "at": time.time(), "ids": {}}
+            _session_uploads[safe_sid] = entry
     ext = _AUDIO_EXT.get(audio_mime, "webm")
 
     # 대화 정보(메타데이터): 클라이언트 JSON + 서버 수신 정보 병합
@@ -783,9 +846,16 @@ async def upload_recording(
             saved = []
             for filename, data, mime in to_save:
                 # requests는 동기 라이브러리 — 이벤트루프 블로킹 방지를 위해 스레드로
-                file_id = await asyncio.to_thread(_gdrive_upload_sync, filename, data, mime)
+                known_id = entry["ids"].get(filename) if entry else None
+                if known_id:
+                    # 진행 중 저장 갱신 — 새 파일을 만들지 않고 내용만 교체
+                    file_id = await asyncio.to_thread(_gdrive_update_sync, known_id, data, mime)
+                else:
+                    file_id = await asyncio.to_thread(_gdrive_upload_sync, filename, data, mime)
+                    if entry is not None:
+                        entry["ids"][filename] = file_id
                 saved.append({"name": filename, "id": file_id})
-            print(f"[녹음] Google Drive 저장 완료: {[s['name'] for s in saved]}")
+            print(f"[녹음] Google Drive 저장 완료{' (갱신)' if entry and safe_sid else ''}: {[s['name'] for s in saved]}")
             return {"ok": True, "storage": "gdrive", "files": saved}
         except Exception as e:
             print(f"[녹음] Google Drive 업로드 실패 — 로컬 폴백: {e}")

@@ -19,7 +19,7 @@ from google.genai import types
 load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨
-APP_VERSION = "v12"
+APP_VERSION = "v13"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -272,10 +272,15 @@ def build_system_prompt(d: int, p: int, ui_lang: str = "", user_name: str = "") 
 #       → ③ 상황극 진행, 턴마다 단계 충족을 분석해 진행률 전송(100% 초과 허용)
 #       → ④ 학습자가 종료 버튼 → 진행률을 점수로 치환 + 대화 저장
 # ============================================================
-# 계획 생성·추천·단계 분석용 모델 — flash-lite는 무료 등급 일일 쿼터가 flash보다
-# 훨씬 커서(수 배) 429 RESOURCE_EXHAUSTED를 피하기 쉽고, JSON 생성 품질도 충분하다.
-# Render 환경변수 ANALYSIS_MODEL로 언제든 교체 가능.
-ANALYSIS_MODEL = os.environ.get("ANALYSIS_MODEL", "gemini-2.5-flash-lite")
+# 계획 생성·추천·단계 분석용 모델.
+# ※ 2026-07 확인: gemini-2.5-flash-lite는 신규 사용자에게 404(제공 종료).
+#   결제(Tier 1) 연결 후에는 gemini-2.5-flash 쿼터가 충분하므로 기본값으로 사용.
+# 사용 중 모델이 404(단종)가 되면 아래 후보 목록 → API 모델 목록 순으로 자동 전환.
+# Render 환경변수 ANALYSIS_MODEL로 언제든 고정 가능.
+ANALYSIS_MODEL = os.environ.get("ANALYSIS_MODEL", "").strip() or "gemini-2.5-flash"
+_analysis_model = {"name": ANALYSIS_MODEL}   # 현재 실사용 모델 (404 시 자동 갱신)
+_MODEL_FALLBACKS = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.0-flash"]
+_tried_models = set()
 _roleplay_plans = {}  # plan_id -> {"plan": dict, "style": str, "at": float}
 
 # 마지막 생성 호출 오류 기록 — 실패 원인을 클라이언트 팝업과 /rp-diag에 그대로 노출
@@ -293,13 +298,49 @@ def _quota_exhausted() -> bool:
     return "429" in m or "RESOURCE_EXHAUSTED" in m
 
 
+def _model_not_found() -> bool:
+    """직전 실패가 '모델 없음/단종'(404 NOT_FOUND)이었는지."""
+    m = LAST_GEN_ERROR["msg"]
+    return "NOT_FOUND" in m or ("404" in m and "model" in m.lower())
+
+
 def _fail_reason(data) -> str:
     """502 detail에 담을 사람이 읽을 수 있는 실패 원인."""
     if data is not None:
         return "모델이 형식에 맞지 않는 응답을 반환"
     if _quota_exhausted():
-        return "Gemini API 무료 사용량(쿼터) 소진 — 잠시 후 또는 내일 다시 시도하거나 결제 설정 필요 (429)"
+        return "Gemini API 사용량(쿼터) 초과 — 잠시 후 다시 시도 (429)"
+    if _model_not_found():
+        return "분석용 모델 사용 불가(404) — 자동 전환도 실패. /rp-diag?models=1 에서 사용 가능 모델 확인"
     return LAST_GEN_ERROR["msg"] or "원인 미기록"
+
+
+async def _next_model(bad: str) -> str | None:
+    """단종된 모델 대신 쓸 다음 후보. 후보가 다 막히면 API 모델 목록에서 flash 계열 탐색."""
+    _tried_models.add(bad)
+    for c in _MODEL_FALLBACKS:
+        if c not in _tried_models:
+            return c
+    try:
+        lst = client.aio.models.list()
+        if hasattr(lst, "__await__"):
+            lst = await lst
+        names = []
+        async for m in lst:
+            n = (getattr(m, "name", "") or "").replace("models/", "")
+            acts = list(getattr(m, "supported_actions", None) or [])
+            if n and (not acts or "generateContent" in acts):
+                names.append(n)
+        flash = sorted(
+            (n for n in names
+             if "flash" in n and not any(x in n for x in ("live", "audio", "tts", "image", "exp", "8b", "lite"))),
+            reverse=True)
+        for n in flash:
+            if n not in _tried_models:
+                return n
+    except Exception as e:
+        print(f"[상황극] 모델 목록 조회 실패: {e}")
+    return None
 _RP_PLAN_TTL = 30 * 60  # 계획 보관 30분 (브리핑 화면에서 오래 머물러도 시작 가능)
 
 
@@ -339,33 +380,46 @@ async def _gen_json(prompt: str, timeout_s: float = 20.0, temperature: float = 0
     """일회성 생성 호출 → JSON 파싱. 실패 시 None (호출부에서 처리).
     ★ 2.5 모델은 '동적 사고(thinking)'가 기본 활성화라 복잡한 프롬프트에서
       응답 전에 수십 초씩 생각하다 타임아웃될 수 있다 → thinking_budget=0으로 즉답."""
-    async def _call():
+    async def _call(model_name: str):
         try:
             cfg = types.GenerateContentConfig(
                 response_mime_type="application/json", temperature=temperature,
                 thinking_config=types.ThinkingConfig(thinking_budget=0))
             resp = await client.aio.models.generate_content(
-                model=ANALYSIS_MODEL, contents=prompt, config=cfg)
+                model=model_name, contents=prompt, config=cfg)
         except Exception as e1:
+            if "NOT_FOUND" in str(e1) or "404" in str(e1):
+                raise  # 모델 자체가 없음 — 같은 모델로 재호출해 봐야 낭비
             print(f"[상황극] thinking 끈 JSON 호출 실패 — 기본 설정 폴백: {e1}")
             try:
                 cfg = types.GenerateContentConfig(response_mime_type="application/json", temperature=temperature)
                 resp = await client.aio.models.generate_content(
-                    model=ANALYSIS_MODEL, contents=prompt, config=cfg)
+                    model=model_name, contents=prompt, config=cfg)
             except (TypeError, AttributeError):
                 # 구버전 SDK 폴백 — JSON 모드 미지원이면 텍스트로 받고 관대 파싱
-                resp = await client.aio.models.generate_content(model=ANALYSIS_MODEL, contents=prompt)
+                resp = await client.aio.models.generate_content(model=model_name, contents=prompt)
         return _parse_json_loose(getattr(resp, "text", "") or "")
-    try:
-        return await asyncio.wait_for(_call(), timeout=timeout_s)
-    except asyncio.TimeoutError:
-        print(f"[상황극] 생성 호출 타임아웃 ({timeout_s}s)")
-        _note_gen_error(f"Timeout: 모델 응답이 {timeout_s:.0f}초를 초과")
-        return None
-    except Exception as e:
-        print(f"[상황극] 생성 호출 실패: {e}")
-        _note_gen_error(e)
-        return None
+
+    # 모델이 단종(404)이면 후보로 갈아타며 최대 3개 모델까지 시도
+    for _ in range(3):
+        model_name = _analysis_model["name"]
+        try:
+            return await asyncio.wait_for(_call(model_name), timeout=timeout_s)
+        except asyncio.TimeoutError:
+            print(f"[상황극] 생성 호출 타임아웃 ({timeout_s}s)")
+            _note_gen_error(f"Timeout: 모델 응답이 {timeout_s:.0f}초를 초과")
+            return None
+        except Exception as e:
+            print(f"[상황극] 생성 호출 실패({model_name}): {e}")
+            _note_gen_error(e)
+            if _model_not_found():
+                nxt = await _next_model(model_name)
+                if nxt:
+                    print(f"[상황극] 모델 자동 전환: {model_name} → {nxt}")
+                    _analysis_model["name"] = nxt
+                    continue
+            return None
+    return None
 
 
 def _clean_str(v, limit: int) -> str:
@@ -602,9 +656,9 @@ def build_roleplay_prompt(d: int, p: int, ui_lang: str, user_name: str,
 
 
 @app.get("/rp-diag")
-async def rp_diag(test: int = 0):
-    """상황극 생성 경로 진단 — 브라우저에서 /rp-diag?test=1 로 열면
-    실제 모델 호출 1회를 수행해 성공 여부·소요 시간·오류 원인을 보여준다."""
+async def rp_diag(test: int = 0, models: int = 0):
+    """상황극 생성 경로 진단 — /rp-diag?test=1 은 실제 모델 호출 1회로 성공 여부·
+    소요 시간·오류 원인을, ?models=1 은 이 API 키로 쓸 수 있는 모델 목록을 보여준다."""
     import sys
     try:
         import google.genai as _gg
@@ -615,10 +669,24 @@ async def rp_diag(test: int = 0):
         "app": APP_VERSION,
         "python": sys.version.split()[0],
         "google_genai": sdk_ver,
-        "analysis_model": ANALYSIS_MODEL,
+        "analysis_model": _analysis_model["name"],
         "api_key_set": bool(os.environ.get("GEMINI_API_KEY")),
         "last_gen_error": dict(LAST_GEN_ERROR),
     }
+    if models:
+        try:
+            lst = client.aio.models.list()
+            if hasattr(lst, "__await__"):
+                lst = await lst
+            names = []
+            async for m in lst:
+                n = (getattr(m, "name", "") or "").replace("models/", "")
+                acts = list(getattr(m, "supported_actions", None) or [])
+                if n and (not acts or "generateContent" in acts):
+                    names.append(n)
+            info["available_models"] = sorted(names)[:80]
+        except Exception as e:
+            info["available_models_error"] = repr(e)[:200]
     if test:
         t0 = time.time()
         data = await _gen_json('JSON만 출력하라: {"pong": true}', timeout_s=20.0)

@@ -18,8 +18,10 @@ from google.genai import types
 # 플랫폼이 환경변수를 직접 주입하므로 .env 파일이 없어도 문제 없음)
 load_dotenv()
 
-# 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨
-APP_VERSION = "v16"
+# 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
+# ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
+APP_VERSION = "v17"
+APP_DATE = "2026-07-12"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -897,7 +899,7 @@ async def get_index(request: Request):
     resp = templates.TemplateResponse(request=request, name="index.html")
     # 브라우저가 옛 index.html을 캐시해서 "고쳤는데 그대로"가 되는 것 방지
     resp.headers["Cache-Control"] = "no-store"
-    resp.headers["X-App-Version"] = APP_VERSION
+    resp.headers["X-App-Version"] = f"{APP_VERSION} ({APP_DATE})"
     return resp
 
 
@@ -1222,6 +1224,53 @@ JSON만 출력: {{"done":[번호,...]}}"""
         finally:
             rp_progress["running"] = False
 
+    hint_state = {"running": False}
+
+    async def send_hints():
+        """🪜 비계(스캐폴딩): 지금 대화 맥락에서 학습자의 '다음 턴'에 쓸 발화 2개 제안.
+        연습했던 표현과 같거나 유사하게 유도하고, 실패 시 연습 표현으로 폴백."""
+        if rp_plan is None or hint_state["running"]:
+            return
+        hint_state["running"] = True
+        try:
+            unmet = [i for i in range(len(rp_plan["stages"])) if i not in rp_progress["done"]]
+            idx = unmet[0] if unmet else len(rp_plan["stages"]) - 1
+            st = rp_plan["stages"][idx]
+            practiced = " / ".join(
+                (e.get("text", "") if isinstance(e, dict) else str(e))
+                for e in (st.get("expressions") or []))
+            transcript = "\n".join(
+                f"{'학습자' if m['role'] == 'user' else '상대'}: {m['text'].strip()}"
+                for m in convo[-12:] if m["text"].strip()) or "(아직 대화 없음)"
+            prompt = f"""한국어 학습자가 음성 상황극 중이다. 잠시 막혀서 도움을 요청했다.
+- 학습자 역할: {rp_plan['user_role']} / 상대(챗봇) 역할: {rp_plan['ai_role']}
+- 과업 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']}
+- 지금 수행할 기능단계: {st['name']} — {st['desc']}
+- 연습했던 표현: {practiced or '(없음)'}
+
+[최근 대화]
+{transcript}
+
+학습자가 '지금 자기 차례에' 말하면 자연스러운 한국어 발화를 정확히 2개 제안하라.
+- 상대의 마지막 말에 대한 대답으로 자연스러워야 한다.
+- 가능하면 연습했던 표현과 같거나 유사하게 하라.
+- 국제 통용 표준 교육과정 중급(4급 이하) 어휘·문법, 짧은 구어체로.
+JSON만 출력: {{"hints":["",""]}}"""
+            data = await _gen_json(prompt, timeout_s=12.0, temperature=0.7)
+            hints = []
+            if isinstance(data, dict):
+                hints = [_clean_str(h, 80) for h in (data.get("hints") or []) if _clean_str(h, 80)][:2]
+            if not hints:
+                # 생성 실패 → 이 단계의 연습 표현으로 폴백
+                hints = [(e.get("text", "") if isinstance(e, dict) else str(e))
+                         for e in (st.get("expressions") or [])][:2]
+            await websocket.send_text(json.dumps({
+                "type": "hint", "stage": st["name"], "items": [h for h in hints if h]}))
+        except Exception as e:
+            print(f"[상황극] 비계 생성 실패: {e}")
+        finally:
+            hint_state["running"] = False
+
     async def send_final_score():
         """종료 버튼 → 마지막 분석을 마치고 퍼센트를 점수로 치환해 전송."""
         if rp_plan is not None:
@@ -1326,6 +1375,9 @@ JSON만 출력: {{"done":[번호,...]}}"""
                             elif event.get("type") == "end_session":
                                 # 종료 버튼: 최종 분석 → 점수 치환 → 클라이언트가 받고 연결을 닫는다
                                 await send_final_score()
+                            elif event.get("type") == "hint_request":
+                                # 🪜 비계 요청 — 백그라운드 생성 (오디오 릴레이를 막지 않음)
+                                asyncio.create_task(send_hints())
                             elif event.get("type") == "text" and event.get("text"):
                                 # 빠른 요청 버튼 등 텍스트 턴 주입 (대화 맥락 유지)
                                 user_spoke["flag"] = True

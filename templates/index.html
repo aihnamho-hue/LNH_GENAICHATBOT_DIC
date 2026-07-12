@@ -315,6 +315,19 @@
         .r-card.turns .r-inner { color: #4CA903; }
         .r-card.time { background: #1CB0F6; }
         .r-card.time .r-inner { color: #1899D6; }
+
+        /* ── 제작자 크레딧 ── */
+        .credit { grid-column: 1 / -1; text-align: center; font-size: 11px; color: var(--muted); padding: 2px 0 4px; letter-spacing: 0.2px; }
+
+        /* ── 플로팅 마사마사 (모바일 한 열 + 대화 중일 때만) ── */
+        .float-ham { display: none; position: fixed; top: 12px; right: 12px; z-index: 60; width: 86px; height: 86px; border-radius: 50%; background: radial-gradient(circle at 50% 62%, var(--accent-soft), #fff 82%); box-shadow: 0 8px 20px -6px rgba(61,44,38,0.35); border: 2px solid #fff; overflow: hidden; transition: box-shadow 0.25s; }
+        .float-ham .fh-wrap { width: 74%; margin: 13% auto 0; transform-origin: 50% 92%; animation: breathe 3.2s ease-in-out infinite; }
+        .float-ham .fh-wrap img { width: 100%; display: block; }
+        .float-ham.speaking .fh-wrap { animation: talk-bounce 0.45s ease-in-out infinite; }
+        .float-ham.listening .fh-wrap { animation: tilt 2.2s ease-in-out infinite; }
+        .float-ham.surprised .fh-wrap { animation: shake 0.4s ease-in-out 2; }
+        .float-ham.speaking { box-shadow: 0 0 0 5px rgba(255,140,90,0.35), 0 8px 20px -6px rgba(61,44,38,0.35); }
+        @media (max-width: 820px) { body.in-convo .float-ham { display: block; } }
     </style>
 </head>
 <body>
@@ -460,6 +473,11 @@
         </div>
     </div>
 </div>
+<!-- 대화 중(모바일 한 열 레이아웃) 플로팅 마사마사 — 채팅을 봐도 캐릭터가 항상 보이게.
+     메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
+<div class="float-ham" id="floatHam">
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png" alt="마사마사"></div>
+</div>
 <div class="app">
     <div class="character-panel">
         <button class="lang-btn" id="langBtn" title="Language">🌐</button>
@@ -482,10 +500,10 @@
         <!-- 지연 진단: 📶왕복지연 · ⬆업로드적체 · ⏱최근 응답 소요 -->
         <div id="netStat" style="font-size:10px; color:var(--muted); min-height:13px; text-align:center;"></div>
 
-        <!-- 모드 선택: 자유 수다 / 주제 대화(상황극) -->
+        <!-- 모드 선택: 주제 대화(상황극) / 자유 수다 — 주제 대화가 앞 -->
         <div class="mode-toggle">
-            <button class="mode-btn" id="modeFreeBtn"></button>
             <button class="mode-btn" id="modeRpBtn"></button>
+            <button class="mode-btn" id="modeFreeBtn"></button>
         </div>
 
         <!-- 페이더 섹션 (시작 시 접힘 → 모드 선택 시 슬라이드 다운) -->
@@ -563,6 +581,8 @@
         <!-- 푸터: 안내문 대신 앱 다운로드(PWA 설치) 버튼 — 업로드 상태 알림도 이 자리에 잠깐 표시됨 -->
         <div class="chat-footer" id="chatFooter"></div>
     </div>
+    <!-- 제작자 크레딧 -->
+    <div class="credit">공동체에 대한 공헌 · LeeNamho · Email: namho1210@naver.com</div>
 </div>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
@@ -575,7 +595,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v16";
+    const APP_VERSION = "v17 (2026-07-12)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("마사마사 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -1508,27 +1528,27 @@
         });
     }
 
-    /* ── 🪜 비계(스캐폴딩): 지금 진행 중인 단계의 추천 표현(발화 연습과 동일)을 보여준다 ── */
+    /* ── 🪜 비계(스캐폴딩): 지금 대화 맥락에서 '내 차례에 할 수 있는 대답' 2개를
+       서버(웹소켓)로 요청해 보여준다. 연습 표현과 같거나 유사하게 생성되고,
+       응답이 없으면 현재 단계의 연습 표현으로 폴백. 탭하면 들려준다. ── */
     const scfBtn = document.getElementById("scfBtn");
     const scfPanel = document.getElementById("scfPanel");
+    let scfTimer = null;
     function currentStageIdx() {
         for (let i = 0; i < rpStagesState.length; i++) {
             if (!rpStagesState[i].done) return i;
         }
         return rpStagesState.length - 1; // 전부 충족 → 마지막 단계 표현
     }
-    function renderScaffold() {
-        if (!rpPlan || !rpStagesState.length) return;
-        const idx = Math.max(0, currentStageIdx());
-        const st = rpPlan.stages[idx];
-        document.getElementById("scfTitleEl").textContent = t("scfTitle") + " · " + (idx + 1) + ". " + st.name;
+    function renderScaffoldItems(items, stageName) {
+        document.getElementById("scfTitleEl").textContent = t("scfTitle") + (stageName ? " · " + stageName : "");
         const list = document.getElementById("scfList");
         list.innerHTML = "";
-        const exprs = (st.expressions || []).map(exprText).filter(Boolean);
-        if (!exprs.length) {
+        const arr = (items || []).filter(Boolean);
+        if (!arr.length) {
             list.textContent = t("scfNone");
         } else {
-            exprs.forEach(x => {
+            arr.forEach(x => {
                 const chip = document.createElement("button");
                 chip.type = "button";
                 chip.className = "scf-chip";
@@ -1539,8 +1559,33 @@
         }
         scfPanel.classList.remove("hidden");
     }
+    function renderScaffoldStatic() { // 폴백: 현재 단계의 연습 표현
+        if (!rpPlan || !rpStagesState.length) return;
+        const idx = Math.max(0, currentStageIdx());
+        const st = rpPlan.stages[idx];
+        renderScaffoldItems((st.expressions || []).map(exprText).filter(Boolean).slice(0, 2),
+            (idx + 1) + ". " + st.name);
+    }
+    function requestScaffold() {
+        if (!rpPlan) return;
+        // 로딩 표시 후 서버에 맥락 힌트 요청
+        document.getElementById("scfTitleEl").textContent = t("scfTitle");
+        document.getElementById("scfList").textContent = t("sgLoading");
+        scfPanel.classList.remove("hidden");
+        clearTimeout(scfTimer);
+        if (rpSessionActive && isConnected && ws && ws.readyState === WebSocket.OPEN) {
+            try {
+                ws.send(JSON.stringify({ type: "hint_request" }));
+                scfTimer = setTimeout(renderScaffoldStatic, 10000); // 무응답 폴백
+            } catch (e) {
+                renderScaffoldStatic();
+            }
+        } else {
+            renderScaffoldStatic();
+        }
+    }
     scfBtn.addEventListener("click", () => {
-        if (scfPanel.classList.contains("hidden")) renderScaffold();
+        if (scfPanel.classList.contains("hidden")) requestScaffold();
         else scfPanel.classList.add("hidden");
     });
 
@@ -1739,6 +1784,7 @@
             sessionUploaded = false;
             sessionSid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
             startPartialSaver(); // 대화 중 60초마다 녹음·기록을 서버에 갱신 저장
+            document.body.classList.add("in-convo"); // 모바일: 플로팅 마사마사 표시
             lastRtt = null; lastTurnSec = null; userTextAt = null;
             startPinger();
             transcriptLog = [];
@@ -1780,6 +1826,7 @@
             } else if (msg.type === "turn_complete") {
                 finalizeBubbles();
                 hamsterWrap.style.setProperty("--talk-scale", "1");
+                floatHamWrap.style.setProperty("--talk-scale", "1");
                 if (!isPaused && !isTalking) setStatus("idle", "stPushHint");
             } else if (msg.type === "interrupted") {
                 stopAllAudio();
@@ -1800,7 +1847,10 @@
                 const nowDone = rpStagesState.filter(s => s.done).length;
                 if (rpPercent > 100 && rpPercent > prevPct) screenZap();  // 확장 중! ⚡ 화면 흔들림
                 else if (nowDone > prevDone) playDing();                  // 단계 달성 🔔
-                if (!scfPanel.classList.contains("hidden")) renderScaffold(); // 열려 있으면 단계 갱신
+            } else if (msg.type === "hint") {
+                // 🪜 비계 응답 — 패널이 열려 있을 때만 표시
+                clearTimeout(scfTimer);
+                if (!scfPanel.classList.contains("hidden")) renderScaffoldItems(msg.items || [], msg.stage || "");
             } else if (msg.type === "final_score") {
                 // 종료 버튼에 대한 서버의 최종 분석 결과 — 퍼센트를 점수로 치환
                 rpFinal = { percent: msg.percent || 0, score: msg.score || 0, stages: msg.stages || rpStagesState };
@@ -1843,6 +1893,17 @@
         // 마이크 정지·컨텍스트 종료는 녹음 마무리(비동기) 안에서 처리
         finishRecordingAndUpload();
         resetChatLog(); // 대화 종료 → 채팅창 비우기 (기록은 서버 저장 + 내보내기 버튼으로 유지)
+        // 과업 진행률·기능 단계 표시도 리셋 (결과 화면은 rpFinal 사본을 쓰므로 안전)
+        document.body.classList.remove("in-convo");
+        progressWrap.classList.add("hidden");
+        rpPercent = 0;
+        rpStagesState = [];
+        progressBar.style.width = "0%";
+        progressBar.classList.remove("over");
+        progressPct.textContent = "0%";
+        stageChips.innerHTML = "";
+        scfPanel.classList.add("hidden");
+        syncFloatHam();
     }
 
     function resetChatLog() {
@@ -1919,6 +1980,16 @@
         nextPlayTime = 0;
     }
 
+    /* ── 플로팅 마사마사: 메인 무대의 상태를 그대로 미러링 ── */
+    const floatHam = document.getElementById("floatHam");
+    const floatHamWrap = document.getElementById("floatHamWrap");
+    function syncFloatHam() {
+        floatHam.className = "float-ham" +
+            (stage.classList.contains("speaking") ? " speaking" : "") +
+            (stage.classList.contains("listening") ? " listening" : "") +
+            (stage.classList.contains("surprised") ? " surprised" : "");
+    }
+
     function setStatus(state, key) {
         lastStatus = { state: state, key: key };
         statusText.textContent = t(key);
@@ -1929,17 +2000,20 @@
             if (state === "speaking") stage.classList.add("speaking");
             else if (state === "listening") stage.classList.add("listening");
         }
+        syncFloatHam();
     }
 
     function playSurprised() {
         if (stage.classList.contains("paused")) return;
         stage.classList.remove("listening", "speaking");
         stage.classList.add("surprised");
+        syncFloatHam();
         spawnEmote("❗");
         clearTimeout(surpriseTimer);
         surpriseTimer = setTimeout(() => {
             stage.classList.remove("surprised");
             stage.classList.add("listening");
+            syncFloatHam();
         }, 900);
     }
 
@@ -2312,6 +2386,7 @@
         for (let i = 0; i < int16.length; i += 8) { const s = int16[i]; sum += s * s; n++; }
         const vol = n ? Math.min(1, (Math.sqrt(sum / n) / 32768) * 4) : 0;
         hamsterWrap.style.setProperty("--talk-scale", (1 + vol * 0.06).toFixed(3));
+        floatHamWrap.style.setProperty("--talk-scale", (1 + vol * 0.06).toFixed(3));
         const buf = playbackCtx.createBuffer(1, int16.length, 24000);
         const ch = buf.getChannelData(0);
         for (let i = 0; i < int16.length; i++) ch[i] = int16[i] / 32768.0;

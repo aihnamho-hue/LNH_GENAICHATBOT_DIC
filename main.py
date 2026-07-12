@@ -19,7 +19,7 @@ from google.genai import types
 load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨
-APP_VERSION = "v14"
+APP_VERSION = "v16"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -253,6 +253,27 @@ LEVEL_RULES = f"""
 - 한 문장은 짧게, 한 번에 한 가지 내용만. 중급 학습자가 한 번 듣고 이해할 수 있어야 한다.
 """
 
+# ============================================================
+# 구어성(입말) 지침 — 이 챗봇의 목표는 '구어 능력' 향상.
+# 근거: 정선화(2009)·김현지(2015)·김주연 외(2021)의 구어 문법 요소.
+# 단, 음운 변이 표기(축약·경음화·현실음)와 의도적 끼어들기는 구현 제외.
+# ============================================================
+SPOKEN_RULES = """
+# ★ 구어성(입말) 지침 — 문어체가 아니라 진짜 '입말'로 말해 ★
+- 담화표지·간투사를 자연스럽게 섞어: "아", "어", "음", "그", "뭐", "좀", "이제", "그니까", "근데", "아 맞다", "있잖아요".
+- 맞장구·평가 표지를 자주: "아 그래요?", "진짜요?", "맞아요 맞아요", "그렇죠", "오~ 좋은데요?", "헐".
+- 구어 문법을 살려:
+  · 조각문 — 완전한 문장 대신 필요한 성분만 ("얼마예요?" → "삼천 원이요.")
+  · 생략 — 맥락상 뻔한 주어·조사는 생략 ("(저는) 밥 먹었어요", "커피 좋아해요?")
+  · 반복 — 강조·공감의 반복 ("좋아요 좋아요", "네네")
+  · 어순 전위 — 뒤에 덧붙이기 ("맛있어요, 거기 떡볶이.")
+  · 대용어 — "그거", "거기", "그분" 같은 대명사 활용
+  · 머리말·꼬리말 — "있잖아요", "~거든요", "~잖아요", "~더라고요"
+- 덩어리 표현(구어 관용 표현)을 중급 수준 안에서: "글쎄요", "그러게요", "아직요", "어떡해요", "잠시만요".
+- 문어체 접속어(그러나, 따라서, 및, ~하였다)와 딱딱한 설명조는 금지.
+- 단, 발음 변이 표기(줄임·경음화 표기)는 쓰지 말고 표준 표기로. 학습자의 말을 일부러 끊지도 마.
+"""
+
 
 def _band(v: int) -> str:
     if v <= 33:
@@ -297,7 +318,7 @@ def build_system_prompt(d: int, p: int, ui_lang: str = "", user_name: str = "") 
     sep = """
 
 """
-    return BASE_PERSONA + LEVEL_RULES + name_hint + native_hint + coord + D_RULES[d_band] + sep + P_RULES[p_band] + sep + fusion
+    return BASE_PERSONA + LEVEL_RULES + SPOKEN_RULES + name_hint + native_hint + coord + D_RULES[d_band] + sep + P_RULES[p_band] + sep + fusion
 
 
 # ============================================================
@@ -505,6 +526,14 @@ def _validate_plan(data) -> dict | None:
     }
 
 
+def _clamp_int(v, lo: int, hi: int, default: int) -> int:
+    try:
+        n = int(float(v))
+    except (TypeError, ValueError):
+        return default
+    return max(lo, min(hi, n))
+
+
 def _validate_suggest(data) -> dict | None:
     """주제 기반 자동 추천 JSON 정리. goals는 교재형→일상형→엉뚱형 3개 보장."""
     if not isinstance(data, dict):
@@ -520,6 +549,9 @@ def _validate_suggest(data) -> dict | None:
         "ai_role": _clean_str(data.get("ai_role"), 40),
         "style": style,
         "style_reason": _clean_str(data.get("style_reason"), 60),
+        # 역할 관계에 어울리는 친밀도(D)·학습자 지위(P) 추천 — 페이더 자동 설정용
+        "d": _clamp_int(data.get("d"), 0, 100, 30),
+        "p": _clamp_int(data.get("p"), 0, 100, 50),
     }
 
 
@@ -569,8 +601,10 @@ async def roleplay_suggest(request: Request):
 4) ai_role: 상대(챗봇) 역할 (예: "점원").
 5) style: 이 관계에서 자연스러운 화계 — "polite"(존댓말) 또는 "banmal"(반말).
 6) style_reason: 그 화계가 자연스러운 이유 한 구절 (15자 내외, 예: "처음 보는 점원과 손님 사이").
+7) d: 두 역할의 친밀도 추천값 0~100 (0=처음 보는 사이, 50=아는 사이, 100=절친). 예: 점원↔손님=10.
+8) p: 학습자의 상대적 지위 추천값 0~100 (0=학습자가 아랫사람, 50=대등, 100=학습자가 윗사람/손님). 예: 손님=75, 면접 지원자=15.
 
-JSON만 출력: {{"goals":["","",""],"place":"","my_role":"","ai_role":"","style":"polite","style_reason":""}}"""
+JSON만 출력: {{"goals":["","",""],"place":"","my_role":"","ai_role":"","style":"polite","style_reason":"","d":30,"p":50}}"""
 
     # 엉뚱형의 다양성을 위해 온도를 높게 (호출마다 다른 추천)
     data = await _gen_json(prompt, timeout_s=25.0, temperature=1.1)
@@ -691,6 +725,129 @@ def build_roleplay_prompt(d: int, p: int, ui_lang: str, user_name: str,
 - '천천히/다시/쉽게/빨리' 요청 대응 규칙은 상황극 중에도 그대로 유효하다.
 """
     return base + rp_block
+
+
+# ============================================================
+# 발화 연습용 Gemini TTS/STT — 기기 내장 음성 대신 실감나는 음성으로.
+# TTS 모델도 단종(404) 시 후보 → API 목록 순으로 자동 전환.
+# ============================================================
+TTS_MODEL = os.environ.get("TTS_MODEL", "").strip() or "gemini-2.5-flash-preview-tts"
+TTS_VOICE = os.environ.get("TTS_VOICE", "").strip() or "Kore"
+_tts_model = {"name": TTS_MODEL}
+_tts_tried = set()
+_tts_cache = {}  # text -> pcm bytes (같은 문장 반복 재생 시 API 호출 절약)
+
+
+async def _next_tts_model(bad: str) -> str | None:
+    _tts_tried.add(bad)
+    for c in ["gemini-2.5-flash-preview-tts", "gemini-2.5-pro-preview-tts", "gemini-2.5-flash-tts"]:
+        if c not in _tts_tried:
+            return c
+    try:
+        lst = client.aio.models.list()
+        if hasattr(lst, "__await__"):
+            lst = await lst
+        names = []
+        async for m in lst:
+            n = (getattr(m, "name", "") or "").replace("models/", "")
+            if "tts" in n:
+                names.append(n)
+        for n in sorted(names, reverse=True):
+            if n not in _tts_tried:
+                return n
+    except Exception as e:
+        print(f"[TTS] 모델 목록 조회 실패: {e}")
+    return None
+
+
+@app.post("/tts")
+async def tts_endpoint(request: Request):
+    """짧은 문장 → 24kHz PCM 음성. 발화 연습·비계(스캐폴딩) 재생용."""
+    from fastapi.responses import Response
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="bad_json")
+    text = _clean_str((body or {}).get("text"), 200)
+    if not text:
+        raise HTTPException(status_code=400, detail="text_required")
+    if text in _tts_cache:
+        return Response(content=_tts_cache[text], media_type="audio/pcm")
+
+    last_err = ""
+    for _ in range(3):
+        model_name = _tts_model["name"]
+        try:
+            cfg = types.GenerateContentConfig(
+                response_modalities=["AUDIO"],
+                speech_config=types.SpeechConfig(voice_config=types.VoiceConfig(
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=TTS_VOICE))))
+            resp = await asyncio.wait_for(
+                client.aio.models.generate_content(model=model_name, contents=text, config=cfg),
+                timeout=25.0)
+            data = b""
+            for cand in (getattr(resp, "candidates", None) or []):
+                content = getattr(cand, "content", None)
+                for part in (getattr(content, "parts", None) or []):
+                    inline = getattr(part, "inline_data", None)
+                    if inline is not None and inline.data:
+                        data += inline.data
+            if not data:
+                raise RuntimeError("no_audio_in_response")
+            if len(_tts_cache) > 300:
+                _tts_cache.clear()
+            _tts_cache[text] = data
+            return Response(content=data, media_type="audio/pcm")
+        except Exception as e:
+            last_err = f"{type(e).__name__}: {e}"[:200]
+            print(f"[TTS] 생성 실패({model_name}): {e}")
+            if "NOT_FOUND" in str(e) or "404" in str(e):
+                nxt = await _next_tts_model(model_name)
+                if nxt:
+                    print(f"[TTS] 모델 자동 전환: {model_name} → {nxt}")
+                    _tts_model["name"] = nxt
+                    continue
+            break
+    raise HTTPException(status_code=502, detail=("tts_failed | " + last_err)[:250])
+
+
+@app.post("/stt")
+async def stt_endpoint(audio: UploadFile = File(...), hint: str = Form(default="")):
+    """발화 연습 녹음 → 한국어 전사.
+    hint = 학습자가 말하려던 목표 문장. 외국인 억양·서툰 발음은 일반 전사가 잘 안 되므로
+    목표 문장을 참조 문맥으로 줘서 '그렇게 들리면 그렇게' 적게 한다 (관대한 인식)."""
+    data = await audio.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="empty_audio")
+    if len(data) > 3 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="audio_too_large")
+    mime = (audio.content_type or "audio/webm").split(";")[0].strip() or "audio/webm"
+    hint = _clean_str(hint, 120)
+    if hint:
+        prompt = (
+            "다음 오디오는 한국어를 배우는 외국인 학습자의 짧은 발화다. 억양이 어색하고 발음이 부정확할 수 있다.\n"
+            f"학습자는 지금 이 문장을 말하는 연습을 하고 있다: \"{hint}\"\n"
+            "오디오를 듣고 들리는 대로 한국어로 전사하라.\n"
+            "- 발음이 목표 문장과 대체로 비슷하게 들리면, 목표 문장 표기를 따라 적어라 (학습자 발음에 관대하게).\n"
+            "- 학습자가 명백히 다른 말을 했으면 들리는 대로 적어라. 목표 문장을 그대로 베끼지 마라.\n"
+            "- 아무 말도 안 들리면 빈 문자열을 출력하라.\n"
+            "전사 텍스트만 출력하고 다른 말은 하지 마라.")
+    else:
+        prompt = ("다음 오디오는 한국어를 배우는 외국인 학습자의 짧은 발화다. 들리는 대로 한국어로 전사하라. "
+                  "발음이 서툴러도 가장 그럴듯한 한국어 문장으로 적어라. 전사 텍스트만 출력하고 다른 말은 하지 마라.")
+    try:
+        cfg = types.GenerateContentConfig(temperature=0.0)
+        resp = await asyncio.wait_for(
+            client.aio.models.generate_content(
+                model=_analysis_model["name"],
+                contents=[types.Part.from_bytes(data=data, mime_type=mime), prompt],
+                config=cfg),
+            timeout=25.0)
+        text = re.sub(r"\s+", " ", (getattr(resp, "text", "") or "")).strip()[:200]
+        return {"text": text}
+    except Exception as e:
+        print(f"[STT] 인식 실패: {e}")
+        raise HTTPException(status_code=502, detail=(f"stt_failed | {type(e).__name__}: {e}")[:250])
 
 
 @app.get("/rp-diag")
@@ -1119,12 +1276,27 @@ JSON만 출력: {{"done":[번호,...]}}"""
             print("[서버] Gemini Live API 세션 연결 성공")
 
             if rp_plan:
-                first_msg = (f"(상황극 시작) 너는 지금 {rp_plan['place_ko']}의 {rp_plan['ai_role']}(이)야. "
+                first_msg = (f"(상황극 시작 — 학습자가 아직 말이 없다) 너는 지금 {rp_plan['place_ko']}의 {rp_plan['ai_role']}(이)야. "
                              f"학습자({rp_plan['user_role']})에게 이 상황에 맞는 자연스러운 첫 발화를 건네라. "
                              "설정된 화계와 페이더에 맞게, 1~2문장으로 짧게.")
             else:
-                first_msg = "(대화 시작) 지금 설정된 친밀도·지위 페이더에 맞는 말투로 첫인사를 건네고, 가벼운 질문 하나로 대화를 열어줘."
-            await gemini_session.send(input=first_msg, end_of_turn=True)
+                first_msg = "(대화 시작 — 학습자가 아직 말이 없다) 지금 설정된 친밀도·지위 페이더에 맞는 말투로 첫인사를 건네고, 가벼운 질문 하나로 대화를 열어줘."
+
+            # ── 말걸기 연습: 학습자가 먼저 입을 열 기회를 준다 ──
+            # 접속 후 잠시 기다렸다가(기본 4초, FIRST_SPEAK_WAIT_S로 조절)
+            # 학습자 발화가 없을 때만 마사마사가 먼저 말을 건다.
+            user_spoke = {"flag": False}
+            first_wait = float(os.environ.get("FIRST_SPEAK_WAIT_S", "4"))
+
+            async def greet_if_silent():
+                try:
+                    await asyncio.sleep(first_wait)
+                    if not user_spoke["flag"]:
+                        await gemini_session.send(input=first_msg, end_of_turn=True)
+                except Exception:
+                    pass
+
+            greeter_task = asyncio.create_task(greet_if_silent())
 
             async def client_to_gemini():
                 # 오디오는 바이너리 프레임으로 받는다 — base64+JSON 파싱은 0.1 vCPU에서
@@ -1146,6 +1318,7 @@ JSON만 출력: {{"done":[번호,...]}}"""
                                 await websocket.send_text(json.dumps({"type": "pong", "t": event.get("t")}))
                             elif event.get("type") == "activity_start":
                                 # push-to-talk: 버튼을 누른 순간 — "발화 시작" 명시
+                                user_spoke["flag"] = True  # 학습자가 먼저 말함 → 자동 첫인사 취소
                                 await gemini_session.send_realtime_input(activity_start=types.ActivityStart())
                             elif event.get("type") == "activity_end":
                                 # push-to-talk: 버튼을 뗀 순간 — "발화 끝" 명시 → 턴 즉시 확정
@@ -1155,6 +1328,7 @@ JSON만 출력: {{"done":[번호,...]}}"""
                                 await send_final_score()
                             elif event.get("type") == "text" and event.get("text"):
                                 # 빠른 요청 버튼 등 텍스트 턴 주입 (대화 맥락 유지)
+                                user_spoke["flag"] = True
                                 await gemini_session.send(input=event["text"], end_of_turn=True)
                             elif event.get("type") == "audio" and "data" in event:
                                 # 구버전 클라이언트(base64) 호환
@@ -1214,6 +1388,7 @@ JSON만 출력: {{"done":[번호,...]}}"""
             )
             for task in pending:
                 task.cancel()
+            greeter_task.cancel()
 
     except WebSocketDisconnect:
         print("[서버] 클라이언트 연결 종료")

@@ -20,7 +20,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v18"
+APP_VERSION = "v19"
 APP_DATE = "2026-07-14"
 
 app = FastAPI()
@@ -575,6 +575,13 @@ async def roleplay_suggest(request: Request):
     if not (topic or place or goal):
         raise HTTPException(status_code=400, detail="input_required")
 
+    # 추천 값은 학습자의 화면 언어(모국어)로 — 학습자가 읽고 고를 수 있어야 한다.
+    # (제출 시 /roleplay-setup이 어떤 언어든 한국어로 정규화하므로 문제 없음)
+    ui_lang = _clean_str(body.get("lang"), 5).lower()
+    native = LANG_NAMES.get(ui_lang, "")
+    lang_line = (f"모든 추천 값(goals, place, my_role, ai_role, style_reason)은 반드시 학습자의 모국어인 {native}로 작성하라. 한국어로 쓰지 마라."
+                 if native else "모든 추천 값은 자연스러운 한국어로 작성하라.")
+
     given_lines = []
     if place:
         given_lines.append(f"- 대화 장소: {place}")
@@ -590,15 +597,15 @@ async def roleplay_suggest(request: Request):
 [학습자 입력]
 {given}
 
-[요구사항 — 모두 자연스러운 한국어로]
+[요구사항]
+★ {lang_line}
 1) goals: 이 상황에서 도전할 만한 '대화의 달성 목적' 3개를 정확히 이 순서로.
    ① 교재형: 한국어 교재에 나올 법한 가장 이상적·전형적인 목적.
    ② 일상형: 실제 생활에서 흔히 부딪히는, 약간의 변수가 있는 목적.
    ③ 엉뚱형: 같은 상황인데 뜻밖이고 재미있는 목적 (황당하지만 대화로는 성립해야 함).
-   각 25자 이내, 명사형 종결(예: "~싸게 사기", "~환불 받기").
-   중급(4급 이하) 학습자가 이해할 수 있는 쉬운 어휘로 쓰라.
+   각각 짧은 명사형 구로 간결하게.
    학습자가 이미 목적을 적었다면 그 취지를 살리면서 세 단계로 변주하라.
-2) place: 이 대화가 벌어질 전형적인 장소 (예: "동네 옷 가게"). 학습자가 적었다면 그것을 자연스러운 한국어로 다듬어라.
+2) place: 이 대화가 벌어질 전형적인 장소. 학습자가 적었다면 그것을 자연스럽게 다듬어라.
 3) my_role: 학습자 역할 (예: "손님").
 4) ai_role: 상대(챗봇) 역할 (예: "점원").
 5) style: 이 관계에서 자연스러운 화계 — "polite"(존댓말) 또는 "banmal"(반말).

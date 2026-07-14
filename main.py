@@ -20,8 +20,8 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v17"
-APP_DATE = "2026-07-12"
+APP_VERSION = "v18"
+APP_DATE = "2026-07-14"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")

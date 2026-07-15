@@ -367,28 +367,38 @@
 
         /* ── 홈 화면 ── */
         body[data-screen="home"] { background: radial-gradient(130% 90% at 50% -10%, #E7EDEF 0%, var(--bg) 55%); }
-        .home-screen { flex-direction: column; align-items: center; justify-content: center;
-            width: 100%; max-width: 468px; min-height: 84vh; gap: 15px; position: relative; text-align: center; padding-top: 48px; }
-        /* 우상단 버튼 묶음 — 지난 대화 · 이름 · 언어 */
-        .home-top { position: absolute; top: 2px; right: 0; display: flex; gap: 8px; align-items: center; }
+        .home-screen { flex-direction: column; align-items: center; justify-content: flex-start;
+            width: 100%; max-width: 480px; min-height: 84vh; gap: 14px; position: relative; text-align: center; }
+        /* 상단 헤더: 제목(왼쪽) · 버튼(오른쪽) */
+        .home-header { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 6px; }
+        .home-title { font-size: 19px; font-weight: 900; margin: 0; color: var(--ink); letter-spacing: -0.4px; text-align: left; line-height: 1.25; }
+        .home-top { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
         .home-top .home-ico { border: 1.5px solid var(--accent-soft); background: rgba(255,255,255,0.7);
-            color: var(--ink); border-radius: 999px; height: 40px; min-width: 40px; padding: 0 14px; font-size: 13px;
+            color: var(--ink); border-radius: 999px; height: 38px; min-width: 38px; padding: 0 13px; font-size: 12.5px;
             font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
             transition: transform 0.12s, background 0.2s, border-color 0.2s; backdrop-filter: blur(4px); }
         .home-top .home-ico:hover { transform: translateY(-1px); background: #fff; border-color: var(--accent); }
         .home-top .home-ico.icon-only { padding: 0; justify-content: center; }
         /* 좁은 화면: 라벨 숨기고 아이콘만 (버튼 넘침 방지) */
-        @media (max-width: 540px) {
-            .home-top .home-ico { padding: 0; min-width: 40px; justify-content: center; }
+        @media (max-width: 560px) {
+            .home-top .home-ico { padding: 0; min-width: 38px; justify-content: center; }
             .home-top .home-ico span:last-child { display: none; }
         }
-        .home-ham { width: 122px; height: 122px; border-radius: 50%;
-            background: radial-gradient(circle at 50% 62%, var(--teal-soft), var(--panel) 82%);
-            box-shadow: var(--shadow); border: 3px solid #fff; overflow: hidden;
-            display: flex; align-items: flex-end; justify-content: center; }
-        .home-ham img { width: 78%; display: block; animation: breathe 3.2s ease-in-out infinite; transform-origin: 50% 92%; }
-        .home-title { font-size: 23px; font-weight: 900; margin: 4px 0 0; color: var(--ink); letter-spacing: -0.3px; }
-        .home-sub { font-size: 13.5px; color: var(--muted); margin: 0 0 8px; line-height: 1.5; font-weight: 600; }
+        /* 마사마사 히어로 — 크게, 원 없이, 통통 튀며 말풍선 */
+        .home-hero { position: relative; margin-top: 4px; display: flex; flex-direction: column; align-items: center; }
+        .home-ham { width: clamp(190px, 52vw, 250px); display: flex; justify-content: center; }
+        .home-ham img { width: 100%; display: block; transform-origin: 50% 92%;
+            animation: breathe 3.4s ease-in-out infinite; filter: drop-shadow(0 14px 22px rgba(57,64,99,0.22)); }
+        .home-ham.bounce img { animation: home-hop 0.9s cubic-bezier(.28,.84,.42,1) 2; }
+        @keyframes home-hop { 0%,100% { transform: translateY(0) scale(1); } 30% { transform: translateY(-22px) scale(1.03); } 55% { transform: translateY(0) scale(0.99); } }
+        .home-bubble { position: absolute; bottom: calc(100% - 14px); left: 50%; transform: translateX(-50%) translateY(6px) scale(0.9);
+            background: #fff; color: var(--ink); font-size: 13.5px; font-weight: 700; line-height: 1.4; padding: 10px 14px;
+            border-radius: 16px; box-shadow: 0 8px 22px -8px rgba(57,64,99,0.3); white-space: nowrap; max-width: 82vw;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s; z-index: 2; }
+        .home-bubble::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            border: 8px solid transparent; border-top-color: #fff; }
+        .home-bubble.show { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+        .home-sub { font-size: 15px; color: var(--muted); margin: 0 0 6px; line-height: 1.5; font-weight: 700; }
         .home-card { width: 100%; display: flex; align-items: center; gap: 16px; text-align: left;
             border: none; border-radius: 22px; padding: 22px 24px; cursor: pointer; position: relative; overflow: hidden;
             box-shadow: var(--shadow); transition: transform 0.16s cubic-bezier(.2,.8,.3,1), box-shadow 0.2s; color: #fff; }
@@ -447,8 +457,15 @@
         .hv-stage-slot .stage { width: min(66vw, 300px); max-height: 46vh; aspect-ratio: 1/1; }
         .hv-stage-slot .stage .hamster-wrap { width: 84%; }
         .hv-stage-slot .stage .stage-glow { opacity: 0.5; background: radial-gradient(circle at 50% 60%, rgba(96,181,194,0.5), transparent 72%); }
-        .hv-caption { color: #fff; font-size: 16px; font-weight: 700; line-height: 1.45; text-align: center; min-height: 48px;
-            max-width: 660px; padding: 0 24px 8px; text-shadow: 0 1px 4px rgba(0,0,0,0.35); }
+        /* 마사마사 말풍선 (꼬리는 위쪽 = 캐릭터를 향함) */
+        .hv-caption { align-self: center; max-width: min(88%, 560px); margin: 0 auto 12px; background: #fff; color: var(--ink);
+            font-size: 15.5px; font-weight: 700; line-height: 1.5; text-align: center; padding: 12px 18px; border-radius: 18px;
+            box-shadow: 0 12px 30px -12px rgba(0,0,0,0.55); position: relative; opacity: 0; transform: translateY(6px);
+            transition: opacity 0.25s, transform 0.25s; }
+        .hv-caption.show { opacity: 1; transform: translateY(0); }
+        .hv-caption:not(.show) { visibility: hidden; }
+        .hv-caption::before { content: ""; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+            border: 9px solid transparent; border-bottom-color: #fff; }
         .hv-controls { width: 100%; max-width: 560px; padding: 0 14px calc(18px + env(safe-area-inset-bottom)); box-sizing: border-box; }
         .hv-controls .ptt-btn { width: 100%; margin: 0 0 10px; background: var(--teal); color: #07333B; box-shadow: 0 10px 26px -10px rgba(0,0,0,0.55); }
         .hv-controls .ptt-btn.talking { background: var(--danger); color: #fff; }
@@ -656,13 +673,21 @@
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
 <div class="home-screen" id="homeScreen">
-    <div class="home-top">
-        <button type="button" class="home-ico" id="homeHistoryBtn"><span>🗂️</span><span id="homeHistoryLbl"></span></button>
-        <button type="button" class="home-ico" id="homeNameBtn"><span>✏️</span><span id="homeNameLbl"></span></button>
-        <button type="button" class="home-ico icon-only" id="homeLangBtn" title="Language">🌐</button>
+    <!-- 상단: 제목(왼쪽) · 버튼(오른쪽) -->
+    <div class="home-header">
+        <h1 class="home-title" id="homeTitleEl">🐹 마사마사와 한국어 수다</h1>
+        <div class="home-top">
+            <button type="button" class="home-ico icon-only" id="bgmBtn" title="BGM">🔊</button>
+            <button type="button" class="home-ico" id="homeHistoryBtn"><span>🗂️</span><span id="homeHistoryLbl"></span></button>
+            <button type="button" class="home-ico" id="homeNameBtn"><span>✏️</span><span id="homeNameLbl"></span></button>
+            <button type="button" class="home-ico icon-only" id="homeLangBtn" title="Language">🌐</button>
+        </div>
     </div>
-    <div class="home-ham"><img src="/static/hamster.png" alt="마사마사"></div>
-    <h1 class="home-title" id="homeTitleEl">🐹 마사마사와 한국어 수다</h1>
+    <!-- 마사마사: 크게, 원 없이. 가끔 통통 튀며 말풍선으로 말을 건다 -->
+    <div class="home-hero">
+        <div class="home-bubble" id="homeBubble" aria-hidden="true"></div>
+        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png" alt="마사마사"></div>
+    </div>
     <p class="home-sub" id="homeSubEl"></p>
     <button type="button" class="home-card hc-rp" id="homeRpCard">
         <span class="hc-emoji">🎬</span>
@@ -699,7 +724,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/hamster.png" alt="마사마사">
+                <img id="hamster" src="/static/ham_idle.png" alt="마사마사">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -817,6 +842,8 @@
     <div class="hv-caption" id="hvCaption"></div>
     <div class="hv-controls" id="hvControls"></div>
 </div>
+<!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 50% 음량으로 재생 -->
+<audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -828,7 +855,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v23 (2026-07-15)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v24 (2026-07-15)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("마사마사 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -940,6 +967,22 @@
         es: { hvOpen:"Vídeo", hvClose:"Chat" }, fr: { hvOpen:"Vidéo", hvClose:"Chat" },
     };
     for (const _l in I18N_HV) { if (I18N[_l]) Object.assign(I18N[_l], I18N_HV[_l]); }
+    /* 홈 부제 변경('같이 대화할까요?') + 홈에서 마사마사가 통통 튀며 건네는 인사말(짧게) */
+    const I18N_GREET = {
+        ko: { homeSub:"같이 대화할까요?", homeGreet:["안녕! 🐹","같이 수다 떨자!","기다렸어! 😊","오늘 뭐 할까?"] },
+        en: { homeSub:"Shall we chat together?", homeGreet:["Hi there! 🐹","Let's chat!","Missed you! 😊","What's up?"] },
+        zh: { homeSub:"一起聊聊吧？", homeGreet:["你好呀！🐹","一起聊天吧！","等你好久啦 😊","今天聊点啥？"] },
+        ja: { homeSub:"一緒にお話ししましょうか？", homeGreet:["やあ！🐹","お話ししよ！","待ってたよ 😊","今日は何する？"] },
+        vi: { homeSub:"Cùng trò chuyện nhé?", homeGreet:["Chào bạn! 🐹","Trò chuyện nhé!","Nhớ bạn đó 😊","Hôm nay sao?"] },
+        th: { homeSub:"มาคุยกันไหม?", homeGreet:["สวัสดี! 🐹","มาคุยกัน!","รออยู่นะ 😊","วันนี้ทำไรดี?"] },
+        id: { homeSub:"Yuk, ngobrol bareng?", homeGreet:["Hai! 🐹","Ngobrol yuk!","Kutunggu ya 😊","Mau apa hari ini?"] },
+        mn: { homeSub:"Хамт ярилцах уу?", homeGreet:["Сайн уу! 🐹","Ярилцъя!","Хүлээж байлаа 😊","Өнөөдөр юу хийх вэ?"] },
+        uz: { homeSub:"Birga suhbatlashamizmi?", homeGreet:["Salom! 🐹","Suhbatlashaylik!","Kutdim! 😊","Bugun nima?"] },
+        ru: { homeSub:"Поболтаем вместе?", homeGreet:["Привет! 🐹","Поболтаем!","Я скучал! 😊","Как ты?"] },
+        es: { homeSub:"¿Charlamos juntos?", homeGreet:["¡Hola! 🐹","¡Charlemos!","¡Te esperaba! 😊","¿Qué tal hoy?"] },
+        fr: { homeSub:"On discute ensemble ?", homeGreet:["Coucou ! 🐹","On papote ?","Tu m'as manqué 😊","Ça va ?"] },
+    };
+    for (const _l in I18N_GREET) { if (I18N[_l]) Object.assign(I18N[_l], I18N_GREET[_l]); }
     let uiLang = localStorage.getItem("uiLang") || null;
     let lastStatus = null; // { state, key } — 언어 변경 시 상태 문구 갱신용
     function t(key) {
@@ -1210,6 +1253,7 @@
         // 전환 시 떠 있던 오버레이 정리 (홈은 깨끗한 상태로)
         [rpResultOverlay, rpBriefOverlay, rpSetupOverlay, freeFbOverlay].forEach(o => o.classList.add("hidden"));
         setScreen("home");
+        setTimeout(homeGreetTick, 1400);   // 홈 착지 후 인사
     }
     function goChat() { setScreen("chat"); }
     function goFeedback() { setScreen("feedback"); }
@@ -1256,6 +1300,44 @@
         nameInput.value = userName; nameShown = true; nameOverlay.classList.remove("hidden");
     });
     document.getElementById("homeHistoryBtn").addEventListener("click", openHistory);
+
+    /* ── 홈에서 마사마사가 가끔 통통 튀며 말풍선으로 말 걸기 ── */
+    const homeHam = document.getElementById("homeHam");
+    const homeBubble = document.getElementById("homeBubble");
+    let homeBubbleHideTimer = null;
+    function homeGreetTick() {
+        if (document.body.dataset.screen !== "home") return;
+        if (document.querySelector(".lang-overlay:not(.hidden)")) return; // 진입 안내 중엔 스킵
+        const arr = t("homeGreet");
+        const msg = (Array.isArray(arr) && arr.length) ? arr[Math.floor(Math.random() * arr.length)] : "";
+        if (msg) { homeBubble.textContent = msg; homeBubble.classList.add("show"); }
+        homeHam.classList.remove("bounce"); void homeHam.offsetWidth; homeHam.classList.add("bounce");
+        clearTimeout(homeBubbleHideTimer);
+        homeBubbleHideTimer = setTimeout(() => homeBubble.classList.remove("show"), 3600);
+    }
+    setInterval(homeGreetTick, 8500);
+    homeHam.addEventListener("click", homeGreetTick);   // 눌러도 인사
+
+    /* ── 배경음악(BGM): 대화 연습 중(isConnected)이 아닐 때만 50% 음량 재생 ── */
+    const bgm = document.getElementById("bgm");
+    if (bgm) bgm.volume = 0.5;
+    let bgmMuted = localStorage.getItem("bgmMuted") === "1";
+    let bgmReady = false;
+    function updateBgm() {
+        if (!bgm) return;
+        if (!bgmMuted && bgmReady && !isConnected) bgm.play().catch(() => {});
+        else bgm.pause();
+    }
+    function unlockBgm() { bgmReady = true; updateBgm(); document.removeEventListener("pointerdown", unlockBgm); }
+    document.addEventListener("pointerdown", unlockBgm);   // 브라우저 자동재생 정책 우회(첫 제스처)
+    const bgmBtn = document.getElementById("bgmBtn");
+    function renderBgmBtn() { if (bgmBtn) bgmBtn.textContent = bgmMuted ? "🔇" : "🔊"; }
+    if (bgmBtn) bgmBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        bgmMuted = !bgmMuted; localStorage.setItem("bgmMuted", bgmMuted ? "1" : "0");
+        bgmReady = true; renderBgmBtn(); updateBgm();
+    });
+    renderBgmBtn();
 
     /* ══════════ 지난 대화(히스토리) — 이 기기 localStorage에 대화록 저장·열람 ══════════ */
     const HIST_KEY = "masamasaHistory";
@@ -1369,6 +1451,7 @@
         hvControls.appendChild(pttBtn);
         hvControls.appendChild(quickBarEl);
         hvCaption.textContent = lastCaption || "";
+        hvCaption.classList.toggle("show", !!lastCaption);
         hamView.classList.add("show");
         hamView.setAttribute("aria-hidden", "false");
         hamViewOpen = true;
@@ -2203,8 +2286,15 @@
     /* ── 눌러서 말하기 (push-to-talk) ──
        누른 순간: activity_start(발화 시작) → 누르는 동안 오디오 전송
        뗀 순간: activity_end(발화 끝) → Gemini가 즉시 턴 확정 → STT 바로 반영 */
+    let pttEndTimer = null;     // 발화 종료 꼬리(끝음절 보존) 타이머
     function startTalking() {
-        if (!isConnected || isPaused || isTalking || !ws || ws.readyState !== WebSocket.OPEN) return;
+        if (!isConnected || isPaused || !ws || ws.readyState !== WebSocket.OPEN) return;
+        if (pttEndTimer) {      // 꼬리 대기 중 다시 누름 → 끊지 않고 같은 발화를 이어감
+            clearTimeout(pttEndTimer); pttEndTimer = null;
+            pttBtn.classList.add("talking"); pttBtn.textContent = t("pttTalking");
+            return;
+        }
+        if (isTalking) return;
         isTalking = true;
         if (captureCtx && captureCtx.state === "suspended") captureCtx.resume().catch(() => {});
         stopAllAudio();                 // 말하려고 누르면 마사마사 발화를 즉시 멈춤(끼어들기)
@@ -2214,12 +2304,18 @@
         setStatus("listening", "stListening");
     }
     function stopTalking() {
-        if (!isTalking) return;
-        isTalking = false;
-        try { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "activity_end" })); } catch (e) {}
+        if (!isTalking || pttEndTimer) return;
+        // ★ STT 개선: 버튼을 떼는 즉시 끊으면 끝음절이 잘려 인식이 나빠진다.
+        //   시각적으로는 바로 '뗀' 상태로 바꾸되, 오디오는 220ms 더 흘려보낸 뒤 종료 신호를 보낸다.
         pttBtn.classList.remove("talking");
         pttBtn.textContent = t("pttHold");
-        if (isConnected && !isPaused) setStatus("idle", "stThinking");
+        if (!isConnected || isPaused) { isTalking = false; return; }
+        pttEndTimer = setTimeout(() => {
+            pttEndTimer = null;
+            isTalking = false;   // 오디오 스트리밍 종료(꼬리 끝)
+            try { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "activity_end" })); } catch (e) {}
+            if (isConnected && !isPaused) setStatus("idle", "stThinking");
+        }, 220);
     }
     // 포인터 이벤트로 마우스·터치·펜 통합 처리. setPointerCapture로 손가락이
     // 버튼 밖으로 나가도 뗄 때(pointerup)까지 추적된다.
@@ -2338,6 +2434,7 @@
             actionBtn.classList.add("recording");
             isConnected = true;
             isPaused = false;
+            updateBgm();   // 대화 시작 → BGM 정지
             nextPlayTime = 0;
             sessionUploaded = false;
             sessionSid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -2430,6 +2527,7 @@
         closeHamView();   // 영상통화 뷰 열려 있으면 닫고 노드 원위치
         isConnected = false;
         isPaused = false;
+        updateBgm();   // 대화 종료 → BGM 재개
         clearInterval(pingTimer);
         clearInterval(partialTimer);
         updateNetStat();
@@ -2550,6 +2648,17 @@
             (stage.classList.contains("surprised") ? " surprised" : "");
     }
 
+    /* ── 마사마사 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
+    const hamsterImg = document.getElementById("hamster");
+    const HAM_EXPR = {
+        idle: "/static/ham_idle.png", smile: "/static/ham_smile.png",
+        surprised: "/static/ham_surprised.png", shy: "/static/ham_shy.png",
+    };
+    function setHamExpr(name) {
+        const src = HAM_EXPR[name] || HAM_EXPR.idle;
+        if (hamsterImg && !hamsterImg.src.endsWith(src)) hamsterImg.src = src;
+    }
+
     function setStatus(state, key) {
         lastStatus = { state: state, key: key };
         statusText.textContent = t(key);
@@ -2557,8 +2666,9 @@
         statusDot.className = "dot " + (state === "connecting" ? "idle" : state);
         if (!stage.classList.contains("surprised") && !stage.classList.contains("paused")) {
             stage.classList.remove("listening", "speaking");
-            if (state === "speaking") stage.classList.add("speaking");
-            else if (state === "listening") stage.classList.add("listening");
+            if (state === "speaking") { stage.classList.add("speaking"); setHamExpr("smile"); }
+            else if (state === "listening") { stage.classList.add("listening"); setHamExpr("idle"); }
+            else setHamExpr("idle");
         }
         syncFloatHam();
     }
@@ -2567,12 +2677,14 @@
         if (stage.classList.contains("paused")) return;
         stage.classList.remove("listening", "speaking");
         stage.classList.add("surprised");
+        setHamExpr("surprised");
         syncFloatHam();
         spawnEmote("❗");
         clearTimeout(surpriseTimer);
         surpriseTimer = setTimeout(() => {
             stage.classList.remove("surprised");
             stage.classList.add("listening");
+            setHamExpr("idle");
             syncFloatHam();
         }, 900);
     }
@@ -2633,9 +2745,13 @@
             current.el.textContent = current.text;
         }
         chatLog.scrollTop = chatLog.scrollHeight;
-        // 영상통화 뷰 자막 갱신 (최근 발화)
-        lastCaption = (role === "user" ? "🙋 " : "🐹 ") + (current.text || "").trim();
-        if (hamViewOpen) hvCaption.textContent = lastCaption;
+        // 영상통화 말풍선: 마사마사(AI)의 말만 말풍선으로. 사용자 차례엔 숨김.
+        if (role === "ai") {
+            lastCaption = (current.text || "").trim();
+            if (hamViewOpen) { hvCaption.textContent = lastCaption; hvCaption.classList.toggle("show", !!lastCaption); }
+        } else if (hamViewOpen) {
+            hvCaption.classList.remove("show");
+        }
     }
 
     function finalizeBubbles() {

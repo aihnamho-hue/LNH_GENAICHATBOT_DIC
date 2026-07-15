@@ -367,10 +367,10 @@
 
         /* ── 홈 화면 ── */
         body[data-screen="home"] { background: radial-gradient(130% 90% at 50% -10%, #E7EDEF 0%, var(--bg) 55%); }
-        .home-screen { flex-direction: column; align-items: center; justify-content: flex-start;
-            width: 100%; max-width: 480px; min-height: 84vh; gap: 14px; position: relative; text-align: center; }
+        .home-screen { flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; max-width: 480px; min-height: 90vh; gap: 30px; position: relative; text-align: center; padding: 14px 0 26px; }
         /* 상단 헤더: 제목(왼쪽) · 버튼(오른쪽) */
-        .home-header { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 6px; }
+        .home-header { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 4px; margin-bottom: 4px; }
         .home-title { font-size: 19px; font-weight: 900; margin: 0; color: var(--ink); letter-spacing: -0.4px; text-align: left; line-height: 1.25; }
         .home-top { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
         .home-top .home-ico { border: 1.5px solid var(--accent-soft); background: rgba(255,255,255,0.7);
@@ -385,10 +385,11 @@
             .home-top .home-ico span:last-child { display: none; }
         }
         /* 마사마사 히어로 — 크게, 원 없이, 통통 튀며 말풍선 */
-        .home-hero { position: relative; margin-top: 4px; display: flex; flex-direction: column; align-items: center; }
+        .home-hero { position: relative; margin: 10px 0; display: flex; flex-direction: column; align-items: center; }
         .home-ham { width: clamp(190px, 52vw, 250px); display: flex; justify-content: center; }
         .home-ham img { width: 100%; display: block; transform-origin: 50% 92%;
-            animation: breathe 3.4s ease-in-out infinite; filter: drop-shadow(0 14px 22px rgba(57,64,99,0.22)); }
+            animation: breathe 3.4s ease-in-out infinite; filter: drop-shadow(0 14px 22px rgba(57,64,99,0.22));
+            transition: opacity 0.22s ease; }
         .home-ham.bounce img { animation: home-hop 0.9s cubic-bezier(.28,.84,.42,1) 2; }
         @keyframes home-hop { 0%,100% { transform: translateY(0) scale(1); } 30% { transform: translateY(-22px) scale(1.03); } 55% { transform: translateY(0) scale(0.99); } }
         .home-bubble { position: absolute; bottom: calc(100% - 14px); left: 50%; transform: translateX(-50%) translateY(6px) scale(0.9);
@@ -398,7 +399,7 @@
         .home-bubble::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
             border: 8px solid transparent; border-top-color: #fff; }
         .home-bubble.show { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-        .home-sub { font-size: 15px; color: var(--muted); margin: 0 0 6px; line-height: 1.5; font-weight: 700; }
+        .home-sub { font-size: 16px; color: var(--muted); margin: 0; line-height: 1.5; font-weight: 700; }
         .home-card { width: 100%; display: flex; align-items: center; gap: 16px; text-align: left;
             border: none; border-radius: 22px; padding: 22px 24px; cursor: pointer; position: relative; overflow: hidden;
             box-shadow: var(--shadow); transition: transform 0.16s cubic-bezier(.2,.8,.3,1), box-shadow 0.2s; color: #fff; }
@@ -842,7 +843,7 @@
     <div class="hv-caption" id="hvCaption"></div>
     <div class="hv-controls" id="hvControls"></div>
 </div>
-<!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 50% 음량으로 재생 -->
+<!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
@@ -855,7 +856,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v24 (2026-07-15)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v25 (2026-07-15)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("마사마사 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -1318,9 +1319,21 @@
     setInterval(homeGreetTick, 8500);
     homeHam.addEventListener("click", homeGreetTick);   // 눌러도 인사
 
+    /* ── 홈의 마사마사 이미지를 랜덤으로 계속 교체 ── */
+    const homeHamImg = homeHam.querySelector("img");
+    const HOME_HAM_IMGS = ["/static/ham_idle.png", "/static/ham_smile.png", "/static/ham_surprised.png", "/static/ham_shy.png"];
+    function homeImgTick() {
+        if (document.body.dataset.screen !== "home" || !homeHamImg) return;
+        const others = HOME_HAM_IMGS.filter(s => !homeHamImg.src.endsWith(s));
+        const next = others[Math.floor(Math.random() * others.length)];
+        homeHamImg.style.opacity = "0";           // 살짝 페이드 후 교체
+        setTimeout(() => { homeHamImg.src = next; homeHamImg.style.opacity = "1"; }, 170);
+    }
+    setInterval(homeImgTick, 2600);
+
     /* ── 배경음악(BGM): 대화 연습 중(isConnected)이 아닐 때만 50% 음량 재생 ── */
     const bgm = document.getElementById("bgm");
-    if (bgm) bgm.volume = 0.5;
+    if (bgm) bgm.volume = 0.3;   // 사용자 볼륨의 30%
     let bgmMuted = localStorage.getItem("bgmMuted") === "1";
     let bgmReady = false;
     function updateBgm() {

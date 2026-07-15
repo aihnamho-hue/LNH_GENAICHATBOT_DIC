@@ -17,13 +17,14 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
     <style>
         :root {
-            /* 지브리(스튜디오 지브리) 색감 — 초원 크림 배경 + 노을 테라코타 + 하늘/잎 보조색 */
-            --bg: #EAF0E1; --panel: #FBFAF2; --ink: #3C4535; --muted: #94A187;
-            --accent: #E5875A; --accent-soft: #F6DEC9; --navy: #5E86A8;
-            --navy-soft: #DCE7EF; --danger: #C4604F;
-            --leaf: #7C9D6A; --leaf-soft: #DBE7CF; --sky: #6E93B4; --sky-soft: #DDE8F0;
+            /* 세련된 팔레트 — 슬레이트 · 틸 · 샌드 · 딥네이비 · 로즈 */
+            --bg: #F3F1EB; --panel: #FFFFFF; --ink: #394063; --muted: #8790A6;
+            --accent: #5A7285; --accent-soft: #DCE3E7; --navy: #394063;
+            --navy-soft: #DADEEA; --danger: #B97B77;
+            --teal: #60B5C2; --teal-soft: #D8ECEF; --sand: #D3CBBB; --sand-soft: #EDE9E1;
+            --rose: #B97B77; --rose-soft: #EBDDDB;
             --kakao-bg: #BACEE0; --kakao-yellow: #FEE500;
-            --shadow: 0 8px 30px -10px rgba(60, 69, 53, 0.20);
+            --shadow: 0 10px 34px -12px rgba(57, 64, 99, 0.28);
         }
         * { box-sizing: border-box; }
         body { margin: 0; font-family: -apple-system, "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -106,7 +107,7 @@
         /* 빠른 요청 버튼 — 대화창(채팅 패널) 하단 배치 */
         .quick-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px 10px; background: rgba(255,255,255,0.35); }
         @media (max-width: 480px) { .quick-bar { grid-template-columns: 1fr 1fr; } }
-        .quick-btn { border: 1.5px solid var(--accent-soft); background: #FFF6F0; color: var(--accent); border-radius: 12px; padding: 7px 4px; font-size: 11px; font-weight: 700; cursor: pointer; transition: transform 0.12s, background 0.2s; line-height: 1.3; }
+        .quick-btn { border: 1.5px solid var(--accent-soft); background: #EEF3F4; color: var(--accent); border-radius: 12px; padding: 7px 4px; font-size: 11px; font-weight: 700; cursor: pointer; transition: transform 0.12s, background 0.2s; line-height: 1.3; }
         .quick-btn:hover:not(:disabled) { transform: translateY(-1px); background: var(--accent-soft); }
         .quick-btn:active:not(:disabled) { transform: scale(0.96); }
         .quick-btn:disabled { opacity: 0.35; cursor: default; }
@@ -155,13 +156,13 @@
         .lang-box h2 { margin: 0 0 4px; font-size: 17px; }
         .lang-box p { margin: 0 0 16px; font-size: 12px; color: var(--muted); }
         .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-        .lang-item { display: flex; align-items: center; gap: 9px; border: 1.5px solid #EEE3D8; background: #FFFBF6; border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 700; color: var(--ink); cursor: pointer; transition: transform 0.12s, border-color 0.2s, background 0.2s; text-align: left; }
-        .lang-item:hover { transform: translateY(-1px); border-color: var(--accent); background: #FFF6F0; }
+        .lang-item { display: flex; align-items: center; gap: 9px; border: 1.5px solid var(--accent-soft); background: #F6F9FA; border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 700; color: var(--ink); cursor: pointer; transition: transform 0.12s, border-color 0.2s, background 0.2s; text-align: left; }
+        .lang-item:hover { transform: translateY(-1px); border-color: var(--accent); background: #EEF3F4; }
         .lang-item .flag { font-size: 20px; }
 
         /* ── 녹음 동의 모달 ── */
         .consent-box { max-width: 420px; }
-        .name-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--accent-soft); font-size: 14px; margin-bottom: 14px; text-align: center; background: #FFFBF6; color: var(--ink); }
+        .name-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--accent-soft); font-size: 14px; margin-bottom: 14px; text-align: center; background: #F6F9FA; color: var(--ink); }
         .consent-box p.consent-text { font-size: 13px; color: var(--ink); line-height: 1.75; text-align: left; margin: 0 0 18px; }
         .consent-actions { display: flex; flex-direction: column; gap: 8px; }
 
@@ -178,7 +179,7 @@
         .mode-btn:disabled { opacity: 0.45; cursor: default; transform: none; }
         .rp-field { text-align: left; margin-bottom: 10px; }
         .rp-field label { display: block; font-size: 11px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
-        .rp-input { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: 10px; border: 1.5px solid var(--accent-soft); font-size: 13px; background: #FFFBF6; color: var(--ink); }
+        .rp-input { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: 10px; border: 1.5px solid var(--accent-soft); font-size: 13px; background: #F6F9FA; color: var(--ink); }
         .rp-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .style-seg { display: flex; gap: 6px; }
         .seg-btn { flex: 1; border: 1.5px solid var(--navy-soft); background: #fff; border-radius: 10px; padding: 8px 4px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--ink); }
@@ -190,7 +191,7 @@
         .stage-item .st-native { font-size: 11px; color: var(--muted); margin-left: 6px; font-weight: 600; }
         .stage-item .st-desc { font-size: 11px; color: #5A6B7B; margin-top: 2px; }
         .stage-item .st-expr { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-        .stage-item .st-expr span { font-size: 11px; background: var(--accent-soft); color: #8A4B2A; border-radius: 8px; padding: 2px 8px; }
+        .stage-item .st-expr span { font-size: 11px; background: var(--accent-soft); color: #41586B; border-radius: 8px; padding: 2px 8px; }
         .progress-wrap { padding: 8px 14px 6px; background: rgba(255,255,255,0.55); border-bottom: 1px solid rgba(0,0,0,0.04); }
         .progress-wrap.hidden { display: none; }
         .progress-top { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
@@ -211,14 +212,14 @@
         /* ── 주제 자동 추천 (예) 표시 + 🎲 목적 재추첨 ── */
         .rp-input-row { display: flex; gap: 6px; }
         .rp-input-row .rp-input { flex: 1; min-width: 0; }
-        .dice-btn { border: 1.5px solid var(--accent-soft); background: #FFF6F0; border-radius: 10px; width: 42px; font-size: 17px; cursor: pointer; flex-shrink: 0; transition: transform 0.15s; }
+        .dice-btn { border: 1.5px solid var(--accent-soft); background: #EEF3F4; border-radius: 10px; width: 42px; font-size: 17px; cursor: pointer; flex-shrink: 0; transition: transform 0.15s; }
         .dice-btn:hover:not(:disabled) { transform: rotate(-18deg) scale(1.08); }
         .dice-btn:disabled { opacity: 0.35; cursor: default; }
-        .rp-style-hint { color: #8A4B2A; background: var(--accent-soft); border-radius: 8px; padding: 4px 10px; display: inline-block; }
+        .rp-style-hint { color: #41586B; background: var(--accent-soft); border-radius: 8px; padding: 4px 10px; display: inline-block; }
 
         /* ── 발화 연습 (듣고 따라 말하기 → 말차례 교환) ── */
         .stage-item.clickable { cursor: pointer; transition: transform 0.12s, border-color 0.2s, box-shadow 0.2s; }
-        .stage-item.clickable:hover { transform: translateY(-1px); border-color: var(--accent); box-shadow: 0 4px 12px -6px rgba(255,140,90,0.4); }
+        .stage-item.clickable:hover { transform: translateY(-1px); border-color: var(--accent); box-shadow: 0 4px 12px -6px rgba(90,114,133,0.4); }
         .st-side { float: right; display: flex; gap: 4px; align-items: center; }
         .st-mic-hint { font-size: 13px; opacity: 0.55; }
         .st-badge { font-size: 10px; font-weight: 800; color: #2E7D4F; background: #DDF3E4; border: 1px solid #BCE5CB; border-radius: 8px; padding: 2px 7px; }
@@ -277,7 +278,7 @@
         .chat-header .info h2 { font-size: 15px; }
         .progress-track { height: 12px; }
         .progress-bar.over { box-shadow: 0 0 10px rgba(244,162,97,0.85); }
-        .rp-input:focus, .name-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,140,90,0.16); background: #fff; }
+        .rp-input:focus, .name-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(96,181,194,0.22); background: #fff; }
         .rp-field label { font-size: 12px; }
         .rp-input { padding: 11px 12px; font-size: 14px; }
         .dice-btn { font-size: 18px; width: 46px; }
@@ -292,13 +293,13 @@
         }
 
         /* ── 🪜 비계(스캐폴딩) 버튼·패널 ── */
-        .scf-btn { border: 1.5px solid var(--accent-soft); background: #FFF6F0; border-radius: 8px; padding: 2px 9px; font-size: 14px; cursor: pointer; transition: transform 0.12s; }
+        .scf-btn { border: 1.5px solid var(--accent-soft); background: #EEF3F4; border-radius: 8px; padding: 2px 9px; font-size: 14px; cursor: pointer; transition: transform 0.12s; }
         .scf-btn:hover { transform: translateY(-1px); }
-        .scf-panel { margin-top: 7px; background: #FFF9F2; border: 1.5px solid var(--accent-soft); border-radius: 10px; padding: 8px 10px; text-align: left; }
+        .scf-panel { margin-top: 7px; background: #F2F6F7; border: 1.5px solid var(--accent-soft); border-radius: 10px; padding: 8px 10px; text-align: left; }
         .scf-panel.hidden { display: none; }
-        .scf-title { font-size: 11px; font-weight: 800; color: #8A4B2A; margin-bottom: 5px; }
+        .scf-title { font-size: 11px; font-weight: 800; color: #41586B; margin-bottom: 5px; }
         .scf-list { display: flex; flex-wrap: wrap; gap: 5px; font-size: 12px; color: var(--muted); }
-        .scf-chip { border: none; background: var(--accent-soft); color: #6B3A1F; border-radius: 9px; padding: 7px 10px; font-size: 12px; font-weight: 700; cursor: pointer; transition: transform 0.1s; }
+        .scf-chip { border: none; background: var(--accent-soft); color: #33475A; border-radius: 9px; padding: 7px 10px; font-size: 12px; font-weight: 700; cursor: pointer; transition: transform 0.1s; }
         .scf-chip:active { transform: scale(0.95); }
 
         /* ── 듀오링고식 대화 완료 화면 ── */
@@ -349,7 +350,8 @@
         .float-ham.listening .fh-wrap { animation: tilt 2.2s ease-in-out infinite; }
         .float-ham.surprised .fh-wrap { animation: shake 0.4s ease-in-out 2; }
         .float-ham.speaking { box-shadow: 0 0 0 5px rgba(255,140,90,0.35), 0 8px 20px -6px rgba(61,44,38,0.35); }
-        @media (max-width: 820px) { body.in-convo .float-ham { display: block; } }
+        /* 플로팅 마사마사(우상단)는 제거 — 대화 화면에 불필요 */
+        .float-ham { display: none !important; }
 
         /* ══════════ 방안 A: 화면 상태 (home | chat | feedback) ══════════
            최상위 컨테이너 클래스 하나(body[data-screen])로 해당 블록만 보이게 토글. */
@@ -364,31 +366,65 @@
         .mode-toggle { display: none !important; }
 
         /* ── 홈 화면 ── */
+        body[data-screen="home"] { background: radial-gradient(130% 90% at 50% -10%, #E7EDEF 0%, var(--bg) 55%); }
         .home-screen { flex-direction: column; align-items: center; justify-content: center;
-            width: 100%; max-width: 460px; min-height: 82vh; gap: 14px; position: relative; text-align: center; }
-        .home-lang { position: absolute; top: 4px; right: 4px; }
-        .home-ham { width: 128px; height: 128px; border-radius: 50%;
-            background: radial-gradient(circle at 50% 62%, var(--accent-soft), var(--panel) 82%);
+            width: 100%; max-width: 468px; min-height: 84vh; gap: 15px; position: relative; text-align: center; padding-top: 48px; }
+        /* 우상단 버튼 묶음 — 지난 대화 · 이름 · 언어 */
+        .home-top { position: absolute; top: 2px; right: 0; display: flex; gap: 8px; align-items: center; }
+        .home-top .home-ico { border: 1.5px solid var(--accent-soft); background: rgba(255,255,255,0.7);
+            color: var(--ink); border-radius: 999px; height: 40px; min-width: 40px; padding: 0 14px; font-size: 13px;
+            font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+            transition: transform 0.12s, background 0.2s, border-color 0.2s; backdrop-filter: blur(4px); }
+        .home-top .home-ico:hover { transform: translateY(-1px); background: #fff; border-color: var(--accent); }
+        .home-top .home-ico.icon-only { padding: 0; justify-content: center; }
+        /* 좁은 화면: 라벨 숨기고 아이콘만 (버튼 넘침 방지) */
+        @media (max-width: 540px) {
+            .home-top .home-ico { padding: 0; min-width: 40px; justify-content: center; }
+            .home-top .home-ico span:last-child { display: none; }
+        }
+        .home-ham { width: 122px; height: 122px; border-radius: 50%;
+            background: radial-gradient(circle at 50% 62%, var(--teal-soft), var(--panel) 82%);
             box-shadow: var(--shadow); border: 3px solid #fff; overflow: hidden;
             display: flex; align-items: flex-end; justify-content: center; }
         .home-ham img { width: 78%; display: block; animation: breathe 3.2s ease-in-out infinite; transform-origin: 50% 92%; }
-        .home-title { font-size: 22px; font-weight: 900; margin: 4px 0 0; color: var(--ink); }
-        .home-sub { font-size: 13px; color: var(--muted); margin: 0 0 6px; line-height: 1.5; }
-        .home-card { width: 100%; display: flex; align-items: center; gap: 14px; text-align: left;
-            border: none; border-radius: 20px; padding: 20px 22px; cursor: pointer;
-            box-shadow: var(--shadow); transition: transform 0.15s, box-shadow 0.2s; color: #fff; }
-        .home-card:hover { transform: translateY(-2px); }
-        .home-card:active { transform: translateY(0); }
-        .hc-rp { background: linear-gradient(135deg, var(--accent) 0%, #E7A06B 100%); }
-        .hc-free { background: linear-gradient(135deg, var(--leaf) 0%, #93B27E 100%); }
-        .hc-emoji { font-size: 38px; line-height: 1; flex-shrink: 0; }
+        .home-title { font-size: 23px; font-weight: 900; margin: 4px 0 0; color: var(--ink); letter-spacing: -0.3px; }
+        .home-sub { font-size: 13.5px; color: var(--muted); margin: 0 0 8px; line-height: 1.5; font-weight: 600; }
+        .home-card { width: 100%; display: flex; align-items: center; gap: 16px; text-align: left;
+            border: none; border-radius: 22px; padding: 22px 24px; cursor: pointer; position: relative; overflow: hidden;
+            box-shadow: var(--shadow); transition: transform 0.16s cubic-bezier(.2,.8,.3,1), box-shadow 0.2s; color: #fff; }
+        .home-card::after { content: ""; position: absolute; inset: 0;
+            background: radial-gradient(120% 140% at 100% 0%, rgba(255,255,255,0.22), transparent 60%); pointer-events: none; }
+        .home-card:hover { transform: translateY(-3px); box-shadow: 0 16px 40px -14px rgba(57,64,99,0.42); }
+        .home-card:active { transform: translateY(-1px); }
+        .hc-rp { background: linear-gradient(135deg, #394063 0%, #5A7285 100%); }
+        .hc-free { background: linear-gradient(135deg, #4E93A0 0%, #60B5C2 100%); }
+        .hc-emoji { font-size: 34px; line-height: 1; flex-shrink: 0; width: 56px; height: 56px; border-radius: 16px;
+            background: rgba(255,255,255,0.16); display: flex; align-items: center; justify-content: center; }
         .hc-txt { display: flex; flex-direction: column; gap: 3px; }
-        .hc-title { font-size: 18px; font-weight: 900; }
-        .hc-desc { font-size: 12px; font-weight: 600; opacity: 0.94; line-height: 1.4; }
-        .home-credit { margin-top: 8px; }
+        .hc-title { font-size: 18px; font-weight: 900; letter-spacing: -0.2px; }
+        .hc-desc { font-size: 12.5px; font-weight: 600; opacity: 0.94; line-height: 1.45; }
+        .home-credit { margin-top: 10px; }
 
         /* ── 뒤로 가기(←) 버튼 — 대화 화면 좌상단 ── */
         .back-btn { font-size: 20px; font-weight: 700; }
+
+        /* ── 지난 대화(히스토리) 오버레이 ── */
+        .hist-list { display: flex; flex-direction: column; gap: 8px; max-height: 46vh; overflow-y: auto; margin: 6px 0 4px; text-align: left; }
+        .hist-item { border: 1.5px solid var(--accent-soft); border-radius: 12px; padding: 11px 13px; background: var(--panel);
+            cursor: pointer; transition: transform 0.12s, border-color 0.2s; }
+        .hist-item:hover { transform: translateY(-1px); border-color: var(--accent); }
+        .hist-item .hi-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+        .hist-item .hi-title { font-size: 13.5px; font-weight: 800; color: var(--ink); }
+        .hist-item .hi-date { font-size: 11px; color: var(--muted); font-weight: 600; flex-shrink: 0; }
+        .hist-item .hi-preview { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.45;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .hist-empty { font-size: 13px; color: var(--muted); padding: 24px 0; }
+        .hist-detail { text-align: left; max-height: 52vh; overflow-y: auto; white-space: pre-wrap;
+            font-size: 13px; line-height: 1.6; color: var(--ink); background: var(--sand-soft); border-radius: 12px; padding: 14px; }
+
+        /* ── 대화창 슬라이드 다운(스르륵) — 대화 시작 시 ── */
+        @keyframes chatSlideDown { from { opacity: 0; transform: translateY(-26px); } to { opacity: 1; transform: translateY(0); } }
+        .chat-panel.slide-in { animation: chatSlideDown 0.5s cubic-bezier(.2,.8,.3,1); }
 
         /* ── 대화 화면 상단 접이식 "⚙️ 대화 스타일" (자유 수다에서만) ── */
         .chat-style-bar { margin-bottom: 8px; border: 1.5px solid var(--accent-soft);
@@ -583,19 +619,36 @@
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
 <div class="home-screen" id="homeScreen">
-    <button class="lang-btn home-lang" id="homeLangBtn" title="Language">🌐</button>
+    <div class="home-top">
+        <button type="button" class="home-ico" id="homeHistoryBtn"><span>🗂️</span><span id="homeHistoryLbl"></span></button>
+        <button type="button" class="home-ico" id="homeNameBtn"><span>✏️</span><span id="homeNameLbl"></span></button>
+        <button type="button" class="home-ico icon-only" id="homeLangBtn" title="Language">🌐</button>
+    </div>
     <div class="home-ham"><img src="/static/hamster.png" alt="마사마사"></div>
     <h1 class="home-title" id="homeTitleEl">🐹 마사마사와 한국어 수다</h1>
     <p class="home-sub" id="homeSubEl"></p>
     <button type="button" class="home-card hc-rp" id="homeRpCard">
-        <span class="hc-emoji">🎭</span>
+        <span class="hc-emoji">🎬</span>
         <span class="hc-txt"><span class="hc-title" id="hcRpTitleEl"></span><span class="hc-desc" id="hcRpDescEl"></span></span>
     </button>
     <button type="button" class="home-card hc-free" id="homeFreeCard">
-        <span class="hc-emoji">💬</span>
+        <span class="hc-emoji">☕</span>
         <span class="hc-txt"><span class="hc-title" id="hcFreeTitleEl"></span><span class="hc-desc" id="hcFreeDescEl"></span></span>
     </button>
     <div class="credit home-credit">공동체에 대한 공헌 · LeeNamho · Email: namho1210@naver.com</div>
+</div>
+<!-- 지난 대화(히스토리) 오버레이 — 이 기기에서 진행한 대화록을 열람·내보내기 -->
+<div class="lang-overlay hidden" id="histOverlay">
+    <div class="lang-box" style="max-width:480px;">
+        <button type="button" class="ov-x" id="histX">✕</button>
+        <h2 id="histTitleEl" style="margin-bottom:8px;">🗂️</h2>
+        <div class="hist-list" id="histList"></div>
+        <div class="hist-detail hidden" id="histDetail"></div>
+        <div class="consent-actions">
+            <button class="action-btn" id="histCloseBtn"></button>
+            <button class="export-btn hidden" id="histExportBtn"></button>
+        </div>
+    </div>
 </div>
 <div class="app">
     <div class="character-panel">
@@ -725,7 +778,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v20 (2026-07-15)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v21 (2026-07-15)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("마사마사 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -810,6 +863,23 @@
         es: { title:"🐹 Charla en coreano con Masamasa", subtitle:"Enciende el micrófono y conversa con naturalidad con Masamasa", speaking:"Hablando...", ready:"Listo para conectar", waiting:"En espera", styleTitle:"🎚️ Estilo de conversación", distLabel:"Cercanía (Distance)", powerLabel:"Estatus del usuario (Power)", distLow:"Desconocidos", distHigh:"Mejores amigos", powerLow:"Subordinado", powerHigh:"Superior", distLv:["Desconocidos","Conocidos","Neutral","Cercanos","Mejores amigos (BFF)"], powerLv:["Subordinado","Algo inferior","De igual a igual","Algo superior","Superior (VIP)"], placeholder:"Código de acceso (solo si es necesario)", btnStart:"Iniciar conversación", btnStop:"Terminar conversación", btnPause:"⏸️ Pausa", btnResume:"▶️ Reanudar", btnExport:"📄 Exportar conversación (.txt)", empty:"Inicia una conversación y<br>los mensajes aparecerán como en un chat", footer:"Habla libremente en coreano · Puedes interrumpir a Masamasa mientras habla", stConnecting:"Conectando al servidor...", stListening:"Escuchando... (micrófono activo)", stSpeaking:"Masamasa está hablando", stSpeakNow:"¡Adelante, habla!", stClosed:"Conexión cerrada", stPaused:"En pausa — pulsa ▶️ para reanudar", errAccess:"Código de acceso incorrecto.", errFull:"Hay demasiados usuarios ahora. Inténtalo más tarde.", errGeneric:"Error de conexión.", consentTitle:"🎙️ Aviso de grabación", consentBody:"Para guardar tu registro de aprendizaje y mejorar el servicio, el audio y el contenido de la conversación se graban automáticamente y se guardan en el servidor. Acepta para empezar.", consentAgree:"Aceptar y empezar", consentCancel:"Cancelar", upUploading:"🎙️ Guardando grabación...", upDone:"✅ Grabación guardada", upFail:"⚠️ Error al guardar la grabación", kakaoNotice:"Algunas funciones (guardar archivos) están limitadas en el navegador de KakaoTalk.", kakaoOpen:"Abrir en el navegador", kakaoExportMsg:"El navegador de KakaoTalk no permite descargar archivos. La transcripción se guardó automáticamente en el servidor. Para descargarla, abre esta página en Chrome/Safari.", earTitle:"🎧 Se recomienda usar auriculares", earBody:"Con el altavoz, la voz de Masamasa puede entrar al micrófono e interrumpir la conversación constantemente. ¡Con auriculares va mucho mejor!", earOk:"¡Entendido!", qSlow:"Más despacio", qAgain:"Otra vez", qEasy:"Más fácil", qFast:"Velocidad normal", nameTitle:"👋 ¿Cómo te llamas?", namePh:"Tu nombre (vale un apodo)", nameOk:"OK", modeFree:"🗣️ Charla libre", modeRp:"🎭 Diálogo temático", rpTitle:"🎭 Configurar diálogo temático", rpIntro:"Puedes escribir en tu idioma — Masamasa te entiende", rpGoalLbl:"Objetivo de la conversación", rpGoalPh:"¡Escribe libremente el objetivo que quieras!", rpPlaceLbl:"Lugar de la conversación", rpPlacePh:"ej.) Tienda de ropa del barrio", rpMyRoleLbl:"Mi papel", rpMyRolePh:"ej.) Cliente", rpAiRoleLbl:"Papel de Masamasa", rpAiRolePh:"ej.) Dependiente", rpStyleLbl:"Registro (forma de hablar)", segAuto:"Auto (faders)", rpFaderNote:"El registro se ajusta automáticamente con los faders de cercanía y estatus", rpMake:"Crear plan de conversación", rpMaking:"Creando plan... ⏳", rpCancel:"Cancelar", rpBriefTitle:"🗺️ Etapas del diálogo", rpBriefGuide:"Toca una etapa para practicar sus expresiones antes 🎤 Durante la charla, la barra sube al cumplir etapas. ¡Empieza cuando estés listo!", rpBegin:"Empezar con esta configuración", rpEdit:"Editar configuración", progressLabel:"Progreso de la tarea", rpOverLabel:"¡Ampliando! 🔥", rpResultTitle:"🏆 Resultado de hoy", rpPts:" pts", rpScoreSub:"Tu progreso se convirtió en tu puntuación", rpSavedNote:"Transcripción guardada automáticamente", rpClose:"Cerrar", rpNeedTopic:"¡Escribe al menos el lugar o el objetivo!", rpPlanFail:"No se pudo crear el plan. Inténtalo de nuevo más tarde.", rpScoring:"🧮 Calculando puntuación...", pttHold:"🎤 Mantén pulsado y habla", pttTalking:"🔴 Hablando — suelta para enviar", stThinking:"🐹 Masamasa te escucha...", stPushHint:"🎤 Habla manteniendo pulsado el botón", sgLoading:"💡 Generando sugerencias...", sgDice:"Otro objetivo (manual→cotidiano→inesperado)", sgPolite:"존댓말 (formal)", sgBanmal:"반말 (informal)", prTitle:"🎤 Práctica oral", prStepRepeat:"① Escucha y repite", prStepReply:"② Responde a Masamasa", prRepeatHint:"Escucha la frase y dila igual", prReplyHint:"Escucha a Masamasa y responde con la frase de abajo", prListen:"🔊 Escuchar otra vez", prMicIdle:"Toca el botón y habla", prMicRec:"🔴 Escuchando... toca de nuevo al terminar", prGreat:"¡Perfecto! 👏", prGood:"¡Muy bien! 👍", prRetry:"Casi — ¡una vez más!", prNoSpeech:"No te escuché — inténtalo otra vez", prHeard:"Dije", prSkip:"Saltar →", prAllDone:"🎉 ¡Práctica de esta etapa completada!", prClose:"Cerrar", prNoSR:"Este navegador no admite reconocimiento de voz. Escucha, repite en voz alta y pulsa el botón de abajo.", prSaidIt:"✅ Lo dije → siguiente", prPracticed:"✅ Practicado", appDownload:"📱 Descargar la app", appInstallHint:"Abre el menú del navegador y toca 'Añadir a pantalla de inicio' para instalar. En iPhone: Compartir (⬆️) → 'Añadir a pantalla de inicio'.", stYouFirst:"🎤 ¡Habla tú primero!", scfTitle:"🪜 Prueba a decir esto", scfNone:"No hay expresiones para esta etapa", rcScore:"Puntos", rcTurns:"Mis turnos", rcTime:"Tiempo", prStt:"🧠 Reconociendo...", introTitle:"🐹 ¡Bienvenido a Masamasa!", introBody:"Masamasa es una app de conversación por voz que desarrolla tu habilidad 'real' de hablar coreano en las situaciones que tú elijas.\n\n🎭 Diálogo temático: elige lugar y objetivo y se crea un plan de conversación. Practica las expresiones primero y luego actúa como en la vida real. Tu progreso se convierte en puntos.\n🗣️ Charla libre: ¡habla de lo que sea con Masamasa!\n🎚️ Ajusta cercanía y estatus para cambiar el registro.\n🪜 ¿Te quedas en blanco? El botón escalera te ayuda.", introOk:"¡Vamos!", egPrefix:"ej.) " },
         fr: { title:"🐹 Papoter en coréen avec Masamasa", subtitle:"Activez le micro et discutez naturellement avec Masamasa", speaking:"En train de parler...", ready:"Prêt à se connecter", waiting:"En attente", styleTitle:"🎚️ Style de conversation", distLabel:"Proximité (Distance)", powerLabel:"Statut de l'utilisateur (Power)", distLow:"Inconnus", distHigh:"Meilleurs amis", powerLow:"Subordonné", powerHigh:"Supérieur", distLv:["Inconnus","Connaissances","Neutre","Proches","Meilleurs amis (BFF)"], powerLv:["Subordonné","Un peu en dessous","D'égal à égal","Un peu au-dessus","Supérieur (VIP)"], placeholder:"Code d'accès (si nécessaire)", btnStart:"Commencer la conversation", btnStop:"Terminer la conversation", btnPause:"⏸️ Pause", btnResume:"▶️ Reprendre", btnExport:"📄 Exporter la conversation (.txt)", empty:"Commencez une conversation :<br>les messages s'affichent comme dans un chat", footer:"Parlez librement en coréen · Vous pouvez interrompre Masamasa", stConnecting:"Connexion au serveur...", stListening:"J'écoute... (micro activé)", stSpeaking:"Masamasa parle", stSpeakNow:"À vous de parler !", stClosed:"Connexion terminée", stPaused:"En pause — appuyez sur ▶️ pour reprendre", errAccess:"Code d'accès incorrect.", errFull:"Trop d'utilisateurs actuellement. Réessayez plus tard.", errGeneric:"Échec de la connexion.", consentTitle:"🎙️ Avis d'enregistrement", consentBody:"Pour conserver votre suivi d'apprentissage et améliorer le service, l'audio et le contenu de la conversation sont automatiquement enregistrés et sauvegardés sur le serveur. Acceptez pour commencer.", consentAgree:"Accepter et commencer", consentCancel:"Annuler", upUploading:"🎙️ Sauvegarde de l'enregistrement...", upDone:"✅ Enregistrement sauvegardé", upFail:"⚠️ Échec de la sauvegarde", kakaoNotice:"Certaines fonctions (sauvegarde de fichiers) sont limitées dans le navigateur KakaoTalk.", kakaoOpen:"Ouvrir dans le navigateur", kakaoExportMsg:"Le navigateur KakaoTalk ne permet pas de télécharger des fichiers. La transcription a été sauvegardée automatiquement sur le serveur. Pour obtenir le fichier, ouvrez cette page dans Chrome/Safari.", earTitle:"🎧 Écouteurs recommandés", earBody:"Avec le haut-parleur, la voix de Masamasa peut entrer dans le micro et couper sans cesse la conversation. C'est bien mieux avec des écouteurs !", earOk:"Compris !", qSlow:"Plus lentement", qAgain:"Encore une fois", qEasy:"Plus simple", qFast:"Vitesse normale", nameTitle:"👋 Comment tu t'appelles ?", namePh:"Ton nom (un surnom, ça marche)", nameOk:"OK", modeFree:"🗣️ Discussion libre", modeRp:"🎭 Dialogue à thème", rpTitle:"🎭 Réglage du dialogue à thème", rpIntro:"Tu peux écrire dans ta langue — Masamasa comprend", rpGoalLbl:"Objectif de la conversation", rpGoalPh:"Écris librement l'objectif de ton choix !", rpPlaceLbl:"Lieu de la conversation", rpPlacePh:"ex.) Boutique de vêtements du quartier", rpMyRoleLbl:"Mon rôle", rpMyRolePh:"ex.) Client", rpAiRoleLbl:"Rôle de Masamasa", rpAiRolePh:"ex.) Vendeur", rpStyleLbl:"Registre (façon de parler)", segAuto:"Auto (faders)", rpFaderNote:"Le registre est réglé automatiquement par les faders de proximité et de statut", rpMake:"Créer le plan de conversation", rpMaking:"Création du plan... ⏳", rpCancel:"Annuler", rpBriefTitle:"🗺️ Étapes du dialogue", rpBriefGuide:"Touche une étape pour t'entraîner d'abord aux expressions 🎤 Pendant le dialogue, la barre monte quand une étape est accomplie. Lance-toi quand tu es prêt !", rpBegin:"Commencer avec ces réglages", rpEdit:"Modifier les réglages", progressLabel:"Progression de la tâche", rpOverLabel:"En extension ! 🔥", rpResultTitle:"🏆 Résultat du jour", rpPts:" pts", rpScoreSub:"Ta progression est devenue ta note", rpSavedNote:"Transcription enregistrée automatiquement", rpClose:"Fermer", rpNeedTopic:"Indique au moins le lieu ou l'objectif !", rpPlanFail:"Échec de la création du plan. Réessaie plus tard.", rpScoring:"🧮 Calcul du score...", pttHold:"🎤 Maintiens pour parler", pttTalking:"🔴 En train de parler — relâche pour envoyer", stThinking:"🐹 Masamasa écoute...", stPushHint:"🎤 Parle en maintenant le bouton", sgLoading:"💡 Préparation des suggestions...", sgDice:"Autre objectif (manuel→quotidien→inattendu)", sgPolite:"존댓말 (poli)", sgBanmal:"반말 (familier)", prTitle:"🎤 Entraînement oral", prStepRepeat:"① Écoute et répète", prStepReply:"② Réponds à Masamasa", prRepeatHint:"Écoute la phrase et redis-la à l'identique", prReplyHint:"Écoute Masamasa et réponds avec la phrase ci-dessous", prListen:"🔊 Réécouter", prMicIdle:"Touche le bouton et parle", prMicRec:"🔴 J'écoute... touche à nouveau quand tu as fini", prGreat:"Parfait ! 👏", prGood:"Très bien ! 👍", prRetry:"Pas tout à fait — encore une fois !", prNoSpeech:"Je ne t'ai pas entendu — réessaie", prHeard:"J'ai dit", prSkip:"Passer →", prAllDone:"🎉 Entraînement de cette étape terminé !", prClose:"Fermer", prNoSR:"Ce navigateur ne prend pas en charge la reconnaissance vocale. Écoute, répète à voix haute puis touche le bouton ci-dessous.", prSaidIt:"✅ Je l'ai dit → suivant", prPracticed:"✅ Entraîné", appDownload:"📱 Télécharger l'appli", appInstallHint:"Ouvre le menu du navigateur et touche 'Ajouter à l'écran d'accueil'. Sur iPhone : Partager (⬆️) → 'Sur l'écran d'accueil'.", stYouFirst:"🎤 Lance la conversation !", scfTitle:"🪜 Essaie de dire ça", scfNone:"Pas d'expressions pour cette étape", rcScore:"Score", rcTurns:"Mes répliques", rcTime:"Durée", prStt:"🧠 Reconnaissance...", introTitle:"🐹 Bienvenue chez Masamasa !", introBody:"Masamasa est une appli de conversation vocale qui développe ta 'vraie' expression orale en coréen, dans les situations de ton choix.\n\n🎭 Dialogue à thème : choisis un lieu et un objectif, un plan de conversation est créé. Entraîne-toi aux expressions puis joue la scène comme en vrai. Ta progression devient ta note.\n🗣️ Discussion libre : parle de tout avec Masamasa !\n🎚️ Règle proximité et statut pour changer le registre.\n🪜 Bloqué ? Le bouton échelle t'aide.", introOk:"C'est parti !", egPrefix:"ex.) " }
     };
+    /* ── 홈/네비/히스토리 문구를 전 언어에 병합 (거대한 언어 줄을 건드리지 않고 한 곳에서 관리).
+       이렇게 하지 않으면 ko/en 외 언어에서 '주제 대화·자유 수다'가 한국어로 남는 버그가 생긴다. ── */
+    const I18N_NAV = {
+        ko: { homeSub:"무엇을 하고 싶어요?", hcRpTitle:"주제 대화", hcRpDesc:"상황을 정하고 목표를 향해 대화 연습", hcFreeTitle:"자유 수다", hcFreeDesc:"마사마사와 편하게 아무 이야기나", csbTitle:"⚙️ 대화 스타일", backConfirm:"대화를 끝낼까요? 지금까지의 대화는 저장돼요.", freeFbTitle:"💬 오늘도 수고했어요!", freeFbBody:"마사마사와 자유롭게 대화했어요. 상호작용 능력 피드백은 곧 추가될 예정이에요.", freeFbClose:"🏠 홈으로", rpHome:"🏠 홈으로", homeName:"이름 바꾸기", homeHistory:"지난 대화", histTitle:"🗂️ 지난 대화", histClose:"닫기", histEmpty:"아직 저장된 대화가 없어요. 대화를 마치면 여기에 기록돼요." },
+        en: { homeSub:"What would you like to do?", hcRpTitle:"Topic Practice", hcRpDesc:"Set a scene and practice toward a goal", hcFreeTitle:"Free Chat", hcFreeDesc:"Chat about anything with Masamasa", csbTitle:"⚙️ Conversation Style", backConfirm:"End the conversation? Your progress is saved.", freeFbTitle:"💬 Great job today!", freeFbBody:"You chatted freely with Masamasa. Interaction-skill feedback is coming soon.", freeFbClose:"🏠 Home", rpHome:"🏠 Home", homeName:"Change name", homeHistory:"History", histTitle:"🗂️ Past conversations", histClose:"Close", histEmpty:"No saved conversations yet. They'll appear here after you finish a chat." },
+        zh: { homeSub:"你想做什么？", hcRpTitle:"主题对话", hcRpDesc:"设定情境，朝目标练习对话", hcFreeTitle:"自由聊天", hcFreeDesc:"和Masamasa随便聊聊", csbTitle:"⚙️ 对话风格", backConfirm:"结束对话吗？目前的对话会被保存。", freeFbTitle:"💬 今天也辛苦啦！", freeFbBody:"你和Masamasa自由地聊了天。互动能力反馈即将推出。", freeFbClose:"🏠 回首页", rpHome:"🏠 回首页", homeName:"改名字", homeHistory:"历史对话", histTitle:"🗂️ 历史对话", histClose:"关闭", histEmpty:"还没有保存的对话。聊完后会显示在这里。" },
+        ja: { homeSub:"何をしますか？", hcRpTitle:"テーマ会話", hcRpDesc:"場面を決めて目標に向かって会話練習", hcFreeTitle:"フリートーク", hcFreeDesc:"マサマサと気軽におしゃべり", csbTitle:"⚙️ 会話スタイル", backConfirm:"会話を終わりますか？ここまでの会話は保存されます。", freeFbTitle:"💬 今日もおつかれさま！", freeFbBody:"マサマサと自由に会話しました。やり取り能力のフィードバックは近日追加予定です。", freeFbClose:"🏠 ホームへ", rpHome:"🏠 ホームへ", homeName:"名前を変更", homeHistory:"会話履歴", histTitle:"🗂️ 会話履歴", histClose:"閉じる", histEmpty:"まだ保存された会話はありません。会話を終えるとここに記録されます。" },
+        vi: { homeSub:"Bạn muốn làm gì?", hcRpTitle:"Hội thoại chủ đề", hcRpDesc:"Chọn tình huống, luyện hội thoại theo mục tiêu", hcFreeTitle:"Trò chuyện tự do", hcFreeDesc:"Tán gẫu thoải mái với Masamasa", csbTitle:"⚙️ Phong cách hội thoại", backConfirm:"Kết thúc hội thoại? Cuộc trò chuyện đến giờ sẽ được lưu.", freeFbTitle:"💬 Hôm nay bạn làm tốt lắm!", freeFbBody:"Bạn đã trò chuyện tự do với Masamasa. Phản hồi về kỹ năng tương tác sẽ sớm có.", freeFbClose:"🏠 Về trang chủ", rpHome:"🏠 Về trang chủ", homeName:"Đổi tên", homeHistory:"Lịch sử", histTitle:"🗂️ Hội thoại đã qua", histClose:"Đóng", histEmpty:"Chưa có hội thoại nào được lưu. Sẽ hiển thị ở đây sau khi bạn trò chuyện xong." },
+        th: { homeSub:"อยากทำอะไรดี?", hcRpTitle:"บทสนทนาตามหัวข้อ", hcRpDesc:"ตั้งสถานการณ์ ฝึกสนทนาสู่เป้าหมาย", hcFreeTitle:"คุยเล่นอิสระ", hcFreeDesc:"คุยกับ Masamasa แบบสบายๆ", csbTitle:"⚙️ สไตล์การสนทนา", backConfirm:"จบการสนทนาไหม? บทสนทนาที่ผ่านมาจะถูกบันทึก", freeFbTitle:"💬 วันนี้เก่งมาก!", freeFbBody:"คุณได้คุยกับ Masamasa อย่างอิสระ ฟีดแบ็กด้านการโต้ตอบกำลังจะมา", freeFbClose:"🏠 กลับหน้าหลัก", rpHome:"🏠 กลับหน้าหลัก", homeName:"เปลี่ยนชื่อ", homeHistory:"ประวัติ", histTitle:"🗂️ บทสนทนาที่ผ่านมา", histClose:"ปิด", histEmpty:"ยังไม่มีบทสนทนาที่บันทึกไว้ จะแสดงที่นี่หลังจบการสนทนา" },
+        id: { homeSub:"Mau melakukan apa?", hcRpTitle:"Percakapan Bertema", hcRpDesc:"Tentukan situasi, latih percakapan menuju tujuan", hcFreeTitle:"Obrolan Bebas", hcFreeDesc:"Ngobrol santai dengan Masamasa", csbTitle:"⚙️ Gaya Percakapan", backConfirm:"Akhiri percakapan? Obrolan sejauh ini akan disimpan.", freeFbTitle:"💬 Kerja bagus hari ini!", freeFbBody:"Kamu mengobrol bebas dengan Masamasa. Umpan balik kemampuan interaksi segera hadir.", freeFbClose:"🏠 Ke Beranda", rpHome:"🏠 Ke Beranda", homeName:"Ganti nama", homeHistory:"Riwayat", histTitle:"🗂️ Percakapan lalu", histClose:"Tutup", histEmpty:"Belum ada percakapan tersimpan. Akan muncul di sini setelah kamu selesai." },
+        mn: { homeSub:"Юу хиймээр байна?", hcRpTitle:"Сэдэвт яриа", hcRpDesc:"Нөхцөл байдлыг сонгож зорилгодоо дадлага", hcFreeTitle:"Чөлөөт яриа", hcFreeDesc:"Masamasa-тай чөлөөтэй хөөрөлдөх", csbTitle:"⚙️ Ярианы хэв маяг", backConfirm:"Яриаг дуусгах уу? Одоог хүртэлх яриа хадгалагдана.", freeFbTitle:"💬 Өнөөдөр сайн байлаа!", freeFbBody:"Та Masamasa-тай чөлөөтэй ярилцлаа. Харилцааны чадварын санал удахгүй нэмэгдэнэ.", freeFbClose:"🏠 Нүүр рүү", rpHome:"🏠 Нүүр рүү", homeName:"Нэр солих", homeHistory:"Түүх", histTitle:"🗂️ Өмнөх яриа", histClose:"Хаах", histEmpty:"Хадгалсан яриа алга. Яриа дуусгасны дараа энд харагдана." },
+        uz: { homeSub:"Nima qilmoqchisiz?", hcRpTitle:"Mavzuli suhbat", hcRpDesc:"Vaziyatni tanlang, maqsad sari suhbat mashqi", hcFreeTitle:"Erkin suhbat", hcFreeDesc:"Masamasa bilan bemalol suhbat", csbTitle:"⚙️ Suhbat uslubi", backConfirm:"Suhbatni tugatasizmi? Shu paytgacha suhbat saqlanadi.", freeFbTitle:"💬 Bugun zo'r ish qildingiz!", freeFbBody:"Masamasa bilan erkin suhbatlashdingiz. Muloqot ko'nikmasi bo'yicha fikr tez orada qo'shiladi.", freeFbClose:"🏠 Bosh sahifa", rpHome:"🏠 Bosh sahifa", homeName:"Ismni o'zgartirish", homeHistory:"Tarix", histTitle:"🗂️ Oldingi suhbatlar", histClose:"Yopish", histEmpty:"Hali saqlangan suhbat yo'q. Suhbatni tugatgach shu yerda ko'rinadi." },
+        ru: { homeSub:"Что хотите сделать?", hcRpTitle:"Тематический диалог", hcRpDesc:"Задайте ситуацию и тренируйтесь к цели", hcFreeTitle:"Свободная беседа", hcFreeDesc:"Свободно болтайте с Masamasa", csbTitle:"⚙️ Стиль общения", backConfirm:"Завершить разговор? Разговор будет сохранён.", freeFbTitle:"💬 Отличная работа сегодня!", freeFbBody:"Вы свободно пообщались с Masamasa. Отзыв о навыках взаимодействия скоро появится.", freeFbClose:"🏠 На главную", rpHome:"🏠 На главную", homeName:"Изменить имя", homeHistory:"История", histTitle:"🗂️ Прошлые разговоры", histClose:"Закрыть", histEmpty:"Пока нет сохранённых разговоров. Они появятся здесь после беседы." },
+        es: { homeSub:"¿Qué te gustaría hacer?", hcRpTitle:"Conversación temática", hcRpDesc:"Define una situación y practica hacia una meta", hcFreeTitle:"Charla libre", hcFreeDesc:"Charla tranquilamente con Masamasa", csbTitle:"⚙️ Estilo de conversación", backConfirm:"¿Terminar la conversación? Lo hablado se guardará.", freeFbTitle:"💬 ¡Buen trabajo hoy!", freeFbBody:"Charlaste libremente con Masamasa. Pronto habrá comentarios sobre la interacción.", freeFbClose:"🏠 Inicio", rpHome:"🏠 Inicio", homeName:"Cambiar nombre", homeHistory:"Historial", histTitle:"🗂️ Conversaciones anteriores", histClose:"Cerrar", histEmpty:"Aún no hay conversaciones guardadas. Aparecerán aquí al terminar." },
+        fr: { homeSub:"Que voulez-vous faire ?", hcRpTitle:"Conversation thématique", hcRpDesc:"Choisissez une situation et visez un objectif", hcFreeTitle:"Discussion libre", hcFreeDesc:"Bavardez tranquillement avec Masamasa", csbTitle:"⚙️ Style de conversation", backConfirm:"Terminer la conversation ? La conversation sera enregistrée.", freeFbTitle:"💬 Bravo pour aujourd'hui !", freeFbBody:"Vous avez discuté librement avec Masamasa. Le retour sur l'interaction arrive bientôt.", freeFbClose:"🏠 Accueil", rpHome:"🏠 Accueil", homeName:"Changer de nom", homeHistory:"Historique", histTitle:"🗂️ Conversations passées", histClose:"Fermer", histEmpty:"Aucune conversation enregistrée. Elles apparaîtront ici après une discussion." },
+    };
+    for (const _lng in I18N_NAV) { if (I18N[_lng]) Object.assign(I18N[_lng], I18N_NAV[_lng]); }
     let uiLang = localStorage.getItem("uiLang") || null;
     let lastStatus = null; // { state, key } — 언어 변경 시 상태 문구 갱신용
     function t(key) {
@@ -849,15 +919,20 @@
         document.getElementById("introTitleEl").textContent = t("introTitle");
         document.getElementById("introBodyEl").textContent = t("introBody");
         document.getElementById("introOkBtn").textContent = t("introOk");
-        /* 홈 화면 · 랭킹 · 자유수다 피드백 (방안 A) */
+        /* 홈 화면 · 자유수다 피드백 · 히스토리 (방안 A) */
         document.getElementById("homeTitleEl").textContent = t("title");
         document.getElementById("homeSubEl").textContent = t("homeSub");
-        document.getElementById("hcRpTitleEl").textContent = "🎭 " + t("hcRpTitle");
+        document.getElementById("hcRpTitleEl").textContent = t("hcRpTitle");
         document.getElementById("hcRpDescEl").textContent = t("hcRpDesc");
-        document.getElementById("hcFreeTitleEl").textContent = "💬 " + t("hcFreeTitle");
+        document.getElementById("hcFreeTitleEl").textContent = t("hcFreeTitle");
         document.getElementById("hcFreeDescEl").textContent = t("hcFreeDesc");
+        document.getElementById("homeNameLbl").textContent = t("homeName");
+        document.getElementById("homeHistoryLbl").textContent = t("homeHistory");
         document.getElementById("csbTitleEl").textContent = t("csbTitle");
         document.getElementById("freeFbCloseBtn").textContent = t("freeFbClose");
+        document.getElementById("histTitleEl").textContent = t("histTitle");
+        document.getElementById("histCloseBtn").textContent = t("histClose");
+        document.getElementById("histExportBtn").textContent = t("btnExport");
         /* 주제 대화 UI */
         modeFreeBtn.textContent = t("modeFree");
         modeRpBtn.textContent = t("modeRp");
@@ -1067,13 +1142,13 @@
     function goFeedback() { setScreen("feedback"); }
 
     /* ── 페이더 위치 제어 (페이더 노드는 하나 — 어디에 있든 값 공유) ──
-       · 자유 수다 → 대화 화면 상단의 접이식 "⚙️ 대화 스타일"(csbBody)로 이동
+       · 자유 수다 → 캐릭터 패널의 '대화 시작하기' 위에 펼쳐 배치 (전처럼, 숨기지 않음)
        · 주제 대화 → 설정 다이얼로그의 말투 칸(rpFaderSlot)으로 이동 */
-    function moveFaderToStyleBar() {
-        csbBody.appendChild(faderSection);
-        styleTitleEl.style.display = "none";           // 바에 자체 제목이 있음
+    function revealFaderInPanel() {
+        if (faderSection.parentElement !== charPanel) charPanel.insertBefore(faderSection, exportBtn);
+        styleTitleEl.style.display = "";
         faderSection.classList.remove("fader-collapsed");
-        chatStyleBar.classList.remove("hidden");
+        chatStyleBar.classList.add("hidden");   // 접이식 바는 쓰지 않음
     }
     function moveFaderToDialog() {
         rpFaderSlot.appendChild(faderSection);
@@ -1087,24 +1162,109 @@
         modeRpBtn.classList.toggle("active", m === "rp");
     }
 
-    /* ── 홈 카드: 🎭 주제 대화 / 💬 자유 수다 (기존 .mode-toggle 대체) ── */
-    function enterTopicSetup() {   // 🎭 주제 대화 → 시나리오 설정 → 브리핑 → 대화
+    /* ── 홈 카드: 🎬 주제 대화 / ☕ 자유 수다 (기존 .mode-toggle 대체) ── */
+    function enterTopicSetup() {   // 주제 대화 → 시나리오 설정 → 브리핑 → 대화
         setMode("rp");
         moveFaderToDialog();
         openRpSetup();             // 홈 위에 설정 오버레이를 띄운다 (대화 시작 시 goChat)
     }
-    function enterFreeChat() {     // 💬 자유 수다 → 곧장 대화 전용 화면 (기본값 즉시 시작)
+    function enterFreeChat() {     // 자유 수다 → 곧장 대화 전용 화면 (말투는 시작 버튼 위에)
         setMode("free");
         rpId = null; rpPlan = null;
-        moveFaderToStyleBar();
+        revealFaderInPanel();
         goChat();
     }
     document.getElementById("homeRpCard").addEventListener("click", enterTopicSetup);
     document.getElementById("homeFreeCard").addEventListener("click", enterFreeChat);
     document.getElementById("homeLangBtn").addEventListener("click", () => langOverlay.classList.remove("hidden"));
 
-    /* ── 접이식 "⚙️ 대화 스타일" 토글 ── */
-    document.getElementById("csbToggle").addEventListener("click", () => chatStyleBar.classList.toggle("open"));
+    /* ── 홈 우상단: 이름 바꾸기 · 지난 대화 ── */
+    document.getElementById("homeNameBtn").addEventListener("click", () => {
+        nameInput.value = userName; nameShown = true; nameOverlay.classList.remove("hidden");
+    });
+    document.getElementById("homeHistoryBtn").addEventListener("click", openHistory);
+
+    /* ══════════ 지난 대화(히스토리) — 이 기기 localStorage에 대화록 저장·열람 ══════════ */
+    const HIST_KEY = "masamasaHistory";
+    const histOverlay = document.getElementById("histOverlay");
+    const histList = document.getElementById("histList");
+    const histDetail = document.getElementById("histDetail");
+    const histExportBtn = document.getElementById("histExportBtn");
+    let histCurrent = null;
+    function loadHistory() {
+        try { return JSON.parse(localStorage.getItem(HIST_KEY) || "[]"); } catch (e) { return []; }
+    }
+    function saveConversationToHistory() {
+        if (!transcriptLog.length) return;
+        const text = buildTranscriptText();
+        if (!text) return;
+        const title = (rpSessionActive && rpPlan) ? (rpPlan.topic_ko || t("hcRpTitle")) : t("hcFreeTitle");
+        const preview = transcriptLog.slice(0, 4)
+            .map(m => (m.role === "user" ? "🙋 " : "🐹 ") + (m.text || "").trim()).join("   ").slice(0, 140);
+        const list = loadHistory();
+        list.unshift({ ts: new Date().toISOString(), mode: rpSessionActive ? "rp" : "free", title, preview, text });
+        if (list.length > 30) list.length = 30;
+        try { localStorage.setItem(HIST_KEY, JSON.stringify(list)); } catch (e) {}
+    }
+    function openHistory() {
+        histDetail.classList.add("hidden");
+        histExportBtn.classList.add("hidden");
+        histList.classList.remove("hidden");
+        renderHistList();
+        histOverlay.classList.remove("hidden");
+    }
+    function renderHistList() {
+        const list = loadHistory();
+        histList.innerHTML = "";
+        if (!list.length) {
+            const e = document.createElement("div");
+            e.className = "hist-empty"; e.textContent = t("histEmpty");
+            histList.appendChild(e); return;
+        }
+        list.forEach((it, i) => {
+            const div = document.createElement("div");
+            div.className = "hist-item";
+            const emoji = it.mode === "rp" ? "🎬" : "☕";
+            const dt = new Date(it.ts).toLocaleString(uiLang || "ko");
+            div.innerHTML = '<div class="hi-top"><span class="hi-title">' + emoji + " " + escapeHtml(it.title || "") +
+                '</span><span class="hi-date">' + escapeHtml(dt) + '</span></div>' +
+                '<div class="hi-preview">' + escapeHtml(it.preview || "") + '</div>';
+            div.addEventListener("click", () => showHistDetail(i));
+            histList.appendChild(div);
+        });
+    }
+    function showHistDetail(i) {
+        const it = loadHistory()[i];
+        if (!it) return;
+        histCurrent = it;
+        histDetail.textContent = it.text || "";
+        histList.classList.add("hidden");
+        histDetail.classList.remove("hidden");
+        histExportBtn.classList.remove("hidden");
+    }
+    histExportBtn.addEventListener("click", () => {
+        if (!histCurrent) return;
+        if (isKakao) { alert(t("kakaoExportMsg")); return; }
+        const blob = new Blob(["﻿" + histCurrent.text], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const dd = new Date(histCurrent.ts);
+        const pad = n => String(n).padStart(2, "0");
+        a.href = url;
+        a.download = "대화기록_" + dd.getFullYear() + pad(dd.getMonth() + 1) + pad(dd.getDate()) + "_" + pad(dd.getHours()) + pad(dd.getMinutes()) + ".txt";
+        a.click(); URL.revokeObjectURL(url);
+    });
+    function closeHistory() {
+        if (!histDetail.classList.contains("hidden")) {
+            histDetail.classList.add("hidden");
+            histExportBtn.classList.add("hidden");
+            histList.classList.remove("hidden");   // 상세 → 목록으로
+        } else {
+            histOverlay.classList.add("hidden");
+        }
+    }
+    document.getElementById("histCloseBtn").addEventListener("click", closeHistory);
+    document.getElementById("histX").addEventListener("click", () => histOverlay.classList.add("hidden"));
 
     /* ── 좌상단 ← 뒤로 가기: 대화 중이면 종료 확인 후, 아니면 바로 홈 ── */
     document.getElementById("backBtn").addEventListener("click", () => {
@@ -2045,8 +2205,10 @@
                 ? rpPlan.stages.map(s => ({ name: s.name, native: s.native || "", done: false }))
                 : [];
             progressWrap.classList.toggle("hidden", !rpSessionActive);
-            // 접이식 대화 스타일 바는 자유 수다에서만 (주제 대화의 D/P는 설정에서 고정됨)
-            chatStyleBar.classList.toggle("hidden", rpSessionActive);
+            chatStyleBar.classList.add("hidden");   // 말투는 캐릭터 패널에 배치 (접이식 바 미사용)
+            // 대화창이 스르륵 슬라이드 다운 (대화 시작 연출)
+            const cp = document.querySelector(".chat-panel");
+            if (cp) { cp.classList.remove("slide-in"); void cp.offsetWidth; cp.classList.add("slide-in"); }
             if (rpSessionActive) renderProgress();
             modeFreeBtn.disabled = true;
             modeRpBtn.disabled = true;
@@ -2165,6 +2327,7 @@
         if (ws) { ws.onclose = null; ws.onerror = null; ws.onmessage = null; try { ws.close(); } catch (e) {} ws = null; }
         finalizeBubbles();
         exportBtn.disabled = transcriptLog.length === 0;
+        saveConversationToHistory();   // 이 기기 '지난 대화'에 대화록 저장 (rpSessionActive/rpPlan 리셋 전)
         // 마이크 정지·컨텍스트 종료는 녹음 마무리(비동기) 안에서 처리
         finishRecordingAndUpload();
         resetChatLog(); // 대화 종료 → 채팅창 비우기 (기록은 서버 저장 + 내보내기 버튼으로 유지)

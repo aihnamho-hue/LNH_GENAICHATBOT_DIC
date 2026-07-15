@@ -332,8 +332,8 @@
 
         /* ── 오버레이 우상단 닫기(✕) 버튼 ── */
         .lang-box { position: relative; }
-        .ov-x { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border: none; border-radius: 11px; background: #F4EDE5; color: #8A7A6E; font-size: 15px; font-weight: 800; cursor: pointer; z-index: 5; transition: background 0.15s, transform 0.12s; }
-        .ov-x:hover { background: #EADFD3; transform: scale(1.05); }
+        .ov-x { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border: none; border-radius: 11px; background: var(--accent-soft); color: var(--accent); font-size: 15px; font-weight: 800; cursor: pointer; z-index: 5; transition: background 0.15s, transform 0.12s; }
+        .ov-x:hover { background: #CBD6DC; transform: scale(1.05); }
 
         /* ── 모드 버튼 크기 차등: 주제 대화(핵심 과업) 크게, 자유 수다 작게 ── */
         #modeRpBtn { flex: 2.1; font-size: 14px; padding: 14px 4px; }
@@ -405,8 +405,8 @@
         .hc-desc { font-size: 12.5px; font-weight: 600; opacity: 0.94; line-height: 1.45; }
         .home-credit { margin-top: 10px; }
 
-        /* ── 뒤로 가기(←) 버튼 — 대화 화면 좌상단 ── */
-        .back-btn { font-size: 20px; font-weight: 700; }
+        /* ── 홈 버튼(🏠) — 대화 화면 좌상단 (기본 .lang-btn은 right 고정이라 left로 덮어씀) ── */
+        .back-btn { left: 12px; right: auto; font-size: 17px; font-weight: 700; }
 
         /* ── 지난 대화(히스토리) 오버레이 ── */
         .hist-list { display: flex; flex-direction: column; gap: 8px; max-height: 46vh; overflow-y: auto; margin: 6px 0 4px; text-align: left; }
@@ -425,6 +425,37 @@
         /* ── 대화창 슬라이드 다운(스르륵) — 대화 시작 시 ── */
         @keyframes chatSlideDown { from { opacity: 0; transform: translateY(-26px); } to { opacity: 1; transform: translateY(0); } }
         .chat-panel.slide-in { animation: chatSlideDown 0.5s cubic-bezier(.2,.8,.3,1); }
+
+        /* ══════════ 영상통화 뷰 (마사마사 크게 보기) — 횡 슬라이드 ══════════ */
+        .hv-open-btn { margin-left: auto; border: 1.5px solid var(--accent-soft); background: rgba(255,255,255,0.72); color: var(--accent);
+            border-radius: 999px; height: 34px; padding: 0 13px; font-size: 12.5px; font-weight: 800; cursor: pointer; flex-shrink: 0;
+            display: inline-flex; align-items: center; gap: 5px; transition: transform 0.12s, background 0.2s, border-color 0.2s; }
+        .hv-open-btn:hover:not(:disabled) { transform: translateY(-1px); background: #fff; border-color: var(--accent); }
+        .hv-open-btn:disabled { opacity: 0.4; cursor: default; }
+        .ham-view { position: fixed; inset: 0; z-index: 80; display: flex; flex-direction: column; align-items: center;
+            background: radial-gradient(120% 85% at 50% 0%, #4A5C80 0%, var(--navy) 58%, #2B3252 100%);
+            transform: translateX(100%); transition: transform 0.42s cubic-bezier(.2,.8,.3,1); visibility: hidden; }
+        .ham-view.show { transform: translateX(0); visibility: visible; }
+        .hv-top { width: 100%; max-width: 760px; display: flex; align-items: center; justify-content: space-between;
+            padding: calc(14px + env(safe-area-inset-top)) 18px 6px; box-sizing: border-box; }
+        .hv-name { color: #fff; font-weight: 800; font-size: 15px; opacity: 0.95; }
+        .hv-back { border: none; background: rgba(255,255,255,0.18); color: #fff; border-radius: 999px; height: 38px; padding: 0 16px;
+            font-size: 13.5px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+            backdrop-filter: blur(4px); transition: background 0.18s, transform 0.12s; }
+        .hv-back:hover { background: rgba(255,255,255,0.3); transform: translateY(-1px); }
+        .hv-stage-slot { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 0; padding: 8px; box-sizing: border-box; }
+        .hv-stage-slot .stage { width: min(66vw, 300px); max-height: 46vh; aspect-ratio: 1/1; }
+        .hv-stage-slot .stage .hamster-wrap { width: 84%; }
+        .hv-stage-slot .stage .stage-glow { opacity: 0.5; background: radial-gradient(circle at 50% 60%, rgba(96,181,194,0.5), transparent 72%); }
+        .hv-caption { color: #fff; font-size: 16px; font-weight: 700; line-height: 1.45; text-align: center; min-height: 48px;
+            max-width: 660px; padding: 0 24px 8px; text-shadow: 0 1px 4px rgba(0,0,0,0.35); }
+        .hv-controls { width: 100%; max-width: 560px; padding: 0 14px calc(18px + env(safe-area-inset-bottom)); box-sizing: border-box; }
+        .hv-controls .ptt-btn { width: 100%; margin: 0 0 10px; background: var(--teal); color: #07333B; box-shadow: 0 10px 26px -10px rgba(0,0,0,0.55); }
+        .hv-controls .ptt-btn.talking { background: var(--danger); color: #fff; }
+        .hv-controls .ptt-btn:disabled { background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); }
+        .hv-controls .quick-bar { background: transparent; padding: 0; }
+        .hv-controls .quick-btn { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.28); color: #fff; }
+        .hv-controls .quick-btn:disabled { opacity: 0.4; }
 
         /* ── 대화 화면 상단 접이식 "⚙️ 대화 스타일" (자유 수다에서만) ── */
         .chat-style-bar { margin-bottom: 8px; border: 1.5px solid var(--accent-soft);
@@ -448,6 +479,8 @@
 <!-- 언어 선택 오버레이 (첫 접속 시 표시) -->
 <div class="lang-overlay" id="langOverlay">
     <div class="lang-box">
+        <!-- ✕는 이미 언어를 고른 뒤(재오픈) 때만 표시 — 첫 방문엔 반드시 언어를 선택 -->
+        <button type="button" class="ov-x" id="langX" hidden>✕</button>
         <h2>🌏 언어 선택 · Select Your Language</h2>
         <p>한국어 학습 내용을 제외한 화면 언어가 바뀝니다</p>
         <div class="lang-grid">
@@ -484,6 +517,7 @@
 <!-- 이어폰 사용 권장 팝업 (언어 선택 직후) -->
 <div class="lang-overlay hidden" id="earphoneOverlay">
     <div class="lang-box consent-box">
+        <button type="button" class="ov-x" id="earX">✕</button>
         <h2 id="earTitleEl">🎧</h2>
         <p class="consent-text" id="earBodyEl" style="text-align:center;"></p>
         <div class="consent-actions">
@@ -494,6 +528,7 @@
 <!-- 사용자 이름 입력 (이어폰 안내 다음 — 매 실행 표시) -->
 <div class="lang-overlay hidden" id="nameOverlay">
     <div class="lang-box consent-box">
+        <button type="button" class="ov-x" id="nameX">✕</button>
         <h2 id="nameTitleEl">👋</h2>
         <input type="text" id="nameInput" maxlength="20" class="name-input" autocomplete="off">
         <div class="consent-actions">
@@ -504,6 +539,7 @@
 <!-- 녹음 동의 모달 (첫 대화 시작 전 1회) -->
 <div class="lang-overlay hidden" id="consentOverlay">
     <div class="lang-box consent-box">
+        <button type="button" class="ov-x" id="consentX">✕</button>
         <h2 id="consentTitleEl">🎙️</h2>
         <p class="consent-text" id="consentBodyEl"></p>
         <div class="consent-actions">
@@ -603,6 +639,7 @@
      TODO: <한국어 대화 상호작용 교육 모형> 문서로 채울 것. 지금은 격려 + 홈 복귀만. -->
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
+        <button type="button" class="ov-x" id="freeFbX">✕</button>
         <img class="result-ham" src="/static/hamster.png" alt="마사마사">
         <div class="freefb-icon">💬</div>
         <h2 id="freeFbTitleEl" style="margin:6px 0;">💬</h2>
@@ -653,7 +690,7 @@
 <div class="app">
     <div class="character-panel">
         <!-- ← 뒤로: 대화 중이면 종료 확인 후 홈으로 -->
-        <button class="lang-btn back-btn" id="backBtn" title="Back">←</button>
+        <button class="lang-btn back-btn" id="backBtn" title="Home">🏠</button>
         <button class="lang-btn" id="langBtn" title="Language">🌐</button>
         <div class="title">
             <h1 id="appTitle">🐹 마사마사와 한국어 수다</h1>
@@ -717,6 +754,8 @@
         <div class="chat-header">
             <div class="avatar"><img src="/static/hamster.png" alt=""></div>
             <div class="info"><h2>마사마사</h2><span id="headerStatus">대기 중</span></div>
+            <!-- 🎥 영상통화 뷰 열기 — 마사마사를 크게 보며 대화 (횡 슬라이드) -->
+            <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span>🎥</span><span id="hamViewBtnLbl"></span></button>
         </div>
         <!-- 접이식 "⚙️ 대화 스타일" — 자유 수다에서만 표시(기본값 즉시 시작, 필요 시 펼침).
              주제 대화의 D/P는 설정 화면에서 정해지므로 여기선 숨김. 페이더는 JS가 이 안으로 옮긴다. -->
@@ -767,6 +806,17 @@
     <!-- 제작자 크레딧 -->
     <div class="credit">공동체에 대한 공헌 · LeeNamho · Email: namho1210@naver.com</div>
 </div>
+<!-- ═══ 영상통화 뷰 (마사마사 크게 보기) — 대화 화면에서 오른쪽에서 슬라이드 인 ═══
+     실제 캐릭터 무대(#stage)와 발화 버튼(#pttBtn)·빠른요청을 이 안으로 옮겨 애니메이션·핸들러를 그대로 유지 -->
+<div class="ham-view" id="hamView" aria-hidden="true">
+    <div class="hv-top">
+        <span class="hv-name">🐹 <span id="hvNameEl">마사마사</span></span>
+        <button type="button" class="hv-back" id="hamViewClose"><span>💬</span><span id="hamViewCloseLbl"></span></button>
+    </div>
+    <div class="hv-stage-slot" id="hvStageSlot"></div>
+    <div class="hv-caption" id="hvCaption"></div>
+    <div class="hv-controls" id="hvControls"></div>
+</div>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -778,7 +828,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v21 (2026-07-15)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v23 (2026-07-15)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("마사마사 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -880,6 +930,16 @@
         fr: { homeSub:"Que voulez-vous faire ?", hcRpTitle:"Conversation thématique", hcRpDesc:"Choisissez une situation et visez un objectif", hcFreeTitle:"Discussion libre", hcFreeDesc:"Bavardez tranquillement avec Masamasa", csbTitle:"⚙️ Style de conversation", backConfirm:"Terminer la conversation ? La conversation sera enregistrée.", freeFbTitle:"💬 Bravo pour aujourd'hui !", freeFbBody:"Vous avez discuté librement avec Masamasa. Le retour sur l'interaction arrive bientôt.", freeFbClose:"🏠 Accueil", rpHome:"🏠 Accueil", homeName:"Changer de nom", homeHistory:"Historique", histTitle:"🗂️ Conversations passées", histClose:"Fermer", histEmpty:"Aucune conversation enregistrée. Elles apparaîtront ici après une discussion." },
     };
     for (const _lng in I18N_NAV) { if (I18N[_lng]) Object.assign(I18N[_lng], I18N_NAV[_lng]); }
+    /* 영상통화 뷰 버튼 라벨 (이모지는 HTML 스팬에 있으니 텍스트만) */
+    const I18N_HV = {
+        ko: { hvOpen:"영상통화", hvClose:"채팅" }, en: { hvOpen:"Video", hvClose:"Chat" },
+        zh: { hvOpen:"视频", hvClose:"聊天" }, ja: { hvOpen:"ビデオ", hvClose:"チャット" },
+        vi: { hvOpen:"Video", hvClose:"Chat" }, th: { hvOpen:"วิดีโอ", hvClose:"แชท" },
+        id: { hvOpen:"Video", hvClose:"Chat" }, mn: { hvOpen:"Видео", hvClose:"Чат" },
+        uz: { hvOpen:"Video", hvClose:"Chat" }, ru: { hvOpen:"Видео", hvClose:"Чат" },
+        es: { hvOpen:"Vídeo", hvClose:"Chat" }, fr: { hvOpen:"Vidéo", hvClose:"Chat" },
+    };
+    for (const _l in I18N_HV) { if (I18N[_l]) Object.assign(I18N[_l], I18N_HV[_l]); }
     let uiLang = localStorage.getItem("uiLang") || null;
     let lastStatus = null; // { state, key } — 언어 변경 시 상태 문구 갱신용
     function t(key) {
@@ -928,6 +988,8 @@
         document.getElementById("hcFreeDescEl").textContent = t("hcFreeDesc");
         document.getElementById("homeNameLbl").textContent = t("homeName");
         document.getElementById("homeHistoryLbl").textContent = t("homeHistory");
+        document.getElementById("hamViewBtnLbl").textContent = t("hvOpen");
+        document.getElementById("hamViewCloseLbl").textContent = t("hvClose");
         document.getElementById("csbTitleEl").textContent = t("csbTitle");
         document.getElementById("freeFbCloseBtn").textContent = t("freeFbClose");
         document.getElementById("histTitleEl").textContent = t("histTitle");
@@ -1034,6 +1096,17 @@
         goHome();   // 진입 안내 완료 → 홈 화면 착지
     });
 
+    /* ── 팝업 닫기(✕) — 진입 안내·동의 팝업도 X로 끌 수 있게 ── */
+    document.getElementById("earX").addEventListener("click", () => { earphoneOverlay.classList.add("hidden"); showNamePopup(); });
+    document.getElementById("nameX").addEventListener("click", () => { nameOverlay.classList.add("hidden"); goHome(); });
+    document.getElementById("consentX").addEventListener("click", () => consentOverlay.classList.add("hidden"));
+    document.getElementById("freeFbX").addEventListener("click", goHome);
+    document.getElementById("langX").addEventListener("click", () => {
+        // ✕는 이미 언어를 고른 뒤에만 보임 — 닫고 다음 단계로
+        langOverlay.classList.add("hidden");
+        showIntroPopup();
+    });
+
     document.querySelectorAll(".lang-item").forEach(btn => btn.addEventListener("click", () => {
         uiLang = btn.dataset.lang;
         localStorage.setItem("uiLang", uiLang);
@@ -1041,7 +1114,7 @@
         applyLang();
         showIntroPopup(); // 언어 선택 → 앱 소개 → 이어폰 → 이름
     }));
-    document.getElementById("langBtn").addEventListener("click", () => langOverlay.classList.remove("hidden"));
+    document.getElementById("langBtn").addEventListener("click", () => { document.getElementById("langX").hidden = false; langOverlay.classList.remove("hidden"); });
     // 배경 클릭으로 닫아도(기존 언어 유지) 다음 단계는 반드시 진행
     langOverlay.addEventListener("click", (e) => {
         if (e.target === langOverlay && uiLang) {
@@ -1176,7 +1249,7 @@
     }
     document.getElementById("homeRpCard").addEventListener("click", enterTopicSetup);
     document.getElementById("homeFreeCard").addEventListener("click", enterFreeChat);
-    document.getElementById("homeLangBtn").addEventListener("click", () => langOverlay.classList.remove("hidden"));
+    document.getElementById("homeLangBtn").addEventListener("click", () => { document.getElementById("langX").hidden = false; langOverlay.classList.remove("hidden"); });
 
     /* ── 홈 우상단: 이름 바꾸기 · 지난 대화 ── */
     document.getElementById("homeNameBtn").addEventListener("click", () => {
@@ -1266,7 +1339,54 @@
     document.getElementById("histCloseBtn").addEventListener("click", closeHistory);
     document.getElementById("histX").addEventListener("click", () => histOverlay.classList.add("hidden"));
 
-    /* ── 좌상단 ← 뒤로 가기: 대화 중이면 종료 확인 후, 아니면 바로 홈 ── */
+    /* ══════════ 영상통화 뷰 (마사마사 크게 보기) — 대화 화면에서 횡 슬라이드 ══════════
+       실제 무대(#stage)·발화 버튼(#pttBtn)·빠른요청을 이 뷰로 옮겨(노드 이동) 애니메이션·핸들러 유지.
+       닫을 때는 슬라이드 아웃이 끝난 뒤 원위치로 되돌린다(빈 화면이 안 보이게). */
+    const hamView = document.getElementById("hamView");
+    const hvStageSlot = document.getElementById("hvStageSlot");
+    const hvControls = document.getElementById("hvControls");
+    const hvCaption = document.getElementById("hvCaption");
+    const hamViewBtn = document.getElementById("hamViewBtn");
+    const quickBarEl = document.querySelector(".quick-bar");
+    let hamViewOpen = false, lastCaption = "", _hvAnchors = null, _hvGen = 0;
+    function _hvRestore() {
+        if (!_hvAnchors) return;
+        _hvAnchors.sp.insertBefore(stage, _hvAnchors.sn);
+        _hvAnchors.pp.insertBefore(pttBtn, _hvAnchors.pn);
+        _hvAnchors.qp.insertBefore(quickBarEl, _hvAnchors.qn);
+        _hvAnchors = null;
+    }
+    function openHamView() {
+        if (hamViewOpen) return;
+        _hvGen++;             // 진행 중이던 복귀 예약 무효화
+        _hvRestore();         // 혹시 남은 노드 정리 후 새로 앵커 저장
+        _hvAnchors = {
+            sp: stage.parentNode, sn: stage.nextSibling,
+            pp: pttBtn.parentNode, pn: pttBtn.nextSibling,
+            qp: quickBarEl.parentNode, qn: quickBarEl.nextSibling,
+        };
+        hvStageSlot.appendChild(stage);
+        hvControls.appendChild(pttBtn);
+        hvControls.appendChild(quickBarEl);
+        hvCaption.textContent = lastCaption || "";
+        hamView.classList.add("show");
+        hamView.setAttribute("aria-hidden", "false");
+        hamViewOpen = true;
+    }
+    function closeHamView() {
+        if (!hamViewOpen) return;
+        hamViewOpen = false;
+        const gen = ++_hvGen;
+        hamView.classList.remove("show");
+        hamView.setAttribute("aria-hidden", "true");
+        const restore = () => { if (gen === _hvGen) _hvRestore(); };
+        hamView.addEventListener("transitionend", restore, { once: true });
+        setTimeout(restore, 520);   // transitionend 미발생 폴백
+    }
+    hamViewBtn.addEventListener("click", openHamView);
+    document.getElementById("hamViewClose").addEventListener("click", closeHamView);
+
+    /* ── 좌상단 홈 버튼: 대화 중이면 종료 확인 후, 아니면 바로 홈 ── */
     document.getElementById("backBtn").addEventListener("click", () => {
         if (isConnected) {
             if (!confirm(t("backConfirm"))) return;
@@ -2152,6 +2272,7 @@
     function setControlsEnabled(on) {
         quickBtns.forEach(b => b.disabled = !on);
         pttBtn.disabled = !on;
+        hamViewBtn.disabled = !on;   // 영상통화 뷰는 대화 중에만
         if (!on) stopTalking(); // 컨트롤이 꺼지면(종료·일시정지) 말하기 상태도 해제
     }
 
@@ -2306,6 +2427,7 @@
     }
 
     function stopSession() {
+        closeHamView();   // 영상통화 뷰 열려 있으면 닫고 노드 원위치
         isConnected = false;
         isPaused = false;
         clearInterval(pingTimer);
@@ -2511,6 +2633,9 @@
             current.el.textContent = current.text;
         }
         chatLog.scrollTop = chatLog.scrollHeight;
+        // 영상통화 뷰 자막 갱신 (최근 발화)
+        lastCaption = (role === "user" ? "🙋 " : "🐹 ") + (current.text || "").trim();
+        if (hamViewOpen) hvCaption.textContent = lastCaption;
     }
 
     function finalizeBubbles() {

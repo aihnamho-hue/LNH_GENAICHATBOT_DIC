@@ -1,7 +1,7 @@
 // 최소 서비스 워커 — PWA 설치 요건 충족용
 // 실시간 음성 스트리밍 앱이므로 오프라인 캐싱은 하지 않고,
 // 정적 리소스만 가볍게 캐싱한다.
-const CACHE_NAME = 'masamasa-v1';
+const CACHE_NAME = 'hoarang-v2';
 const STATIC_ASSETS = [
   '/static/hamster.png',
   '/static/icon-192.png',

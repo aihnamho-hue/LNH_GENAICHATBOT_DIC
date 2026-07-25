@@ -6,15 +6,15 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json">
+    <link rel="manifest" href="/static/manifest.json?v=26">
     <meta name="theme-color" content="#FF8C5A">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=26">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=26">
     <style>
         :root {
             /* 세련된 팔레트 — 슬레이트 · 틸 · 샌드 · 딥네이비 · 로즈 */
@@ -541,7 +541,7 @@
 <div class="lang-overlay hidden" id="introOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="introX">✕</button>
-        <div class="intro-ham-wrap" id="introHamWrap"><img class="intro-ham" src="/static/hamster.png" alt="호아랑"></div>
+        <div class="intro-ham-wrap" id="introHamWrap"><img class="intro-ham" src="/static/hamster.png?v=26" alt="호아랑"></div>
         <h2 id="introTitleEl" style="margin-bottom:8px;">🐯</h2>
         <p class="consent-text" id="introBodyEl" style="white-space:pre-line;"></p>
         <div class="consent-actions"><button class="action-btn" id="introOkBtn"></button></div>
@@ -636,7 +636,7 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=26" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
         <div class="result-cards">
             <div class="r-card score"><div class="r-label" id="rcScoreLbl"></div><div class="r-inner" id="rcScoreVal">0</div></div>
@@ -658,7 +658,7 @@
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=26" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
@@ -679,7 +679,7 @@
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=26" alt="호아랑">
         <div class="freefb-icon">💬</div>
         <h2 id="freeFbTitleEl" style="margin:6px 0;">💬</h2>
         <p class="consent-text" id="freeFbBodyEl" style="text-align:center;"></p>
@@ -691,7 +691,7 @@
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=26" alt="호아랑"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
 <div class="home-screen" id="homeScreen">
@@ -708,7 +708,7 @@
     <!-- 호아랑: 크게, 원 없이. 가끔 통통 튀며 말풍선으로 말을 건다 -->
     <div class="home-hero">
         <div class="home-bubble" id="homeBubble" aria-hidden="true"></div>
-        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png" alt="호아랑"></div>
+        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png?v=26" alt="호아랑"></div>
     </div>
     <p class="home-sub" id="homeSubEl"></p>
     <button type="button" class="home-card hc-rp" id="homeRpCard">
@@ -727,7 +727,7 @@
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=26" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -761,7 +761,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=26" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -814,7 +814,7 @@
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=26" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span>🎥</span><span id="hamViewBtnLbl"></span></button>
@@ -1384,7 +1384,7 @@
 
     /* ── 홈의 호아랑 이미지를 랜덤으로 계속 교체 ── */
     const homeHamImg = homeHam.querySelector("img");
-    const HOME_HAM_IMGS = ["/static/ham_idle.png", "/static/ham_smile.png", "/static/ham_surprised.png", "/static/ham_shy.png"];
+    const HOME_HAM_IMGS = ["/static/ham_idle.png?v=26", "/static/ham_smile.png?v=26", "/static/ham_surprised.png?v=26", "/static/ham_shy.png?v=26"];
     function homeImgTick() {
         if (document.body.dataset.screen !== "home" || !homeHamImg) return;
         const others = HOME_HAM_IMGS.filter(s => !homeHamImg.src.endsWith(s));
@@ -2753,8 +2753,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png", smile: "/static/ham_smile.png",
-        surprised: "/static/ham_surprised.png", shy: "/static/ham_shy.png",
+        idle: "/static/ham_idle.png?v=26", smile: "/static/ham_smile.png?v=26",
+        surprised: "/static/ham_surprised.png?v=26", shy: "/static/ham_shy.png?v=26",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -2825,7 +2825,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png";
+                img.src = "/static/hamster.png?v=26";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");

@@ -1,17 +1,20 @@
 // 최소 서비스 워커 — PWA 설치 요건 충족용
 // 실시간 음성 스트리밍 앱이므로 오프라인 캐싱은 하지 않고,
 // 정적 리소스만 가볍게 캐싱한다.
-const CACHE_NAME = 'hoarang-v2';
+// ★ 전략: 네트워크 우선(network-first). 예전엔 캐시 우선이라 캐릭터 이미지를
+//   교체해도 옛 이미지(마사마사 햄스터)가 계속 보이는 문제가 있었다.
+//   이제 온라인이면 항상 새 파일을 받고, 오프라인일 때만 캐시로 대체한다.
+const CACHE_NAME = 'hoarang-v3';
 const STATIC_ASSETS = [
-  '/static/hamster.png',
-  '/static/icon-192.png',
+  '/static/hamster.png?v=26',
+  '/static/icon-192.png?v=26',
   '/static/icon-512.png',
-  '/static/manifest.json'
+  '/static/manifest.json?v=26'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)).catch(() => {})
   );
   self.skipWaiting();
 });
@@ -27,10 +30,17 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  // WebSocket, API 요청은 절대 가로채지 않음 — 정적 파일만 캐시 우선
+  // WebSocket, API 요청은 절대 가로채지 않음 — 정적 파일만 처리
   if (event.request.method === 'GET' && url.pathname.startsWith('/static/')) {
     event.respondWith(
-      caches.match(event.request).then((cached) => cached || fetch(event.request))
+      fetch(event.request)
+        .then((res) => {
+          // 받아온 최신 파일을 캐시에 갱신(오프라인 대비)
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(event.request, copy)).catch(() => {});
+          return res;
+        })
+        .catch(() => caches.match(event.request))   // 오프라인 → 캐시 사용
     );
   }
 });

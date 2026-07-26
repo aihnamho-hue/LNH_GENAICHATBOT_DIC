@@ -5,6 +5,7 @@ import base64
 import time
 import datetime
 import re
+import hashlib
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
@@ -20,7 +21,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v28"
+APP_VERSION = "v29"
 APP_DATE = "2026-07-26"
 
 app = FastAPI()
@@ -748,10 +749,77 @@ def build_roleplay_prompt(d: int, p: int, ui_lang: str, user_name: str,
 # TTS 모델도 단종(404) 시 후보 → API 목록 순으로 자동 전환.
 # ============================================================
 TTS_MODEL = os.environ.get("TTS_MODEL", "").strip() or "gemini-2.5-flash-preview-tts"
-TTS_VOICE = os.environ.get("TTS_VOICE", "").strip() or "Kore"
+
+# ── 목소리 (Chirp 3 HD 프리빌트 보이스 — Live API·TTS 공용) ──────────────
+# 호아랑은 '갓 쓴 아기 호랑이'라 기본은 밝은 남자아이 목소리(Puck)로 잡는다.
+# 주제 대화에서는 호아랑이 배역을 맡으므로, 그 배역에 맞는 목소리로 자동 전환한다.
+VOICE_TABLE = {
+    "boy":     "Puck",     # Upbeat  — 밝은 남자아이 (호아랑 본래 목소리)
+    "boy_hi":  "Fenrir",   # Excitable — 더 들뜬 소년
+    "girl":    "Leda",     # Youthful — 앳된 목소리
+    "man":     "Charon",   # Informative — 차분한 성인 남성
+    "man_firm": "Orus",    # Firm — 단단한 성인 남성
+    "woman":   "Kore",     # Firm — 또렷한 성인 여성
+    "woman_soft": "Aoede", # Breezy — 부드러운 성인 여성
+    "elder_m": "Algenib",  # Gravelly — 나이 든 남성 (할아버지 역)
+    "elder_f": "Gacrux",   # Mature — 원숙한 여성 (할머니 역)
+}
+HOARANG_VOICE_KEY = "boy"
+TTS_VOICE = os.environ.get("TTS_VOICE", "").strip() or VOICE_TABLE[HOARANG_VOICE_KEY]
+
+# 역할 이름에서 성별·나이를 '드러나 있을 때만' 읽는다.
+# 직업만으로 성별을 넘겨짚지 않기 위해(예: 간호사=여성) 명시적 호칭만 본다.
+_ROLE_FEMALE = ("아주머니", "아줌마", "어머니", "엄마", "어머님", "언니", "누나", "이모", "고모",
+                "여자", "여성", "소녀", "딸", "아내", "부인", "여동생", "여학생", "여선생",
+                "할머니", "외할머니", "여사장", "아가씨", "며느리", "숙모")
+_ROLE_MALE = ("아저씨", "아버지", "아빠", "아버님", "형", "오빠", "삼촌", "외삼촌",
+              "남자", "남성", "소년", "아들", "남편", "남동생", "남학생", "남선생",
+              "할아버지", "외할아버지", "남사장", "총각", "사위", "고모부")
+_ROLE_ELDER = ("할머니", "할아버지", "어르신", "노인", "외할머니", "외할아버지", "연세")
+_ROLE_YOUNG = ("친구", "학생", "동급생", "반 친구", "짝꿍", "또래", "후배", "아이", "어린이",
+               "동생", "초등학생", "중학생", "고등학생")
+
+
+def pick_voice(ai_role: str = "", override: str = "") -> str:
+    """대화 상대(호아랑이 맡은 배역)에 어울리는 목소리 이름을 고른다.
+
+    - 학습자가 홈에서 목소리를 직접 고르면(override) 그것을 최우선으로 쓴다.
+    - 자유 수다처럼 배역이 없으면 호아랑 본래 목소리(남자아이).
+    - 배역에 성별·나이가 드러나 있으면 반영한다.
+    - 직업 이름만 있어 성별을 알 수 없으면 넘겨짚지 않고, 역할 이름을 해시해
+      성인 남성/여성 중 하나를 고정 배정한다(같은 역할이면 항상 같은 목소리).
+    """
+    key = (override or "").strip().lower()
+    if key and key != "auto":
+        if key in VOICE_TABLE:
+            return VOICE_TABLE[key]
+        for v in VOICE_TABLE.values():       # 목소리 이름을 그대로 보낸 경우
+            if key == v.lower():
+                return v
+    role = (ai_role or "").strip()
+    if not role:
+        return VOICE_TABLE[HOARANG_VOICE_KEY]
+
+    is_elder = any(w in role for w in _ROLE_ELDER)
+    is_female = any(w in role for w in _ROLE_FEMALE)
+    is_male = any(w in role for w in _ROLE_MALE)
+    is_young = any(w in role for w in _ROLE_YOUNG)
+    # 성별이 드러나지 않으면 넘겨짚지 않고 역할명 해시로 고정 배정
+    # (같은 역할이면 언제나 같은 목소리 — 수업 중 목소리가 널뛰지 않게)
+    coin_female = hashlib.sha1(role.encode("utf-8")).digest()[0] % 2 == 1
+    if not (is_female or is_male):
+        is_female, is_male = coin_female, not coin_female
+
+    if is_elder:
+        return VOICE_TABLE["elder_f" if is_female else "elder_m"]
+    if is_young:
+        return VOICE_TABLE["girl" if is_female else "boy"]
+    return VOICE_TABLE["woman" if is_female else "man"]
+
+
 _tts_model = {"name": TTS_MODEL}
 _tts_tried = set()
-_tts_cache = {}  # text -> pcm bytes (같은 문장 반복 재생 시 API 호출 절약)
+_tts_cache = {}  # (text, voice) -> pcm bytes (같은 문장 반복 재생 시 API 호출 절약)
 
 
 async def _next_tts_model(bad: str) -> str | None:
@@ -787,8 +855,12 @@ async def tts_endpoint(request: Request):
     text = _clean_str((body or {}).get("text"), 200)
     if not text:
         raise HTTPException(status_code=400, detail="text_required")
-    if text in _tts_cache:
-        return Response(content=_tts_cache[text], media_type="audio/pcm")
+    # 발화 연습에서도 대화와 같은 목소리로 들려준다 (배역·학습자 선택 반영)
+    voice = pick_voice(_clean_str((body or {}).get("role"), 40),
+                       _clean_str((body or {}).get("voice"), 20))
+    ck = (text, voice)
+    if ck in _tts_cache:
+        return Response(content=_tts_cache[ck], media_type="audio/pcm")
 
     last_err = ""
     for _ in range(3):
@@ -797,7 +869,7 @@ async def tts_endpoint(request: Request):
             cfg = types.GenerateContentConfig(
                 response_modalities=["AUDIO"],
                 speech_config=types.SpeechConfig(voice_config=types.VoiceConfig(
-                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=TTS_VOICE))))
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice))))
             resp = await asyncio.wait_for(
                 client.aio.models.generate_content(model=model_name, contents=text, config=cfg),
                 timeout=25.0)
@@ -812,7 +884,7 @@ async def tts_endpoint(request: Request):
                 raise RuntimeError("no_audio_in_response")
             if len(_tts_cache) > 300:
                 _tts_cache.clear()
-            _tts_cache[text] = data
+            _tts_cache[ck] = data
             return Response(content=data, media_type="audio/pcm")
         except Exception as e:
             last_err = f"{type(e).__name__}: {e}"[:200]
@@ -1125,6 +1197,8 @@ async def _handle_session(websocket: WebSocket):
     ui_lang = websocket.query_params.get("lang", "").strip().lower()[:5]
     # 이름은 시스템 프롬프트에 들어가므로 공백 정리 + 길이 제한 (프롬프트 주입 방지)
     user_name = re.sub(r"\s+", " ", websocket.query_params.get("name", "")).strip()[:20]
+    # 학습자가 홈에서 고른 목소리 (빈 값·auto면 배역에 맞춰 자동 선택)
+    voice_pref = websocket.query_params.get("voice", "").strip().lower()[:20]
 
     # 주제 대화(상황극) 모드: /roleplay-setup에서 만든 계획 ID가 오면 상황극 프롬프트로 전환
     rp_plan = None
@@ -1310,6 +1384,12 @@ JSON만 출력: {{"hints":["",""]}}"""
         }))
         print(f"[상황극] 최종 점수 전송: {rp_progress['percent']}점")
 
+    # ── 목소리: 호아랑은 갓 쓴 아기 호랑이라 기본은 남자아이 목소리.
+    #    주제 대화에서 배역(점원·선생님·아주머니 등)을 맡으면 그에 맞는 목소리로 자동 전환.
+    #    학습자가 홈에서 직접 고른 값(voice)이 있으면 그게 최우선. ──
+    voice_name = pick_voice(rp_plan.get("ai_role", "") if rp_plan else "", voice_pref)
+    print(f"[서버] 목소리 = {voice_name} (배역={rp_plan.get('ai_role','-') if rp_plan else '자유수다'}, 선택={voice_pref or 'auto'})")
+
     config_kwargs = dict(
         response_modalities=[types.Modality.AUDIO],
         system_instruction=types.Content(
@@ -1317,6 +1397,8 @@ JSON만 출력: {{"hints":["",""]}}"""
         ),
         input_audio_transcription=types.AudioTranscriptionConfig(),
         output_audio_transcription=types.AudioTranscriptionConfig(),
+        speech_config=types.SpeechConfig(voice_config=types.VoiceConfig(
+            prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice_name))),
     )
     # ── 발화 감지: 수동 모드 (push-to-talk) ──
     # 진단 결과(업로드 0KB·응답 1.4s인데도 STT가 30~60초 지연) → 오디오는 잘 도착하는데

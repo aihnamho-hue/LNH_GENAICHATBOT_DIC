@@ -6,26 +6,26 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json?v=28">
+    <link rel="manifest" href="/static/manifest.json?v=29">
     <meta name="theme-color" content="#5A7285">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=28">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=28">
-    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=28" crossorigin>
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=29">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=29">
+    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=29" crossorigin>
     <style>
         /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansMedium.woff2?v=28") format("woff2");
+            src: url("/static/fonts/GmarketSansMedium.woff2?v=29") format("woff2");
             font-weight: 400 600; font-style: normal; font-display: swap;
         }
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansBold.woff2?v=28") format("woff2");
+            src: url("/static/fonts/GmarketSansBold.woff2?v=29") format("woff2");
             font-weight: 700 900; font-style: normal; font-display: swap;
         }
         :root {
@@ -175,6 +175,21 @@
         .chat-footer { padding: 8px 14px; background: rgba(255,255,255,0.55); font-size: 11px; color: #5A6B7B; text-align: center; }
 
         /* ── 언어 선택 오버레이 ── */
+        /* ── 목소리 선택 ── */
+        .voice-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; text-align: left; }
+        .voice-item { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--navy-soft);
+            border-radius: 13px; padding: 10px 12px; background: #fff; cursor: pointer; transition: border-color .15s, background .15s; }
+        .voice-item:hover { border-color: var(--accent); }
+        .voice-item.on { border-color: var(--accent); background: var(--accent-soft); }
+        .voice-item .vi-emoji { font-size: 20px; flex-shrink: 0; }
+        .voice-item .vi-txt { flex: 1; min-width: 0; }
+        .voice-item .vi-name { font-size: 13.5px; font-weight: 800; color: var(--navy); }
+        .voice-item .vi-desc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+        .voice-item .vi-play { flex-shrink: 0; border: 1.5px solid var(--accent-soft); background: #fff;
+            border-radius: 10px; width: 34px; height: 30px; font-size: 14px; cursor: pointer; }
+        .voice-item .vi-play:hover { border-color: var(--accent); }
+        .voice-item .vi-play:disabled { opacity: 0.45; cursor: default; }
+
         /* ── 인앱 브라우저 안내 게이트 (카톡·인스타 DM 등에서 열렸을 때) ── */
         .inapp-gate { position: fixed; inset: 0; z-index: 3000; background: rgba(35,29,26,0.72); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 18px; }
         .inapp-gate.hidden { display: none; }
@@ -487,7 +502,10 @@
             width: 100%; max-width: 480px; min-height: calc(90vh / var(--ui-zoom)); gap: 30px; position: relative; text-align: center; padding: 14px 0 26px; }
         /* 상단 헤더: 제목(왼쪽) · 버튼(오른쪽) */
         .home-header { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 4px; margin-bottom: 4px; }
-        .home-title { font-size: 19px; font-weight: 900; margin: 0; color: var(--ink); letter-spacing: -0.4px; text-align: left; line-height: 1.25; }
+        .home-title { font-size: 21px; font-weight: 900; margin: 0; color: var(--ink); letter-spacing: -0.4px; text-align: left; line-height: 1.2;
+            display: flex; align-items: center; gap: 9px; min-width: 0; }
+        .home-logo { width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; object-fit: cover;
+            box-shadow: 0 3px 10px -4px rgba(57,64,99,0.45); }
         .home-top { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
         .home-top .home-ico { border: 1.5px solid var(--accent-soft); background: rgba(255,255,255,0.7);
             color: var(--ink); border-radius: 999px; height: 38px; min-width: 38px; padding: 0 13px; font-size: 12.5px;
@@ -637,7 +655,7 @@
 <div class="lang-overlay hidden" id="introOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="introX">✕</button>
-        <div class="intro-ham-wrap" id="introHamWrap"><img class="intro-ham" src="/static/hamster.png?v=28" alt="호아랑"></div>
+        <div class="intro-ham-wrap" id="introHamWrap"><img class="intro-ham" src="/static/hamster.png?v=29" alt="호아랑"></div>
         <h2 id="introTitleEl" style="margin-bottom:8px;">🐯</h2>
         <p class="consent-text" id="introBodyEl" style="white-space:pre-line;"></p>
         <div class="consent-actions"><button class="action-btn" id="introOkBtn"></button></div>
@@ -749,7 +767,7 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png?v=28" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=29" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
         <div class="result-cards">
             <div class="r-card score"><div class="r-label" id="rcScoreLbl"></div><div class="r-inner" id="rcScoreVal">0</div></div>
@@ -771,7 +789,7 @@
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png?v=28" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=29" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
@@ -792,7 +810,7 @@
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=28" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=29" alt="호아랑">
         <div class="freefb-icon">💬</div>
         <h2 id="freeFbTitleEl" style="margin:6px 0;">💬</h2>
         <p class="consent-text" id="freeFbBodyEl" style="text-align:center;"></p>
@@ -804,14 +822,18 @@
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=28" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=29" alt="호아랑"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
 <div class="home-screen" id="homeScreen">
     <!-- 상단: 제목(왼쪽) · 버튼(오른쪽) -->
     <div class="home-header">
-        <h1 class="home-title" id="homeTitleEl">🐯 호아랑과 한국어 수다</h1>
+        <h1 class="home-title">
+            <img class="home-logo" src="/static/icon-192.png?v=29" alt="">
+            <span id="homeTitleEl">호아랑</span>
+        </h1>
         <div class="home-top">
+            <button type="button" class="home-ico icon-only" id="voiceBtn" title="Voice">🎙️</button>
             <button type="button" class="home-ico icon-only" id="bgmBtn" title="BGM">🔊</button>
             <button type="button" class="home-ico" id="homeHistoryBtn"><span>🗂️</span><span id="homeHistoryLbl"></span></button>
             <button type="button" class="home-ico" id="homeNameBtn"><span>✏️</span><span id="homeNameLbl"></span></button>
@@ -821,7 +843,7 @@
     <!-- 호아랑: 크게, 원 없이. 가끔 통통 튀며 말풍선으로 말을 건다 -->
     <div class="home-hero">
         <div class="home-bubble" id="homeBubble" aria-hidden="true"></div>
-        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png?v=28" alt="호아랑"></div>
+        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png?v=29" alt="호아랑"></div>
     </div>
     <p class="home-sub" id="homeSubEl"></p>
     <button type="button" class="home-card hc-rp" id="homeRpCard">
@@ -840,11 +862,22 @@
         효과음 「전통악기 징」 (재)전주정보문화산업진흥원 — 공유마당(KOGL 제1유형)
     </div>
 </div>
+<!-- 목소리 선택창 — 기본은 '자동'(주제 대화의 배역에 맞춰 서버가 고름) -->
+<div class="lang-overlay hidden" id="voiceOverlay">
+    <div class="lang-box" style="max-width:420px;">
+        <button type="button" class="ov-x" id="voiceX">✕</button>
+        <h2 id="voiceTitleEl">🎙️</h2>
+        <p class="consent-text" id="voiceBodyEl" style="margin-bottom:12px;"></p>
+        <div class="voice-list" id="voiceList"></div>
+        <div class="consent-actions"><button class="export-btn" id="voiceCloseBtn"></button></div>
+    </div>
+</div>
+
 <!-- 앱 다운로드/설치 안내창 (플랫폼별 홈 화면 추가 안내) -->
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=28" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=29" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -878,7 +911,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png?v=28" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=29" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -931,7 +964,7 @@
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png?v=28" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=29" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span>🎥</span><span id="hamViewBtnLbl"></span></button>
@@ -1006,9 +1039,9 @@
 <!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <!-- 발화 연습 배경 — '통통(가야금)', 사용자 볼륨의 20%로 아주 은은하게 -->
-<audio id="prBgm" src="/static/practice_bgm.mp3?v=28" loop preload="none"></audio>
+<audio id="prBgm" src="/static/practice_bgm.mp3?v=29" loop preload="none"></audio>
 <!-- 단계 달성 — 전통악기 징 -->
-<audio id="gongSfx" src="/static/gong.mp3?v=28" preload="auto"></audio>
+<audio id="gongSfx" src="/static/gong.mp3?v=29" preload="auto"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -1020,7 +1053,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v28 (2026-07-26)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v29 (2026-07-26)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -1151,6 +1184,9 @@
         es: { hvOpen:"Vídeo", hvClose:"Chat" }, fr: { hvOpen:"Vidéo", hvClose:"Chat" },
     };
     for (const _l in I18N_HV) { if (I18N[_l]) Object.assign(I18N[_l], I18N_HV[_l]); }
+    /* 캐릭터 이름 — 홈 좌상단 제목(앱 아이콘 + 이름)과 영상통화 이름표에 쓰인다 */
+    const I18N_NAME = { ko:"호아랑", ja:"ホアラン" };
+    for (const _l in I18N) { I18N[_l].charName = I18N_NAME[_l] || "Hoarang"; }
     /* 홈 부제 변경('같이 대화할까요?') + 홈에서 호아랑이 통통 튀며 건네는 인사말(짧게) */
     const I18N_GREET = {
         ko: { homeSub:"같이 대화할까요?", homeGreet:["안녕! 🐯","같이 수다 떨자!","기다렸어! 😊","오늘 뭐 할까?"] },
@@ -1184,6 +1220,35 @@
         fr: { inTitle:"🌐 Ouvrez dans un navigateur", inBody:"Vous êtes dans le navigateur intégré d'une messagerie.\nLe micro et l'installation de l'app y sont bloqués : impossible de parler avec Hoarang.", inSteps:"① Appuyez sur « Ouvrir dans le navigateur » ci-dessous\n② Sans effet : ⋯ (ou ⋮) en haut à droite → « Ouvrir dans le navigateur »\n③ Toujours rien ? Copiez le lien et collez-le dans Chrome ou Safari", inOpen:"🌐 Ouvrir dans le navigateur", inCopy:"🔗 Copier le lien", inSkip:"Ce n'est pas grave, je reste ici", inCopied:"Lien copié ! Collez-le dans Chrome ou Safari.", inCopyManual:"Copiez ce lien et collez-le dans votre navigateur" },
     };
     for (const _l in I18N_INAPP) { if (I18N[_l]) Object.assign(I18N[_l], I18N_INAPP[_l]); }
+
+    /* 목소리 선택 문구 — 12개 언어. vcNames는 [자동, 남자아이, 여자아이, 성인 남성, 성인 여성, 어르신] 순 */
+    const I18N_VOICE = {
+        ko: { vcTitle:"🎙️ 호아랑 목소리", vcBody:"기본은 '자동'이에요. 주제 대화에서 호아랑이 맡은 배역(점원·아주머니 등)에 어울리는 목소리로 알아서 바뀝니다.", vcAuto:"배역에 맞춰 자동", vcAutoD:"추천 — 상황에 맞는 목소리로 연습", vcClose:"닫기", vcPlay:"미리 듣기", vcSample:"안녕하세요, 저는 호아랑이에요. 같이 한국어로 이야기해요!",
+             vcN:["남자아이","여자아이","성인 남성","성인 여성","어르신"], vcD:["호아랑 본래 목소리 · 밝고 씩씩함","앳되고 또렷한 목소리","차분한 어른 남자 목소리","또렷한 어른 여자 목소리","나이 지긋한 목소리"] },
+        en: { vcTitle:"🎙️ Hoarang's voice", vcBody:"'Auto' is the default. In Topic Practice the voice matches the role Hoarang plays (clerk, shopkeeper, and so on).", vcAuto:"Auto (match the role)", vcAutoD:"Recommended — fits each situation", vcClose:"Close", vcPlay:"Preview", vcSample:"안녕하세요, 저는 호아랑이에요. 같이 한국어로 이야기해요!",
+             vcN:["Boy","Girl","Adult man","Adult woman","Older person"], vcD:["Hoarang's own voice · bright","Young and clear","Calm adult male","Clear adult female","Mature voice"] },
+        zh: { vcTitle:"🎙️ Hoarang的声音", vcBody:"默认为「自动」。在主题对话中，会根据Hoarang扮演的角色（店员、阿姨等）自动选择合适的声音。", vcAuto:"自动（配合角色）", vcAutoD:"推荐 — 贴合每个情境", vcClose:"关闭", vcPlay:"试听", vcSample:"안녕하세요, 저는 호아랑이에요. 같이 한국어로 이야기해요!",
+             vcN:["男孩","女孩","成年男性","成年女性","长辈"], vcD:["Hoarang原本的声音 · 明亮","稚嫩清亮","沉稳的男声","清晰的女声","年长的声音"] },
+        ja: { vcTitle:"🎙️ ホアランの声", vcBody:"既定は「自動」です。テーマ会話では、ホアランが演じる役（店員・おばさんなど）に合った声に自動で変わります。", vcAuto:"自動（役に合わせる）", vcAutoD:"おすすめ — 場面に合う声で練習", vcClose:"閉じる", vcPlay:"試し聞き", vcSample:"안녕하세요, 저는 호아랑이에요. 같이 한국어로 이야기해요!",
+             vcN:["男の子","女の子","大人の男性","大人の女性","年配の方"], vcD:["ホアラン本来の声・明るい","若くはっきりした声","落ち着いた男性の声","はっきりした女性の声","年配の声"] },
+        vi: { vcTitle:"🎙️ Giọng của Hoarang", vcBody:"Mặc định là 'Tự động'. Trong Luyện theo chủ đề, giọng sẽ hợp với vai Hoarang đóng (nhân viên, cô bán hàng...).", vcAuto:"Tự động (theo vai)", vcAutoD:"Khuyên dùng — hợp từng tình huống", vcClose:"Đóng", vcPlay:"Nghe thử", vcSample:"안녕하세요, 저는 호아랑이에요. 같이 한국어로 이야기해요!",
+             vcN:["Bé trai","Bé gái","Nam trưởng thành","Nữ trưởng thành","Người lớn tuổi"], vcD:["Giọng gốc của Hoarang · tươi sáng","Trẻ trung, rõ ràng","Giọng nam điềm đạm","Giọng nữ rõ ràng","Giọng lớn tuổi"] },
+        th: { vcTitle:"🎙️ เสียงของ Hoarang", vcBody:"ค่าเริ่มต้นคือ 'อัตโนมัติ' ในบทสนทนาตามหัวข้อ เสียงจะเปลี่ยนตามบทบาทที่ Hoarang รับ (พนักงาน ป้า ฯลฯ)", vcAuto:"อัตโนมัติ (ตามบทบาท)", vcAutoD:"แนะนำ — เข้ากับแต่ละสถานการณ์", vcClose:"ปิด", vcPlay:"ฟังตัวอย่าง", vcSample:"안녕하세요, 저는 호아랑이에요. 같이 한국어로 이야기해요!",
+             vcN:["เด็กชาย","เด็กหญิง","ผู้ชายผู้ใหญ่","ผู้หญิงผู้ใหญ่","ผู้สูงอายุ"], vcD:["เสียงดั้งเดิมของ Hoarang · สดใส","เสียงเด็กใส","เสียงชายสุขุม","เสียงหญิงชัดเจน","เสียงผู้สูงวัย"] },
+        id: { vcTitle:"🎙️ Suara Hoarang", vcBody:"Bawaannya 'Otomatis'. Di Latihan Topik, suara menyesuaikan peran yang dimainkan Hoarang (pelayan, ibu penjual, dll).", vcAuto:"Otomatis (sesuai peran)", vcAutoD:"Disarankan — cocok tiap situasi", vcClose:"Tutup", vcPlay:"Dengar contoh", vcSample:"안녕하세요, 저는 호아랑이에요. 같이 한국어로 이야기해요!",
+             vcN:["Anak laki-laki","Anak perempuan","Pria dewasa","Wanita dewasa","Orang tua"], vcD:["Suara asli Hoarang · cerah","Muda dan jernih","Suara pria tenang","Suara wanita jernih","Suara sepuh"] },
+        mn: { vcTitle:"🎙️ Hoarang-ийн дуу хоолой", vcBody:"Анхдагч нь 'Автомат'. Сэдэвт яриан дээр Hoarang-ийн тоглох дүрд (худалдагч, эгч гэх мэт) тохирсон хоолой сонгогдоно.", vcAuto:"Автомат (дүрд тохируулах)", vcAutoD:"Санал болгоно — нөхцөл бүрт тохирно", vcClose:"Хаах", vcPlay:"Сонсох", vcSample:"안녕하세요, 저는 호아랑이에요. 같이 한국어로 이야기해요!",
+             vcN:["Хүү","Охин","Насанд хүрсэн эрэгтэй","Насанд хүрсэн эмэгтэй","Ахмад настан"], vcD:["Hoarang-ийн жинхэнэ хоолой · тод","Залуу, тод","Тайван эрэгтэй хоолой","Тод эмэгтэй хоолой","Настай хүний хоолой"] },
+        uz: { vcTitle:"🎙️ Hoarang ovozi", vcBody:"Standart holat — 'Avtomatik'. Mavzuli suhbatda ovoz Hoarang o'ynayotgan rolga (sotuvchi, xola va h.k.) moslashadi.", vcAuto:"Avtomatik (rolga mos)", vcAutoD:"Tavsiya etiladi — har vaziyatga mos", vcClose:"Yopish", vcPlay:"Tinglash", vcSample:"안녕하세요, 저는 호아랑이에요. 같이 한국어로 이야기해요!",
+             vcN:["O'g'il bola","Qiz bola","Katta yoshli erkak","Katta yoshli ayol","Keksa kishi"], vcD:["Hoarangning asl ovozi · yorqin","Yosh va tiniq","Bosiq erkak ovozi","Tiniq ayol ovozi","Keksa ovoz"] },
+        ru: { vcTitle:"🎙️ Голос Hoarang", vcBody:"По умолчанию «Автоматически». В тематическом диалоге голос подстроится под роль Hoarang (продавец, тётя и т. д.).", vcAuto:"Автоматически (по роли)", vcAutoD:"Рекомендуем — под каждую ситуацию", vcClose:"Закрыть", vcPlay:"Прослушать", vcSample:"안녕하세요, 저는 호아랑이에요. 같이 한국어로 이야기해요!",
+             vcN:["Мальчик","Девочка","Взрослый мужчина","Взрослая женщина","Пожилой человек"], vcD:["Родной голос Hoarang · яркий","Юный и чёткий","Спокойный мужской","Чёткий женский","Голос в возрасте"] },
+        es: { vcTitle:"🎙️ La voz de Hoarang", vcBody:"Por defecto es «Automático». En la Práctica por temas, la voz se ajusta al papel que interpreta Hoarang (dependiente, señora, etc.).", vcAuto:"Automático (según el papel)", vcAutoD:"Recomendado — encaja en cada situación", vcClose:"Cerrar", vcPlay:"Escuchar", vcSample:"안녕하세요, 저는 호아랑이에요. 같이 한국어로 이야기해요!",
+             vcN:["Niño","Niña","Hombre adulto","Mujer adulta","Persona mayor"], vcD:["Voz propia de Hoarang · alegre","Joven y clara","Voz masculina serena","Voz femenina clara","Voz mayor"] },
+        fr: { vcTitle:"🎙️ La voix de Hoarang", vcBody:"Par défaut : « Automatique ». En Pratique par thème, la voix s'adapte au rôle joué par Hoarang (vendeur, dame, etc.).", vcAuto:"Automatique (selon le rôle)", vcAutoD:"Recommandé — adapté à chaque situation", vcClose:"Fermer", vcPlay:"Écouter", vcSample:"안녕하세요, 저는 호아랑이에요. 같이 한국어로 이야기해요!",
+             vcN:["Garçon","Fille","Homme adulte","Femme adulte","Personne âgée"], vcD:["Voix d'origine de Hoarang · lumineuse","Jeune et claire","Voix masculine posée","Voix féminine claire","Voix âgée"] },
+    };
+    for (const _l in I18N_VOICE) { if (I18N[_l]) Object.assign(I18N[_l], I18N_VOICE[_l]); }
 
     let uiLang = localStorage.getItem("uiLang") || null;
     let lastStatus = null; // { state, key } — 언어 변경 시 상태 문구 갱신용
@@ -1225,7 +1290,8 @@
         document.getElementById("introBodyEl").textContent = t("introBody");
         document.getElementById("introOkBtn").textContent = t("introOk");
         /* 홈 화면 · 자유수다 피드백 · 히스토리 (방안 A) */
-        document.getElementById("homeTitleEl").textContent = t("title");
+        document.getElementById("homeTitleEl").textContent = t("charName");
+        document.getElementById("hvNameEl").textContent = t("charName");
         document.getElementById("homeSubEl").textContent = t("homeSub");
         document.getElementById("hcRpTitleEl").textContent = t("hcRpTitle");
         document.getElementById("hcRpDescEl").textContent = t("hcRpDesc");
@@ -1549,7 +1615,7 @@
 
     /* ── 홈의 호아랑 이미지를 랜덤으로 계속 교체 ── */
     const homeHamImg = homeHam.querySelector("img");
-    const HOME_HAM_IMGS = ["/static/ham_idle.png?v=28", "/static/ham_smile.png?v=28", "/static/ham_surprised.png?v=28", "/static/ham_shy.png?v=28"];
+    const HOME_HAM_IMGS = ["/static/ham_idle.png?v=29", "/static/ham_smile.png?v=29", "/static/ham_surprised.png?v=29", "/static/ham_shy.png?v=29"];
     function homeImgTick() {
         if (document.body.dataset.screen !== "home" || !homeHamImg) return;
         const others = HOME_HAM_IMGS.filter(s => !homeHamImg.src.endsWith(s));
@@ -2082,14 +2148,19 @@
         src.start();
         prLastSrc = src;
     }
-    async function ttsPlay(text) {
+    async function ttsPlay(text, voiceOverride) {
         if (!text) return;
-        if (geminiTtsDead) { speakKo(text); return; }
+        if (geminiTtsDead && !voiceOverride) { speakKo(text); return; }
         try {
+            // 발화 연습도 대화와 같은 목소리로 — 배역(role)과 학습자 선택(voice)을 함께 보낸다
             const res = await fetch("/tts", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text: text }),
+                body: JSON.stringify({
+                    text: text,
+                    role: (rpPlan && rpPlan.ai_role) ? rpPlan.ai_role : "",
+                    voice: voiceOverride || voicePref,
+                }),
             });
             if (!res.ok) throw new Error("HTTP " + res.status);
             const buf = await res.arrayBuffer();
@@ -2561,6 +2632,68 @@
         document.getElementById("kakaoOpenBtn").addEventListener("click", escapeInApp);
     }
 
+    /* ══════════ 목소리 선택 ══════════
+       호아랑은 갓 쓴 아기 호랑이라 기본 목소리는 남자아이(서버 Puck).
+       주제 대화에서는 호아랑이 맡은 배역에 맞춰 서버가 알아서 목소리를 고른다(auto).
+       학습자가 여기서 직접 고르면 그 값이 항상 우선한다. */
+    const VOICE_KEYS = ["boy", "girl", "man", "woman", "elder_f"];
+    const VOICE_EMOJI = ["🧒", "👧", "🧑", "👩", "🧓"];
+    let voicePref = localStorage.getItem("voicePref") || "auto";
+    let voiceBusy = false;
+
+    function renderVoiceList() {
+        const box = document.getElementById("voiceList");
+        if (!box) return;
+        const names = t("vcN") || [], descs = t("vcD") || [];
+        const rows = [{ key: "auto", emoji: "✨", name: t("vcAuto"), desc: t("vcAutoD") }];
+        VOICE_KEYS.forEach((k, i) => rows.push({ key: k, emoji: VOICE_EMOJI[i], name: names[i] || k, desc: descs[i] || "" }));
+        box.innerHTML = "";
+        rows.forEach((r) => {
+            const item = document.createElement("div");
+            item.className = "voice-item" + (voicePref === r.key ? " on" : "");
+            item.innerHTML = '<span class="vi-emoji"></span>'
+                + '<span class="vi-txt"><span class="vi-name"></span><span class="vi-desc"></span></span>';
+            item.querySelector(".vi-emoji").textContent = r.emoji;
+            item.querySelector(".vi-name").textContent = r.name;
+            item.querySelector(".vi-desc").textContent = r.desc;
+            item.addEventListener("click", () => {
+                voicePref = r.key;
+                localStorage.setItem("voicePref", voicePref);
+                renderVoiceList();
+            });
+            if (r.key !== "auto") {           // '자동'은 배역이 정해져야 알 수 있어 미리 듣기 없음
+                const play = document.createElement("button");
+                play.type = "button"; play.className = "vi-play"; play.textContent = "🔊";
+                play.title = t("vcPlay");
+                play.addEventListener("click", async (e) => {
+                    e.stopPropagation();
+                    if (voiceBusy) return;
+                    voiceBusy = true; play.disabled = true; play.textContent = "⏳";
+                    try { await ttsPlay(t("vcSample"), r.key); }
+                    finally { voiceBusy = false; play.disabled = false; play.textContent = "🔊"; }
+                });
+                item.appendChild(play);
+            }
+            box.appendChild(item);
+        });
+    }
+    function openVoicePicker() {
+        document.getElementById("voiceTitleEl").textContent = t("vcTitle");
+        document.getElementById("voiceBodyEl").textContent = t("vcBody");
+        document.getElementById("voiceCloseBtn").textContent = t("vcClose");
+        renderVoiceList();
+        document.getElementById("voiceOverlay").classList.remove("hidden");
+    }
+    (function bindVoicePicker() {
+        const ov = document.getElementById("voiceOverlay");
+        if (!ov) return;
+        const close = () => ov.classList.add("hidden");
+        document.getElementById("voiceBtn").addEventListener("click", (e) => { e.stopPropagation(); openVoicePicker(); });
+        document.getElementById("voiceX").addEventListener("click", close);
+        document.getElementById("voiceCloseBtn").addEventListener("click", close);
+        ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    })();
+
     /* ══════════ 인앱 브라우저 게이트 ══════════
        카톡·인스타 DM 등으로 링크를 받으면 앱 안의 작은 브라우저에서 열린다.
        거기서는 마이크 권한과 홈 화면 설치(PWA)가 막혀 수업을 못 한다.
@@ -2796,7 +2929,7 @@
         const rpParams = (mode === "rp" && rpId)
             ? "&rp=" + encodeURIComponent(rpId) + "&style=" + encodeURIComponent(rpStyle)
             : "";
-        ws = new WebSocket(proto + location.host + "/ws/live?d=" + d + "&p=" + p + "&lang=" + encodeURIComponent(uiLang || "ko") + "&name=" + encodeURIComponent(userName) + rpParams);
+        ws = new WebSocket(proto + location.host + "/ws/live?d=" + d + "&p=" + p + "&lang=" + encodeURIComponent(uiLang || "ko") + "&name=" + encodeURIComponent(userName) + "&voice=" + encodeURIComponent(voicePref) + rpParams);
         ws.binaryType = "arraybuffer"; // 오디오는 바이너리 프레임 (base64 오버헤드 제거)
         ws.onopen = async () => {
             /* 상황극 세션 초기화 */
@@ -3042,8 +3175,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png?v=28", smile: "/static/ham_smile.png?v=28",
-        surprised: "/static/ham_surprised.png?v=28", shy: "/static/ham_shy.png?v=28",
+        idle: "/static/ham_idle.png?v=29", smile: "/static/ham_smile.png?v=29",
+        surprised: "/static/ham_surprised.png?v=29", shy: "/static/ham_shy.png?v=29",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -3114,7 +3247,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png?v=28";
+                img.src = "/static/hamster.png?v=29";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");

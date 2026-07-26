@@ -6,26 +6,26 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json?v=34">
+    <link rel="manifest" href="/static/manifest.json?v=35">
     <meta name="theme-color" content="#4A7C74">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=34">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=34">
-    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=34" crossorigin>
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=35">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=35">
+    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=35" crossorigin>
     <style>
         /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansMedium.woff2?v=34") format("woff2");
+            src: url("/static/fonts/GmarketSansMedium.woff2?v=35") format("woff2");
             font-weight: 400 600; font-style: normal; font-display: swap;
         }
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansBold.woff2?v=34") format("woff2");
+            src: url("/static/fonts/GmarketSansBold.woff2?v=35") format("woff2");
             font-weight: 700 900; font-style: normal; font-display: swap;
         }
         :root {
@@ -221,6 +221,24 @@
             .splash video { width: auto; max-width: 46vw; }
         }
 
+        /* ── 호아랑 빼꼼 (오른쪽에서 슬쩍 나와 한마디) ── */
+        .ham-peek { position: fixed; right: 0; bottom: 16%; z-index: 1200; pointer-events: none;
+            display: flex; align-items: flex-end; gap: 6px;
+            transform: translateX(105%); opacity: 0; visibility: hidden;
+            transition: transform 0.5s cubic-bezier(0.2, 1.1, 0.3, 1), opacity 0.35s, visibility 0.35s; }
+        .ham-peek.show { transform: translateX(0); opacity: 1; visibility: visible; }
+        .hp-ham { width: clamp(84px, 24vw, 118px); height: auto; flex-shrink: 0;
+            filter: drop-shadow(0 10px 18px rgba(58,48,34,0.35)); transform: translateX(12%); }
+        .hp-bubble { position: relative; background: #fff; border: 1.5px solid #A9C4BB; border-radius: 16px;
+            padding: 11px 14px; font-size: 14px; font-weight: 800; line-height: 1.45; color: var(--ink);
+            max-width: min(52vw, 260px); margin-bottom: 22px;
+            box-shadow: 0 12px 28px -12px rgba(58,48,34,0.55); }
+        .hp-bubble::before { content: ""; position: absolute; left: 100%; bottom: 14px;
+            border: 9px solid transparent; border-left-color: #A9C4BB; }
+        .hp-bubble::after { content: ""; position: absolute; left: 100%; bottom: 14px; margin-left: -2.5px;
+            border: 8px solid transparent; border-left-color: #fff; }
+        @media (prefers-reduced-motion: reduce) { .ham-peek { transition-duration: 0.15s; } }
+
         /* ── 목소리 선택 ── */
         .voice-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; text-align: left; }
         .voice-item { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--navy-soft);
@@ -348,26 +366,27 @@
         .jangji-r::after { left: -26px; transform: scaleX(-1); }
         .jangji-word {
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.9);
-            opacity: 0; font-size: 27px; font-weight: 800; color: #2E3338;   /* 창호지 위의 먹빛 */
-            letter-spacing: 0.02em; text-align: center; white-space: pre-line; line-height: 1.45;
-            text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+            opacity: 0; font-size: clamp(30px, 8.4vw, 52px); font-weight: 900; color: #2E3338;  /* 창호지 위의 먹빛 */
+            letter-spacing: -0.01em; text-align: center; white-space: pre-line; line-height: 1.3;
+            max-width: 86%; text-shadow: 0 1px 0 rgba(255,255,255,0.6);
         }
         /* ① 열기 — 대화가 시작될 때. 닫힌 문에서 시작해 좌우로 열린다 */
-        .jangji.opening .jangji-l { animation: doorOpenL 1.7s cubic-bezier(0.36, 0.02, 0.2, 1) forwards; }
-        .jangji.opening .jangji-r { animation: doorOpenR 1.7s cubic-bezier(0.36, 0.02, 0.2, 1) forwards; }
-        .jangji.opening .jangji-word { animation: doorWordOut 1.7s ease forwards; }
+        .jangji.opening .jangji-l { animation: doorOpenL 2.4s cubic-bezier(0.36, 0.02, 0.2, 1) forwards; }
+        .jangji.opening .jangji-r { animation: doorOpenR 2.4s cubic-bezier(0.36, 0.02, 0.2, 1) forwards; }
+        .jangji.opening .jangji-word { animation: doorWordOut 2.4s ease forwards; }
         @keyframes doorOpenL {
-            0%, 34% { transform: translateX(-3%); }
+            0%, 52% { transform: translateX(-3%); }
             100%    { transform: translateX(-101%); }
         }
         @keyframes doorOpenR {
-            0%, 34% { transform: translateX(3%); }
+            0%, 52% { transform: translateX(3%); }
             100%    { transform: translateX(101%); }
         }
         @keyframes doorWordOut {
-            0%       { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
-            14%, 34% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            56%,100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
+            0%       { opacity: 0; transform: translate(-50%, -50%) scale(0.86); }
+            13%      { opacity: 1; transform: translate(-50%, -50%) scale(1.02); }
+            20%, 52% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            72%,100% { opacity: 0; transform: translate(-50%, -50%) scale(1.06); }
         }
         /* ② 닫기 — 대화를 마칠 때. 열린 문이 가운데로 닫히고 잠시 머문다 */
         .jangji.closing .jangji-l { animation: doorCloseL 2.0s cubic-bezier(0.34, 0.02, 0.22, 1) forwards; }
@@ -423,7 +442,7 @@
         .pr-listen-btn { border: 1.5px solid var(--navy-soft); background: #fff; color: var(--navy); border-radius: 10px; padding: 6px 14px; font-size: 12px; font-weight: 800; cursor: pointer; margin-top: 4px; }
         .pr-listen-btn:hover { background: var(--navy-soft); }
         /* 발화 연습 마이크 버튼: '눌러서 말하기'(.ptt-btn)와 동일한 UI(넓은 알약·네이비) */
-        .pr-mic { border: none; width: calc(100% - 20px); max-width: 340px; height: auto; border-radius: 16px; font-size: 30px; line-height: 1; background: var(--navy); color: #fff; cursor: pointer; box-shadow: 0 8px 20px -8px rgba(61,90,128,0.55); transition: transform 0.1s, background 0.15s, box-shadow 0.15s; margin: 14px auto 0; padding: 18px 16px; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none; }
+        .pr-mic { border: none; width: calc(100% - 20px); max-width: 340px; height: auto; border-radius: 16px; font-size: 16px; font-weight: 800; line-height: 1.3; user-select: none; -webkit-user-select: none; touch-action: none; background: var(--navy); color: #fff; cursor: pointer; box-shadow: 0 8px 20px -8px rgba(61,90,128,0.55); transition: transform 0.1s, background 0.15s, box-shadow 0.15s; margin: 14px auto 0; padding: 18px 16px; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none; }
         .pr-mic:hover:not(:disabled) { background: #3A6259; }
         .pr-mic.rec { background: var(--danger); animation: pulse 0.9s ease-in-out infinite; }
         .pr-mic:disabled { opacity: 0.35; cursor: default; }
@@ -478,7 +497,7 @@
         .dice-btn { font-size: 18px; width: 46px; }
         .lang-box { border: 1px solid rgba(61,44,38,0.06); }
         .consent-actions .action-btn { padding: 14px 18px; }
-        .pr-mic { font-size: 32px; padding: 20px 16px; border-radius: 18px; }
+        .pr-mic { font-size: 17px; padding: 20px 16px; border-radius: 18px; }
         @media (max-width: 480px) {
             body { padding: 10px; }
             .app { gap: 12px; }
@@ -760,8 +779,8 @@
 <!-- ═══ 앱 시작 영상 (한옥 장지문이 열리고 호아랑이 나온다) ═══
      같은 세션에서 한 번만 재생하고, 끝나면 스스로 사라진다. -->
 <div class="splash" id="splash">
-    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=34">
-        <source src="/static/intro.mp4?v=34" type="video/mp4">
+    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=35">
+        <source src="/static/intro.mp4?v=35" type="video/mp4">
     </video>
     <button type="button" class="splash-skip" id="splashSkip">건너뛰기 ›</button>
 </div>
@@ -793,7 +812,7 @@
 <div class="lang-overlay hidden" id="introOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="introX">✕</button>
-        <div class="intro-ham-wrap" id="introHamWrap"><img class="intro-ham" src="/static/hamster.png?v=34" alt="호아랑"></div>
+        <div class="intro-ham-wrap" id="introHamWrap"><img class="intro-ham" src="/static/hamster.png?v=35" alt="호아랑"></div>
         <h2 id="introTitleEl" style="margin-bottom:8px;">🐯</h2>
         <p class="consent-text" id="introBodyEl" style="white-space:pre-line;"></p>
         <div class="consent-actions"><button class="action-btn" id="introOkBtn"></button></div>
@@ -905,7 +924,7 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png?v=34" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=35" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
         <div class="result-cards">
             <div class="r-card score"><div class="r-label" id="rcScoreLbl"></div><div class="r-inner" id="rcScoreVal">0</div></div>
@@ -927,13 +946,13 @@
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png?v=34" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=35" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
         <button type="button" class="pr-listen-btn" id="prListenBtn">🔊</button>
         <div class="pr-feedback" id="prFeedback"></div>
-        <button type="button" class="pr-mic" id="prMicBtn">🎤</button>
+        <button type="button" class="pr-mic" id="prMicBtn"></button>
         <p class="pr-mic-label" id="prMicLabel"></p>
         <div class="pr-dots" id="prDots"></div>
         <div class="consent-actions" style="margin-top:14px;">
@@ -948,7 +967,7 @@
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=34" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=35" alt="호아랑">
         <div class="freefb-icon">💬</div>
         <h2 id="freeFbTitleEl" style="margin:6px 0;">💬</h2>
         <p class="consent-text" id="freeFbBodyEl" style="text-align:center;"></p>
@@ -960,14 +979,14 @@
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=34" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=35" alt="호아랑"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
 <div class="home-screen" id="homeScreen">
     <!-- 상단: 제목(왼쪽) · 버튼(오른쪽) -->
     <div class="home-header">
         <h1 class="home-title">
-            <img class="home-logo" src="/static/icon-192.png?v=34" alt="">
+            <img class="home-logo" src="/static/icon-192.png?v=35" alt="">
             <span id="homeTitleEl">호아랑</span>
         </h1>
         <div class="home-top">
@@ -981,7 +1000,7 @@
     <!-- 호아랑: 크게, 원 없이. 가끔 통통 튀며 말풍선으로 말을 건다 -->
     <div class="home-hero">
         <div class="home-bubble" id="homeBubble" aria-hidden="true"></div>
-        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png?v=34" alt="호아랑"></div>
+        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png?v=35" alt="호아랑"></div>
     </div>
     <p class="home-sub" id="homeSubEl"></p>
     <button type="button" class="home-card hc-rp" id="homeRpCard">
@@ -1016,7 +1035,7 @@
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=34" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=35" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -1050,7 +1069,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png?v=34" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=35" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -1103,7 +1122,7 @@
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png?v=34" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=35" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span>🎥</span><span id="hamViewBtnLbl"></span></button>
@@ -1178,7 +1197,13 @@
     </div>
     <div class="hv-controls" id="hvControls"></div>
 </div>
-<!-- 단계 달성 연출 — 한옥 장지문이 열렸다 닫히는 전환 -->
+<!-- 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 (발화 연습 시작 등) -->
+<div class="ham-peek" id="hamPeek" aria-hidden="true">
+    <div class="hp-bubble" id="hamPeekText"></div>
+    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=35" alt="">
+</div>
+
+<!-- 대화의 문턱 연출 — 한옥 장지문 -->
 <div class="jangji" id="jangji" aria-hidden="true">
     <div class="jangji-leaf jangji-l"><span class="jangji-grid"></span></div>
     <div class="jangji-leaf jangji-r"><span class="jangji-grid"></span></div>
@@ -1188,9 +1213,9 @@
 <!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <!-- 발화 연습 배경 — '통통(가야금)', 사용자 볼륨의 20%로 아주 은은하게 -->
-<audio id="prBgm" src="/static/practice_bgm.mp3?v=34" loop preload="none"></audio>
+<audio id="prBgm" src="/static/practice_bgm.mp3?v=35" loop preload="none"></audio>
 <!-- 단계 달성 — 전통악기 징 -->
-<audio id="gongSfx" src="/static/gong.mp3?v=34" preload="auto"></audio>
+<audio id="gongSfx" src="/static/gong.mp3?v=35" preload="auto"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -1202,7 +1227,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v34 (2026-07-26)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v35 (2026-07-26)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -1400,6 +1425,16 @@
         id:"Kerja bagus", mn:"Сайн байна", uz:"Barakalla", ru:"Молодец", es:"¡Bien hecho!", fr:"Bravo",
     };
     for (const _l in I18N) { I18N[_l].doorEnd = I18N_DOOR[_l] || I18N_DOOR.en; }
+    /* 발화 연습에 들어갈 때 호아랑이 빼꼼 나와 건네는 말 */
+    const I18N_PEEK = {
+        ko:"이제 이 대화를 연습해 봐요!", en:"Let's practice this conversation!",
+        zh:"我们来练习这段对话吧！", ja:"この会話を練習してみよう！",
+        vi:"Cùng luyện đoạn hội thoại này nhé!", th:"มาฝึกบทสนทนานี้กันเถอะ!",
+        id:"Ayo latihan percakapan ini!", mn:"Одоо энэ яриаг дасгал хийцгээе!",
+        uz:"Endi shu suhbatni mashq qilaylik!", ru:"Давай потренируем этот диалог!",
+        es:"¡Vamos a practicar esta conversación!", fr:"Entraînons-nous à ce dialogue !",
+    };
+    for (const _l in I18N) { I18N[_l].prPeek = I18N_PEEK[_l] || I18N_PEEK.en; }
     /* 홈 부제 변경('같이 대화할까요?') + 홈에서 호아랑이 통통 튀며 건네는 인사말(짧게) */
     const I18N_GREET = {
         ko: { homeSub:"같이 대화할까요?", homeGreet:["안녕! 🐯","같이 수다 떨자!","기다렸어! 😊","오늘 뭐 할까?"] },
@@ -1787,6 +1822,45 @@
     function goChat() { setScreen("chat"); }
     function goFeedback() { setScreen("feedback"); }
 
+    /* ══════════ 휴대폰 뒤로가기 버튼 ══════════
+       그냥 두면 첫 뒤로가기에 앱이 그대로 닫혀 버린다.
+       히스토리에 여분 항목을 하나 심어 두고, 뒤로가기를 누를 때마다
+       '지금 화면에서 한 단계 뒤'로 보낸 뒤 항목을 다시 채워 넣는다.
+       (누를 때마다 실제 화면을 보고 판단하므로 상태가 어긋날 일이 없다) */
+    const BACK_OVERLAYS = [          // 위(가장 최근에 뜬 것)에서부터 검사
+        "prOverlay", "histOverlay", "voiceOverlay", "appDlOverlay",
+        "rpResultOverlay", "freeFbOverlay", "rpBriefOverlay", "rpSetupOverlay",
+        "consentOverlay", "nameOverlay", "earphoneOverlay", "introOverlay",
+    ];
+    function handleBackPress() {
+        // ① 인트로 영상 → 건너뛰기
+        const sp = document.getElementById("splash");
+        if (sp && !sp.classList.contains("gone")) { sp.dispatchEvent(new Event("pointerdown")); return; }
+        // ② 떠 있는 팝업 → 그 팝업의 ✕와 똑같이 닫는다 (기존 동작 그대로 재사용)
+        for (const id of BACK_OVERLAYS) {
+            const el = document.getElementById(id);
+            if (el && !el.classList.contains("hidden")) {
+                const x = el.querySelector(".ov-x");
+                if (x) x.click(); else el.classList.add("hidden");
+                return;
+            }
+        }
+        // ③ 영상통화 → 채팅으로
+        if (typeof hamViewOpen !== "undefined" && hamViewOpen) { closeHamView(); return; }
+        // ④ 화면 단계: 대화 → (종료 확인 후) 홈 / 피드백 → 홈
+        const scr = document.body.dataset.screen;
+        if (scr === "chat") { const b = document.getElementById("backBtn"); if (b) b.click(); else goHome(); return; }
+        if (scr === "feedback") { goHome(); return; }
+        // ⑤ 홈에서는 아무 일도 하지 않는다 (수업 중 실수로 앱이 닫히지 않게)
+    }
+    (function bindBackButton() {
+        try { history.replaceState({ hb: 0 }, ""); history.pushState({ hb: 1 }, ""); } catch (e) { return; }
+        window.addEventListener("popstate", () => {
+            try { handleBackPress(); } catch (e) {}
+            try { history.pushState({ hb: 1 }, ""); } catch (e) {}   // 여분 항목 다시 채우기
+        });
+    })();
+
     // 이미 세 번 안내를 받은 기기라면 언어·소개·이어폰·이름을 건너뛰고 바로 홈으로.
     // (언어는 홈 우상단 🌐, 이름은 ✏️로 언제든 다시 바꿀 수 있다)
     if (skipEntryGuide) {
@@ -1858,7 +1932,7 @@
 
     /* ── 홈의 호아랑 이미지를 랜덤으로 계속 교체 ── */
     const homeHamImg = homeHam.querySelector("img");
-    const HOME_HAM_IMGS = ["/static/ham_idle.png?v=34", "/static/ham_smile.png?v=34", "/static/ham_surprised.png?v=34", "/static/ham_shy.png?v=34"];
+    const HOME_HAM_IMGS = ["/static/ham_idle.png?v=35", "/static/ham_smile.png?v=35", "/static/ham_surprised.png?v=35", "/static/ham_shy.png?v=35"];
     function homeImgTick() {
         if (document.body.dataset.screen !== "home" || !homeHamImg) return;
         const others = HOME_HAM_IMGS.filter(s => !homeHamImg.src.endsWith(s));
@@ -1872,8 +1946,8 @@
     const bgm = document.getElementById("bgm");
     const prBgm = document.getElementById("prBgm");      // 발화 연습 배경 — 통통(가야금)
     const gongSfx = document.getElementById("gongSfx");  // 단계 달성 — 전통악기 징
-    if (bgm) bgm.volume = 0.3;      // 사용자 볼륨의 30%
-    if (prBgm) prBgm.volume = 0.2;  // 사용자 볼륨의 20% — 연습에 방해되지 않을 만큼만
+    if (bgm) bgm.volume = 0;        // 목표 30% — 재생할 때 페이드인으로 올린다
+    if (prBgm) prBgm.volume = 0;    // 목표 20% — 연습에 방해되지 않을 만큼만
     if (gongSfx) gongSfx.volume = 0.5;
     let bgmMuted = localStorage.getItem("bgmMuted") === "1";
     let bgmReady = false;
@@ -1893,15 +1967,53 @@
         sceneQuiet = open("rpBriefOverlay");
         updateBgm();
     }
+    /* 배경음은 툭 켜지고 툭 꺼지면 거슬린다 → 항상 서서히 오르내리게 한다.
+       (같은 오디오에 여러 번 불려도 직전 페이드를 취소하고 이어받는다) */
+    const BGM_VOL = { bgm: 0.30, prBgm: 0.20 };   // 각 음원의 목표 음량
+    const _fades = new WeakMap();
+    function fadeAudio(el, target, ms, onDone) {
+        if (!el) return;
+        clearInterval(_fades.get(el));
+        const from = el.volume;
+        const steps = Math.max(1, Math.round(ms / 25));
+        let i = 0;
+        const id = setInterval(() => {
+            i += 1;
+            const v = from + (target - from) * (i / steps);
+            try { el.volume = Math.max(0, Math.min(1, v)); } catch (e) {}
+            if (i >= steps) {
+                clearInterval(id);
+                _fades.delete(el);
+                if (onDone) onDone();
+            }
+        }, 25);
+        _fades.set(el, id);
+    }
+    function fadeIn(el, key, ms) {
+        if (!el) return;
+        if (el.paused) { try { el.volume = 0; } catch (e) {} }
+        const p = el.play();
+        if (p && p.catch) p.catch(() => {});
+        fadeAudio(el, BGM_VOL[key], ms || 500);
+    }
+    function fadeOut(el, ms, stopAtEnd) {
+        if (!el || el.paused) return;
+        fadeAudio(el, 0, ms || 420, () => {
+            el.pause();
+            if (stopAtEnd) { try { el.currentTime = 0; } catch (e) {} }
+        });
+    }
     function updateBgm() {
         const canPlay = !bgmMuted && bgmReady && !splashActive;   // 인트로 영상 중엔 배경음악을 겹치지 않는다
+        const wantMain = canPlay && !isConnected && !sceneQuiet && !scenePractice;
+        const wantPr = canPlay && scenePractice;
         if (bgm) {
-            if (canPlay && !isConnected && !sceneQuiet && !scenePractice) bgm.play().catch(() => {});
-            else bgm.pause();
+            if (wantMain) fadeIn(bgm, "bgm", 500);       // 홈에 들어설 때 0.5초에 걸쳐 서서히
+            else fadeOut(bgm, 420, false);               // 나갈 때도 서서히 (이어듣기 위해 위치는 유지)
         }
         if (prBgm) {
-            if (canPlay && scenePractice) prBgm.play().catch(() => {});
-            else { prBgm.pause(); try { prBgm.currentTime = 0; } catch (e) {} }
+            if (wantPr) fadeIn(prBgm, "prBgm", 500);
+            else fadeOut(prBgm, 420, true);
         }
     }
     // 창이 열리고 닫히는 걸 직접 감시 → 여닫는 코드를 일일이 고치지 않아도 자동 반영
@@ -2477,6 +2589,9 @@
         prExprIdx = 0;
         prPhase = "repeat";
         prOverlay.classList.remove("hidden");
+        // 연습도 하나의 '방'에 들어가는 것 — 문이 열리고 호아랑이 빼꼼 나와 말을 건다
+        openDoor(t("prTitle").replace(/^🎤\s*/, ""));
+        setTimeout(() => hamPeek(t("prPeek"), 4200), 1500);
         renderPractice(true);
     }
     function renderPractice(autoplay) {
@@ -2496,6 +2611,7 @@
         prMicBtn.classList.remove("rec");
         if (practiceMicAvailable()) {
             prMicBtn.style.display = "";
+            prMicBtn.textContent = t("pttHold");
             prMicLabel.textContent = t("prMicIdle");
             prSaidBtn.style.display = "none";
         } else {
@@ -2535,7 +2651,10 @@
     function prStopRecUI() {
         prRecOn = false;
         prMicBtn.classList.remove("rec");
-        if (practiceMicAvailable()) prMicLabel.textContent = t("prMicIdle");
+        if (practiceMicAvailable()) {
+            prMicBtn.textContent = t("pttHold");
+            prMicLabel.textContent = t("prMicIdle");
+        }
     }
 
     async function prGeminiRecToggle() {
@@ -2557,6 +2676,7 @@
             prRecd.start();
             prRecOn = true;
             prMicBtn.classList.add("rec");
+            prMicBtn.textContent = t("pttTalking");
             prMicLabel.textContent = t("prMicRec");
             prFeedback.innerHTML = "";
             prAutoStop = setTimeout(() => { try { prRecd.stop(); } catch (e) {} }, 12000); // 안전 자동 종료
@@ -2616,6 +2736,7 @@
             prRec.start();
             prRecOn = true;
             prMicBtn.classList.add("rec");
+            prMicBtn.textContent = t("pttTalking");
             prMicLabel.textContent = t("prMicRec");
             prFeedback.innerHTML = "";
         } catch (e) {
@@ -2623,11 +2744,29 @@
             prStopRecUI();
         }
     }
-    prMicBtn.addEventListener("click", () => {
-        if (prMicBtn.disabled) return;
+    /* 발화 연습 마이크 — 대화 화면과 똑같이 '꾹 눌러 말하기'.
+       탭해서 시작/탭해서 종료 방식이 학습자에게 헷갈려 통일했다. */
+    function prToggleRec() {
         if (canMediaRec && !geminiSttDead) prGeminiRecToggle();
         else if (SRClass) prBrowserRecToggle();
+    }
+    function prHoldStart() {
+        if (prMicBtn.disabled || prRecOn) return;
+        prToggleRec();
+    }
+    function prHoldEnd() {
+        if (!prRecOn) return;
+        // 손을 떼도 220ms 더 흘려보낸 뒤 끝낸다 — 문장 끝음절이 잘리는 걸 막는다
+        setTimeout(() => { if (prRecOn) prToggleRec(); }, 220);
+    }
+    prMicBtn.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        try { prMicBtn.setPointerCapture(e.pointerId); } catch (_) {}
+        prHoldStart();
     });
+    prMicBtn.addEventListener("pointerup", (e) => { e.preventDefault(); prHoldEnd(); });
+    prMicBtn.addEventListener("pointercancel", prHoldEnd);
+    prMicBtn.addEventListener("contextmenu", (e) => e.preventDefault());
 
     function prShowFeedback(cls, main, heard) {
         prFeedback.innerHTML = "";
@@ -2689,6 +2828,7 @@
         if (prMedia) { try { prMedia.getTracks().forEach(tr => tr.stop()); } catch (e) {} prMedia = null; }
         if (prLastSrc) { try { prLastSrc.stop(); } catch (e) {} }
         prStopRecUI();
+        hamPeekHide();
         if (window.speechSynthesis) { try { speechSynthesis.cancel(); } catch (e) {} }
         prOverlay.classList.add("hidden");
         if (rpPlan) renderStageList();      // 브리핑의 '연습함' 배지 갱신
@@ -2735,7 +2875,7 @@
         void el.offsetWidth;                       // 리플로우 강제 → 연속 호출에도 다시 재생
         el.classList.add(mode);                    // "opening" | "closing"
         playGong();                                // 문이 움직일 때 징 한 번
-        const hold = mode === "closing" ? 2050 : 1750;
+        const hold = mode === "closing" ? 2050 : 2450;
         playDoor._t1 = setTimeout(() => el.classList.add("fade"), hold);
         playDoor._t2 = setTimeout(() => {
             el.classList.remove("opening", "closing", "fade", "on");
@@ -2743,6 +2883,23 @@
     }
     function openDoor(text) { playDoor("opening", text); }   // 대화 시작
     function closeDoor(text) { playDoor("closing", text); }  // 대화 종료
+
+    /* 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 */
+    let hamPeekTimer = null;
+    function hamPeek(text, ms) {
+        const el = document.getElementById("hamPeek");
+        const tx = document.getElementById("hamPeekText");
+        if (!el) return;
+        if (tx) tx.textContent = text || "";
+        el.classList.add("show");
+        clearTimeout(hamPeekTimer);
+        hamPeekTimer = setTimeout(() => el.classList.remove("show"), ms || 3600);
+    }
+    function hamPeekHide() {
+        clearTimeout(hamPeekTimer);
+        const el = document.getElementById("hamPeek");
+        if (el) el.classList.remove("show");
+    }
 
     function playDing() { // 기능 단계 달성 — 짧고 경쾌한 딩동↑
         const c = fxContext();
@@ -3490,8 +3647,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png?v=34", smile: "/static/ham_smile.png?v=34",
-        surprised: "/static/ham_surprised.png?v=34", shy: "/static/ham_shy.png?v=34",
+        idle: "/static/ham_idle.png?v=35", smile: "/static/ham_smile.png?v=35",
+        surprised: "/static/ham_surprised.png?v=35", shy: "/static/ham_shy.png?v=35",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -3562,7 +3719,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png?v=34";
+                img.src = "/static/hamster.png?v=35";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");

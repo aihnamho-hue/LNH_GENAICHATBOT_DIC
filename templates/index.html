@@ -6,26 +6,26 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json?v=36">
+    <link rel="manifest" href="/static/manifest.json?v=37">
     <meta name="theme-color" content="#4A7C74">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=36">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=36">
-    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=36" crossorigin>
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=37">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=37">
+    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=37" crossorigin>
     <style>
         /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansMedium.woff2?v=36") format("woff2");
+            src: url("/static/fonts/GmarketSansMedium.woff2?v=37") format("woff2");
             font-weight: 400 600; font-style: normal; font-display: swap;
         }
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansBold.woff2?v=36") format("woff2");
+            src: url("/static/fonts/GmarketSansBold.woff2?v=37") format("woff2");
             font-weight: 700 900; font-style: normal; font-display: swap;
         }
         :root {
@@ -155,6 +155,21 @@
         .ptt-btn:disabled { opacity: 0.4; cursor: default; }
         /* 말하는 중에도 색을 바꾸지 않고 같은 계열로 조금 진하게 + 테두리만 (색이 널뛰지 않게) */
         .ptt-btn.talking { background: #8E4231; transform: scale(0.99); box-shadow: 0 0 0 6px rgba(181,87,63,0.28); }
+        /* 말하는 동안 실제 목소리 세기로 움직이는 막대 */
+        .ptt-btn { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .ptt-vu { display: none; align-items: flex-end; gap: 3px; height: 22px; width: 34px; flex-shrink: 0; }
+        .ptt-btn.talking .ptt-vu { display: flex; }
+        .ptt-vu i { flex: 1; background: rgba(255,255,255,0.92); border-radius: 2px; height: 16%;
+            transition: height 0.09s linear; }
+        .ptt-label { min-width: 0; }
+
+        /* 주제 대화에서는 진녹색 버튼 (자유 수다는 장단 주홍) */
+        body[data-mode="rp"] .ptt-btn, body[data-mode="rp"] .pr-mic { background: #2E5B3E; }
+        body[data-mode="rp"] .ptt-btn:hover:not(:disabled),
+        body[data-mode="rp"] .pr-mic:hover:not(:disabled) { background: #264E34; }
+        body[data-mode="rp"] .ptt-btn.talking, body[data-mode="rp"] .pr-mic.rec {
+            background: #1F4029; box-shadow: 0 0 0 6px rgba(46,91,62,0.30); }
+
         .ptt-hint { margin: 6px 12px 0; font-size: 11px; line-height: 1.4; color: var(--muted); text-align: center; }
 
         /* 빠른 요청 버튼 — 대화창(채팅 패널) 하단 배치 */
@@ -692,11 +707,13 @@
             font-size: 13.5px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
             box-shadow: 0 4px 12px -6px rgba(58,48,34,0.4); transition: background 0.18s, transform 0.12s; }
         .hv-back:hover { background: var(--accent-soft); transform: translateY(-1px); }
-        .hv-actions { display: inline-flex; align-items: center; gap: 8px; }
-        .hv-scf-btn { border: 1.5px solid var(--accent-soft); background: var(--panel); color: var(--accent); border-radius: 999px;
-            height: 38px; padding: 0 14px; font-size: 13.5px; font-weight: 800; cursor: pointer;
-            display: inline-flex; align-items: center; gap: 5px; font-family: inherit;
-            box-shadow: 0 4px 12px -6px rgba(58,48,34,0.4); transition: background 0.18s, transform 0.12s; }
+        /* 🪜 버튼 — 카드가 나오는 자리 바로 위 오른쪽에 붙여 둔다 */
+        .hv-scf-btn { position: absolute; right: 12px; z-index: 41;
+            bottom: calc(252px + env(safe-area-inset-bottom));
+            border: 1.5px solid var(--accent-soft); background: var(--panel); color: var(--accent); border-radius: 999px;
+            height: 40px; padding: 0 15px; font-size: 13.5px; font-weight: 800; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 6px; font-family: inherit;
+            box-shadow: 0 6px 16px -6px rgba(58,48,34,0.45); transition: background 0.18s, transform 0.12s; }
         .hv-scf-btn span:first-child { font-size: 16px; }
         .hv-scf-btn:hover { background: var(--accent-soft); transform: translateY(-1px); }
         .hv-scf-btn[hidden] { display: none; }
@@ -792,8 +809,8 @@
 <!-- ═══ 앱 시작 영상 (한옥 장지문이 열리고 호아랑이 나온다) ═══
      같은 세션에서 한 번만 재생하고, 끝나면 스스로 사라진다. -->
 <div class="splash" id="splash">
-    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=36">
-        <source src="/static/intro.mp4?v=36" type="video/mp4">
+    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=37">
+        <source src="/static/intro.mp4?v=37" type="video/mp4">
     </video>
     <button type="button" class="splash-skip" id="splashSkip">건너뛰기 ›</button>
 </div>
@@ -825,7 +842,7 @@
 <div class="lang-overlay hidden" id="introOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="introX">✕</button>
-        <div class="intro-ham-wrap" id="introHamWrap"><img class="intro-ham" src="/static/hamster.png?v=36" alt="호아랑"></div>
+        <div class="intro-ham-wrap" id="introHamWrap"><img class="intro-ham" src="/static/hamster.png?v=37" alt="호아랑"></div>
         <h2 id="introTitleEl" style="margin-bottom:8px;">🐯</h2>
         <p class="consent-text" id="introBodyEl" style="white-space:pre-line;"></p>
         <div class="consent-actions"><button class="action-btn" id="introOkBtn"></button></div>
@@ -937,7 +954,7 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png?v=36" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=37" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
         <div class="result-cards">
             <div class="r-card score"><div class="r-label" id="rcScoreLbl"></div><div class="r-inner" id="rcScoreVal">0</div></div>
@@ -959,7 +976,7 @@
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png?v=36" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=37" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
@@ -980,7 +997,7 @@
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=36" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=37" alt="호아랑">
         <div class="freefb-icon">💬</div>
         <h2 id="freeFbTitleEl" style="margin:6px 0;">💬</h2>
         <p class="consent-text" id="freeFbBodyEl" style="text-align:center;"></p>
@@ -992,14 +1009,14 @@
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=36" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=37" alt="호아랑"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
 <div class="home-screen" id="homeScreen">
     <!-- 상단: 제목(왼쪽) · 버튼(오른쪽) -->
     <div class="home-header">
         <h1 class="home-title">
-            <img class="home-logo" src="/static/icon-192.png?v=36" alt="">
+            <img class="home-logo" src="/static/icon-192.png?v=37" alt="">
             <span id="homeTitleEl">호아랑</span>
         </h1>
         <div class="home-top">
@@ -1013,7 +1030,7 @@
     <!-- 호아랑: 크게, 원 없이. 가끔 통통 튀며 말풍선으로 말을 건다 -->
     <div class="home-hero">
         <div class="home-bubble" id="homeBubble" aria-hidden="true"></div>
-        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png?v=36" alt="호아랑"></div>
+        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png?v=37" alt="호아랑"></div>
     </div>
     <p class="home-sub" id="homeSubEl"></p>
     <button type="button" class="home-card hc-rp" id="homeRpCard">
@@ -1028,7 +1045,7 @@
     <button type="button" class="home-dl-btn" id="homeDownloadBtn" hidden></button>
     <div class="credit home-credit">공동체에 대한 공헌 · LeeNamho · Email: namho1210@naver.com</div>
     <div class="credit home-credit" style="opacity:0.62; font-size:10px; line-height:1.5;">
-        글꼴 지마켓 산스(G마켓) · 배경음 「Tong tong(통통) 가야금」 서예지 ·
+        글꼴 지마켓 산스(G마켓) · 배경음 「Tong tong(통통)」·「How are you」 가야금 서예지 ·
         효과음 「전통악기 징」 (재)전주정보문화산업진흥원 — 공유마당(KOGL 제1유형)<br>
         전통 문양(소슬빗살) 참고: 국립문화유산연구원 「한국의 전통문양」
     </div>
@@ -1048,7 +1065,7 @@
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=36" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=37" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -1082,7 +1099,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png?v=36" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=37" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -1135,7 +1152,7 @@
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png?v=36" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=37" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span>🎥</span><span id="hamViewBtnLbl"></span></button>
@@ -1194,16 +1211,14 @@
 <div class="ham-view" id="hamView" aria-hidden="true">
     <div class="hv-top">
         <span class="hv-name">🐯 <span id="hvNameEl">호아랑</span></span>
-        <span class="hv-actions">
-            <button type="button" class="hv-scf-btn" id="hvScfBtn" hidden><span>🪜</span><span id="hvScfLbl"></span></button>
-            <button type="button" class="hv-back" id="hamViewClose"><span>💬</span><span id="hamViewCloseLbl"></span></button>
-        </span>
+        <button type="button" class="hv-back" id="hamViewClose"><span>💬</span><span id="hamViewCloseLbl"></span></button>
     </div>
     <!-- 말풍선은 캐릭터와 한 덩어리로 묶어 '머리 바로 위'에 뜨게 한다 -->
     <div class="hv-stage-slot" id="hvStageSlot">
         <div class="hv-caption" id="hvCaption"></div>
     </div>
-    <!-- 비계: 오른쪽에서 빼꼼 나와 표현을 알려주고 사라진다 -->
+    <!-- 비계: 🪜를 누르면 바로 그 자리에서 카드가 옆으로 나온다 (버튼과 카드가 붙어 있다) -->
+    <button type="button" class="hv-scf-btn" id="hvScfBtn" hidden><span>🪜</span><span id="hvScfLbl"></span></button>
     <div class="hv-scaffold" id="hvScaffold" aria-hidden="true">
         <div class="hvs-title" id="hvsTitle"></div>
         <div class="hvs-list" id="hvsList"></div>
@@ -1213,7 +1228,7 @@
 <!-- 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 (발화 연습 시작 등) -->
 <div class="ham-peek" id="hamPeek" aria-hidden="true">
     <div class="hp-bubble" id="hamPeekText"></div>
-    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=36" alt="">
+    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=37" alt="">
 </div>
 
 <!-- 대화의 문턱 연출 — 한옥 장지문 -->
@@ -1226,9 +1241,11 @@
 <!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <!-- 발화 연습 배경 — '통통(가야금)', 사용자 볼륨의 20%로 아주 은은하게 -->
-<audio id="prBgm" src="/static/practice_bgm.mp3?v=36" loop preload="none"></audio>
+<audio id="prBgm" src="/static/practice_bgm.mp3?v=37" loop preload="none"></audio>
 <!-- 단계 달성 — 전통악기 징 -->
-<audio id="gongSfx" src="/static/gong.mp3?v=36" preload="auto"></audio>
+<audio id="gongSfx" src="/static/gong.mp3?v=37" preload="auto"></audio>
+<!-- 주제 대화·자유 수다 진행 중 배경 — 「How are you 가야금」 -->
+<audio id="chatBgm" src="/static/chat_bgm.mp3?v=37" loop preload="none"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -1240,7 +1257,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v36 (2026-07-27)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v37 (2026-07-27)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -1335,6 +1352,8 @@
     const isInAppBrowser = !!inAppKind;
     let isPaused = false;
     let isTalking = false;     // push-to-talk: 버튼을 누르고 있는 동안만 true
+    let pttHeld = false;       // 손가락이 실제로 버튼 위에 눌려 있는지
+    let pttSafety = null;      // 뗀 신호를 놓쳤을 때 강제 종료
     let playbackRate = 1.0;
     let nextPlayTime = 0;
     let activeSources = [];
@@ -1540,7 +1559,7 @@
         document.querySelectorAll(".quick-btn").forEach(b => { if (b.dataset.qkey) b.textContent = b.dataset.emoji + " " + t(b.dataset.qkey); });
         if (emptyState) emptyState.innerHTML = '<span class="emoji">🐯</span>' + t("empty");
         actionBtn.innerText = isConnected ? t("btnStop") : t("btnStart");
-        pttBtn.textContent = isTalking ? t("pttTalking") : t("pttHold");
+        pttSetLabel(isTalking ? t("pttTalking") : t("pttHold"));
         exportBtn.textContent = t("btnExport");
         document.getElementById("consentTitleEl").textContent = t("consentTitle");
         document.getElementById("consentBodyEl").textContent = t("consentBody");
@@ -1906,6 +1925,7 @@
 
     function setMode(m) {
         mode = m;
+        document.body.dataset.mode = m;   // 주제 대화면 말하기 버튼이 진녹색이 된다
         modeFreeBtn.classList.toggle("active", m === "free");
         modeRpBtn.classList.toggle("active", m === "rp");
     }
@@ -1952,7 +1972,7 @@
 
     /* ── 홈의 호아랑 이미지를 랜덤으로 계속 교체 ── */
     const homeHamImg = homeHam.querySelector("img");
-    const HOME_HAM_IMGS = ["/static/ham_idle.png?v=36", "/static/ham_smile.png?v=36", "/static/ham_surprised.png?v=36", "/static/ham_shy.png?v=36"];
+    const HOME_HAM_IMGS = ["/static/ham_idle.png?v=37", "/static/ham_smile.png?v=37", "/static/ham_surprised.png?v=37", "/static/ham_shy.png?v=37"];
     function homeImgTick() {
         if (document.body.dataset.screen !== "home" || !homeHamImg) return;
         const others = HOME_HAM_IMGS.filter(s => !homeHamImg.src.endsWith(s));
@@ -1964,10 +1984,13 @@
 
     /* ── 배경음악(BGM): 대화 연습 중(isConnected)이 아닐 때만 50% 음량 재생 ── */
     const bgm = document.getElementById("bgm");
-    const prBgm = document.getElementById("prBgm");      // 발화 연습 배경 — 통통(가야금)
-    const gongSfx = document.getElementById("gongSfx");  // 단계 달성 — 전통악기 징
-    if (bgm) bgm.volume = 0;        // 목표 30% — 재생할 때 페이드인으로 올린다
-    if (prBgm) prBgm.volume = 0;    // 목표 20% — 연습에 방해되지 않을 만큼만
+    const prBgm = document.getElementById("prBgm");      // 대화 단계·발화 연습 배경 — 통통(가야금)
+    const chatBgm = document.getElementById("chatBgm");  // 대화 진행 중 배경 — How are you(가야금)
+    const gongSfx = document.getElementById("gongSfx");  // 문이 여닫힐 때 — 전통악기 징
+    // 배경음은 모두 기기 음량의 20%. 재생할 때 0에서 페이드인으로 올린다.
+    if (bgm) bgm.volume = 0;
+    if (prBgm) prBgm.volume = 0;
+    if (chatBgm) chatBgm.volume = 0;
     if (gongSfx) gongSfx.volume = 0.5;
     let bgmMuted = localStorage.getItem("bgmMuted") === "1";
     let bgmReady = false;
@@ -1981,15 +2004,14 @@
             const el = document.getElementById(id);
             return !!el && !el.classList.contains("hidden");
         };
-        scenePractice = open("prOverlay");
-        // 시나리오 설정창까지는 배경음악을 그대로 둔다(아직 연습 전).
-        // 브리핑(대화 단계 보기)부터가 연습 구간이라 여기서부터 무음.
-        sceneQuiet = open("rpBriefOverlay");
+        // 대화 단계(브리핑)와 발화 연습에서는 「통통 가야금」이 은은하게 깔린다.
+        scenePractice = open("prOverlay") || open("rpBriefOverlay");
+        sceneQuiet = false;
         updateBgm();
     }
     /* 배경음은 툭 켜지고 툭 꺼지면 거슬린다 → 항상 서서히 오르내리게 한다.
        (같은 오디오에 여러 번 불려도 직전 페이드를 취소하고 이어받는다) */
-    const BGM_VOL = { bgm: 0.30, prBgm: 0.20 };   // 각 음원의 목표 음량
+    const BGM_VOL = { bgm: 0.20, prBgm: 0.20, chatBgm: 0.20 };   // 모두 기기 음량의 20%
     const _fades = new WeakMap();
     function fadeAudio(el, target, ms, onDone) {
         if (!el) return;
@@ -2025,16 +2047,15 @@
     }
     function updateBgm() {
         const canPlay = !bgmMuted && bgmReady && !splashActive;   // 인트로 영상 중엔 배경음악을 겹치지 않는다
-        const wantMain = canPlay && !isConnected && !sceneQuiet && !scenePractice;
-        const wantPr = canPlay && scenePractice;
-        if (bgm) {
-            if (wantMain) fadeIn(bgm, "bgm", 500);       // 홈에 들어설 때 0.5초에 걸쳐 서서히
-            else fadeOut(bgm, 420, false);               // 나갈 때도 서서히 (이어듣기 위해 위치는 유지)
-        }
-        if (prBgm) {
-            if (wantPr) fadeIn(prBgm, "prBgm", 500);
-            else fadeOut(prBgm, 420, true);
-        }
+        //   대화 중        → How are you 가야금
+        //   대화 단계·연습 → 통통 가야금
+        //   그 밖(홈·안내) → 기본 배경음
+        const wantChat = canPlay && isConnected;
+        const wantPr = canPlay && !isConnected && scenePractice;
+        const wantMain = canPlay && !isConnected && !scenePractice && !sceneQuiet;
+        if (bgm) { if (wantMain) fadeIn(bgm, "bgm", 500); else fadeOut(bgm, 420, false); }
+        if (prBgm) { if (wantPr) fadeIn(prBgm, "prBgm", 500); else fadeOut(prBgm, 420, true); }
+        if (chatBgm) { if (wantChat) fadeIn(chatBgm, "chatBgm", 700); else fadeOut(chatBgm, 500, true); }
     }
     // 창이 열리고 닫히는 걸 직접 감시 → 여닫는 코드를 일일이 고치지 않아도 자동 반영
     try {
@@ -2178,11 +2199,7 @@
         const hvScf = document.getElementById("hvScfBtn");
         if (hvScf) hvScf.hidden = !rpSessionActive;
         hamView.classList.add("show");
-        // 주제 대화라면 비계가 여기 있다는 걸 한 번 보여 준다 (한 세션에 한 번)
-        if (rpSessionActive && !openHamView._shown) {
-            openHamView._shown = true;
-            setTimeout(() => { try { renderScaffoldStatic(); } catch (e) {} }, 900);
-        }
+        // 비계는 학습자가 🪜를 눌렀을 때만 나온다 (자동으로 튀어나오지 않음)
         hamView.setAttribute("aria-hidden", "false");
         hamViewOpen = true;
     }
@@ -2264,6 +2281,7 @@
             rpId = data.id;
             rpPlan = data.plan;
             rpPracticed = {};   // 새 계획 → 연습 기록 초기화
+            openPractice._doorShown = false;   // 새 계획이면 연습 문 연출도 처음부터
             rpSetupOverlay.classList.add("hidden");
             showBriefing(true);   // 계획을 막 만든 참 → 문 열림 + 호아랑 등장 + 단계 차례 등장
         } catch (e) {
@@ -2321,7 +2339,7 @@
             if (canPractice) item.addEventListener("click", () => openPractice(i));
             if (animate) {   // 첫 등장 — 문이 열린 뒤 위에서부터 한 칸씩
                 item.classList.add("st-in");
-                item.style.animationDelay = (3.0 + i * 0.28) + "s";
+                item.style.animationDelay = (3.2 + i * 0.56) + "s";
             }
             list.appendChild(item);
         });
@@ -2638,8 +2656,11 @@
         prExprIdx = 0;
         prPhase = "repeat";
         prOverlay.classList.remove("hidden");
-        // 연습도 하나의 '방'에 들어가는 것 — 단계를 누르면 발화 연습 문이 열린다
-        openDoor(t("prTitle").replace(/^🎤\s*/, ""));
+        // 연습도 하나의 '방'에 들어가는 것 — 다만 문은 이 계획에서 '처음' 들어갈 때만 연다
+        if (!openPractice._doorShown) {
+            openPractice._doorShown = true;
+            openDoor(t("prTitle").replace(/^🎤\s*/, ""));
+        }
         renderPractice(true);
     }
     function renderPractice(autoplay) {
@@ -2839,10 +2860,12 @@
         const target = exprText(e);
         let best = 0, bestText = alts[0] || "";
         alts.forEach(a => { const s = simScore(a, target); if (s > best) { best = s; bestText = a; } });
-        if (best >= 0.85) {
+        // 목표의 절반도 안 되게 말했으면(반쯤 하다 말았으면) 통과시키지 않는다
+        const shortSaid = bestText.replace(/\s+/g, "").length < target.replace(/\s+/g, "").length * 0.6;
+        if (best >= 0.90 && !shortSaid) {
             prShowFeedback("great", t("prGreat"), bestText);
             prAdvTimer = setTimeout(advancePhase, 1300);
-        } else if (best >= 0.68) {
+        } else if (best >= 0.76 && !shortSaid) {
             prShowFeedback("ok", t("prGood"), bestText);
             prAdvTimer = setTimeout(advancePhase, 1300);
         } else {
@@ -3008,6 +3031,7 @@
        (채팅 화면의 접이식 패널과 같은 내용을, 화면에 맞는 방식으로 보여줄 뿐) */
     const hvScaffold = document.getElementById("hvScaffold");
     let hvScfHideTimer = null;
+    let hvScfWanted = false;   // 🪜를 눌렀을 때만 true — 저절로 튀어나오지 않게
     function hvScaffoldFill(items, stageName, loadingText) {
         if (!hvScaffold) return;
         document.getElementById("hvsTitle").textContent = t("scfTitle") + (stageName ? " · " + stageName : "");
@@ -3067,7 +3091,7 @@
         scfPanel.classList.remove("hidden");
         // 영상통화 중이면 같은 내용을 옆에서 빼꼼 보여준다
         hvScaffoldFill(arr, stageName);
-        if (isHamViewOpen()) hvScaffoldPeek(arr.length ? 9000 : 4500);
+        if (isHamViewOpen() && hvScfWanted) hvScaffoldPeek(arr.length ? 9000 : 4500);
     }
     function renderScaffoldStatic() { // 폴백: 현재 단계의 연습 표현
         if (!rpPlan || !rpStagesState.length) return;
@@ -3082,7 +3106,7 @@
         document.getElementById("scfTitleEl").textContent = t("scfTitle");
         document.getElementById("scfList").textContent = t("sgLoading");
         scfPanel.classList.remove("hidden");
-        if (isHamViewOpen()) { hvScaffoldFill([], "", t("sgLoading")); hvScaffoldPeek(11000); }
+        if (isHamViewOpen() && hvScfWanted) { hvScaffoldFill([], "", t("sgLoading")); hvScaffoldPeek(11000); }
         clearTimeout(scfTimer);
         if (rpSessionActive && isConnected && ws && ws.readyState === WebSocket.OPEN) {
             try {
@@ -3104,7 +3128,8 @@
         const b = document.getElementById("hvScfBtn");
         if (!b) return;
         b.addEventListener("click", () => {
-            if (hvScaffold.classList.contains("show")) { hvScaffoldHide(); return; }
+            if (hvScaffold.classList.contains("show")) { hvScfWanted = false; hvScaffoldHide(); return; }
+            hvScfWanted = true;
             requestScaffold();
         });
     })();
@@ -3335,11 +3360,37 @@
        누른 순간: activity_start(발화 시작) → 누르는 동안 오디오 전송
        뗀 순간: activity_end(발화 끝) → Gemini가 즉시 턴 확정 → STT 바로 반영 */
     let pttEndTimer = null;     // 발화 종료 꼬리(끝음절 보존) 타이머
+    /* 버튼 내부 = [막대 5개] + [글자]. 글자만 바꿔야 막대가 살아 있다. */
+    (function buildPttMeter() {
+        if (!pttBtn) return;
+        const label = document.createElement("span");
+        label.className = "ptt-label";
+        label.textContent = pttBtn.textContent || "";
+        const vu = document.createElement("span");
+        vu.className = "ptt-vu";
+        for (let i = 0; i < 5; i++) {
+            const b = document.createElement("i");
+            b.style.height = "16%";
+            vu.appendChild(b);
+            vuBars.push(b);
+        }
+        pttBtn.textContent = "";
+        pttBtn.appendChild(vu);
+        pttBtn.appendChild(label);
+    })();
+    function pttSetLabel(txt) {
+        const l = pttBtn.querySelector(".ptt-label");
+        if (l) l.textContent = txt; else pttBtn.textContent = txt;
+    }
+
     function startTalking() {
         if (!isConnected || isPaused || !ws || ws.readyState !== WebSocket.OPEN) return;
+        pttHeld = true;
+        clearTimeout(pttSafety);
+        pttSafety = setTimeout(() => { if (pttHeld) { pttHeld = false; stopTalking(); } }, 45000); // 손을 뗀 신호를 놓쳤을 때의 안전장치
         if (pttEndTimer) {      // 꼬리 대기 중 다시 누름 → 끊지 않고 같은 발화를 이어감
             clearTimeout(pttEndTimer); pttEndTimer = null;
-            pttBtn.classList.add("talking"); pttBtn.textContent = t("pttTalking");
+            pttBtn.classList.add("talking"); pttSetLabel(t("pttTalking"));
             return;
         }
         if (isTalking) return;
@@ -3348,22 +3399,26 @@
         stopAllAudio();                 // 말하려고 누르면 호아랑 발화를 즉시 멈춤(끼어들기)
         try { ws.send(JSON.stringify({ type: "activity_start" })); } catch (e) {}
         pttBtn.classList.add("talking");
-        pttBtn.textContent = t("pttTalking");
+        pttSetLabel(t("pttTalking"));
+        vuReset();
         setStatus("listening", "stListening");
     }
     function stopTalking() {
+        pttHeld = false;
+        clearTimeout(pttSafety);
         if (!isTalking || pttEndTimer) return;
         // ★ STT 개선: 버튼을 떼는 즉시 끊으면 끝음절이 잘려 인식이 나빠진다.
-        //   시각적으로는 바로 '뗀' 상태로 바꾸되, 오디오는 400ms 더 흘려보낸 뒤 종료 신호를 보낸다.
+        //   시각적으로는 바로 '뗀' 상태로 바꾸되, 오디오는 250ms 더 흘려보낸 뒤 종료 신호를 보낸다.
         pttBtn.classList.remove("talking");
-        pttBtn.textContent = t("pttHold");
+        pttSetLabel(t("pttHold"));
+        vuReset();
         if (!isConnected || isPaused) { isTalking = false; return; }
         pttEndTimer = setTimeout(() => {
             pttEndTimer = null;
             isTalking = false;   // 오디오 스트리밍 종료(꼬리 끝)
             try { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "activity_end" })); } catch (e) {}
             if (isConnected && !isPaused) setStatus("idle", "stThinking");
-        }, 400);
+        }, 250);
     }
     // 포인터 이벤트로 마우스·터치·펜 통합 처리. setPointerCapture로 손가락이
     // 버튼 밖으로 나가도 뗄 때(pointerup)까지 추적된다.
@@ -3374,6 +3429,11 @@
     });
     pttBtn.addEventListener("pointerup", (e) => { e.preventDefault(); stopTalking(); });
     pttBtn.addEventListener("pointercancel", () => stopTalking());
+    pttBtn.addEventListener("lostpointercapture", () => { if (pttHeld) stopTalking(); });
+    // 손을 화면 밖에서 떼거나, 앱이 뒤로 밀리면 눌린 상태가 남을 수 있다 → 확실히 종료
+    window.addEventListener("pointerup", () => { if (pttHeld) stopTalking(); });
+    window.addEventListener("blur", () => { if (pttHeld) stopTalking(); });
+    document.addEventListener("visibilitychange", () => { if (document.hidden && pttHeld) stopTalking(); });
     // 컨텍스트 메뉴(길게 눌렀을 때) 방지
     pttBtn.addEventListener("contextmenu", (e) => e.preventDefault());
 
@@ -3699,8 +3759,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png?v=36", smile: "/static/ham_smile.png?v=36",
-        surprised: "/static/ham_surprised.png?v=36", shy: "/static/ham_shy.png?v=36",
+        idle: "/static/ham_idle.png?v=37", smile: "/static/ham_smile.png?v=37",
+        surprised: "/static/ham_surprised.png?v=37", shy: "/static/ham_shy.png?v=37",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -3771,7 +3831,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png?v=36";
+                img.src = "/static/hamster.png?v=37";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");
@@ -3863,7 +3923,35 @@
        마이크는 항상 돌고 있으므로 최근 3조각(약 384ms)을 들고 있다가
        발화가 시작되면 그것부터 흘려보내 앞머리가 잘리지 않게 한다. */
     let pcmPreRoll = [];
-    const PRE_ROLL_CHUNKS = 3;      // 2048샘플 @16kHz = 128ms × 3 ≈ 384ms
+    const PRE_ROLL_CHUNKS = 2;      // 2048샘플 @16kHz = 128ms × 2 ≈ 256ms
+
+    /* 말하는 동안 '내 목소리가 들어가고 있다'를 눈으로 보여 준다.
+       실제 마이크 신호의 세기(RMS)를 재서 버튼 안 막대가 함께 움직인다. */
+    const vuBars = [];
+    let vuLevel = 0, vuRaf = null;
+    function pcmRms(u8) {
+        const i16 = new Int16Array(u8.buffer, u8.byteOffset, (u8.byteLength / 2) | 0);
+        let sum = 0;
+        for (let i = 0; i < i16.length; i += 4) { const v = i16[i] / 32768; sum += v * v; }
+        return Math.sqrt(sum / Math.max(1, i16.length / 4));
+    }
+    function vuTick() {
+        vuRaf = null;
+        if (!vuBars.length) return;
+        // 0.02(정적) ~ 0.30(큰 소리) 구간을 0~1로 펴서 막대 높이에 반영
+        const lv = Math.max(0, Math.min(1, (vuLevel - 0.015) / 0.22));
+        for (let i = 0; i < vuBars.length; i++) {
+            const w = [0.55, 0.85, 1, 0.85, 0.55][i] || 0.6;
+            const h = 16 + lv * w * 74 + (lv > 0.05 ? Math.random() * 10 : 0);
+            vuBars[i].style.height = Math.min(100, h) + "%";
+        }
+    }
+    function vuSet(level) {
+        vuLevel = vuLevel * 0.55 + level * 0.45;   // 튀지 않게 완만히
+        if (!vuRaf) vuRaf = requestAnimationFrame(vuTick);
+    }
+    function vuReset() { vuLevel = 0; vuBars.forEach(b => { b.style.height = "16%"; }); }
+
     function sendPcmChunk(u8) {
         // push-to-talk: 버튼을 누르고 있는 동안(isTalking)에만 오디오를 보낸다.
         // 안 누르면 마이크는 돌지만 전송 안 함 → 불필요한 업로드·오탐 없음.
@@ -3877,6 +3965,7 @@
             for (const c of pcmPreRoll) { try { ws.send(c); } catch (e) {} }
             pcmPreRoll.length = 0;
         }
+        try { vuSet(pcmRms(u8)); } catch (e) {}  // 버튼 안 막대를 실제 목소리 세기로 움직인다
         ws.send(u8); // 바이너리 프레임 전송 — base64/JSON 인코딩 오버헤드 없음
     }
 

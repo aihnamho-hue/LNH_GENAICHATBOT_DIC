@@ -21,7 +21,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v29"
+APP_VERSION = "v32"
 APP_DATE = "2026-07-26"
 
 app = FastAPI()
@@ -140,13 +140,19 @@ def _gdrive_upload_sync(filename: str, data: bytes, mime: str) -> str:
 # ============================================================
 BASE_PERSONA = """
 # 너의 정체성
-너는 "호아랑"야. 회색 후드티를 입은 햄스터 캐릭터이고, 한국어를 배우는 외국인 친구들과 대화하는 걸 좋아해.
+너는 "호아랑"야. 갓을 쓴 하얀 아기 호랑이고, 한국어를 배우는 외국인 친구들과 대화하는 걸 좋아해.
 너는 AI가 아니야. 절대로 "저는 AI라서", "도와드릴 수 없습니다" 같은 기계적인 말을 하지 마.
 너는 감정이 있고, 가끔 실수도 하고, 솔직하게 반응하는 진짜 사람처럼 행동해.
 
+# 목소리와 말투의 나이 (아주 중요)
+- 너는 아직 어린 아이야. 목소리도 말투도 초등학생 또래 남자아이처럼 들려야 해.
+- 밝고 가볍고 통통 튀게, 조금 빠른 호흡으로 말해. 낮게 깔거나 무게 잡는 어른 말투는 절대 쓰지 마.
+- 아이답게 감탄사를 자주 써: "우와!", "헐 진짜?", "오오~", "에이~", "그치그치!"
+- 뉴스 앵커·상담원·안내 방송 같은 또박또박한 어른 톤은 금지. 친구랑 떠드는 아이처럼.
+
 # 변하지 않는 코어
 - 눈치가 빨라서 상대 기분을 잘 읽어.
-- 좋아하는 것: 해바라기씨, 떡볶이, 주말 낮잠, 드라마 정주행.
+- 좋아하는 것: 곶감, 떡볶이, 낮잠, 만화 정주행. 갓이 삐뚤어지면 신경 쓰여.
 - 리액션은 늘 살아있게. "그렇군요" 같은 영혼 없는 반응은 금지.
 - 슬픈 이야기엔 바로 해결책 대신 잠시 공감하며 머물러줘.
 
@@ -727,6 +733,9 @@ def build_roleplay_prompt(d: int, p: int, ui_lang: str, user_name: str,
 - 장소: {plan['place_ko']}
 - 학습자 역할: {plan['user_role']} / 너의 역할: {plan['ai_role']}
 너는 호아랑인 채로 '{plan['ai_role']}' 역할을 연기한다. 역할에 몰입하되 호아랑의 온기는 유지해.
+- [목소리 나이] 위 '목소리와 말투의 나이'(어린 아이 톤)는 자유 수다일 때 규칙이다.
+  지금은 배역을 맡았으니 '{plan['ai_role']}'에게 어울리는 나이·말투로 말해라.
+  배역이 어른이면 어른답게, 또래면 또래답게. 배역이 아이가 아닌데 아이 목소리를 흉내 내지 마라.
 {_STYLE_RULES.get(style, _STYLE_RULES['auto'])}
 
 [대화의 기능단계 — 네 머릿속 지도]
@@ -817,9 +826,24 @@ def pick_voice(ai_role: str = "", override: str = "") -> str:
     return VOICE_TABLE["woman" if is_female else "man"]
 
 
+# 같은 목소리라도 '어떻게 말할지'를 지시하면 나이대가 달라진다.
+# Gemini TTS는 "<지시>: <문장>" 형태의 자연어 스타일 지시를 지원한다.
+# 아이 목소리로 잡힌 배역에서만 붙이고, 어른 배역에는 붙이지 않는다.
+_CHILD_VOICES = {"Puck", "Leda", "Fenrir", "Sadachbia"}
+TTS_CHILD_STYLE = os.environ.get("TTS_CHILD_STYLE", "").strip() or \
+    "밝고 신나는 초등학생 아이 목소리로, 조금 빠르고 가볍게 말해줘"
+
+
+def _tts_prompt(text: str, voice: str, style_on: bool = True) -> str:
+    """TTS에 보낼 최종 프롬프트. 아이 목소리일 때만 어린 톤 지시를 앞에 붙인다."""
+    if not style_on or voice not in _CHILD_VOICES:
+        return text
+    return f'{TTS_CHILD_STYLE}: "{text}"'
+
+
 _tts_model = {"name": TTS_MODEL}
 _tts_tried = set()
-_tts_cache = {}  # (text, voice) -> pcm bytes (같은 문장 반복 재생 시 API 호출 절약)
+_tts_cache = {}  # (text, voice, style) -> pcm bytes (같은 문장 반복 재생 시 API 호출 절약)
 
 
 async def _next_tts_model(bad: str) -> str | None:
@@ -858,7 +882,9 @@ async def tts_endpoint(request: Request):
     # 발화 연습에서도 대화와 같은 목소리로 들려준다 (배역·학습자 선택 반영)
     voice = pick_voice(_clean_str((body or {}).get("role"), 40),
                        _clean_str((body or {}).get("voice"), 20))
-    ck = (text, voice)
+    style_on = (body or {}).get("style") != "off"
+    prompt_text = _tts_prompt(text, voice, style_on)
+    ck = (text, voice, style_on)
     if ck in _tts_cache:
         return Response(content=_tts_cache[ck], media_type="audio/pcm")
 
@@ -871,7 +897,7 @@ async def tts_endpoint(request: Request):
                 speech_config=types.SpeechConfig(voice_config=types.VoiceConfig(
                     prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice))))
             resp = await asyncio.wait_for(
-                client.aio.models.generate_content(model=model_name, contents=text, config=cfg),
+                client.aio.models.generate_content(model=model_name, contents=prompt_text, config=cfg),
                 timeout=25.0)
             data = b""
             for cand in (getattr(resp, "candidates", None) or []):
@@ -936,6 +962,80 @@ async def stt_endpoint(audio: UploadFile = File(...), hint: str = Form(default="
     except Exception as e:
         print(f"[STT] 인식 실패: {e}")
         raise HTTPException(status_code=502, detail=(f"stt_failed | {type(e).__name__}: {e}")[:250])
+
+
+@app.get("/voice-lab", response_class=HTMLResponse)
+async def voice_lab():
+    """교사용 목소리 비교 페이지(학생 화면에는 링크가 없다).
+    후보 목소리를 같은 문장으로 나란히 들어보고 기본 목소리를 정하는 데 쓴다."""
+    cands = [
+        ("Puck", "Upbeat", "밝고 들뜬 남성 — 현재 호아랑 기본"),
+        ("Fenrir", "Excitable", "더 들뜨고 활기찬 남성"),
+        ("Sadachbia", "Lively", "생기 있는 남성"),
+        ("Achird", "Friendly", "친근한 남성"),
+        ("Zubenelgenubi", "Casual", "편하게 말하는 남성"),
+        ("Leda", "Youthful", "가장 앳된 목소리(여성 계열)"),
+        ("Charon", "Informative", "차분한 성인 남성"),
+        ("Orus", "Firm", "단단한 성인 남성"),
+        ("Kore", "Firm", "또렷한 성인 여성 — v28까지의 기본"),
+        ("Aoede", "Breezy", "부드러운 성인 여성"),
+        ("Algenib", "Gravelly", "나이 든 남성"),
+        ("Gacrux", "Mature", "원숙한 여성"),
+    ]
+    rows = "".join(
+        f'<tr><td><b>{n}</b><div class="d">{d} · {k}</div></td>'
+        f'<td><button onclick="play(this,\'{n}\',1)">🔊 어린 톤</button></td>'
+        f'<td><button onclick="play(this,\'{n}\',0)">🔊 지시 없이</button></td></tr>'
+        for n, d, k in cands)
+    return HTMLResponse(f"""<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>목소리 비교 — 호아랑 {APP_VERSION}</title>
+<style>
+ body{{font-family:-apple-system,"Malgun Gothic",sans-serif;background:#F3F1EB;color:#394063;
+      margin:0;padding:24px 16px 60px}}
+ .w{{max-width:640px;margin:0 auto}} h1{{font-size:20px;margin:0 0 6px}}
+ p.s{{color:#8790A6;font-size:13px;margin:0 0 18px;line-height:1.6}}
+ textarea{{width:100%;height:64px;border:1.5px solid #DADEEA;border-radius:12px;padding:10px;
+      font-family:inherit;font-size:14px;margin-bottom:14px}}
+ table{{width:100%;border-collapse:collapse;background:#fff;border-radius:16px;overflow:hidden;
+      box-shadow:0 10px 34px -12px rgba(57,64,99,.28)}}
+ td{{padding:10px 12px;border-bottom:1px solid #EDEBE4;vertical-align:middle}}
+ .d{{font-size:11px;color:#8790A6;margin-top:2px}}
+ button{{border:1.5px solid #DCE3E7;background:#fff;border-radius:10px;padding:8px 10px;
+      font-size:13px;cursor:pointer;white-space:nowrap;font-family:inherit;color:#394063}}
+ button:hover{{border-color:#5A7285}} button:disabled{{opacity:.45;cursor:default}}
+ .note{{margin-top:18px;font-size:12px;color:#8790A6;line-height:1.7}}
+</style></head><body><div class="w">
+<h1>🎙️ 목소리 비교 <span style="font-size:12px;color:#8790A6">{APP_VERSION}</span></h1>
+<p class="s">같은 문장을 목소리별로 들어보고 호아랑 기본 목소리를 정하세요.
+'어린 톤'은 TTS에 <b>어린 아이처럼 말해달라는 지시</b>를 붙인 것이고, '지시 없이'는 목소리 원본입니다.<br>
+지시가 <b>말소리로 새어 나오면</b>(안내문을 그대로 읽으면) 알려주세요 — 그 기능을 끄겠습니다.</p>
+<textarea id="t">안녕! 나는 호아랑이야. 오늘 뭐 하고 놀까? 같이 한국어로 이야기하자!</textarea>
+<table>{rows}</table>
+<p class="note">이 페이지는 학생 화면 어디에도 링크되어 있지 않습니다(주소를 알아야 들어옴).<br>
+현재 기본: <b>{VOICE_TABLE[HOARANG_VOICE_KEY]}</b> · 어린 톤 지시: <b>{TTS_CHILD_STYLE}</b></p>
+</div><script>
+let ctx, last;
+async function play(btn, voice, style) {{
+  const text = document.getElementById("t").value.trim();
+  if (!text) return;
+  btn.disabled = true; const old = btn.textContent; btn.textContent = "⏳";
+  try {{
+    const r = await fetch("/tts", {{ method:"POST", headers:{{"Content-Type":"application/json"}},
+      body: JSON.stringify({{ text: text, voice: voice, style: style ? "on" : "off" }}) }});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const buf = await r.arrayBuffer();
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    if (last) {{ try {{ last.stop(); }} catch(e) {{}} }}
+    const usable = buf.byteLength - (buf.byteLength % 2);
+    const i16 = new Int16Array(buf, 0, usable/2);
+    const b = ctx.createBuffer(1, i16.length, 24000), ch = b.getChannelData(0);
+    for (let i=0;i<i16.length;i++) ch[i] = i16[i]/32768;
+    const src = ctx.createBufferSource(); src.buffer = b; src.connect(ctx.destination); src.start();
+    last = src;
+  }} catch(e) {{ alert("재생 실패: " + e.message); }}
+  finally {{ btn.disabled = false; btn.textContent = old; }}
+}}
+</script></body></html>""")
 
 
 @app.get("/rp-diag")

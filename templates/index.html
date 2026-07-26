@@ -6,37 +6,52 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json?v=29">
-    <meta name="theme-color" content="#5A7285">
+    <link rel="manifest" href="/static/manifest.json?v=32">
+    <meta name="theme-color" content="#4A7C74">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=29">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=29">
-    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=29" crossorigin>
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=32">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=32">
+    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=32" crossorigin>
     <style>
         /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansMedium.woff2?v=29") format("woff2");
+            src: url("/static/fonts/GmarketSansMedium.woff2?v=32") format("woff2");
             font-weight: 400 600; font-style: normal; font-display: swap;
         }
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansBold.woff2?v=29") format("woff2");
+            src: url("/static/fonts/GmarketSansBold.woff2?v=32") format("woff2");
             font-weight: 700 900; font-style: normal; font-display: swap;
         }
         :root {
-            /* 세련된 팔레트 — 슬레이트 · 틸 · 샌드 · 딥네이비 · 로즈 */
-            --bg: #F3F1EB; --panel: #FFFFFF; --ink: #394063; --muted: #8790A6;
-            --accent: #5A7285; --accent-soft: #DCE3E7; --navy: #394063;
-            --navy-soft: #DADEEA; --danger: #B97B77;
-            --teal: #60B5C2; --teal-soft: #D8ECEF; --sand: #D3CBBB; --sand-soft: #EDE9E1;
-            --rose: #B97B77; --rose-soft: #EBDDDB;
-            --kakao-bg: #BACEE0; --kakao-yellow: #FEE500;
-            --shadow: 0 10px 34px -12px rgba(57, 64, 99, 0.28);
+            /* ── 단청 팔레트 (은은한 재해석) ──
+               한옥 단청의 안료색을 채도만 낮춰 옮겼다. 배경은 한지색 무지로 두고,
+               색은 강조가 필요한 곳에만 얹어 어지럽지 않게 한다.
+               뇌록(청록) = 주색 · 장단(주홍) = 강조 · 황토 = 보조 · 먹 = 글자 */
+            --bg: #F4F0E6;              /* 한지색 */
+            --panel: #FFFDF8;           /* 미색 종이 */
+            --ink: #2E3338;             /* 먹색 */
+            --muted: #726A5C;           /* 옅은 먹 */
+            --accent: #4A7C74;          /* 뇌록 — 단청의 대표 청록 */
+            --accent-soft: #DEE9E4;
+            --navy: #2A4A55;            /* 삼청을 짙게 — 제목·강조 글자 */
+            --navy-soft: #D6E2E1;
+            --danger: #B5573F;          /* 장단(주홍) */
+            --teal: #6FA79C;            /* 뇌록 밝게 */
+            --teal-soft: #DFEDE8;
+            --sand: #D6C6A2;            /* 황토 */
+            --sand-soft: #F1E9D8;
+            --rose: #B5573F;            /* 장단 */
+            --rose-soft: #F2DFD8;
+            --dan-gold: #C9922E;        /* 단청 황 */
+            --kakao-bg: #C7D5C4;        /* 대화창 바탕 — 옅은 뇌록빛(흰 말풍선이 뜨도록 살짝 진하게) */
+            --kakao-yellow: #E0B84C;
+            --shadow: 0 10px 34px -12px rgba(58, 48, 34, 0.26);
             --font-ui: "GmarketSans", -apple-system, "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", sans-serif;
             /* 화면 크기별 UI 배율 — 교실 스크린(PC·프로젝터)에서 글자가 작아 안 보이던 문제 해결.
                폰은 1.0 그대로, 데스크톱부터 단계적으로 확대한다. */
@@ -48,7 +63,19 @@
         * { box-sizing: border-box; }
         /* 폼 요소는 기본적으로 body 글꼴을 물려받지 않는다 → 지마켓 산스로 통일 */
         input, button, textarea, select, optgroup { font-family: inherit; }
-        body { margin: 0; font-family: var(--font-ui); background: var(--bg); color: var(--ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        body { margin: 0; font-family: var(--font-ui); background: var(--bg); color: var(--ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px;
+            /* 한지 결 — 아주 옅은 씨실·날실. 색이 아니라 질감으로만 한국적인 느낌을 준다 */
+            background-image:
+                repeating-linear-gradient(0deg,  rgba(140,120,90,0.030) 0 1px, transparent 1px 3px),
+                repeating-linear-gradient(90deg, rgba(140,120,90,0.022) 0 1px, transparent 1px 4px); }
+        /* 단청 오방색 띠 — 청·황·적·백·흑. 패널 맨 위에 3px 한 줄만 얹는다 */
+        .dancheong-top {
+            background:
+                linear-gradient(90deg,
+                    var(--accent) 0 20%, var(--dan-gold) 20% 40%, var(--danger) 40% 60%,
+                    #EFE6D2 60% 80%, #4A4740 80% 100%) top left / 100% 3px no-repeat,
+                var(--panel);
+        }
         /* 화면 확대는 '내용 블록'에만 건다. 전체 화면을 덮는 배경막(position:fixed)은
            그대로 두어야 어느 브라우저에서도 화면 밖으로 삐져나가지 않는다. */
         .app, .home-screen, .lang-box, .inapp-card,
@@ -124,7 +151,7 @@
 
         /* 눌러서 말하기(push-to-talk) 버튼 */
         .ptt-btn { margin: 10px 10px 0; border: none; border-radius: 16px; padding: 18px 16px; font-size: 16px; font-weight: 800; color: #fff; background: var(--navy); cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; transition: background 0.15s, transform 0.1s, box-shadow 0.15s; }
-        .ptt-btn:hover:not(:disabled) { background: #34507a; }
+        .ptt-btn:hover:not(:disabled) { background: #3A6259; }
         .ptt-btn:disabled { opacity: 0.4; cursor: default; }
         .ptt-btn.talking { background: var(--danger); transform: scale(0.99); box-shadow: 0 0 0 5px rgba(231,111,81,0.22); }
         .ptt-hint { margin: 6px 12px 0; font-size: 11px; line-height: 1.4; color: var(--muted); text-align: center; }
@@ -132,7 +159,7 @@
         /* 빠른 요청 버튼 — 대화창(채팅 패널) 하단 배치 */
         .quick-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px 10px; background: rgba(255,255,255,0.35); }
         @media (max-width: 480px) { .quick-bar { grid-template-columns: 1fr 1fr; } }
-        .quick-btn { border: 1.5px solid var(--accent-soft); background: #EEF3F4; color: var(--accent); border-radius: 12px; padding: 7px 4px; font-size: 11px; font-weight: 700; cursor: pointer; transition: transform 0.12s, background 0.2s; line-height: 1.3; }
+        .quick-btn { border: 1.5px solid var(--accent-soft); background: #EAF0EB; color: var(--accent); border-radius: 12px; padding: 7px 4px; font-size: 11px; font-weight: 700; cursor: pointer; transition: transform 0.12s, background 0.2s; line-height: 1.3; }
         .quick-btn:hover:not(:disabled) { transform: translateY(-1px); background: var(--accent-soft); }
         .quick-btn:active:not(:disabled) { transform: scale(0.96); }
         .quick-btn:disabled { opacity: 0.35; cursor: default; }
@@ -159,7 +186,7 @@
         .chat-log { flex: 1; overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 8px; }
         .chat-log::-webkit-scrollbar { width: 5px; }
         .chat-log::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 4px; }
-        .empty-state { margin: auto; text-align: center; color: #5A6B7B; font-size: 13px; line-height: 1.7; }
+        .empty-state { margin: auto; text-align: center; color: #6E6357; font-size: 13px; line-height: 1.7; }
         .empty-state .emoji { font-size: 32px; display: block; margin-bottom: 10px; }
         .msg-row { display: flex; align-items: flex-end; gap: 6px; }
         .msg-row.user { flex-direction: row-reverse; }
@@ -170,9 +197,11 @@
         .sender-name { font-size: 11px; color: #4A5A6A; margin-bottom: 2px; padding-left: 2px; }
         .bubble { padding: 8px 12px; border-radius: 14px; font-size: 13px; line-height: 1.5; word-break: break-word; white-space: pre-wrap; box-shadow: 0 1px 1px rgba(0,0,0,0.06); }
         .msg-row.ai .bubble { background: #FFFFFF; border-top-left-radius: 4px; }
-        .msg-row.user .bubble { background: var(--kakao-yellow); color: #1A1A1A; border-top-right-radius: 4px; }
+        /* 내 발화도 흰 바탕. 상대(호아랑)와는 위치·프로필·뇌록 테두리로 구분한다 */
+        .msg-row.user .bubble { background: #FFFFFF; color: var(--ink); border-top-right-radius: 4px;
+            border: 1.5px solid #8FB3A7; }
         .bubble.interrupted-mark { opacity: 0.6; text-decoration: line-through; }
-        .chat-footer { padding: 8px 14px; background: rgba(255,255,255,0.55); font-size: 11px; color: #5A6B7B; text-align: center; }
+        .chat-footer { padding: 8px 14px; background: rgba(255,255,255,0.55); font-size: 11px; color: #6E6357; text-align: center; }
 
         /* ── 언어 선택 오버레이 ── */
         /* ── 목소리 선택 ── */
@@ -203,17 +232,17 @@
 
         .lang-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(61,44,38,0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; }
         .lang-overlay.hidden { display: none; }
-        .lang-box { background: #fff; border-radius: 24px; padding: 26px 22px; max-width: 540px; width: 100%; box-shadow: var(--shadow); text-align: center; max-height: calc(90vh / var(--ui-zoom)); overflow-y: auto; }
+        .lang-box { border-radius: 24px; padding: 26px 22px; max-width: 540px; width: 100%; box-shadow: var(--shadow); text-align: center; max-height: calc(90vh / var(--ui-zoom)); overflow-y: auto; }
         .lang-box h2 { margin: 0 0 4px; font-size: 17px; }
         .lang-box p { margin: 0 0 16px; font-size: 12px; color: var(--muted); }
         .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-        .lang-item { display: flex; align-items: center; gap: 9px; border: 1.5px solid var(--accent-soft); background: #F6F9FA; border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 700; color: var(--ink); cursor: pointer; transition: transform 0.12s, border-color 0.2s, background 0.2s; text-align: left; }
-        .lang-item:hover { transform: translateY(-1px); border-color: var(--accent); background: #EEF3F4; }
+        .lang-item { display: flex; align-items: center; gap: 9px; border: 1.5px solid var(--accent-soft); background: #F7F4EC; border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 700; color: var(--ink); cursor: pointer; transition: transform 0.12s, border-color 0.2s, background 0.2s; text-align: left; }
+        .lang-item:hover { transform: translateY(-1px); border-color: var(--accent); background: #EAF0EB; }
         .lang-item .flag { font-size: 20px; }
 
         /* ── 녹음 동의 모달 ── */
         .consent-box { max-width: 420px; }
-        .name-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--accent-soft); font-size: 14px; margin-bottom: 14px; text-align: center; background: #F6F9FA; color: var(--ink); }
+        .name-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--accent-soft); font-size: 14px; margin-bottom: 14px; text-align: center; background: #F7F4EC; color: var(--ink); }
         .consent-box p.consent-text { font-size: 13px; color: var(--ink); line-height: 1.75; text-align: left; margin: 0 0 18px; }
         .consent-actions { display: flex; flex-direction: column; gap: 8px; }
 
@@ -230,28 +259,28 @@
         .mode-btn:disabled { opacity: 0.45; cursor: default; transform: none; }
         .rp-field { text-align: left; margin-bottom: 10px; }
         .rp-field label { display: block; font-size: 11px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
-        .rp-input { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: 10px; border: 1.5px solid var(--accent-soft); font-size: 13px; background: #F6F9FA; color: var(--ink); }
+        .rp-input { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: 10px; border: 1.5px solid var(--accent-soft); font-size: 13px; background: #F7F4EC; color: var(--ink); }
         .rp-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .style-seg { display: flex; gap: 6px; }
         .seg-btn { flex: 1; border: 1.5px solid var(--navy-soft); background: #fff; border-radius: 10px; padding: 8px 4px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--ink); }
         .seg-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
         .rp-note { font-size: 11px; color: var(--muted); margin: 2px 0 12px; }
         .stage-list { text-align: left; display: flex; flex-direction: column; gap: 8px; margin: 12px 0 16px; max-height: calc(44vh / var(--ui-zoom)); overflow-y: auto; }
-        .stage-item { border: 1.5px solid var(--navy-soft); border-radius: 12px; padding: 9px 12px; background: #FBFDFF; }
+        .stage-item { border: 1.5px solid var(--navy-soft); border-radius: 12px; padding: 9px 12px; background: #FDFBF4; }
         .stage-item .st-name { font-size: 13px; font-weight: 800; color: var(--navy); }
         .stage-item .st-native { font-size: 11px; color: var(--muted); margin-left: 6px; font-weight: 600; }
-        .stage-item .st-desc { font-size: 11px; color: #5A6B7B; margin-top: 2px; }
+        .stage-item .st-desc { font-size: 11px; color: #6E6357; margin-top: 2px; }
         .stage-item .st-expr { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-        .stage-item .st-expr span { font-size: 11px; background: var(--accent-soft); color: #41586B; border-radius: 8px; padding: 2px 8px; }
+        .stage-item .st-expr span { font-size: 11px; background: var(--accent-soft); color: #3D4B45; border-radius: 8px; padding: 2px 8px; }
         .progress-wrap { padding: 8px 14px 6px; background: rgba(255,255,255,0.55); border-bottom: 1px solid rgba(0,0,0,0.04); }
         .progress-wrap.hidden { display: none; }
         .progress-top { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
         #progressPct { font-size: 13px; }
         .progress-track { height: 10px; border-radius: 6px; background: #E8EDF3; overflow: hidden; }
         .progress-bar { height: 100%; width: 0%; border-radius: 6px; background: linear-gradient(90deg, var(--navy), #5B7EA6); transition: width 0.6s ease; }
-        .progress-bar.over { background: linear-gradient(90deg, #F4A261, #E9C46A); }
+        .progress-bar.over { background: linear-gradient(90deg, #C9922E, #DFC183); }
         .stage-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-        .stage-chip { font-size: 10px; font-weight: 700; border-radius: 8px; padding: 2px 7px; background: #EDF1F6; color: #7A8AA0; border: 1px solid #E0E7EF; }
+        .stage-chip { font-size: 10px; font-weight: 700; border-radius: 8px; padding: 2px 7px; background: #EDE8DC; color: #7A8AA0; border: 1px solid #E0E7EF; }
         .stage-chip.done { background: #DDF3E4; color: #2E7D4F; border-color: #BCE5CB; }
         .score-big { font-size: 44px; font-weight: 900; color: var(--accent); margin: 6px 0 0; }
         .score-sub { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
@@ -263,12 +292,12 @@
         /* ── 주제 자동 추천 (예) 표시 + 🎲 목적 재추첨 ── */
         .rp-input-row { display: flex; gap: 6px; }
         .rp-input-row .rp-input { flex: 1; min-width: 0; }
-        .dice-btn { border: 1.5px solid var(--accent-soft); background: #EEF3F4; border-radius: 10px; width: 42px; font-size: 17px; cursor: pointer; flex-shrink: 0; transition: transform 0.15s; }
+        .dice-btn { border: 1.5px solid var(--accent-soft); background: #EAF0EB; border-radius: 10px; width: 42px; font-size: 17px; cursor: pointer; flex-shrink: 0; transition: transform 0.15s; }
         .dice-btn:hover:not(:disabled) { transform: rotate(-18deg) scale(1.08); }
         .dice-btn:disabled { opacity: 0.35; cursor: default; }
-        .rp-style-hint { color: #41586B; background: var(--accent-soft); border-radius: 8px; padding: 4px 10px; display: inline-block; }
+        .rp-style-hint { color: #3D4B45; background: var(--accent-soft); border-radius: 8px; padding: 4px 10px; display: inline-block; }
         /* 추천 예시를 입력창 아래에 '전부' 보이도록(플레이스홀더는 잘려서 안 보이던 문제) — 탭하면 채워짐 */
-        .sg-hint { margin-top: 5px; font-size: 12px; line-height: 1.45; color: #41586B; background: var(--accent-soft); border-radius: 9px; padding: 6px 10px; cursor: pointer; word-break: break-word; white-space: normal; transition: background 0.15s; }
+        .sg-hint { margin-top: 5px; font-size: 12px; line-height: 1.45; color: #3D4B45; background: var(--accent-soft); border-radius: 9px; padding: 6px 10px; cursor: pointer; word-break: break-word; white-space: normal; transition: background 0.15s; }
         .sg-hint:hover { background: var(--accent); color: #fff; }
         .sg-hint .sg-tap { opacity: 0.7; font-weight: 700; margin-left: 4px; }
 
@@ -335,7 +364,7 @@
         /* ── 발화 연습 (듣고 따라 말하기 → 말차례 교환) ── */
         .stage-item.clickable { cursor: pointer; transition: transform 0.12s, border-color 0.2s, box-shadow 0.2s; }
         /* 첫 단계 박스: 눌러보라고 살짝 흔들며 강조 (호버/포커스 시 멈춤) */
-        .stage-item.nudge { animation: stageNudge 1.9s ease-in-out infinite; border-color: var(--accent); box-shadow: 0 4px 14px -6px rgba(90,114,133,0.45); }
+        .stage-item.nudge { animation: stageNudge 1.9s ease-in-out infinite; border-color: var(--accent); box-shadow: 0 4px 14px -6px rgba(74,124,116,0.45); }
         .stage-item.nudge:hover { animation: none; }
         @keyframes stageNudge {
             0%, 62%, 100% { transform: translateX(0) scale(1); }
@@ -345,30 +374,30 @@
             94% { transform: translateX(0) scale(1); }
         }
         @media (prefers-reduced-motion: reduce) { .stage-item.nudge { animation: none; } }
-        .stage-item.clickable:hover { transform: translateY(-1px); border-color: var(--accent); box-shadow: 0 4px 12px -6px rgba(90,114,133,0.4); }
+        .stage-item.clickable:hover { transform: translateY(-1px); border-color: var(--accent); box-shadow: 0 4px 12px -6px rgba(74,124,116,0.4); }
         .st-side { float: right; display: flex; gap: 4px; align-items: center; }
         .st-mic-hint { font-size: 13px; opacity: 0.55; }
         .st-badge { font-size: 10px; font-weight: 800; color: #2E7D4F; background: #DDF3E4; border: 1px solid #BCE5CB; border-radius: 8px; padding: 2px 7px; }
-        .pr-stage-name { font-size: 12px; color: #5A6B7B; font-weight: 700; margin: 0 0 10px; }
+        .pr-stage-name { font-size: 12px; color: #6E6357; font-weight: 700; margin: 0 0 10px; }
         .pr-step { font-size: 13px; font-weight: 800; color: var(--navy); margin: 0 0 2px; }
         .pr-cue-row { display: flex; align-items: flex-end; gap: 8px; margin: 18px 0 14px; }
         .pr-cue-row.hidden { display: none; }
         .pr-cue-row .profile { width: 42px; height: 42px; border-radius: 14px; overflow: hidden; flex-shrink: 0; background: #fff; border: 1px solid #EEE; }
         .pr-cue-row .profile img { width: 100%; height: 100%; object-fit: cover; }
-        .pr-cue-bubble { background: #EDF1F6; border-radius: 16px; border-bottom-left-radius: 4px; padding: 14px 18px; font-size: 18px; font-weight: 700; text-align: left; max-width: 88%; line-height: 1.55; }
+        .pr-cue-bubble { background: #EDE8DC; border-radius: 16px; border-bottom-left-radius: 4px; padding: 14px 18px; font-size: 18px; font-weight: 700; text-align: left; max-width: 88%; line-height: 1.55; }
         .pr-target { position: relative; font-size: 17px; font-weight: 800; line-height: 1.55; background: #FFFBF0; border: 1.5px solid var(--kakao-yellow); border-radius: 14px; border-bottom-right-radius: 4px; padding: 13px 15px; margin: 16px 0 8px; }
         .pr-listen-btn { border: 1.5px solid var(--navy-soft); background: #fff; color: var(--navy); border-radius: 10px; padding: 6px 14px; font-size: 12px; font-weight: 800; cursor: pointer; margin-top: 4px; }
         .pr-listen-btn:hover { background: var(--navy-soft); }
         /* 발화 연습 마이크 버튼: '눌러서 말하기'(.ptt-btn)와 동일한 UI(넓은 알약·네이비) */
         .pr-mic { border: none; width: calc(100% - 20px); max-width: 340px; height: auto; border-radius: 16px; font-size: 30px; line-height: 1; background: var(--navy); color: #fff; cursor: pointer; box-shadow: 0 8px 20px -8px rgba(61,90,128,0.55); transition: transform 0.1s, background 0.15s, box-shadow 0.15s; margin: 14px auto 0; padding: 18px 16px; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none; }
-        .pr-mic:hover:not(:disabled) { background: #34507a; }
+        .pr-mic:hover:not(:disabled) { background: #3A6259; }
         .pr-mic.rec { background: var(--danger); animation: pulse 0.9s ease-in-out infinite; }
         .pr-mic:disabled { opacity: 0.35; cursor: default; }
         .pr-mic-label { font-size: 11px; font-weight: 700; color: var(--muted); margin: 6px 0 0; min-height: 15px; }
         .pr-feedback { min-height: 44px; margin-top: 8px; font-size: 14px; font-weight: 800; }
         .pr-feedback .fb-main.great, .pr-feedback .fb-main.ok { color: #2E7D4F; }
         .pr-feedback .fb-main.retry { color: var(--danger); }
-        .pr-feedback .fb-heard { font-size: 12px; color: #5A6B7B; font-weight: 600; margin-top: 3px; }
+        .pr-feedback .fb-heard { font-size: 12px; color: #6E6357; font-weight: 600; margin-top: 3px; }
         .pr-dots { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
         .pr-dot { width: 9px; height: 9px; border-radius: 50%; background: #E0D8D0; transition: background 0.25s; }
         .pr-dot.cur { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
@@ -392,7 +421,7 @@
         .app-dl-btn:hover { transform: translateY(-1px); }
         /* 홈 맨 아래 앱 다운로드 버튼 */
         .home-dl-btn { margin: 6px auto 0; border: none; border-radius: 999px; padding: 12px 30px; font-size: 14px; font-weight: 800; color: #fff; background: var(--navy); cursor: pointer; box-shadow: 0 8px 20px -8px rgba(61,90,128,0.6); transition: transform 0.12s, background 0.15s; }
-        .home-dl-btn:hover { transform: translateY(-2px); background: #34507a; }
+        .home-dl-btn:hover { transform: translateY(-2px); background: #3A6259; }
         .home-dl-btn[hidden] { display: none; }
 
         /* ══════════ UI 폴리시 (v14) — 가독성·터치 타깃·시각 위계 ══════════ */
@@ -424,11 +453,11 @@
         }
 
         /* ── 🪜 비계(스캐폴딩) 버튼·패널 ── */
-        .scf-btn { border: 1.5px solid var(--accent-soft); background: #EEF3F4; border-radius: 8px; padding: 2px 9px; font-size: 14px; cursor: pointer; transition: transform 0.12s; }
+        .scf-btn { border: 1.5px solid var(--accent-soft); background: #EAF0EB; border-radius: 8px; padding: 2px 9px; font-size: 14px; cursor: pointer; transition: transform 0.12s; }
         .scf-btn:hover { transform: translateY(-1px); }
-        .scf-panel { margin-top: 7px; background: #F2F6F7; border: 1.5px solid var(--accent-soft); border-radius: 10px; padding: 8px 10px; text-align: left; }
+        .scf-panel { margin-top: 7px; background: #F3F0E8; border: 1.5px solid var(--accent-soft); border-radius: 10px; padding: 8px 10px; text-align: left; }
         .scf-panel.hidden { display: none; }
-        .scf-title { font-size: 11px; font-weight: 800; color: #41586B; margin-bottom: 5px; }
+        .scf-title { font-size: 11px; font-weight: 800; color: #3D4B45; margin-bottom: 5px; }
         .scf-list { display: flex; flex-wrap: wrap; gap: 5px; font-size: 12px; color: var(--muted); }
         .scf-chip { border: none; background: var(--accent-soft); color: #33475A; border-radius: 9px; padding: 7px 10px; font-size: 12px; font-weight: 700; cursor: pointer; transition: transform 0.1s; }
         .scf-chip:active { transform: scale(0.95); }
@@ -444,7 +473,7 @@
         .r-card { border-radius: 15px; padding: 3px; color: #fff; font-weight: 800; }
         .r-card .r-label { font-size: 11px; padding: 5px 0 4px; letter-spacing: 0.3px; }
         .r-card .r-inner { background: #fff; border-radius: 12px; padding: 12px 4px; font-size: 17px; font-weight: 900; }
-        .r-card.score { background: #FFC800; }
+        .r-card.score { background: #C9922E; }
         .r-card.score .r-inner { color: #E6A700; }
         .r-card.turns { background: #58CC02; }
         .r-card.turns .r-inner { color: #4CA903; }
@@ -463,6 +492,14 @@
 
         /* ── 오버레이 우상단 닫기(✕) 버튼 ── */
         .lang-box { position: relative; }
+        /* 단청 띠를 팝업과 왼쪽 패널 위쪽에 (배경으로 그려 스크롤해도 그대로) */
+        .lang-box, .character-panel {
+            background:
+                linear-gradient(90deg,
+                    var(--accent) 0 20%, var(--dan-gold) 20% 40%, var(--danger) 40% 60%,
+                    #EFE6D2 60% 80%, #4A4740 80% 100%) top left / 100% 3px no-repeat,
+                var(--panel);
+        }
         .ov-x { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border: none; border-radius: 11px; background: var(--accent-soft); color: var(--accent); font-size: 15px; font-weight: 800; cursor: pointer; z-index: 5; transition: background 0.15s, transform 0.12s; }
         .ov-x:hover { background: #CBD6DC; transform: scale(1.05); }
 
@@ -505,7 +542,7 @@
         .home-title { font-size: 21px; font-weight: 900; margin: 0; color: var(--ink); letter-spacing: -0.4px; text-align: left; line-height: 1.2;
             display: flex; align-items: center; gap: 9px; min-width: 0; }
         .home-logo { width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; object-fit: cover;
-            box-shadow: 0 3px 10px -4px rgba(57,64,99,0.45); }
+            box-shadow: 0 3px 10px -4px rgba(58,48,34,0.45); }
         .home-top { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
         .home-top .home-ico { border: 1.5px solid var(--accent-soft); background: rgba(255,255,255,0.7);
             color: var(--ink); border-radius: 999px; height: 38px; min-width: 38px; padding: 0 13px; font-size: 12.5px;
@@ -522,13 +559,13 @@
         .home-hero { position: relative; margin: 10px 0; display: flex; flex-direction: column; align-items: center; }
         .home-ham { width: clamp(190px, calc(52vw / var(--ui-zoom)), 250px); display: flex; justify-content: center; }
         .home-ham img { width: 100%; display: block; transform-origin: 50% 92%;
-            animation: breathe 3.4s ease-in-out infinite; filter: drop-shadow(0 14px 22px rgba(57,64,99,0.22));
+            animation: breathe 3.4s ease-in-out infinite; filter: drop-shadow(0 14px 22px rgba(58,48,34,0.22));
             transition: opacity 0.22s ease; }
         .home-ham.bounce img { animation: home-hop 0.9s cubic-bezier(.28,.84,.42,1) 2; }
         @keyframes home-hop { 0%,100% { transform: translateY(0) scale(1); } 30% { transform: translateY(-22px) scale(1.03); } 55% { transform: translateY(0) scale(0.99); } }
         .home-bubble { position: absolute; bottom: calc(100% - 14px); left: 50%; transform: translateX(-50%) translateY(6px) scale(0.9);
             background: #fff; color: var(--ink); font-size: 13.5px; font-weight: 700; line-height: 1.4; padding: 10px 14px;
-            border-radius: 16px; box-shadow: 0 8px 22px -8px rgba(57,64,99,0.3); white-space: nowrap; max-width: calc(82vw / var(--ui-zoom));
+            border-radius: 16px; box-shadow: 0 8px 22px -8px rgba(58,48,34,0.3); white-space: nowrap; max-width: calc(82vw / var(--ui-zoom));
             opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s; z-index: 2; }
         .home-bubble::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
             border: 8px solid transparent; border-top-color: #fff; }
@@ -539,10 +576,10 @@
             box-shadow: var(--shadow); transition: transform 0.16s cubic-bezier(.2,.8,.3,1), box-shadow 0.2s; color: #fff; }
         .home-card::after { content: ""; position: absolute; inset: 0;
             background: radial-gradient(120% 140% at 100% 0%, rgba(255,255,255,0.22), transparent 60%); pointer-events: none; }
-        .home-card:hover { transform: translateY(-3px); box-shadow: 0 16px 40px -14px rgba(57,64,99,0.42); }
+        .home-card:hover { transform: translateY(-3px); box-shadow: 0 16px 40px -14px rgba(58,48,34,0.42); }
         .home-card:active { transform: translateY(-1px); }
-        .hc-rp { background: linear-gradient(135deg, #394063 0%, #5A7285 100%); }
-        .hc-free { background: linear-gradient(135deg, #4E93A0 0%, #60B5C2 100%); }
+        .hc-rp { background: linear-gradient(135deg, #2A4A55 0%, #4A7C74 100%); }
+        .hc-free { background: linear-gradient(135deg, #7E5238 0%, #9C6A45 100%); }
         .hc-emoji { font-size: 34px; line-height: 1; flex-shrink: 0; width: 56px; height: 56px; border-radius: 16px;
             background: rgba(255,255,255,0.16); display: flex; align-items: center; justify-content: center; }
         .hc-txt { display: flex; flex-direction: column; gap: 3px; }
@@ -577,37 +614,69 @@
             display: inline-flex; align-items: center; gap: 5px; transition: transform 0.12s, background 0.2s, border-color 0.2s; }
         .hv-open-btn:hover:not(:disabled) { transform: translateY(-1px); background: #fff; border-color: var(--accent); }
         .hv-open-btn:disabled { opacity: 0.4; cursor: default; }
+        /* 영상통화 — 어두운 남색이 답답해서 한지빛 밝은 화면으로 (v32) */
         .ham-view { position: fixed; inset: 0; z-index: 80; display: flex; flex-direction: column; align-items: center;
-            background: radial-gradient(120% 85% at 50% 0%, #4A5C80 0%, var(--navy) 58%, #2B3252 100%);
+            background: radial-gradient(125% 85% at 50% 0%, #FFFEFA 0%, var(--bg) 46%, #E9E1CE 100%);
             transform: translateX(100%); transition: transform 0.42s cubic-bezier(.2,.8,.3,1); visibility: hidden; }
         .ham-view.show { transform: translateX(0); visibility: visible; }
         .hv-top { width: 100%; max-width: 760px; display: flex; align-items: center; justify-content: space-between;
             padding: calc(14px + env(safe-area-inset-top)) 18px 6px; box-sizing: border-box; }
-        .hv-name { color: #fff; font-weight: 800; font-size: 15px; opacity: 0.95; }
-        .hv-back { border: none; background: rgba(255,255,255,0.18); color: #fff; border-radius: 999px; height: 38px; padding: 0 16px;
+        .hv-name { color: var(--navy); font-weight: 800; font-size: 15px; }
+        .hv-back { border: 1.5px solid var(--accent-soft); background: var(--panel); color: var(--accent); border-radius: 999px; height: 38px; padding: 0 16px;
             font-size: 13.5px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
-            backdrop-filter: blur(4px); transition: background 0.18s, transform 0.12s; }
-        .hv-back:hover { background: rgba(255,255,255,0.3); transform: translateY(-1px); }
+            box-shadow: 0 4px 12px -6px rgba(58,48,34,0.4); transition: background 0.18s, transform 0.12s; }
+        .hv-back:hover { background: var(--accent-soft); transform: translateY(-1px); }
+        .hv-actions { display: inline-flex; align-items: center; gap: 8px; }
+        .hv-scf-btn { border: 1.5px solid var(--accent-soft); background: var(--panel); color: var(--accent); border-radius: 999px;
+            width: 38px; height: 38px; font-size: 17px; cursor: pointer;
+            box-shadow: 0 4px 12px -6px rgba(58,48,34,0.4); transition: background 0.18s, transform 0.12s; }
+        .hv-scf-btn:hover { background: var(--accent-soft); transform: translateY(-1px); }
+        .hv-scf-btn[hidden] { display: none; }
         .hv-stage-slot { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 0; padding: 8px; box-sizing: border-box; }
         .hv-stage-slot .stage { width: min(66vw, 300px); max-height: 46vh; aspect-ratio: 1/1; }
         .hv-stage-slot .stage .hamster-wrap { width: 84%; }
-        .hv-stage-slot .stage .stage-glow { opacity: 0.5; background: radial-gradient(circle at 50% 60%, rgba(96,181,194,0.5), transparent 72%); }
-        /* 호아랑 말풍선 (꼬리는 위쪽 = 캐릭터를 향함) */
-        .hv-caption { align-self: center; max-width: min(88%, 560px); margin: 0 auto 12px; background: #fff; color: var(--ink);
+        .hv-stage-slot .stage .stage-glow { opacity: 0.55; background: radial-gradient(circle at 50% 60%, rgba(111,167,156,0.42), transparent 72%); }
+        /* 호아랑 말풍선 — 캐릭터 '머리 위'에 뜨고 꼬리는 아래(캐릭터)를 향한다 */
+        .hv-caption { align-self: center; max-width: min(88%, 560px); margin: 4px auto 16px; background: #fff; color: var(--ink);
             font-size: 15.5px; font-weight: 700; line-height: 1.5; text-align: center; padding: 12px 18px; border-radius: 18px;
-            box-shadow: 0 12px 30px -12px rgba(0,0,0,0.55); position: relative; opacity: 0; transform: translateY(6px);
-            transition: opacity 0.25s, transform 0.25s; }
+            border: 1.5px solid #A9C4BB;
+            box-shadow: 0 12px 28px -12px rgba(58,48,34,0.55); position: relative; opacity: 0; transform: translateY(-6px);
+            transition: opacity 0.25s, transform 0.25s; flex-shrink: 0; }
         .hv-caption.show { opacity: 1; transform: translateY(0); }
         .hv-caption:not(.show) { visibility: hidden; }
-        .hv-caption::before { content: ""; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
-            border: 9px solid transparent; border-bottom-color: #fff; }
+        /* 말풍선 꼬리 — 테두리가 생겼으므로 두 겹(바깥 테두리색 + 안쪽 흰색)으로 그린다 */
+        .hv-caption::before { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            border: 10px solid transparent; border-top-color: #A9C4BB; }
+        .hv-caption::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            margin-top: -2px; border: 9px solid transparent; border-top-color: #fff; }
+        /* ── 영상통화 비계 — 오른쪽 가장자리에서 빼꼼 나왔다가 스스로 사라진다 ── */
+        .hv-scaffold { position: absolute; right: 0; top: 44%; z-index: 6; width: min(74vw, 264px);
+            background: var(--panel); color: var(--ink); border-radius: 16px 0 0 16px;
+            border: 1.5px solid var(--accent-soft); border-right: none;
+            box-shadow: -10px 12px 30px -14px rgba(0,0,0,0.55); padding: 11px 13px 12px;
+            transform: translateX(102%); opacity: 0; visibility: hidden;
+            transition: transform 0.42s cubic-bezier(0.22, 1, 0.28, 1), opacity 0.3s, visibility 0.3s; }
+        .hv-scaffold.show { transform: translateX(0); opacity: 1; visibility: visible; }
+        .hv-scaffold::before { content: "🪜"; position: absolute; left: -15px; top: 12px; font-size: 17px;
+            background: var(--dan-gold); border-radius: 50%; width: 30px; height: 30px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px -4px rgba(0,0,0,0.5); }
+        .hvs-title { font-size: 11px; font-weight: 800; color: var(--navy); margin: 0 0 6px 18px; }
+        .hvs-list { display: flex; flex-direction: column; gap: 5px; }
+        .hvs-list button { border: none; text-align: left; background: var(--accent-soft); color: #3D4B45;
+            border-radius: 10px; padding: 7px 10px; font-size: 12.5px; font-weight: 700; cursor: pointer;
+            font-family: inherit; line-height: 1.4; }
+        .hvs-list button:active { transform: scale(0.97); }
+        .hvs-list .hvs-empty { font-size: 12px; color: var(--muted); padding: 4px 2px; }
+        @media (prefers-reduced-motion: reduce) { .hv-scaffold { transition-duration: 0.12s; } }
+
         .hv-controls { width: 100%; max-width: 560px; padding: 0 14px calc(18px + env(safe-area-inset-bottom)); box-sizing: border-box; }
-        .hv-controls .ptt-btn { width: 100%; margin: 0 0 10px; background: var(--teal); color: #07333B; box-shadow: 0 10px 26px -10px rgba(0,0,0,0.55); }
+        .hv-controls .ptt-btn { width: 100%; margin: 0 0 10px; background: var(--accent); color: #fff; box-shadow: 0 10px 26px -12px rgba(58,48,34,0.6); }
         .hv-controls .ptt-btn.talking { background: var(--danger); color: #fff; }
-        .hv-controls .ptt-btn:disabled { background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); }
+        .hv-controls .ptt-btn:disabled { background: #DDD7C9; color: #6A6254; }
         .hv-controls .quick-bar { background: transparent; padding: 0; }
-        .hv-controls .quick-btn { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.28); color: #fff; }
-        .hv-controls .quick-btn:disabled { opacity: 0.4; }
+        .hv-controls .quick-btn { background: var(--panel); border-color: var(--accent-soft); color: var(--accent); }
+        .hv-controls .quick-btn:disabled { opacity: 0.45; }
 
         /* ── 대화 화면 상단 접이식 "⚙️ 대화 스타일" (자유 수다에서만) ── */
         .chat-style-bar { margin-bottom: 8px; border: 1.5px solid var(--accent-soft);
@@ -625,6 +694,28 @@
         /* ── 자유 수다 피드백 스텁 화면 ── */
         .freefb-icon { font-size: 40px; }
         .freefb-todo { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 8px 0; }
+
+        /* ══ 전통 문양 — 소슬빗살(한옥 창호의 빗살) ══════════════════
+           국립문화유산연구원 「한국의 전통문양」의 문양 유형을 참고해 벡터로 작도.
+           대각선 살대 두 방향 + 세로살이 겹치는 한옥 문살의 결을 아주 옅게 얹는다.
+           (배경색을 새로 지정하는 :hover·:disabled 규칙보다 뒤에 두어야 무늬가 유지된다) */
+        .action-btn, .action-btn:hover, .action-btn:disabled,
+        .home-card, .home-card:hover,
+        .ptt-btn, .ptt-btn:hover:not(:disabled),
+        .home-dl-btn, .home-dl-btn:hover,
+        .pr-mic, .pr-mic:hover:not(:disabled) {
+            background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2226%22%20height%3D%2226%22%20viewBox%3D%220%200%2026%2026%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C255%2C255%2C0.16%29%22%20stroke-width%3D%221.1%22%20stroke-linecap%3D%22square%22%3E%3Cpath%20d%3D%22M0%200%20L26%2026%20M0%2026%20L26%200%20M13.0%200%20V26%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+        }
+        /* 카드는 그라데이션 위에 문양을 겹쳐야 하므로 따로 지정 */
+        .home-card.hc-rp, .home-card.hc-rp:hover {
+            background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2226%22%20height%3D%2226%22%20viewBox%3D%220%200%2026%2026%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C255%2C255%2C0.16%29%22%20stroke-width%3D%221.1%22%20stroke-linecap%3D%22square%22%3E%3Cpath%20d%3D%22M0%200%20L26%2026%20M0%2026%20L26%200%20M13.0%200%20V26%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E"), linear-gradient(135deg, #2A4A55 0%, #4A7C74 100%);
+        }
+        .home-card.hc-free, .home-card.hc-free:hover {
+            background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2226%22%20height%3D%2226%22%20viewBox%3D%220%200%2026%2026%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C255%2C255%2C0.16%29%22%20stroke-width%3D%221.1%22%20stroke-linecap%3D%22square%22%3E%3Cpath%20d%3D%22M0%200%20L26%2026%20M0%2026%20L26%200%20M13.0%200%20V26%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E"), linear-gradient(135deg, #7E5238 0%, #9C6A45 100%);
+        }
+        @media (prefers-contrast: more) {
+            .action-btn, .home-card, .ptt-btn, .home-dl-btn, .pr-mic { background-image: none; }
+        }
     </style>
 </head>
 <body data-screen="home"><!-- 화면 상태: home | chat | feedback (방안 A: 홈+대화 분리) -->
@@ -655,7 +746,7 @@
 <div class="lang-overlay hidden" id="introOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="introX">✕</button>
-        <div class="intro-ham-wrap" id="introHamWrap"><img class="intro-ham" src="/static/hamster.png?v=29" alt="호아랑"></div>
+        <div class="intro-ham-wrap" id="introHamWrap"><img class="intro-ham" src="/static/hamster.png?v=32" alt="호아랑"></div>
         <h2 id="introTitleEl" style="margin-bottom:8px;">🐯</h2>
         <p class="consent-text" id="introBodyEl" style="white-space:pre-line;"></p>
         <div class="consent-actions"><button class="action-btn" id="introOkBtn"></button></div>
@@ -753,7 +844,7 @@
     <div class="lang-box" style="max-width:520px;">
         <button type="button" class="ov-x" id="rpBriefX">✕</button>
         <h2 id="rpBriefTitleEl">🗺️</h2>
-        <p id="rpBriefScenario" style="font-size:12px; color:#5A6B7B; margin:0 0 4px; font-weight:700;"></p>
+        <p id="rpBriefScenario" style="font-size:12px; color:#6E6357; margin:0 0 4px; font-weight:700;"></p>
         <p class="rp-note" id="rpBriefGuideEl" style="text-align:center;"></p>
         <div class="stage-list" id="rpStageList"></div>
         <div class="consent-actions">
@@ -767,7 +858,7 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png?v=29" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=32" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
         <div class="result-cards">
             <div class="r-card score"><div class="r-label" id="rcScoreLbl"></div><div class="r-inner" id="rcScoreVal">0</div></div>
@@ -789,7 +880,7 @@
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png?v=29" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=32" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
@@ -810,7 +901,7 @@
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=29" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=32" alt="호아랑">
         <div class="freefb-icon">💬</div>
         <h2 id="freeFbTitleEl" style="margin:6px 0;">💬</h2>
         <p class="consent-text" id="freeFbBodyEl" style="text-align:center;"></p>
@@ -822,14 +913,14 @@
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=29" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=32" alt="호아랑"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
 <div class="home-screen" id="homeScreen">
     <!-- 상단: 제목(왼쪽) · 버튼(오른쪽) -->
     <div class="home-header">
         <h1 class="home-title">
-            <img class="home-logo" src="/static/icon-192.png?v=29" alt="">
+            <img class="home-logo" src="/static/icon-192.png?v=32" alt="">
             <span id="homeTitleEl">호아랑</span>
         </h1>
         <div class="home-top">
@@ -843,7 +934,7 @@
     <!-- 호아랑: 크게, 원 없이. 가끔 통통 튀며 말풍선으로 말을 건다 -->
     <div class="home-hero">
         <div class="home-bubble" id="homeBubble" aria-hidden="true"></div>
-        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png?v=29" alt="호아랑"></div>
+        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png?v=32" alt="호아랑"></div>
     </div>
     <p class="home-sub" id="homeSubEl"></p>
     <button type="button" class="home-card hc-rp" id="homeRpCard">
@@ -859,7 +950,8 @@
     <div class="credit home-credit">공동체에 대한 공헌 · LeeNamho · Email: namho1210@naver.com</div>
     <div class="credit home-credit" style="opacity:0.62; font-size:10px; line-height:1.5;">
         글꼴 지마켓 산스(G마켓) · 배경음 「Tong tong(통통) 가야금」 서예지 ·
-        효과음 「전통악기 징」 (재)전주정보문화산업진흥원 — 공유마당(KOGL 제1유형)
+        효과음 「전통악기 징」 (재)전주정보문화산업진흥원 — 공유마당(KOGL 제1유형)<br>
+        전통 문양(소슬빗살) 참고: 국립문화유산연구원 「한국의 전통문양」
     </div>
 </div>
 <!-- 목소리 선택창 — 기본은 '자동'(주제 대화의 배역에 맞춰 서버가 고름) -->
@@ -877,7 +969,7 @@
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=29" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=32" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -911,7 +1003,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png?v=29" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=32" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -964,7 +1056,7 @@
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png?v=29" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=32" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span>🎥</span><span id="hamViewBtnLbl"></span></button>
@@ -1023,10 +1115,19 @@
 <div class="ham-view" id="hamView" aria-hidden="true">
     <div class="hv-top">
         <span class="hv-name">🐯 <span id="hvNameEl">호아랑</span></span>
-        <button type="button" class="hv-back" id="hamViewClose"><span>💬</span><span id="hamViewCloseLbl"></span></button>
+        <span class="hv-actions">
+            <button type="button" class="hv-scf-btn" id="hvScfBtn" title="🪜" hidden>🪜</button>
+            <button type="button" class="hv-back" id="hamViewClose"><span>💬</span><span id="hamViewCloseLbl"></span></button>
+        </span>
     </div>
-    <div class="hv-stage-slot" id="hvStageSlot"></div>
+    <!-- 말풍선은 캐릭터 위 (머리 위에서 말이 나오도록) -->
     <div class="hv-caption" id="hvCaption"></div>
+    <div class="hv-stage-slot" id="hvStageSlot"></div>
+    <!-- 비계: 오른쪽에서 빼꼼 나와 표현을 알려주고 사라진다 -->
+    <div class="hv-scaffold" id="hvScaffold" aria-hidden="true">
+        <div class="hvs-title" id="hvsTitle"></div>
+        <div class="hvs-list" id="hvsList"></div>
+    </div>
     <div class="hv-controls" id="hvControls"></div>
 </div>
 <!-- 단계 달성 연출 — 한옥 장지문이 열렸다 닫히는 전환 -->
@@ -1039,9 +1140,9 @@
 <!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <!-- 발화 연습 배경 — '통통(가야금)', 사용자 볼륨의 20%로 아주 은은하게 -->
-<audio id="prBgm" src="/static/practice_bgm.mp3?v=29" loop preload="none"></audio>
+<audio id="prBgm" src="/static/practice_bgm.mp3?v=32" loop preload="none"></audio>
 <!-- 단계 달성 — 전통악기 징 -->
-<audio id="gongSfx" src="/static/gong.mp3?v=29" preload="auto"></audio>
+<audio id="gongSfx" src="/static/gong.mp3?v=32" preload="auto"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -1053,7 +1154,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v29 (2026-07-26)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v32 (2026-07-26)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -1353,6 +1454,22 @@
     let userName = localStorage.getItem("userName") || "";
     let earphoneShown = false, nameShown = false, introShown = false;
 
+    /* ── 진입 안내를 몇 번까지 보여줄지 ──
+       같은 기기에서 이미 여러 번 들어온 학습자에게 언어 선택·소개·이어폰 안내를
+       매번 다시 묻는 건 번거롭다. 세 번까지만 안내하고, 그 뒤로는 저장된
+       언어·이름으로 곧장 홈에 들어간다. (언어·이름은 홈 우상단 🌐 ✏️로 언제든 변경) */
+    const ENTRY_MAX = 3;
+    const ENTRY_KEY = "entryDoneCount";
+    let entryDone = parseInt(localStorage.getItem(ENTRY_KEY) || "0", 10) || 0;
+    function markEntryDone() {
+        if (entryDone < ENTRY_MAX) {
+            entryDone += 1;
+            localStorage.setItem(ENTRY_KEY, String(entryDone));
+        }
+    }
+    // 세 번을 다 채웠고, 언어와 이름이 남아 있을 때만 건너뛴다
+    const skipEntryGuide = entryDone >= ENTRY_MAX && !!uiLang && !!userName;
+
     /* 앱 소개 팝업 — 언어 선택 직후, 선택한 언어로 1회 표시.
        호아랑이 통통 튀며 이모지 표정을 뿌린다. */
     const introOverlay = document.getElementById("introOverlay");
@@ -1404,12 +1521,13 @@
         userName = nameInput.value.trim().slice(0, 20);
         localStorage.setItem("userName", userName);
         nameOverlay.classList.add("hidden");
-        goHome();   // 진입 안내 완료 → 홈 화면 착지
+        markEntryDone();   // 안내를 끝까지 본 횟수 +1 (3회 뒤엔 안내를 건너뛴다)
+        goHome();          // 진입 안내 완료 → 홈 화면 착지
     });
 
     /* ── 팝업 닫기(✕) — 진입 안내·동의 팝업도 X로 끌 수 있게 ── */
     document.getElementById("earX").addEventListener("click", () => { earphoneOverlay.classList.add("hidden"); showNamePopup(); });
-    document.getElementById("nameX").addEventListener("click", () => { nameOverlay.classList.add("hidden"); goHome(); });
+    document.getElementById("nameX").addEventListener("click", () => { nameOverlay.classList.add("hidden"); markEntryDone(); goHome(); });
     document.getElementById("consentX").addEventListener("click", () => consentOverlay.classList.add("hidden"));
     document.getElementById("freeFbX").addEventListener("click", goHome);
     document.getElementById("langX").addEventListener("click", () => {
@@ -1553,6 +1671,14 @@
     function goChat() { setScreen("chat"); }
     function goFeedback() { setScreen("feedback"); }
 
+    // 이미 세 번 안내를 받은 기기라면 언어·소개·이어폰·이름을 건너뛰고 바로 홈으로.
+    // (언어는 홈 우상단 🌐, 이름은 ✏️로 언제든 다시 바꿀 수 있다)
+    if (skipEntryGuide) {
+        langOverlay.classList.add("hidden");
+        introShown = earphoneShown = nameShown = true;
+        goHome();
+    }
+
     /* ── 페이더 위치 제어 (페이더 노드는 하나 — 어디에 있든 값 공유) ──
        · 자유 수다 → 캐릭터 패널의 '대화 시작하기' 위에 펼쳐 배치 (전처럼, 숨기지 않음)
        · 주제 대화 → 설정 다이얼로그의 말투 칸(rpFaderSlot)으로 이동 */
@@ -1615,7 +1741,7 @@
 
     /* ── 홈의 호아랑 이미지를 랜덤으로 계속 교체 ── */
     const homeHamImg = homeHam.querySelector("img");
-    const HOME_HAM_IMGS = ["/static/ham_idle.png?v=29", "/static/ham_smile.png?v=29", "/static/ham_surprised.png?v=29", "/static/ham_shy.png?v=29"];
+    const HOME_HAM_IMGS = ["/static/ham_idle.png?v=32", "/static/ham_smile.png?v=32", "/static/ham_surprised.png?v=32", "/static/ham_shy.png?v=32"];
     function homeImgTick() {
         if (document.body.dataset.screen !== "home" || !homeHamImg) return;
         const others = HOME_HAM_IMGS.filter(s => !homeHamImg.src.endsWith(s));
@@ -1645,7 +1771,9 @@
             return !!el && !el.classList.contains("hidden");
         };
         scenePractice = open("prOverlay");
-        sceneQuiet = open("rpSetupOverlay") || open("rpBriefOverlay");
+        // 시나리오 설정창까지는 배경음악을 그대로 둔다(아직 연습 전).
+        // 브리핑(대화 단계 보기)부터가 연습 구간이라 여기서부터 무음.
+        sceneQuiet = open("rpBriefOverlay");
         updateBgm();
     }
     function updateBgm() {
@@ -1797,6 +1925,9 @@
         hvControls.appendChild(quickBarEl);
         hvCaption.textContent = lastCaption || "";
         hvCaption.classList.toggle("show", !!lastCaption);
+        // 🪜 비계는 주제 대화일 때만 (진행률 표시와 같은 조건)
+        const hvScf = document.getElementById("hvScfBtn");
+        if (hvScf) hvScf.hidden = !rpSessionActive;
         hamView.classList.add("show");
         hamView.setAttribute("aria-hidden", "false");
         hamViewOpen = true;
@@ -1804,6 +1935,7 @@
     function closeHamView() {
         if (!hamViewOpen) return;
         hamViewOpen = false;
+        try { hvScaffoldHide(); } catch (e) {}   // 빼꼼 카드가 떠 있으면 같이 넣는다
         const gen = ++_hvGen;
         hamView.classList.remove("show");
         hamView.setAttribute("aria-hidden", "true");
@@ -2532,6 +2664,49 @@
         }
         return rpStagesState.length - 1; // 전부 충족 → 마지막 단계 표현
     }
+    /* 영상통화용 비계 — 오른쪽에서 빼꼼 나왔다가 스스로 사라지는 카드.
+       (채팅 화면의 접이식 패널과 같은 내용을, 화면에 맞는 방식으로 보여줄 뿐) */
+    const hvScaffold = document.getElementById("hvScaffold");
+    let hvScfHideTimer = null;
+    function hvScaffoldFill(items, stageName, loadingText) {
+        if (!hvScaffold) return;
+        document.getElementById("hvsTitle").textContent = t("scfTitle") + (stageName ? " · " + stageName : "");
+        const list = document.getElementById("hvsList");
+        list.innerHTML = "";
+        if (loadingText) {
+            const p = document.createElement("div");
+            p.className = "hvs-empty"; p.textContent = loadingText;
+            list.appendChild(p);
+        } else {
+            const arr = (items || []).filter(Boolean);
+            if (!arr.length) {
+                const p = document.createElement("div");
+                p.className = "hvs-empty"; p.textContent = t("scfNone");
+                list.appendChild(p);
+            } else {
+                arr.forEach(x => {
+                    const b = document.createElement("button");
+                    b.type = "button";
+                    b.textContent = "💬 " + x;
+                    b.addEventListener("click", () => { ttsPlay(x); hvScaffoldPeek(); }); // 탭하면 들려주고 시간 연장
+                    list.appendChild(b);
+                });
+            }
+        }
+    }
+    function hvScaffoldPeek(ms) {   // 잠깐 내밀었다가 알아서 들어간다
+        if (!hvScaffold) return;
+        hvScaffold.classList.add("show");
+        clearTimeout(hvScfHideTimer);
+        hvScfHideTimer = setTimeout(() => hvScaffold.classList.remove("show"), ms || 7000);
+    }
+    function hvScaffoldHide() {
+        if (!hvScaffold) return;
+        clearTimeout(hvScfHideTimer);
+        hvScaffold.classList.remove("show");
+    }
+    function isHamViewOpen() { return document.getElementById("hamView").classList.contains("show"); }
+
     function renderScaffoldItems(items, stageName) {
         document.getElementById("scfTitleEl").textContent = t("scfTitle") + (stageName ? " · " + stageName : "");
         const list = document.getElementById("scfList");
@@ -2550,6 +2725,9 @@
             });
         }
         scfPanel.classList.remove("hidden");
+        // 영상통화 중이면 같은 내용을 옆에서 빼꼼 보여준다
+        hvScaffoldFill(arr, stageName);
+        if (isHamViewOpen()) hvScaffoldPeek(arr.length ? 9000 : 4500);
     }
     function renderScaffoldStatic() { // 폴백: 현재 단계의 연습 표현
         if (!rpPlan || !rpStagesState.length) return;
@@ -2564,6 +2742,7 @@
         document.getElementById("scfTitleEl").textContent = t("scfTitle");
         document.getElementById("scfList").textContent = t("sgLoading");
         scfPanel.classList.remove("hidden");
+        if (isHamViewOpen()) { hvScaffoldFill([], "", t("sgLoading")); hvScaffoldPeek(11000); }
         clearTimeout(scfTimer);
         if (rpSessionActive && isConnected && ws && ws.readyState === WebSocket.OPEN) {
             try {
@@ -2580,6 +2759,15 @@
         if (scfPanel.classList.contains("hidden")) requestScaffold();
         else scfPanel.classList.add("hidden");
     });
+    // 영상통화 화면의 🪜 — 누르면 옆에서 빼꼼 나왔다가 사라진다
+    (function bindHvScaffoldBtn() {
+        const b = document.getElementById("hvScfBtn");
+        if (!b) return;
+        b.addEventListener("click", () => {
+            if (hvScaffold.classList.contains("show")) { hvScaffoldHide(); return; }
+            requestScaffold();
+        });
+    })();
 
     /* 종료 버튼: 서버에 최종 분석을 요청하고 점수를 받은 뒤 세션을 닫는다 */
     function endRoleplaySession() {
@@ -3175,8 +3363,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png?v=29", smile: "/static/ham_smile.png?v=29",
-        surprised: "/static/ham_surprised.png?v=29", shy: "/static/ham_shy.png?v=29",
+        idle: "/static/ham_idle.png?v=32", smile: "/static/ham_smile.png?v=32",
+        surprised: "/static/ham_surprised.png?v=32", shy: "/static/ham_shy.png?v=32",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -3247,7 +3435,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png?v=29";
+                img.src = "/static/hamster.png?v=32";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");

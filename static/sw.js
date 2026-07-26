@@ -4,12 +4,12 @@
 // ★ 전략: 네트워크 우선(network-first). 예전엔 캐시 우선이라 캐릭터 이미지를
 //   교체해도 옛 이미지(마사마사 햄스터)가 계속 보이는 문제가 있었다.
 //   이제 온라인이면 항상 새 파일을 받고, 오프라인일 때만 캐시로 대체한다.
-const CACHE_NAME = 'hoarang-v9';
+const CACHE_NAME = 'hoarang-v11';
 const STATIC_ASSETS = [
-  '/static/hamster.png?v=32',
-  '/static/icon-192.png?v=32',
-  '/static/icon-512.png?v=32',
-  '/static/manifest.json?v=32'
+  '/static/hamster.png?v=34',
+  '/static/icon-192.png?v=34',
+  '/static/icon-512.png?v=34',
+  '/static/manifest.json?v=34'
 ];
 
 self.addEventListener('install', (event) => {
@@ -34,7 +34,7 @@ self.addEventListener('fetch', (event) => {
 
   // 글꼴·사운드는 파일명이 바뀌지 않고 ?v= 로 버전을 구분하므로 캐시 우선이 안전하다.
   // (매번 다시 받으면 지마켓 산스 1MB를 접속할 때마다 내려받게 된다)
-  if (/^\/static\/(fonts\/|.*\.(woff2|mp3)$)/.test(url.pathname)) {
+  if (/^\/static\/(fonts\/|.*\.(woff2|mp3|mp4)$)/.test(url.pathname)) {
     event.respondWith(
       caches.match(event.request).then((hit) => hit || fetch(event.request).then((res) => {
         const copy = res.clone();

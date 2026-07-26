@@ -21,8 +21,8 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v35"
-APP_DATE = "2026-07-26"
+APP_VERSION = "v36"
+APP_DATE = "2026-07-27"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -691,7 +691,10 @@ async def roleplay_setup(request: Request):
      표현과 cue는 모두 국제 통용 한국어 표준 교육과정 중급(4급 이하) 어휘·문법 범위로 작성하라.
      각 표현은 객체로: text = 학습자 발화, cue = 그 발화가 자연스러운 대답이 되는 상대방({ai_role or '상대'}) 발화.
      예) cue "어떻게 오셨어요?" → text "택배 좀 부치려고 하는데요".
-     cue는 발화 연습(말차례 교환)에 쓰인다. text가 대화를 먼저 여는 발화면 cue는 빈 문자열로.
+     ★ cue는 발화 연습의 '가→나' 말차례 교환에 쓰이므로 **모든 표현에 반드시 채워라. 빈 문자열 금지.**
+     학습자가 먼저 말을 여는 표현이라도, 그 직전에 올 법한 상대의 말을 자연스럽게 만들어 넣어라.
+     예) text "이거 얼마예요?"가 첫 발화라면 cue는 "어서 오세요, 뭐 찾으세요?" 처럼.
+     인사로 시작하는 표현이면 cue도 상대의 인사·호객으로.
 
 JSON만 출력하라. 스키마:
 {{"topic_ko":"","goal_ko":"","place_ko":"","user_role":"","ai_role":"","stages":[{{"name":"","native":"","desc":"","expressions":[{{"text":"","cue":""}}]}}]}}"""

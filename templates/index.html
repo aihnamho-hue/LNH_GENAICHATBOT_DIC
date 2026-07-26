@@ -6,16 +6,28 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json?v=26">
-    <meta name="theme-color" content="#FF8C5A">
+    <link rel="manifest" href="/static/manifest.json?v=28">
+    <meta name="theme-color" content="#5A7285">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=26">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=26">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=28">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=28">
+    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=28" crossorigin>
     <style>
+        /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
+        @font-face {
+            font-family: "GmarketSans";
+            src: url("/static/fonts/GmarketSansMedium.woff2?v=28") format("woff2");
+            font-weight: 400 600; font-style: normal; font-display: swap;
+        }
+        @font-face {
+            font-family: "GmarketSans";
+            src: url("/static/fonts/GmarketSansBold.woff2?v=28") format("woff2");
+            font-weight: 700 900; font-style: normal; font-display: swap;
+        }
         :root {
             /* 세련된 팔레트 — 슬레이트 · 틸 · 샌드 · 딥네이비 · 로즈 */
             --bg: #F3F1EB; --panel: #FFFFFF; --ink: #394063; --muted: #8790A6;
@@ -25,14 +37,27 @@
             --rose: #B97B77; --rose-soft: #EBDDDB;
             --kakao-bg: #BACEE0; --kakao-yellow: #FEE500;
             --shadow: 0 10px 34px -12px rgba(57, 64, 99, 0.28);
+            --font-ui: "GmarketSans", -apple-system, "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", sans-serif;
+            /* 화면 크기별 UI 배율 — 교실 스크린(PC·프로젝터)에서 글자가 작아 안 보이던 문제 해결.
+               폰은 1.0 그대로, 데스크톱부터 단계적으로 확대한다. */
+            --ui-zoom: 1;
         }
+        @media (min-width: 1000px) and (min-height: 640px) { :root { --ui-zoom: 1.18; } }
+        @media (min-width: 1400px) and (min-height: 760px) { :root { --ui-zoom: 1.34; } }
+        @media (min-width: 1800px) and (min-height: 900px) { :root { --ui-zoom: 1.5; } }
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: -apple-system, "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        /* 폼 요소는 기본적으로 body 글꼴을 물려받지 않는다 → 지마켓 산스로 통일 */
+        input, button, textarea, select, optgroup { font-family: inherit; }
+        body { margin: 0; font-family: var(--font-ui); background: var(--bg); color: var(--ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        /* 화면 확대는 '내용 블록'에만 건다. 전체 화면을 덮는 배경막(position:fixed)은
+           그대로 두어야 어느 브라우저에서도 화면 밖으로 삐져나가지 않는다. */
+        .app, .home-screen, .lang-box, .inapp-card,
+        .hv-top, .hv-caption, .hv-controls, .jangji-word { zoom: var(--ui-zoom); }
         .app { width: 100%; max-width: 1060px; display: grid; grid-template-columns: 340px 1fr; gap: 16px; align-items: stretch; }
         @media (max-width: 820px) { .app { grid-template-columns: 1fr; } }
 
         /* ── 왼쪽 패널 ── */
-        .character-panel { position: relative; background: var(--panel); border-radius: 24px; box-shadow: var(--shadow); padding: 20px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; overflow-y: auto; max-height: 92vh; }
+        .character-panel { position: relative; background: var(--panel); border-radius: 24px; box-shadow: var(--shadow); padding: 20px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; overflow-y: auto; max-height: calc(92vh / var(--ui-zoom)); }
         .lang-btn { position: absolute; top: 12px; right: 12px; z-index: 5; border: 1.5px solid var(--navy-soft); background: #fff; border-radius: 10px; width: 34px; height: 30px; font-size: 15px; cursor: pointer; transition: transform 0.12s; }
         .lang-btn:hover { transform: translateY(-1px); }
         .title { text-align: center; }
@@ -125,7 +150,7 @@
         .export-btn:disabled { opacity: 0.35; cursor: default; }
 
         /* ── 채팅 패널 ── */
-        .chat-panel { background: var(--kakao-bg); border-radius: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 540px; max-height: 92vh; overflow: hidden; }
+        .chat-panel { background: var(--kakao-bg); border-radius: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 540px; max-height: calc(92vh / var(--ui-zoom)); overflow: hidden; }
         .chat-header { padding: 12px 16px; background: rgba(255,255,255,0.55); backdrop-filter: blur(6px); display: flex; align-items: center; gap: 10px; }
         .chat-header .avatar { width: 36px; height: 36px; border-radius: 13px; overflow: hidden; flex-shrink: 0; background: #fff; }
         .chat-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -150,9 +175,20 @@
         .chat-footer { padding: 8px 14px; background: rgba(255,255,255,0.55); font-size: 11px; color: #5A6B7B; text-align: center; }
 
         /* ── 언어 선택 오버레이 ── */
+        /* ── 인앱 브라우저 안내 게이트 (카톡·인스타 DM 등에서 열렸을 때) ── */
+        .inapp-gate { position: fixed; inset: 0; z-index: 3000; background: rgba(35,29,26,0.72); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 18px; }
+        .inapp-gate.hidden { display: none; }
+        .inapp-card { background: #fff; border-radius: 22px; padding: 26px 20px 18px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 24px 60px -20px rgba(0,0,0,0.5); max-height: calc(92vh / var(--ui-zoom)); overflow-y: auto; }
+        .inapp-emoji { font-size: 40px; line-height: 1; margin-bottom: 8px; }
+        .inapp-card h2 { margin: 0 0 10px; font-size: 18px; color: var(--navy); }
+        .inapp-body { margin: 0 0 12px; font-size: 13.5px; line-height: 1.6; color: #55607A; white-space: pre-line; }
+        .inapp-steps { margin: 0 0 16px; font-size: 12.5px; line-height: 1.65; color: #6B7690; background: var(--sand-soft); border-radius: 12px; padding: 11px 13px; text-align: left; white-space: pre-line; }
+        .inapp-actions { display: flex; flex-direction: column; gap: 8px; }
+        .inapp-skip { margin-top: 12px; border: none; background: none; color: var(--muted); font-size: 12px; text-decoration: underline; cursor: pointer; }
+
         .lang-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(61,44,38,0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; }
         .lang-overlay.hidden { display: none; }
-        .lang-box { background: #fff; border-radius: 24px; padding: 26px 22px; max-width: 540px; width: 100%; box-shadow: var(--shadow); text-align: center; max-height: 90vh; overflow-y: auto; }
+        .lang-box { background: #fff; border-radius: 24px; padding: 26px 22px; max-width: 540px; width: 100%; box-shadow: var(--shadow); text-align: center; max-height: calc(90vh / var(--ui-zoom)); overflow-y: auto; }
         .lang-box h2 { margin: 0 0 4px; font-size: 17px; }
         .lang-box p { margin: 0 0 16px; font-size: 12px; color: var(--muted); }
         .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
@@ -185,7 +221,7 @@
         .seg-btn { flex: 1; border: 1.5px solid var(--navy-soft); background: #fff; border-radius: 10px; padding: 8px 4px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--ink); }
         .seg-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
         .rp-note { font-size: 11px; color: var(--muted); margin: 2px 0 12px; }
-        .stage-list { text-align: left; display: flex; flex-direction: column; gap: 8px; margin: 12px 0 16px; max-height: 44vh; overflow-y: auto; }
+        .stage-list { text-align: left; display: flex; flex-direction: column; gap: 8px; margin: 12px 0 16px; max-height: calc(44vh / var(--ui-zoom)); overflow-y: auto; }
         .stage-item { border: 1.5px solid var(--navy-soft); border-radius: 12px; padding: 9px 12px; background: #FBFDFF; }
         .stage-item .st-name { font-size: 13px; font-weight: 800; color: var(--navy); }
         .stage-item .st-native { font-size: 11px; color: var(--muted); margin-left: 6px; font-weight: 600; }
@@ -220,6 +256,66 @@
         .sg-hint { margin-top: 5px; font-size: 12px; line-height: 1.45; color: #41586B; background: var(--accent-soft); border-radius: 9px; padding: 6px 10px; cursor: pointer; word-break: break-word; white-space: normal; transition: background 0.15s; }
         .sg-hint:hover { background: var(--accent); color: #fff; }
         .sg-hint .sg-tap { opacity: 0.7; font-weight: 700; margin-left: 4px; }
+
+        /* ── 단계 달성 연출: 한옥 장지문 ──
+           징 소리와 함께 창호지 문 두 짝이 스르륵 닫혔다가 다시 열린다.
+           별도 이미지 없이 창살(격자)은 CSS 그라데이션으로 그린다. */
+        .jangji { position: fixed; inset: 0; z-index: 900; pointer-events: none; display: none; }
+        .jangji.on { display: block; }
+        .jangji-leaf {
+            position: absolute; top: 0; bottom: 0; width: 52%;
+            background: linear-gradient(180deg, #FBF6EA 0%, #F2E9D6 55%, #E9DDC4 100%);
+            box-shadow: 0 0 60px -10px rgba(60,42,22,0.45) inset;
+            border: 0 solid #7C5C3B;
+        }
+        .jangji-l { left: 0;  transform: translateX(-101%); border-right-width: 7px; }
+        .jangji-r { right: 0; transform: translateX(101%);  border-left-width: 7px; }
+        /* 창살 격자 — 가로/세로 반복 선 */
+        .jangji-grid {
+            position: absolute; inset: 9px;
+            background-image:
+                repeating-linear-gradient(90deg, rgba(124,92,59,0.55) 0 5px, transparent 5px 74px),
+                repeating-linear-gradient(0deg,  rgba(124,92,59,0.55) 0 5px, transparent 5px 74px);
+            border: 5px solid rgba(124,92,59,0.6);
+        }
+        /* 문틈으로 새는 빛 */
+        .jangji-l::after, .jangji-r::after {
+            content: ""; position: absolute; top: 0; bottom: 0; width: 26px;
+            background: linear-gradient(90deg, rgba(255,240,205,0) 0%, rgba(255,238,196,0.85) 100%);
+        }
+        .jangji-l::after { right: -26px; }
+        .jangji-r::after { left: -26px; transform: scaleX(-1); }
+        .jangji-word {
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.86);
+            opacity: 0; font-size: 26px; font-weight: 800; color: #6B4A2A;
+            letter-spacing: 0.06em; text-align: center; white-space: pre-line; line-height: 1.45;
+            text-shadow: 0 2px 0 rgba(255,255,255,0.8);
+        }
+        .jangji.play .jangji-l { animation: jangjiL 2.1s cubic-bezier(0.4, 0.02, 0.2, 1) forwards; }
+        .jangji.play .jangji-r { animation: jangjiR 2.1s cubic-bezier(0.4, 0.02, 0.2, 1) forwards; }
+        .jangji.play .jangji-word { animation: jangjiWord 2.1s ease forwards; }
+        @keyframes jangjiL {
+            0%   { transform: translateX(-101%); }
+            34%  { transform: translateX(-3%); }
+            60%  { transform: translateX(-3%); }
+            100% { transform: translateX(-101%); }
+        }
+        @keyframes jangjiR {
+            0%   { transform: translateX(101%); }
+            34%  { transform: translateX(3%); }
+            60%  { transform: translateX(3%); }
+            100% { transform: translateX(101%); }
+        }
+        @keyframes jangjiWord {
+            0%, 26%  { opacity: 0; transform: translate(-50%, -50%) scale(0.86); }
+            40%      { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            58%      { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            72%,100% { opacity: 0; transform: translate(-50%, -50%) scale(1.04); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .jangji.play .jangji-l, .jangji.play .jangji-r { animation-duration: 0.9s; }
+            .jangji.play .jangji-word { animation-duration: 0.9s; }
+        }
 
         /* ── 발화 연습 (듣고 따라 말하기 → 말차례 교환) ── */
         .stage-item.clickable { cursor: pointer; transition: transform 0.12s, border-color 0.2s, box-shadow 0.2s; }
@@ -388,7 +484,7 @@
         /* ── 홈 화면 ── */
         body[data-screen="home"] { background: radial-gradient(130% 90% at 50% -10%, #E7EDEF 0%, var(--bg) 55%); }
         .home-screen { flex-direction: column; align-items: center; justify-content: center;
-            width: 100%; max-width: 480px; min-height: 90vh; gap: 30px; position: relative; text-align: center; padding: 14px 0 26px; }
+            width: 100%; max-width: 480px; min-height: calc(90vh / var(--ui-zoom)); gap: 30px; position: relative; text-align: center; padding: 14px 0 26px; }
         /* 상단 헤더: 제목(왼쪽) · 버튼(오른쪽) */
         .home-header { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 4px; margin-bottom: 4px; }
         .home-title { font-size: 19px; font-weight: 900; margin: 0; color: var(--ink); letter-spacing: -0.4px; text-align: left; line-height: 1.25; }
@@ -406,7 +502,7 @@
         }
         /* 호아랑 히어로 — 크게, 원 없이, 통통 튀며 말풍선 */
         .home-hero { position: relative; margin: 10px 0; display: flex; flex-direction: column; align-items: center; }
-        .home-ham { width: clamp(190px, 52vw, 250px); display: flex; justify-content: center; }
+        .home-ham { width: clamp(190px, calc(52vw / var(--ui-zoom)), 250px); display: flex; justify-content: center; }
         .home-ham img { width: 100%; display: block; transform-origin: 50% 92%;
             animation: breathe 3.4s ease-in-out infinite; filter: drop-shadow(0 14px 22px rgba(57,64,99,0.22));
             transition: opacity 0.22s ease; }
@@ -414,7 +510,7 @@
         @keyframes home-hop { 0%,100% { transform: translateY(0) scale(1); } 30% { transform: translateY(-22px) scale(1.03); } 55% { transform: translateY(0) scale(0.99); } }
         .home-bubble { position: absolute; bottom: calc(100% - 14px); left: 50%; transform: translateX(-50%) translateY(6px) scale(0.9);
             background: #fff; color: var(--ink); font-size: 13.5px; font-weight: 700; line-height: 1.4; padding: 10px 14px;
-            border-radius: 16px; box-shadow: 0 8px 22px -8px rgba(57,64,99,0.3); white-space: nowrap; max-width: 82vw;
+            border-radius: 16px; box-shadow: 0 8px 22px -8px rgba(57,64,99,0.3); white-space: nowrap; max-width: calc(82vw / var(--ui-zoom));
             opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s; z-index: 2; }
         .home-bubble::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
             border: 8px solid transparent; border-top-color: #fff; }
@@ -440,7 +536,7 @@
         .back-btn { left: 12px; right: auto; font-size: 17px; font-weight: 700; }
 
         /* ── 지난 대화(히스토리) 오버레이 ── */
-        .hist-list { display: flex; flex-direction: column; gap: 8px; max-height: 46vh; overflow-y: auto; margin: 6px 0 4px; text-align: left; }
+        .hist-list { display: flex; flex-direction: column; gap: 8px; max-height: calc(46vh / var(--ui-zoom)); overflow-y: auto; margin: 6px 0 4px; text-align: left; }
         .hist-item { border: 1.5px solid var(--accent-soft); border-radius: 12px; padding: 11px 13px; background: var(--panel);
             cursor: pointer; transition: transform 0.12s, border-color 0.2s; }
         .hist-item:hover { transform: translateY(-1px); border-color: var(--accent); }
@@ -450,7 +546,7 @@
         .hist-item .hi-preview { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.45;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .hist-empty { font-size: 13px; color: var(--muted); padding: 24px 0; }
-        .hist-detail { text-align: left; max-height: 52vh; overflow-y: auto; white-space: pre-wrap;
+        .hist-detail { text-align: left; max-height: calc(52vh / var(--ui-zoom)); overflow-y: auto; white-space: pre-wrap;
             font-size: 13px; line-height: 1.6; color: var(--ink); background: var(--sand-soft); border-radius: 12px; padding: 14px; }
 
         /* ── 대화창 슬라이드 다운(스르륵) — 대화 시작 시 ── */
@@ -541,7 +637,7 @@
 <div class="lang-overlay hidden" id="introOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="introX">✕</button>
-        <div class="intro-ham-wrap" id="introHamWrap"><img class="intro-ham" src="/static/hamster.png?v=26" alt="호아랑"></div>
+        <div class="intro-ham-wrap" id="introHamWrap"><img class="intro-ham" src="/static/hamster.png?v=28" alt="호아랑"></div>
         <h2 id="introTitleEl" style="margin-bottom:8px;">🐯</h2>
         <p class="consent-text" id="introBodyEl" style="white-space:pre-line;"></p>
         <div class="consent-actions"><button class="action-btn" id="introOkBtn"></button></div>
@@ -551,6 +647,23 @@
 <div class="kakao-banner" id="kakaoBanner">
     <span id="kakaoNoticeText"></span>
     <button id="kakaoOpenBtn"></button>
+</div>
+
+<!-- 인앱 브라우저(카톡·인스타·DM 등) 안내 게이트 —
+     링크를 메신저로 받으면 앱 안 브라우저에서 열려 마이크·앱 설치가 막힌다.
+     그래서 진입하자마자 바깥 브라우저로 나가도록 안내한다. -->
+<div class="inapp-gate hidden" id="inappGate">
+    <div class="inapp-card">
+        <div class="inapp-emoji">🌐</div>
+        <h2 id="inappTitleEl"></h2>
+        <p class="inapp-body" id="inappBodyEl"></p>
+        <p class="inapp-steps" id="inappStepsEl"></p>
+        <div class="inapp-actions">
+            <button class="action-btn" id="inappOpenBtn"></button>
+            <button class="export-btn" id="inappCopyBtn"></button>
+        </div>
+        <button type="button" class="inapp-skip" id="inappSkipBtn"></button>
+    </div>
 </div>
 <!-- 이어폰 사용 권장 팝업 (언어 선택 직후) -->
 <div class="lang-overlay hidden" id="earphoneOverlay">
@@ -636,7 +749,7 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png?v=26" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=28" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
         <div class="result-cards">
             <div class="r-card score"><div class="r-label" id="rcScoreLbl"></div><div class="r-inner" id="rcScoreVal">0</div></div>
@@ -658,7 +771,7 @@
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png?v=26" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=28" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
@@ -679,7 +792,7 @@
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=26" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=28" alt="호아랑">
         <div class="freefb-icon">💬</div>
         <h2 id="freeFbTitleEl" style="margin:6px 0;">💬</h2>
         <p class="consent-text" id="freeFbBodyEl" style="text-align:center;"></p>
@@ -691,7 +804,7 @@
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=26" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=28" alt="호아랑"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
 <div class="home-screen" id="homeScreen">
@@ -708,7 +821,7 @@
     <!-- 호아랑: 크게, 원 없이. 가끔 통통 튀며 말풍선으로 말을 건다 -->
     <div class="home-hero">
         <div class="home-bubble" id="homeBubble" aria-hidden="true"></div>
-        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png?v=26" alt="호아랑"></div>
+        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png?v=28" alt="호아랑"></div>
     </div>
     <p class="home-sub" id="homeSubEl"></p>
     <button type="button" class="home-card hc-rp" id="homeRpCard">
@@ -722,12 +835,16 @@
     <!-- 앱 다운로드 버튼: 홈 맨 아래. 누르면 설치 안내창(플랫폼별) 표시 -->
     <button type="button" class="home-dl-btn" id="homeDownloadBtn" hidden></button>
     <div class="credit home-credit">공동체에 대한 공헌 · LeeNamho · Email: namho1210@naver.com</div>
+    <div class="credit home-credit" style="opacity:0.62; font-size:10px; line-height:1.5;">
+        글꼴 지마켓 산스(G마켓) · 배경음 「Tong tong(통통) 가야금」 서예지 ·
+        효과음 「전통악기 징」 (재)전주정보문화산업진흥원 — 공유마당(KOGL 제1유형)
+    </div>
 </div>
 <!-- 앱 다운로드/설치 안내창 (플랫폼별 홈 화면 추가 안내) -->
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=26" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=28" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -761,7 +878,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png?v=26" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=28" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -814,7 +931,7 @@
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png?v=26" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=28" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span>🎥</span><span id="hamViewBtnLbl"></span></button>
@@ -879,8 +996,19 @@
     <div class="hv-caption" id="hvCaption"></div>
     <div class="hv-controls" id="hvControls"></div>
 </div>
+<!-- 단계 달성 연출 — 한옥 장지문이 열렸다 닫히는 전환 -->
+<div class="jangji" id="jangji" aria-hidden="true">
+    <div class="jangji-leaf jangji-l"><span class="jangji-grid"></span></div>
+    <div class="jangji-leaf jangji-r"><span class="jangji-grid"></span></div>
+    <div class="jangji-word" id="jangjiWord"></div>
+</div>
+
 <!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
+<!-- 발화 연습 배경 — '통통(가야금)', 사용자 볼륨의 20%로 아주 은은하게 -->
+<audio id="prBgm" src="/static/practice_bgm.mp3?v=28" loop preload="none"></audio>
+<!-- 단계 달성 — 전통악기 징 -->
+<audio id="gongSfx" src="/static/gong.mp3?v=28" preload="auto"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -892,7 +1020,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v26 (2026-07-24)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v28 (2026-07-26)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -915,6 +1043,25 @@
     }
     updateNetStat();
     const isKakao = /KAKAOTALK/i.test(navigator.userAgent);
+    /* 인앱 브라우저(메신저·SNS 안에서 열린 브라우저) 판별 —
+       마이크 권한과 홈 화면 설치가 막히는 환경이라 바깥 브라우저로 안내해야 한다. */
+    const _UA = navigator.userAgent || "";
+    const isAndroidUA = /Android/i.test(_UA);
+    const inAppKind =
+          /KAKAOTALK/i.test(_UA)              ? "kakao"
+        : /Instagram/i.test(_UA)              ? "instagram"
+        : /Threads/i.test(_UA)                ? "threads"
+        : /FBAN|FBAV|FB_IAB|FBIOS/i.test(_UA) ? "facebook"
+        : /\bLine\//i.test(_UA)               ? "line"
+        : /NAVER\(inapp/i.test(_UA)           ? "naver"
+        : /DaumApps|daumcafe/i.test(_UA)      ? "daum"
+        : /\bBAND\//i.test(_UA)               ? "band"
+        : /MicroMessenger/i.test(_UA)         ? "wechat"
+        : /everytimeApp/i.test(_UA)           ? "everytime"
+        : /Snapchat/i.test(_UA)               ? "snapchat"
+        : /; ?wv\)/.test(_UA)                 ? "webview"   // 안드로이드 일반 웹뷰
+        : null;
+    const isInAppBrowser = !!inAppKind;
     let isPaused = false;
     let isTalking = false;     // push-to-talk: 버튼을 누르고 있는 동안만 true
     let playbackRate = 1.0;
@@ -1020,6 +1167,24 @@
         fr: { homeSub:"On discute ensemble ?", homeGreet:["Coucou ! 🐯","On papote ?","Tu m'as manqué 😊","Ça va ?"] },
     };
     for (const _l in I18N_GREET) { if (I18N[_l]) Object.assign(I18N[_l], I18N_GREET[_l]); }
+
+    /* 인앱 브라우저(카톡·인스타 DM 등) 안내 문구 — 12개 언어 */
+    const I18N_INAPP = {
+        ko: { inTitle:"🌐 브라우저에서 열어 주세요", inBody:"지금은 메신저 안의 작은 브라우저예요.\n여기서는 마이크와 앱 설치가 막혀서 호아랑과 대화할 수 없어요.", inSteps:"① 아래 '브라우저로 열기'를 누르세요\n② 안 되면 오른쪽 위 ⋯ (또는 ⋮) → '다른 브라우저로 열기'\n③ 그래도 안 되면 주소를 복사해 크롬·사파리에 붙여넣기", inOpen:"🌐 브라우저로 열기", inCopy:"🔗 주소 복사하기", inSkip:"괜찮아요, 여기서 볼게요", inCopied:"주소를 복사했어요! 크롬이나 사파리에 붙여넣어 주세요.", inCopyManual:"이 주소를 복사해 브라우저에 붙여넣어 주세요" },
+        en: { inTitle:"🌐 Please open in a browser", inBody:"You're in a messenger's built-in browser.\nThe microphone and app install are blocked here, so you can't talk with Hoarang.", inSteps:"① Tap 'Open in browser' below\n② If nothing happens: top-right ⋯ (or ⋮) → 'Open in browser'\n③ Still stuck? Copy the link and paste it into Chrome or Safari", inOpen:"🌐 Open in browser", inCopy:"🔗 Copy link", inSkip:"It's fine, I'll stay here", inCopied:"Link copied! Paste it into Chrome or Safari.", inCopyManual:"Copy this link and paste it into your browser" },
+        zh: { inTitle:"🌐 请在浏览器中打开", inBody:"你现在使用的是聊天软件内置浏览器。\n这里麦克风和安装应用都被限制，无法和Hoarang对话。", inSteps:"① 点击下方「在浏览器中打开」\n② 若无反应：右上角 ⋯（或 ⋮）→「在浏览器中打开」\n③ 仍不行：复制链接，粘贴到Chrome或Safari", inOpen:"🌐 在浏览器中打开", inCopy:"🔗 复制链接", inSkip:"没关系，就在这里看", inCopied:"链接已复制！请粘贴到Chrome或Safari。", inCopyManual:"请复制此链接并粘贴到浏览器" },
+        ja: { inTitle:"🌐 ブラウザで開いてください", inBody:"今はメッセンジャー内のブラウザです。\nマイクとアプリのインストールが使えないため、ホアランと話せません。", inSteps:"① 下の「ブラウザで開く」を押す\n② 反応がなければ 右上の ⋯（または ⋮）→「他のブラウザで開く」\n③ それでもだめならリンクをコピーしてChrome・Safariに貼り付け", inOpen:"🌐 ブラウザで開く", inCopy:"🔗 リンクをコピー", inSkip:"大丈夫、このまま見ます", inCopied:"リンクをコピーしました！ChromeかSafariに貼り付けてください。", inCopyManual:"このリンクをコピーしてブラウザに貼り付けてください" },
+        vi: { inTitle:"🌐 Hãy mở bằng trình duyệt", inBody:"Bạn đang ở trình duyệt bên trong ứng dụng nhắn tin.\nMicro và cài đặt ứng dụng bị chặn nên không thể trò chuyện với Hoarang.", inSteps:"① Nhấn 'Mở bằng trình duyệt' bên dưới\n② Nếu không được: ⋯ (hoặc ⋮) góc trên bên phải → 'Mở bằng trình duyệt'\n③ Vẫn không được: sao chép liên kết và dán vào Chrome hoặc Safari", inOpen:"🌐 Mở bằng trình duyệt", inCopy:"🔗 Sao chép liên kết", inSkip:"Không sao, tôi xem ở đây", inCopied:"Đã sao chép! Hãy dán vào Chrome hoặc Safari.", inCopyManual:"Sao chép liên kết này và dán vào trình duyệt" },
+        th: { inTitle:"🌐 กรุณาเปิดในเบราว์เซอร์", inBody:"ตอนนี้คุณอยู่ในเบราว์เซอร์ของแอปแชท\nไมโครโฟนและการติดตั้งแอปถูกปิดกั้น จึงคุยกับ Hoarang ไม่ได้", inSteps:"① กด 'เปิดในเบราว์เซอร์' ด้านล่าง\n② ถ้าไม่ได้: มุมขวาบน ⋯ (หรือ ⋮) → 'เปิดในเบราว์เซอร์'\n③ ยังไม่ได้: คัดลอกลิงก์ไปวางใน Chrome หรือ Safari", inOpen:"🌐 เปิดในเบราว์เซอร์", inCopy:"🔗 คัดลอกลิงก์", inSkip:"ไม่เป็นไร ดูตรงนี้ก็ได้", inCopied:"คัดลอกลิงก์แล้ว! วางใน Chrome หรือ Safari ได้เลย", inCopyManual:"คัดลอกลิงก์นี้แล้ววางในเบราว์เซอร์" },
+        id: { inTitle:"🌐 Buka di peramban, ya", inBody:"Kamu sedang di peramban bawaan aplikasi pesan.\nMikrofon dan pemasangan aplikasi diblokir, jadi tidak bisa mengobrol dengan Hoarang.", inSteps:"① Tekan 'Buka di peramban' di bawah\n② Jika tidak jalan: ⋯ (atau ⋮) di kanan atas → 'Buka di peramban'\n③ Masih gagal: salin tautan lalu tempel di Chrome atau Safari", inOpen:"🌐 Buka di peramban", inCopy:"🔗 Salin tautan", inSkip:"Tidak apa-apa, di sini saja", inCopied:"Tautan tersalin! Tempel di Chrome atau Safari.", inCopyManual:"Salin tautan ini lalu tempel di peramban" },
+        mn: { inTitle:"🌐 Хөтчөөр нээнэ үү", inBody:"Та мессенжерийн доторх хөтөч дээр байна.\nМикрофон болон апп суулгах хаагдсан тул Hoarang-тай ярьж чадахгүй.", inSteps:"① Доорх 'Хөтчөөр нээх' товчийг дарна уу\n② Ажиллахгүй бол: баруун дээд ⋯ (эсвэл ⋮) → 'Өөр хөтчөөр нээх'\n③ Болохгүй бол холбоосыг хуулж Chrome эсвэл Safari-д буулгана уу", inOpen:"🌐 Хөтчөөр нээх", inCopy:"🔗 Холбоос хуулах", inSkip:"Зүгээр, энд үзье", inCopied:"Холбоосыг хууллаа! Chrome эсвэл Safari-д буулгана уу.", inCopyManual:"Энэ холбоосыг хуулж хөтөч дээр буулгана уу" },
+        uz: { inTitle:"🌐 Brauzerda oching", inBody:"Siz messenjer ichidagi brauzerdasiz.\nMikrofon va ilova o'rnatish bloklangan, shuning uchun Hoarang bilan gaplasha olmaysiz.", inSteps:"① Quyidagi 'Brauzerda ochish' tugmasini bosing\n② Ishlamasa: yuqori o'ngdagi ⋯ (yoki ⋮) → 'Brauzerda ochish'\n③ Baribir bo'lmasa: havolani nusxalab Chrome yoki Safari'ga joylang", inOpen:"🌐 Brauzerda ochish", inCopy:"🔗 Havoladan nusxa olish", inSkip:"Mayli, shu yerda qolaman", inCopied:"Havola nusxalandi! Chrome yoki Safari'ga joylang.", inCopyManual:"Ushbu havolani nusxalab brauzerga joylang" },
+        ru: { inTitle:"🌐 Откройте в браузере", inBody:"Вы в браузере внутри мессенджера.\nМикрофон и установка приложения здесь заблокированы, поэтому поговорить с Hoarang не получится.", inSteps:"① Нажмите «Открыть в браузере» ниже\n② Если не работает: вверху справа ⋯ (или ⋮) → «Открыть в браузере»\n③ Всё ещё нет: скопируйте ссылку и вставьте в Chrome или Safari", inOpen:"🌐 Открыть в браузере", inCopy:"🔗 Скопировать ссылку", inSkip:"Ничего, останусь здесь", inCopied:"Ссылка скопирована! Вставьте её в Chrome или Safari.", inCopyManual:"Скопируйте эту ссылку и вставьте в браузер" },
+        es: { inTitle:"🌐 Ábrelo en un navegador", inBody:"Estás en el navegador interno de una app de mensajería.\nEl micrófono y la instalación están bloqueados, así que no puedes hablar con Hoarang.", inSteps:"① Pulsa 'Abrir en el navegador' abajo\n② Si no pasa nada: ⋯ (o ⋮) arriba a la derecha → 'Abrir en el navegador'\n③ ¿Sigue sin funcionar? Copia el enlace y pégalo en Chrome o Safari", inOpen:"🌐 Abrir en el navegador", inCopy:"🔗 Copiar enlace", inSkip:"No pasa nada, me quedo aquí", inCopied:"¡Enlace copiado! Pégalo en Chrome o Safari.", inCopyManual:"Copia este enlace y pégalo en tu navegador" },
+        fr: { inTitle:"🌐 Ouvrez dans un navigateur", inBody:"Vous êtes dans le navigateur intégré d'une messagerie.\nLe micro et l'installation de l'app y sont bloqués : impossible de parler avec Hoarang.", inSteps:"① Appuyez sur « Ouvrir dans le navigateur » ci-dessous\n② Sans effet : ⋯ (ou ⋮) en haut à droite → « Ouvrir dans le navigateur »\n③ Toujours rien ? Copiez le lien et collez-le dans Chrome ou Safari", inOpen:"🌐 Ouvrir dans le navigateur", inCopy:"🔗 Copier le lien", inSkip:"Ce n'est pas grave, je reste ici", inCopied:"Lien copié ! Collez-le dans Chrome ou Safari.", inCopyManual:"Copiez ce lien et collez-le dans votre navigateur" },
+    };
+    for (const _l in I18N_INAPP) { if (I18N[_l]) Object.assign(I18N[_l], I18N_INAPP[_l]); }
+
     let uiLang = localStorage.getItem("uiLang") || null;
     let lastStatus = null; // { state, key } — 언어 변경 시 상태 문구 갱신용
     function t(key) {
@@ -1384,7 +1549,7 @@
 
     /* ── 홈의 호아랑 이미지를 랜덤으로 계속 교체 ── */
     const homeHamImg = homeHam.querySelector("img");
-    const HOME_HAM_IMGS = ["/static/ham_idle.png?v=26", "/static/ham_smile.png?v=26", "/static/ham_surprised.png?v=26", "/static/ham_shy.png?v=26"];
+    const HOME_HAM_IMGS = ["/static/ham_idle.png?v=28", "/static/ham_smile.png?v=28", "/static/ham_surprised.png?v=28", "/static/ham_shy.png?v=28"];
     function homeImgTick() {
         if (document.body.dataset.screen !== "home" || !homeHamImg) return;
         const others = HOME_HAM_IMGS.filter(s => !homeHamImg.src.endsWith(s));
@@ -1396,15 +1561,53 @@
 
     /* ── 배경음악(BGM): 대화 연습 중(isConnected)이 아닐 때만 50% 음량 재생 ── */
     const bgm = document.getElementById("bgm");
-    if (bgm) bgm.volume = 0.3;   // 사용자 볼륨의 30%
+    const prBgm = document.getElementById("prBgm");      // 발화 연습 배경 — 통통(가야금)
+    const gongSfx = document.getElementById("gongSfx");  // 단계 달성 — 전통악기 징
+    if (bgm) bgm.volume = 0.3;      // 사용자 볼륨의 30%
+    if (prBgm) prBgm.volume = 0.2;  // 사용자 볼륨의 20% — 연습에 방해되지 않을 만큼만
+    if (gongSfx) gongSfx.volume = 0.5;
     let bgmMuted = localStorage.getItem("bgmMuted") === "1";
     let bgmReady = false;
-    function updateBgm() {
-        if (!bgm) return;
-        if (!bgmMuted && bgmReady && !isConnected) bgm.play().catch(() => {});
-        else bgm.pause();
+    let sceneQuiet = false;      // 대화 계획 설정·브리핑 중 → 완전 무음
+    let scenePractice = false;   // 발화 연습 중 → 가야금만 은은하게
+
+    /* 지금 화면에 어떤 창이 떠 있는지 보고 배경음 장면을 다시 계산한다.
+       (대화 계획을 짜거나 발화 연습을 할 때 메인 BGM이 계속 들려 방해되던 문제 해결) */
+    function recomputeAudioScene() {
+        const open = (id) => {
+            const el = document.getElementById(id);
+            return !!el && !el.classList.contains("hidden");
+        };
+        scenePractice = open("prOverlay");
+        sceneQuiet = open("rpSetupOverlay") || open("rpBriefOverlay");
+        updateBgm();
     }
-    function unlockBgm() { bgmReady = true; updateBgm(); document.removeEventListener("pointerdown", unlockBgm); }
+    function updateBgm() {
+        const canPlay = !bgmMuted && bgmReady;
+        if (bgm) {
+            if (canPlay && !isConnected && !sceneQuiet && !scenePractice) bgm.play().catch(() => {});
+            else bgm.pause();
+        }
+        if (prBgm) {
+            if (canPlay && scenePractice) prBgm.play().catch(() => {});
+            else { prBgm.pause(); try { prBgm.currentTime = 0; } catch (e) {} }
+        }
+    }
+    // 창이 열리고 닫히는 걸 직접 감시 → 여닫는 코드를 일일이 고치지 않아도 자동 반영
+    try {
+        const sceneObs = new MutationObserver(recomputeAudioScene);
+        ["prOverlay", "rpSetupOverlay", "rpBriefOverlay"].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) sceneObs.observe(el, { attributes: true, attributeFilter: ["class"] });
+        });
+    } catch (e) {}
+
+    function playGong() {   // 단계 달성 — 징 한 번
+        if (!gongSfx || bgmMuted) return;
+        try { gongSfx.currentTime = 0; gongSfx.play().catch(() => {}); } catch (e) {}
+    }
+
+    function unlockBgm() { bgmReady = true; recomputeAudioScene(); document.removeEventListener("pointerdown", unlockBgm); }
     document.addEventListener("pointerdown", unlockBgm);   // 브라우저 자동재생 정책 우회(첫 제스처)
     const bgmBtn = document.getElementById("bgmBtn");
     function renderBgmBtn() { if (bgmBtn) bgmBtn.textContent = bgmMuted ? "🔇" : "🔊"; }
@@ -2189,6 +2392,24 @@
         o.start(t0);
         o.stop(t0 + dur + 0.02);
     }
+    /* 단계 달성 연출 — 징 + 한옥 장지문이 스르륵 닫혔다 열림 */
+    function showJangji(text) {
+        const el = document.getElementById("jangji");
+        const w = document.getElementById("jangjiWord");
+        if (!el) return;
+        if (w) w.textContent = text || "";
+        el.classList.remove("play");
+        el.classList.add("on");
+        void el.offsetWidth;                 // 리플로우 강제 → 연속 달성에도 애니메이션 재시작
+        el.classList.add("play");
+        clearTimeout(showJangji._t);
+        showJangji._t = setTimeout(() => { el.classList.remove("play", "on"); }, 2250);
+    }
+    function celebrateStage(stageName) {
+        playGong();
+        showJangji(stageName ? ("✓ " + stageName) : "");
+    }
+
     function playDing() { // 기능 단계 달성 — 짧고 경쾌한 딩동↑
         const c = fxContext();
         if (!c) return;
@@ -2337,10 +2558,73 @@
     if (isKakao) {
         document.getElementById("kakaoBanner").classList.add("show");
         document.body.style.paddingTop = "56px";
-        document.getElementById("kakaoOpenBtn").addEventListener("click", () => {
-            location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(location.href);
-        });
+        document.getElementById("kakaoOpenBtn").addEventListener("click", escapeInApp);
     }
+
+    /* ══════════ 인앱 브라우저 게이트 ══════════
+       카톡·인스타 DM 등으로 링크를 받으면 앱 안의 작은 브라우저에서 열린다.
+       거기서는 마이크 권한과 홈 화면 설치(PWA)가 막혀 수업을 못 한다.
+       → 들어오자마자 바깥 브라우저로 나가도록 안내하고, 가능한 경우 자동 전환한다. */
+    function escapeInApp() {
+        const url = location.href;
+        if (inAppKind === "kakao") {   // 카카오톡 전용 스킴 — 가장 확실
+            location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(url);
+            return;
+        }
+        if (inAppKind === "line") {    // 라인 — 쿼리 하나로 외부 브라우저 전환
+            location.href = url + (url.indexOf("?") > -1 ? "&" : "?") + "openExternalBrowser=1";
+            return;
+        }
+        if (isAndroidUA) {             // 안드로이드 — 크롬으로 넘기는 intent
+            location.href = "intent://" + url.replace(/^https?:\/\//, "")
+                + "#Intent;scheme=https;action=android.intent.action.VIEW;package=com.android.chrome;end";
+            return;
+        }
+        // iOS 인스타·페북 계열 — 사파리로 넘기는 비공식 스킴을 시도하고, 실패하면 주소 복사
+        const t0 = Date.now();
+        try { location.href = "x-safari-" + url; } catch (e) {}
+        setTimeout(() => { if (Date.now() - t0 < 1800) copyAppLink(); }, 1200);
+    }
+    async function copyAppLink() {
+        const url = location.href;
+        try {
+            await navigator.clipboard.writeText(url);
+            alert(t("inCopied")); return;
+        } catch (e) {}
+        try {                                   // 구형 브라우저 대비
+            const ta = document.createElement("textarea");
+            ta.value = url; ta.style.position = "fixed"; ta.style.opacity = "0";
+            document.body.appendChild(ta); ta.select();
+            const ok = document.execCommand("copy");
+            ta.remove();
+            if (ok) { alert(t("inCopied")); return; }
+        } catch (e) {}
+        prompt(t("inCopyManual"), url);
+    }
+    (function bindInAppGate() {
+        const gate = document.getElementById("inappGate");
+        if (!gate) return;
+        document.getElementById("inappOpenBtn").addEventListener("click", escapeInApp);
+        document.getElementById("inappCopyBtn").addEventListener("click", copyAppLink);
+        document.getElementById("inappSkipBtn").addEventListener("click", () => {
+            gate.classList.add("hidden");
+            try { sessionStorage.setItem("inappSkip", "1"); } catch (e) {}
+        });
+        if (!isInAppBrowser || isStandaloneApp) return;
+        try { if (sessionStorage.getItem("inappSkip") === "1") return; } catch (e) {}
+        // 언어를 아직 안 골랐다면 기기 언어로 문구를 맞춰 준다
+        if (!uiLang) {
+            const guess = (navigator.language || "ko").slice(0, 2).toLowerCase();
+            if (I18N[guess]) uiLang = guess;
+        }
+        document.getElementById("inappTitleEl").textContent = t("inTitle");
+        document.getElementById("inappBodyEl").textContent = t("inBody");
+        document.getElementById("inappStepsEl").textContent = t("inSteps");
+        document.getElementById("inappOpenBtn").textContent = t("inOpen");
+        document.getElementById("inappCopyBtn").textContent = t("inCopy");
+        document.getElementById("inappSkipBtn").textContent = t("inSkip");
+        gate.classList.remove("hidden");
+    })();
 
     /* ── 페이더 라벨 업데이트 (다국어) ── */
     function getDistLabel(v) {
@@ -2603,7 +2887,12 @@
                 renderProgress();
                 const nowDone = rpStagesState.filter(s => s.done).length;
                 if (rpPercent > 100 && rpPercent > prevPct) screenZap();  // 확장 중! ⚡ 화면 흔들림
-                else if (nowDone > prevDone) playDing();                  // 단계 달성 🔔
+                else if (nowDone > prevDone) {
+                    // 단계 달성 — 징 + 장지문. 이번에 새로 충족된 단계 이름을 문 위에 띄운다.
+                    const justDone = rpStagesState.filter(s => s.done);
+                    const nm = justDone.length ? justDone[justDone.length - 1].name : "";
+                    celebrateStage(nm);
+                }
             } else if (msg.type === "hint") {
                 // 🪜 비계 응답 — 패널이 열려 있을 때만 표시
                 clearTimeout(scfTimer);
@@ -2753,8 +3042,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png?v=26", smile: "/static/ham_smile.png?v=26",
-        surprised: "/static/ham_surprised.png?v=26", shy: "/static/ham_shy.png?v=26",
+        idle: "/static/ham_idle.png?v=28", smile: "/static/ham_smile.png?v=28",
+        surprised: "/static/ham_surprised.png?v=28", shy: "/static/ham_shy.png?v=28",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -2825,7 +3114,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png?v=26";
+                img.src = "/static/hamster.png?v=28";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");

@@ -21,7 +21,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v38"
+APP_VERSION = "v40"
 APP_DATE = "2026-07-27"
 
 app = FastAPI()
@@ -1035,6 +1035,103 @@ async function play(btn, voice, style) {{
     last = src;
   }} catch(e) {{ alert("재생 실패: " + e.message); }}
   finally {{ btn.disabled = false; btn.textContent = old; }}
+}}
+</script></body></html>""")
+
+
+@app.get("/healthz")
+async def healthz():
+    """서버가 깨어 있는지만 확인하는 가장 가벼운 응답.
+    무료 플랜은 15분쯤 쓰지 않으면 잠들고, 깨어나는 데 수십 초가 걸린다.
+    클라이언트가 앱을 켤 때·대화 준비 단계에서 미리 이걸 찔러 깨워 둔다."""
+    return {"ok": True, "app": APP_VERSION, "sessions": _active_sessions}
+
+
+@app.get("/conn-diag", response_class=HTMLResponse)
+async def conn_diag():
+    """연결 진단 — '서버에 연결 중…'에서 멈출 때 어디서 막히는지 단계별로 재 본다.
+    학생 화면에는 링크가 없다. 문제가 나는 그 기기에서 이 주소를 열면 된다."""
+    return HTMLResponse(f"""<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>연결 진단 — 호아랑 {APP_VERSION}</title>
+<style>
+ body{{font-family:-apple-system,"Malgun Gothic",sans-serif;background:#F4F0E6;color:#2E3338;margin:0;padding:22px 16px 60px}}
+ .w{{max-width:620px;margin:0 auto}} h1{{font-size:19px;margin:0 0 6px}}
+ p.s{{color:#726A5C;font-size:13px;margin:0 0 16px;line-height:1.6}}
+ button{{border:none;border-radius:12px;background:#4A7C74;color:#fff;font-weight:800;font-size:14px;
+   padding:12px 18px;cursor:pointer;font-family:inherit}}
+ table{{width:100%;border-collapse:collapse;background:#FFFDF8;border-radius:14px;overflow:hidden;margin-top:16px}}
+ td{{padding:10px 12px;border-bottom:1px solid #EDE8DC;font-size:13px;vertical-align:top}}
+ td:first-child{{width:42%;font-weight:800;color:#2A4A55}}
+ .ok{{color:#2E5B3E;font-weight:800}} .bad{{color:#B5573F;font-weight:800}} .wait{{color:#8A8175}}
+ pre{{background:#FFFDF8;border-radius:12px;padding:12px;font-size:11.5px;overflow:auto;line-height:1.6}}
+</style></head><body><div class="w">
+<h1>🔌 연결 진단 <span style="font-size:12px;color:#726A5C">{APP_VERSION}</span></h1>
+<p class="s">'서버에 연결 중…'에서 멈추는 그 기기·그 네트워크에서 이 페이지를 열고 아래 버튼을 눌러 주세요.
+ 어느 단계에서 몇 초가 걸리는지, 무엇이 막히는지 그대로 보여 줍니다.</p>
+<button onclick="run()">진단 시작</button>
+<table id="t"></table>
+<pre id="log"></pre>
+</div><script>
+const rows = [
+  ["서버 응답(/healthz)", "서버가 깨어 있는지 · 지금 대화 중인 세션 수"],
+  ["웹소켓 핸드셰이크", "대화용 연결이 열리는 데 걸린 시간"],
+  ["첫 서버 메시지", "연결 후 서버가 실제로 말을 거는지"],
+  ["마이크 권한", "브라우저가 마이크를 내주는지"],
+];
+function draw(i, val, cls) {{
+  const t = document.getElementById("t");
+  if (!t.rows.length) rows.forEach(r => {{
+    const tr = t.insertRow(); tr.insertCell().textContent = r[0];
+    const c = tr.insertCell(); c.innerHTML = '<span class="wait">대기</span><div style="font-size:11px;color:#8A8175;margin-top:2px">' + r[1] + '</div>';
+  }});
+  const c = t.rows[i].cells[1];
+  c.innerHTML = '<span class="' + cls + '">' + val + '</span><div style="font-size:11px;color:#8A8175;margin-top:2px">' + rows[i][1] + '</div>';
+}}
+function log(m) {{ document.getElementById("log").textContent += m + "\\n"; }}
+async function run() {{
+  document.getElementById("t").innerHTML = ""; document.getElementById("log").textContent = "";
+  rows.forEach((_, i) => draw(i, "대기", "wait"));
+  // ① /healthz
+  let t0 = performance.now();
+  try {{
+    const r = await fetch("/healthz?t=" + Date.now(), {{ cache: "no-store" }});
+    const j = await r.json();
+    const ms = Math.round(performance.now() - t0);
+    draw(0, ms + "ms · 세션 " + j.sessions + "개", ms < 1500 ? "ok" : "bad");
+    log("healthz " + ms + "ms " + JSON.stringify(j));
+    if (ms > 3000) log("→ 서버가 잠들어 있었거나 매우 느립니다.");
+  }} catch (e) {{ draw(0, "실패", "bad"); log("healthz 실패: " + e); return; }}
+  // ② 웹소켓
+  t0 = performance.now();
+  const proto = location.protocol === "https:" ? "wss://" : "ws://";
+  const ws = new WebSocket(proto + location.host + "/ws/live?d=50&p=50&lang=ko&name=%EC%A7%84%EB%8B%A8");
+  let opened = false, gotMsg = false;
+  const guard = setTimeout(() => {{
+    if (!opened) {{ draw(1, "25초 안에 못 붙음", "bad");
+      log("→ 핸드셰이크가 응답하지 않습니다. 서버 재시작 중이거나 네트워크(방화벽·프록시)가 웹소켓을 막는지 확인하세요."); }}
+    try {{ ws.close(); }} catch (e) {{}}
+  }}, 25000);
+  ws.onopen = () => {{ opened = true; clearTimeout(guard);
+    const ms = Math.round(performance.now() - t0);
+    draw(1, ms + "ms 연결됨", ms < 3000 ? "ok" : "bad"); log("웹소켓 연결 " + ms + "ms");
+    setTimeout(() => {{ if (!gotMsg) {{ draw(2, "10초간 응답 없음", "bad");
+      log("→ 연결은 됐는데 서버가 조용합니다. Gemini 연결·API 키·쿼터를 확인하세요."); }}
+      try {{ ws.close(); }} catch (e) {{}} }}, 10000);
+  }};
+  ws.onmessage = (ev) => {{ if (gotMsg) return; gotMsg = true;
+    const ms = Math.round(performance.now() - t0);
+    draw(2, ms + "ms 만에 첫 메시지", "ok");
+    log("첫 메시지: " + String(ev.data).slice(0, 160));
+    try {{ ws.close(); }} catch (e) {{}} }};
+  ws.onclose = (ev) => {{ clearTimeout(guard); log("소켓 닫힘 code=" + ev.code + " reason=" + (ev.reason || "-"));
+    if (!opened) draw(1, "닫힘 code " + ev.code, "bad"); }};
+  ws.onerror = () => log("소켓 오류 발생");
+  // ③ 마이크
+  try {{
+    const st = await navigator.mediaDevices.getUserMedia({{ audio: true }});
+    draw(3, "허용됨", "ok"); st.getTracks().forEach(t => t.stop());
+  }} catch (e) {{ draw(3, "거부/실패: " + e.name, "bad");
+    log("→ 마이크가 없으면 연결돼도 대화가 되지 않습니다."); }}
 }}
 </script></body></html>""")
 

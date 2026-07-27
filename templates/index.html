@@ -6,26 +6,26 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json?v=40">
+    <link rel="manifest" href="/static/manifest.json?v=41">
     <meta name="theme-color" content="#4A7C74">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=40">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=40">
-    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=40" crossorigin>
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=41">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=41">
+    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=41" crossorigin>
     <style>
         /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansMedium.woff2?v=40") format("woff2");
+            src: url("/static/fonts/GmarketSansMedium.woff2?v=41") format("woff2");
             font-weight: 400 600; font-style: normal; font-display: swap;
         }
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansBold.woff2?v=40") format("woff2");
+            src: url("/static/fonts/GmarketSansBold.woff2?v=41") format("woff2");
             font-weight: 700 900; font-style: normal; font-display: swap;
         }
         :root {
@@ -809,8 +809,8 @@
 <!-- ═══ 앱 시작 영상 (한옥 장지문이 열리고 호아랑이 나온다) ═══
      같은 세션에서 한 번만 재생하고, 끝나면 스스로 사라진다. -->
 <div class="splash" id="splash">
-    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=40">
-        <source src="/static/intro.mp4?v=40" type="video/mp4">
+    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=41">
+        <source src="/static/intro.mp4?v=41" type="video/mp4">
     </video>
     <button type="button" class="splash-skip" id="splashSkip">건너뛰기 ›</button>
 </div>
@@ -842,7 +842,7 @@
 <div class="lang-overlay hidden" id="introOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="introX">✕</button>
-        <div class="intro-ham-wrap" id="introHamWrap"><img class="intro-ham" src="/static/hamster.png?v=40" alt="호아랑"></div>
+        <div class="intro-ham-wrap" id="introHamWrap"><img class="intro-ham" src="/static/hamster.png?v=41" alt="호아랑"></div>
         <h2 id="introTitleEl" style="margin-bottom:8px;">🐯</h2>
         <p class="consent-text" id="introBodyEl" style="white-space:pre-line;"></p>
         <div class="consent-actions"><button class="action-btn" id="introOkBtn"></button></div>
@@ -954,7 +954,7 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png?v=40" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=41" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
         <div class="result-cards">
             <div class="r-card score"><div class="r-label" id="rcScoreLbl"></div><div class="r-inner" id="rcScoreVal">0</div></div>
@@ -976,7 +976,7 @@
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png?v=40" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=41" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
@@ -997,7 +997,7 @@
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=40" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=41" alt="호아랑">
         <div class="freefb-icon">💬</div>
         <h2 id="freeFbTitleEl" style="margin:6px 0;">💬</h2>
         <p class="consent-text" id="freeFbBodyEl" style="text-align:center;"></p>
@@ -1009,14 +1009,14 @@
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=40" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=41" alt="호아랑"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
 <div class="home-screen" id="homeScreen">
     <!-- 상단: 제목(왼쪽) · 버튼(오른쪽) -->
     <div class="home-header">
         <h1 class="home-title">
-            <img class="home-logo" src="/static/icon-192.png?v=40" alt="">
+            <img class="home-logo" src="/static/icon-192.png?v=41" alt="">
             <span id="homeTitleEl">호아랑</span>
         </h1>
         <div class="home-top">
@@ -1030,7 +1030,7 @@
     <!-- 호아랑: 크게, 원 없이. 가끔 통통 튀며 말풍선으로 말을 건다 -->
     <div class="home-hero">
         <div class="home-bubble" id="homeBubble" aria-hidden="true"></div>
-        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png?v=40" alt="호아랑"></div>
+        <div class="home-ham" id="homeHam"><img src="/static/ham_smile.png?v=41" alt="호아랑"></div>
     </div>
     <p class="home-sub" id="homeSubEl"></p>
     <button type="button" class="home-card hc-rp" id="homeRpCard">
@@ -1065,7 +1065,7 @@
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=40" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=41" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -1099,7 +1099,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png?v=40" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=41" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -1152,7 +1152,7 @@
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png?v=40" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=41" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span>🎥</span><span id="hamViewBtnLbl"></span></button>
@@ -1228,7 +1228,7 @@
 <!-- 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 (발화 연습 시작 등) -->
 <div class="ham-peek" id="hamPeek" aria-hidden="true">
     <div class="hp-bubble" id="hamPeekText"></div>
-    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=40" alt="">
+    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=41" alt="">
 </div>
 
 <!-- 대화의 문턱 연출 — 한옥 장지문 -->
@@ -1241,11 +1241,11 @@
 <!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <!-- 발화 연습 배경 — '통통(가야금)', 사용자 볼륨의 20%로 아주 은은하게 -->
-<audio id="prBgm" src="/static/practice_bgm.mp3?v=40" loop preload="none"></audio>
+<audio id="prBgm" src="/static/practice_bgm.mp3?v=41" loop preload="none"></audio>
 <!-- 단계 달성 — 전통악기 징 -->
-<audio id="gongSfx" src="/static/gong.mp3?v=40" preload="auto"></audio>
+<audio id="gongSfx" src="/static/gong.mp3?v=41" preload="auto"></audio>
 <!-- 주제 대화·자유 수다 진행 중 배경 — 「How are you 가야금」 -->
-<audio id="chatBgm" src="/static/chat_bgm.mp3?v=40" loop preload="none"></audio>
+<audio id="chatBgm" src="/static/chat_bgm.mp3?v=41" loop preload="none"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -1257,7 +1257,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v40 (2026-07-27)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v41 (2026-07-27)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -1398,6 +1398,7 @@
     const CONNECT_TIMEOUT_MS = 25000;   // 이만큼 못 붙으면 끊고 다시 시도할지 묻는다
     let connectStartedAt = 0;
     let lastCloseInfo = "";   // 마지막 연결 실패 사유 (안내·진단용)
+    let connectTicker = null;  // 연결 대기 초 표시
     let isTalking = false;     // push-to-talk: 버튼을 누르고 있는 동안만 true
     let pttHeld = false;       // 손가락이 실제로 버튼 위에 눌려 있는지
     let pttSafety = null;      // 뗀 신호를 놓쳤을 때 강제 종료
@@ -2053,7 +2054,7 @@
 
     /* ── 홈의 호아랑 이미지를 랜덤으로 계속 교체 ── */
     const homeHamImg = homeHam.querySelector("img");
-    const HOME_HAM_IMGS = ["/static/ham_idle.png?v=40", "/static/ham_smile.png?v=40", "/static/ham_surprised.png?v=40", "/static/ham_shy.png?v=40"];
+    const HOME_HAM_IMGS = ["/static/ham_idle.png?v=41", "/static/ham_smile.png?v=41", "/static/ham_surprised.png?v=41", "/static/ham_shy.png?v=41"];
     function homeImgTick() {
         if (document.body.dataset.screen !== "home" || !homeHamImg) return;
         const others = HOME_HAM_IMGS.filter(s => !homeHamImg.src.endsWith(s));
@@ -3605,12 +3606,22 @@
     }
 
     function startSession() {
+        const WS_STATE = ["연결중", "열림", "닫는중", "닫힘"];
+        console.log("[대화] 시작 요청 —", {
+            대화중: isConnected, 소켓: ws ? WS_STATE[ws.readyState] : "없음",
+            모드: mode, 계획: rpId || "-",
+        });
         // 이미 붙어 있거나 붙는 중이면 다시 열지 않는다 (연타 → 이중 세션 방지).
         // 단, 오래 매달려 있는 연결은 죽은 것으로 보고 정리한 뒤 새로 연다.
-        if (isConnected) return;
-        if (ws && ws.readyState === WebSocket.OPEN) return;
+        if (isConnected) { console.warn("[대화] 이미 대화 중 — 요청 무시"); return; }
+        if (ws && ws.readyState === WebSocket.OPEN) { console.warn("[대화] 소켓이 이미 열려 있음 — 요청 무시"); return; }
         if (ws && ws.readyState === WebSocket.CONNECTING) {
-            if (Date.now() - connectStartedAt < CONNECT_TIMEOUT_MS) return;   // 아직 기다리는 중
+            const waited = Date.now() - connectStartedAt;
+            if (waited < CONNECT_TIMEOUT_MS) {
+                console.warn("[대화] 아직 연결 시도 중(" + Math.round(waited / 1000) + "초째) — 요청 무시");
+                return;
+            }
+            console.warn("[대화] 죽은 연결 정리 후 재시도");
             try { ws.onopen = ws.onclose = ws.onerror = ws.onmessage = null; ws.close(); } catch (e) {}
             ws = null;
         }
@@ -3631,6 +3642,16 @@
         ws.binaryType = "arraybuffer"; // 오디오는 바이너리 프레임 (base64 오버헤드 제거)
         let sessionOpened = false;     // 한 번이라도 붙었는지 (연결 실패 판별용)
         connectStartedAt = Date.now();
+        console.log("[대화] 소켓 생성 —", ws.url);
+        // 연결이 몇 초째인지 상태줄에 함께 보여 준다 (멈춘 것과 기다리는 것을 구분)
+        clearInterval(connectTicker);
+        connectTicker = setInterval(() => {
+            if (sessionOpened || !ws || ws.readyState !== WebSocket.CONNECTING) { clearInterval(connectTicker); return; }
+            const sec = Math.round((Date.now() - connectStartedAt) / 1000);
+            const base = sec >= 3 ? t("stWaking") : t("stConnecting");
+            statusText.textContent = base + " (" + sec + "초)";
+            headerStatus.textContent = base + " (" + sec + "초)";
+        }, 1000);
         // 3초가 지나도 안 붙으면 '서버를 깨우는 중'이라고 알려 준다 (멈춘 게 아니라는 신호)
         const wakeMsg = setTimeout(() => { if (!sessionOpened) setStatus("connecting", "stWaking"); }, 3000);
         // 정해진 시간이 지나도 못 붙으면 매달려 있지 않고 끊고 안내한다
@@ -3651,8 +3672,10 @@
         ws.onopen = async () => {
           try {
             sessionOpened = true;
+            clearInterval(connectTicker);
             clearTimeout(wakeMsg);
             clearTimeout(connectGuard);
+            console.log("[대화] 연결됨 — " + (Date.now() - connectStartedAt) + "ms");
             wokeAt = Date.now();   // 붙었다 = 서버는 깨어 있다
             flowBusy = false;      // 연결됐으니 전환 잠금 해제
             /* 상황극 세션 초기화 */
@@ -3771,6 +3794,7 @@
         };
         // 한 번도 못 붙고 끊긴 경우 = 연결 실패. 빈 대화 화면에 남겨 두지 않고 홈으로 되돌린다.
         const bail = () => {
+            clearInterval(connectTicker);
             clearTimeout(wakeMsg);
             clearTimeout(connectGuard);
             if (sessionOpened) return false;
@@ -3932,8 +3956,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png?v=40", smile: "/static/ham_smile.png?v=40",
-        surprised: "/static/ham_surprised.png?v=40", shy: "/static/ham_shy.png?v=40",
+        idle: "/static/ham_idle.png?v=41", smile: "/static/ham_smile.png?v=41",
+        surprised: "/static/ham_surprised.png?v=41", shy: "/static/ham_shy.png?v=41",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -4004,7 +4028,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png?v=40";
+                img.src = "/static/hamster.png?v=41";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");

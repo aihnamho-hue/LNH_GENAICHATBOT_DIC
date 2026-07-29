@@ -4,12 +4,12 @@
 // ★ 전략: 네트워크 우선(network-first). 예전엔 캐시 우선이라 캐릭터 이미지를
 //   교체해도 옛 이미지(마사마사 햄스터)가 계속 보이는 문제가 있었다.
 //   이제 온라인이면 항상 새 파일을 받고, 오프라인일 때만 캐시로 대체한다.
-const CACHE_NAME = 'hoarang-v19';
+const CACHE_NAME = 'hoarang-v23';
 const STATIC_ASSETS = [
-  '/static/hamster.png?v=42',
-  '/static/icon-192.png?v=42',
-  '/static/icon-512.png?v=42',
-  '/static/manifest.json?v=42'
+  '/static/hamster.png?v=46',
+  '/static/icon-192.png?v=46',
+  '/static/icon-512.png?v=46',
+  '/static/manifest.json?v=46'
 ];
 
 self.addEventListener('install', (event) => {
@@ -58,4 +58,35 @@ self.addEventListener('fetch', (event) => {
         .catch(() => caches.match(event.request))   // 오프라인 → 캐시 사용
     );
   }
+});
+
+/* ── 알림 ──
+   서버가 하루 세 번(한국시간 10·14·20시) 보내는 알림을 받아 띄운다. */
+self.addEventListener('push', (event) => {
+  let d = { title: '호아랑', body: '같이 한국어로 이야기해요!' };
+  try { if (event.data) d = Object.assign(d, event.data.json()); } catch (e) {}
+  event.waitUntil(
+    self.registration.showNotification(d.title, {
+      body: d.body,
+      icon: '/static/icon-192.png',
+      badge: '/static/icon-192.png',
+      tag: 'hoarang-daily',        // 같은 태그 = 알림이 쌓이지 않고 최신 것으로 대체
+      renotify: true,
+      data: { url: d.url || '/' },
+    })
+  );
+});
+
+/* 알림을 누르면 이미 열려 있는 창으로, 없으면 새로 연다 */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if ('focus' in c) return c.focus();
+      }
+      return self.clients.openWindow(target);
+    })
+  );
 });

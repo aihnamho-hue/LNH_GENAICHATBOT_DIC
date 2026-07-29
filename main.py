@@ -21,8 +21,8 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v42"
-APP_DATE = "2026-07-27"
+APP_VERSION = "v46"
+APP_DATE = "2026-07-29"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -1037,6 +1037,206 @@ async function play(btn, voice, style) {{
   finally {{ btn.disabled = false; btn.textContent = old; }}
 }}
 </script></body></html>""")
+
+
+# ============================================================
+# 알림(웹 푸시) — 하루 세 번 호아랑이 부른다
+#   설정: Render 환경변수에 VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT
+#   키가 없으면 기능 전체가 조용히 꺼진다(앱 동작에는 영향 없음).
+# ============================================================
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "").strip()
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "").strip()
+VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "").strip() or "mailto:namho1210@naver.com"
+PUSH_HOURS = [10, 14, 20]        # 한국시간 기준 발송 시각
+KST = datetime.timezone(datetime.timedelta(hours=9))
+_PUSH_FILE = "push_subs.json"
+_push_subs = {}                  # endpoint -> {sub, lang, name, at}
+_push_sent = set()               # 오늘 이미 보낸 (날짜, 시각) — 중복 발송 방지
+_push_lock = asyncio.Lock()
+
+# 시간대별 문구 (아침·점심·저녁) — {name}은 학습자 이름으로 치환
+PUSH_MSG = {
+    "ko": [("좋은 아침이에요!", "{name}, 오늘 한국어 한마디 해볼까요?"),
+           ("잠깐 쉬어 갈까요?", "{name}, 호아랑이랑 5분만 이야기해요"),
+           ("오늘 하루 어땠어요?", "{name}, 호아랑이 기다리고 있어요")],
+    "en": [("Good morning!", "{name}, ready for a little Korean today?"),
+           ("Time for a break?", "{name}, just 5 minutes with Hoarang"),
+           ("How was your day?", "{name}, Hoarang is waiting for you")],
+    "zh": [("早上好！", "{name}，今天来说一句韩语吧？"), ("休息一下？", "{name}，和Hoarang聊5分钟"),
+           ("今天过得怎么样？", "{name}，Hoarang在等你哦")],
+    "ja": [("おはよう！", "{name}、今日も韓国語ひとこと言ってみる？"), ("ひと休みしよう？", "{name}、ホアランと5分だけ"),
+           ("今日はどうだった？", "{name}、ホアランが待ってるよ")],
+    "vi": [("Chào buổi sáng!", "{name}, hôm nay nói một câu tiếng Hàn nhé?"),
+           ("Nghỉ một chút nhé?", "{name}, 5 phút với Hoarang thôi"),
+           ("Hôm nay của bạn thế nào?", "{name}, Hoarang đang đợi bạn")],
+    "th": [("อรุณสวัสดิ์!", "{name} วันนี้พูดภาษาเกาหลีสักประโยคไหม?"),
+           ("พักสักครู่ไหม?", "{name} คุยกับ Hoarang แค่ 5 นาที"),
+           ("วันนี้เป็นยังไงบ้าง?", "{name} Hoarang รออยู่นะ")],
+    "id": [("Selamat pagi!", "{name}, coba satu kalimat bahasa Korea hari ini?"),
+           ("Istirahat sebentar?", "{name}, 5 menit saja dengan Hoarang"),
+           ("Bagaimana harimu?", "{name}, Hoarang menunggumu")],
+    "mn": [("Өглөөний мэнд!", "{name}, өнөөдөр солонгосоор нэг өгүүлбэр хэлэх үү?"),
+           ("Жаахан амарцгаая?", "{name}, Hoarang-тай ердөө 5 минут"),
+           ("Өнөөдөр ямар байсан бэ?", "{name}, Hoarang чамайг хүлээж байна")],
+    "uz": [("Xayrli tong!", "{name}, bugun bitta koreyscha gap aytamizmi?"),
+           ("Biroz dam olamizmi?", "{name}, Hoarang bilan atigi 5 daqiqa"),
+           ("Kuningiz qanday o'tdi?", "{name}, Hoarang sizni kutmoqda")],
+    "ru": [("Доброе утро!", "{name}, скажем сегодня фразу по-корейски?"),
+           ("Сделаем паузу?", "{name}, всего 5 минут с Hoarang"),
+           ("Как прошёл день?", "{name}, Hoarang тебя ждёт")],
+    "es": [("¡Buenos días!", "{name}, ¿una frase en coreano hoy?"),
+           ("¿Un descanso?", "{name}, solo 5 minutos con Hoarang"),
+           ("¿Qué tal el día?", "{name}, Hoarang te está esperando")],
+    "fr": [("Bonjour !", "{name}, une phrase en coréen aujourd'hui ?"),
+           ("Une petite pause ?", "{name}, juste 5 minutes avec Hoarang"),
+           ("Ta journée s'est bien passée ?", "{name}, Hoarang t'attend")],
+}
+
+
+def _push_ready() -> bool:
+    return bool(VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY)
+
+
+def _push_load():
+    global _push_subs
+    try:
+        with open(_PUSH_FILE, encoding="utf-8") as f:
+            _push_subs = json.load(f)
+        print(f"[알림] 저장된 구독 {len(_push_subs)}개 불러옴")
+    except Exception:
+        _push_subs = {}
+
+
+def _push_save():
+    try:
+        with open(_PUSH_FILE, "w", encoding="utf-8") as f:
+            json.dump(_push_subs, f)
+    except Exception as e:
+        print(f"[알림] 구독 저장 실패(무시): {e}")
+
+
+def _push_send_one(entry: dict, slot: int) -> bool:
+    """한 사람에게 보낸다. 구독이 죽었으면 False를 돌려 정리하게 한다."""
+    from pywebpush import webpush, WebPushException
+    lang = entry.get("lang") or "ko"
+    msgs = PUSH_MSG.get(lang) or PUSH_MSG["ko"]
+    title, body = msgs[slot % len(msgs)]
+    name = (entry.get("name") or "").strip()
+    body = body.replace("{name}, ", f"{name}, ") if name else body.replace("{name}, ", "").replace("{name}", "")
+    payload = json.dumps({"title": title, "body": body, "url": "/"})
+    try:
+        webpush(subscription_info=entry["sub"], data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": VAPID_SUBJECT})
+        return True
+    except WebPushException as e:
+        code = getattr(getattr(e, "response", None), "status_code", 0)
+        if code in (404, 410):      # 구독이 사라짐 — 목록에서 뺀다
+            return False
+        print(f"[알림] 발송 실패(계속 유지): {str(e)[:120]}")
+        return True
+    except Exception as e:
+        print(f"[알림] 발송 오류: {str(e)[:120]}")
+        return True
+
+
+async def _push_broadcast(slot: int) -> int:
+    if not _push_ready() or not _push_subs:
+        return 0
+    dead, sent = [], 0
+    for ep, entry in list(_push_subs.items()):
+        ok = await asyncio.to_thread(_push_send_one, entry, slot)
+        if ok:
+            sent += 1
+        else:
+            dead.append(ep)
+    if dead:
+        async with _push_lock:
+            for ep in dead:
+                _push_subs.pop(ep, None)
+            _push_save()
+    print(f"[알림] {len(PUSH_HOURS) and PUSH_HOURS[slot]}시 발송 — 성공 {sent} · 정리 {len(dead)}")
+    return sent
+
+
+async def _push_scheduler():
+    """1분마다 시계를 보고, 한국시간으로 정해진 시각이 되면 한 번만 보낸다."""
+    if not _push_ready():
+        print("[알림] VAPID 키가 없어 알림 기능은 꺼짐")
+        return
+    print(f"[알림] 스케줄러 시작 — 매일 {', '.join(str(h) + '시' for h in PUSH_HOURS)} (한국시간)")
+    while True:
+        try:
+            now = datetime.datetime.now(KST)
+            if now.hour in PUSH_HOURS and now.minute < 5:
+                key = (now.strftime("%Y-%m-%d"), now.hour)
+                if key not in _push_sent:
+                    _push_sent.add(key)
+                    if len(_push_sent) > 40:
+                        _push_sent.clear()
+                        _push_sent.add(key)
+                    await _push_broadcast(PUSH_HOURS.index(now.hour))
+        except Exception as e:
+            print(f"[알림] 스케줄러 오류(계속 진행): {e}")
+        await asyncio.sleep(60)
+
+
+@app.on_event("startup")
+async def _on_startup():
+    _push_load()
+    asyncio.create_task(_push_scheduler())
+
+
+@app.get("/push/key")
+async def push_key():
+    """브라우저가 구독할 때 필요한 공개키. 키가 없으면 enabled=false."""
+    return {"enabled": _push_ready(), "key": VAPID_PUBLIC_KEY, "hours": PUSH_HOURS}
+
+
+@app.post("/push/subscribe")
+async def push_subscribe(request: Request):
+    if not _push_ready():
+        return {"ok": False, "reason": "disabled"}
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="bad_json")
+    sub = (body or {}).get("sub")
+    if not isinstance(sub, dict) or not sub.get("endpoint"):
+        raise HTTPException(status_code=400, detail="bad_subscription")
+    async with _push_lock:
+        _push_subs[sub["endpoint"]] = {
+            "sub": sub,
+            "lang": _clean_str((body or {}).get("lang"), 5).lower() or "ko",
+            "name": _clean_str((body or {}).get("name"), 20),
+            "at": int(time.time()),
+        }
+        _push_save()
+    return {"ok": True, "count": len(_push_subs)}
+
+
+@app.post("/push/unsubscribe")
+async def push_unsubscribe(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="bad_json")
+    ep = (body or {}).get("endpoint") or ""
+    async with _push_lock:
+        removed = _push_subs.pop(ep, None) is not None
+        if removed:
+            _push_save()
+    return {"ok": True, "removed": removed}
+
+
+@app.get("/push/send")
+async def push_send_now(key: str = "", slot: int = 2):
+    """교사용 수동 발송 — /push/send?key=ADMIN_KEY (수업 시작 알림 등)."""
+    admin = os.environ.get("ADMIN_KEY", "").strip()
+    if not admin or key != admin:
+        raise HTTPException(status_code=403, detail="forbidden")
+    sent = await _push_broadcast(max(0, min(2, slot)))
+    return {"ok": True, "sent": sent, "subscribers": len(_push_subs)}
 
 
 @app.get("/healthz")

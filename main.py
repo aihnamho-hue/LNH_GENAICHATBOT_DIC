@@ -6,6 +6,7 @@ import time
 import datetime
 import re
 import hashlib
+from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
@@ -21,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v48"
+APP_VERSION = "v49"
 APP_DATE = "2026-07-29"
 
 app = FastAPI()
@@ -1237,6 +1238,30 @@ async def push_send_now(key: str = "", slot: int = 2):
         raise HTTPException(status_code=403, detail="forbidden")
     sent = await _push_broadcast(max(0, min(2, slot)))
     return {"ok": True, "sent": sent, "subscribers": len(_push_subs)}
+
+
+@app.get("/home-loops")
+async def home_loops():
+    """홈 배경으로 쓸 루프 영상 목록.
+
+    static/ 안의 `home_loop*.mp4`를 그대로 훑어서 돌려준다.
+    새 영상을 만들면 파일만 넣으면 되고 코드는 고칠 필요가 없다.
+    같은 이름의 .jpg가 있으면 포스터(흐린 배경막)로 함께 쓴다.
+    """
+    out = []
+    try:
+        d = Path("static")
+        for p in sorted(d.glob("home_loop*.mp4")):
+            jpg = p.with_suffix(".jpg")
+            out.append({
+                "mp4": f"/static/{p.name}",
+                "jpg": f"/static/{jpg.name}" if jpg.exists() else "",
+            })
+    except Exception:
+        pass
+    if not out:
+        out = [{"mp4": "/static/home_loop.mp4", "jpg": "/static/home_loop.jpg"}]
+    return {"loops": out}
 
 
 @app.get("/healthz")

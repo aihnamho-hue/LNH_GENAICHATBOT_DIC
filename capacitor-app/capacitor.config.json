@@ -1,0 +1,12 @@
+{
+  "appId": "com.hoarang.app",
+  "appName": "호아랑",
+  "webDir": "www",
+  "server": {
+    "url": "https://REPLACE-WITH-YOUR-RENDER-URL.onrender.com",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

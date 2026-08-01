@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.hoarang.app",
+        "sha256_cert_fingerprints": ["8E:0D:40:62:A5:0F:76:A7:E9:E7:4B:0A:09:92:02:70:E9:09:E5:7B:F5:41:A0:2C:4F:9B:19:0B:1C:5D:55:F7"]
+      }
+    }]

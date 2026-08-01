@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v49"
+APP_VERSION = "v52"
 APP_DATE = "2026-07-29"
 
 app = FastAPI()
@@ -1238,6 +1238,61 @@ async def push_send_now(key: str = "", slot: int = 2):
         raise HTTPException(status_code=403, detail="forbidden")
     sent = await _push_broadcast(max(0, min(2, slot)))
     return {"ok": True, "sent": sent, "subscribers": len(_push_subs)}
+
+
+# ══════════ APK 배포 (안드로이드) ══════════
+# 안드로이드는 PWA 설치가 '크롬 바로가기'로 떨어지는 일이 잦아, 진짜 앱 파일을 직접 나눠 준다.
+# PWABuilder로 만든 hoarang.apk 를 static/ 에 넣으면 아래 주소로 받을 수 있다.
+APK_PATH = Path("static/hoarang.apk")
+
+
+@app.get("/app-info")
+async def app_info():
+    """관문 화면이 'APK를 줄 수 있는 상태인가'를 확인하는 곳."""
+    ok = APK_PATH.exists()
+    return {
+        "apk": "/download/hoarang.apk" if ok else "",
+        "size": APK_PATH.stat().st_size if ok else 0,
+        "version": APP_VERSION,
+    }
+
+
+@app.get("/download/hoarang.apk")
+@app.head("/download/hoarang.apk")   # 일부 다운로드 관리자가 HEAD로 먼저 물어본다
+async def download_apk():
+    """APK 내려받기. 안드로이드가 '설치'로 이어 가도록 MIME 타입을 정확히 준다."""
+    if not APK_PATH.exists():
+        raise HTTPException(status_code=404, detail="APK not uploaded yet")
+    return FileResponse(
+        APK_PATH,
+        media_type="application/vnd.android.package-archive",
+        filename="hoarang.apk",
+    )
+
+
+@app.get("/.well-known/assetlinks.json")
+async def assetlinks():
+    """Digital Asset Links — APK(TWA)가 이 사이트의 '정식 앱'임을 증명한다.
+
+    이게 맞아야 앱 위에 주소창이 뜨지 않는다.
+    PWABuilder가 준 assetlinks.json 을 static/ 에 그대로 넣거나,
+    지문(SHA-256)만 환경변수 TWA_FINGERPRINT 에 넣어도 된다.
+    """
+    f = Path("static/assetlinks.json")
+    if f.exists():
+        return FileResponse(f, media_type="application/json")
+    fp = os.getenv("TWA_FINGERPRINT", "").strip()
+    pkg = os.getenv("TWA_PACKAGE", "com.hoarang.app").strip()
+    if not fp:
+        raise HTTPException(status_code=404, detail="assetlinks not configured")
+    return [{
+        "relation": ["delegate_permission/common.handle_all_urls"],
+        "target": {
+            "namespace": "android_app",
+            "package_name": pkg,
+            "sha256_cert_fingerprints": [x.strip() for x in fp.split(",") if x.strip()],
+        },
+    }]
 
 
 @app.get("/home-loops")

@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v52"
+APP_VERSION = "v54"
 APP_DATE = "2026-07-29"
 
 app = FastAPI()
@@ -1250,9 +1250,19 @@ APK_PATH = Path("static/hoarang.apk")
 async def app_info():
     """관문 화면이 'APK를 줄 수 있는 상태인가'를 확인하는 곳."""
     ok = APK_PATH.exists()
+    if not ok:
+        return {"apk": "", "size": 0, "mb": "", "sha256": "", "version": APP_VERSION}
+    n = APK_PATH.stat().st_size
+    # 파일이 도중에 잘렸는지 확인할 수 있도록 지문도 함께 준다(설치 실패 진단용)
+    h = hashlib.sha256()
+    with open(APK_PATH, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
     return {
-        "apk": "/download/hoarang.apk" if ok else "",
-        "size": APK_PATH.stat().st_size if ok else 0,
+        "apk": "/download/hoarang.apk",
+        "size": n,
+        "mb": f"{n / 1048576:.1f}MB",
+        "sha256": h.hexdigest(),
         "version": APP_VERSION,
     }
 

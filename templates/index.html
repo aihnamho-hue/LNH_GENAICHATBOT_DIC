@@ -6,26 +6,26 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json?v=54">
+    <link rel="manifest" href="/static/manifest.json?v=57">
     <meta name="theme-color" content="#4A7C74">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=54">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=54">
-    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=54" crossorigin>
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=57">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=57">
+    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=57" crossorigin>
     <style>
         /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansMedium.woff2?v=54") format("woff2");
+            src: url("/static/fonts/GmarketSansMedium.woff2?v=57") format("woff2");
             font-weight: 400 600; font-style: normal; font-display: swap;
         }
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansBold.woff2?v=54") format("woff2");
+            src: url("/static/fonts/GmarketSansBold.woff2?v=57") format("woff2");
             font-weight: 700 900; font-style: normal; font-display: swap;
         }
         :root {
@@ -36,23 +36,40 @@
             --bg: #F4F0E6;              /* 한지색 */
             --panel: #FFFDF8;           /* 미색 종이 */
             --ink: #2E3338;             /* 먹색 */
-            --muted: #726A5C;           /* 옅은 먹 */
+            --muted: #665F52;           /* 옅은 먹 — 대화창 바탕 위 대비 확보(3.50 → 4.24) */
             --accent: #4A7C74;          /* 뇌록 — 단청의 대표 청록 */
             --accent-soft: #DEE9E4;
             --navy: #2A4A55;            /* 삼청을 짙게 — 제목·강조 글자 */
             --navy-soft: #D6E2E1;
-            --danger: #B5573F;          /* 장단(주홍) */
-            --teal: #6FA79C;            /* 뇌록 밝게 */
-            --teal-soft: #DFEDE8;
+            --danger: #B5573F;          /* 장단(주홍) — 면·테두리용 */
             --sand: #D6C6A2;            /* 황토 */
             --sand-soft: #F1E9D8;
-            --rose: #B5573F;            /* 장단 */
-            --rose-soft: #F2DFD8;
-            --dan-gold: #C9922E;        /* 단청 황 */
+            --dan-gold: #C9922E;        /* 단청 황 — 면용 */
+            --pine: #2E5B3E;            /* 진녹 — 주제 대화 모드 */
+            /* ── 글자 전용 색 ──
+               면에 얹는 색과 글자에 쓰는 색을 나눈다. 단청 안료를 그대로 글자에 쓰면
+               한지 바탕(#F4F0E6)에서 대비가 4.2 정도라 초급 학습자가 읽기 어렵다.
+               먹을 섞어 어둡게 한 값 — 한지 위 대비 6.5 이상(WCAG AA 여유 통과). */
+            --accent-ink: #375D57;      /* 뇌록에 먹 — 대비 6.44 */
+            --danger-ink: #87412F;      /* 장단에 먹 — 대비 6.53 (교정·오류 표시) */
             --kakao-bg: #C7D5C4;        /* 대화창 바탕 — 옅은 뇌록빛(흰 말풍선이 뜨도록 살짝 진하게) */
             --kakao-yellow: #E0B84C;
             --shadow: 0 10px 34px -12px rgba(58, 48, 34, 0.26);
+            /* 그림자는 검정이 아니라 먹빛으로 — 한지 바탕에서 검정은 탁하게 가라앉는다 */
+            --shadow-s: 0 2px 8px -3px rgba(58, 48, 34, 0.16);
+            --shadow-m: 0 8px 22px -10px rgba(58, 48, 34, 0.24);
+            --shadow-l: 0 18px 44px -16px rgba(58, 48, 34, 0.32);
+            /* 모서리 — 한옥 처마처럼 부드럽되 완전한 원은 아니게 */
+            --r-s: 10px; --r-m: 16px; --r-l: 22px;
             --font-ui: "GmarketSans", -apple-system, "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", sans-serif;
+            /* ── 두 겹 글자 크기 ──
+               초급 학습자는 모국어 UI는 훑어보지만 한국어 문장은 글자 하나씩 해독한다.
+               인지 부담이 다르므로 크기 층을 나눈다. 라벨과 연습 문장이 같은 크기면
+               '무엇을 읽어야 하는지'부터 판단해야 해서 부담이 두 배가 된다.
+                 UI 층   = 안내·라벨·버튼      11 / 13 / 15
+                 학습 층 = 한국어 문장·말풍선  16 / 18 / 21  ← 반드시 이쪽 */
+            --t-ui-s: 11px;  --t-ui-m: 13px;  --t-ui-l: 15px;   /* --t-ui-l = 화면 제목·굵은 라벨 */
+            --t-ko-s: 16px;  --t-ko-m: 18px;  --t-ko-l: 21px;
             /* 화면 크기별 UI 배율 — 교실 스크린(PC·프로젝터)에서 글자가 작아 안 보이던 문제 해결.
                폰은 1.0 그대로, 데스크톱부터 단계적으로 확대한다. */
             --ui-zoom: 1;
@@ -71,9 +88,12 @@
         /* 단청 오방색 띠 — 청·황·적·백·흑. 패널 맨 위에 3px 한 줄만 얹는다 */
         .dancheong-top {
             background:
+                /* 오방색을 칸으로 자르지 않고 서로 스미게 두면 띠 하나로 읽힌다.
+                   단청을 옮기되 장식이 아니라 마감선이 되게 하는 것 — 절제가 곧 세련. */
                 linear-gradient(90deg,
-                    var(--accent) 0 20%, var(--dan-gold) 20% 40%, var(--danger) 40% 60%,
-                    #EFE6D2 60% 80%, #4A4740 80% 100%) top left / 100% 3px no-repeat,
+                    var(--accent) 0%, var(--accent) 14%, var(--dan-gold) 30%,
+                    var(--danger) 48%, #E4D8BE 66%, #4A4740 88%, #4A4740 100%)
+                    top left / 100% 2.5px no-repeat,
                 var(--panel);
         }
         /* 화면 확대는 '내용 블록'에만 건다. 전체 화면을 덮는 배경막(position:fixed)은
@@ -118,8 +138,8 @@
         .pause-overlay { position: absolute; inset: 0; z-index: 3; display: none; align-items: center; justify-content: center; font-size: 54px; background: rgba(255,255,255,0.35); border-radius: 20px; }
         .stage.paused .pause-overlay { display: flex; }
 
-        .status { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--navy); }
-        .status .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); transition: background 0.25s, box-shadow 0.25s; }
+        .status { display: flex; align-items: center; gap: 9px; font-size: var(--t-ui-m); font-weight: 700; color: var(--navy); letter-spacing: -0.2px; }
+        .status .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); transition: background 0.25s, box-shadow 0.25s; }
         .status .dot.listening { background: var(--navy); box-shadow: 0 0 0 4px var(--navy-soft); }
         .status .dot.speaking { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); animation: pulse 0.9s ease-in-out infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
@@ -186,23 +206,26 @@
         .ptt-label { min-width: 0; }
 
         /* 주제 대화에서는 진녹색 버튼 (자유 수다는 장단 주홍) */
-        body[data-mode="rp"] .ptt-btn, body[data-mode="rp"] .pr-mic { background: #2E5B3E; }
+        /* 주제 대화는 진녹(송화색 계열) — 자유 수다의 장단과 한눈에 구분되게 */
+        body[data-mode="rp"] .ptt-btn, body[data-mode="rp"] .pr-mic { background: var(--pine); }
+        body[data-mode="rp"] .ptt-btn:hover:not(:disabled) { background: #295137; }
+        body[data-mode="rp"] .ptt-btn.talking { background: #23472F; box-shadow: 0 0 0 6px rgba(46,91,62,0.26); }
         body[data-mode="rp"] .ptt-btn:hover:not(:disabled),
         body[data-mode="rp"] .pr-mic:hover:not(:disabled) { background: #264E34; }
         body[data-mode="rp"] .ptt-btn.talking, body[data-mode="rp"] .pr-mic.rec {
             background: #1F4029; box-shadow: 0 0 0 6px rgba(46,91,62,0.30); }
 
-        .ptt-hint { margin: 6px 12px 0; font-size: 11px; line-height: 1.4; color: var(--muted); text-align: center; }
+        .ptt-hint { font-size: var(--t-ui-s); margin: 6px 12px 0; font-size: 11px; line-height: 1.4; color: var(--muted); text-align: center; }
 
         /* 빠른 요청 버튼 — 대화창(채팅 패널) 하단 배치 */
         .quick-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px 10px; background: rgba(255,255,255,0.35); }
         @media (max-width: 480px) { .quick-bar { grid-template-columns: 1fr 1fr; } }
-        .quick-btn { border: 1.5px solid var(--accent-soft); background: #EAF0EB; color: var(--accent); border-radius: 12px; padding: 7px 4px; font-size: 11px; font-weight: 700; cursor: pointer; transition: transform 0.12s, background 0.2s; line-height: 1.3; }
+        .quick-btn { border: 1.5px solid var(--accent-soft); background: #EAF0EB; color: var(--accent-ink); border-radius: 12px; padding: 7px 4px; font-size: 11px; font-weight: 700; cursor: pointer; transition: transform 0.12s, background 0.2s; line-height: 1.3; }
         .quick-btn:hover:not(:disabled) { transform: translateY(-1px); background: var(--accent-soft); }
         .quick-btn:active:not(:disabled) { transform: scale(0.96); }
         .quick-btn:disabled { opacity: 0.35; cursor: default; }
 
-        .action-btn { width: 100%; border: none; border-radius: 999px; padding: 12px 18px; font-size: 13px; font-weight: 800; color: #fff; background: var(--navy); cursor: pointer; transition: transform 0.15s, background 0.2s; box-shadow: 0 6px 16px -6px rgba(61,90,128,0.55); }
+        .action-btn { width: 100%; border: none; border-radius: 999px; padding: 12px 18px; font-size: 13px; font-weight: 800; color: #fff; background: var(--navy); cursor: pointer; transition: transform 0.15s, background 0.2s; box-shadow: 0 6px 16px -6px rgba(58,48,34,0.34); }
         .action-btn:hover { transform: translateY(-1px); }
         .action-btn.recording { background: var(--danger); }
         .main-controls { display: flex; gap: 8px; width: 100%; }
@@ -226,20 +249,20 @@
         .chat-log::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 4px; }
         .empty-state { margin: auto; text-align: center; color: #6E6357; font-size: 13px; line-height: 1.7; }
         .empty-state .emoji { font-size: 32px; display: block; margin-bottom: 10px; }
-        .msg-row { display: flex; align-items: flex-end; gap: 6px; }
+        .msg-row { display: flex; align-items: flex-end; gap: 8px; }
         .msg-row.user { flex-direction: row-reverse; }
         .msg-row .profile { width: 32px; height: 32px; border-radius: 12px; overflow: hidden; flex-shrink: 0; align-self: flex-start; background: #fff; }
         .msg-row .profile img { width: 100%; height: 100%; object-fit: cover; }
-        .msg-group { display: flex; flex-direction: column; gap: 3px; max-width: 72%; }
+        .msg-group { display: flex; flex-direction: column; gap: 4px; max-width: 76%; }
         .msg-row.user .msg-group { align-items: flex-end; }
-        .sender-name { font-size: 11px; color: #4A5A6A; margin-bottom: 2px; padding-left: 2px; }
-        .bubble { padding: 8px 12px; border-radius: 14px; font-size: 13px; line-height: 1.5; word-break: break-word; white-space: pre-wrap; box-shadow: 0 1px 1px rgba(0,0,0,0.06); }
+        .sender-name { font-size: var(--t-ui-s); color: #4A5A6A; margin-bottom: 2px; padding-left: 2px; }
+        .bubble { padding: 11px 15px; border-radius: var(--r-m); font-size: var(--t-ko-s); line-height: 1.62; word-break: break-word; white-space: pre-wrap; box-shadow: var(--shadow-s); }
         .msg-row.ai .bubble { background: #FFFFFF; border-top-left-radius: 4px; }
         /* 내 발화도 흰 바탕. 상대(호아랑)와는 위치·프로필·뇌록 테두리로 구분한다 */
         .msg-row.user .bubble { background: #FFFFFF; color: var(--ink); border-top-right-radius: 4px;
             border: 1.5px solid #8FB3A7; }
         .bubble.interrupted-mark { opacity: 0.6; text-decoration: line-through; }
-        .chat-footer { padding: 8px 14px; background: rgba(255,255,255,0.55); font-size: 11px; color: #6E6357; text-align: center; }
+        .chat-footer { padding: 8px 14px; background: rgba(255,255,255,0.55); font-size: var(--t-ui-s); color: #6E6357; text-align: center; }
 
         /* ── 언어 선택 오버레이 ── */
         /* ── 앱 시작 영상 (스플래시) ── */
@@ -314,23 +337,23 @@
         .ob-in-row { display: flex; gap: 5px; align-items: stretch; }
         .ob-in-row .ob-in { flex: 1; }
         .ob-dice { display: flex; align-items: center; justify-content: center; width: 30px;
-            border: 1.5px solid var(--accent-soft); border-radius: 9px; background: var(--sand-soft); color: var(--accent); }
+            border: 1.5px solid var(--accent-soft); border-radius: 9px; background: var(--sand-soft); color: var(--accent-ink); }
         .ob-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
         .ob-fader { border: 1.5px solid var(--navy-soft); border-radius: 9px; background: var(--panel); padding: 7px 9px 6px; }
         .ob-fader .bar { display: block; position: relative; height: 4px; border-radius: 3px; background: var(--navy-soft); }
         .ob-fader .bar b { position: absolute; top: -4px; width: 12px; height: 12px; border-radius: 50%;
             background: var(--accent); transform: translateX(-50%); }
-        .ob-fader .fl { display: block; font-size: 10px; font-weight: 800; color: var(--accent); margin-top: 6px; }
+        .ob-fader .fl { display: block; font-size: 10px; font-weight: 800; color: var(--accent-ink); margin-top: 6px; }
         .ob-cta { margin-top: 2px; border-radius: 10px; background: var(--accent); color: #fff;
             font-size: 11.5px; font-weight: 800; text-align: center; padding: 8px; }
-        .ob-scene { font-size: 10px; font-weight: 800; color: var(--accent); background: var(--accent-soft);
+        .ob-scene { font-size: 10px; font-weight: 800; color: var(--accent-ink); background: var(--accent-soft);
             border-radius: 8px; padding: 5px 8px; text-align: left; }
         .ob-step { border: 1.5px solid var(--navy-soft); border-radius: 10px; padding: 6px 8px; background: var(--panel); }
         .ob-step .sh { display: flex; align-items: center; gap: 6px; }
         .ob-step .n { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); color: #fff;
             font-size: 9.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .ob-step .tx { font-size: 11.5px; font-weight: 800; color: var(--navy); }
-        .ob-step .mic { margin-left: auto; color: var(--accent); display: flex; }
+        .ob-step .mic { margin-left: auto; color: var(--accent-ink); display: flex; }
         .ob-step .sc { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
         .ob-step .sc span { font-size: 9.5px; font-weight: 700; background: var(--accent-soft);
             color: #3D4B45; border-radius: 6px; padding: 2px 6px; }
@@ -338,7 +361,7 @@
         /* ⑤ 채팅 화면 · 영상통화 화면 */
         .ob-views { display: flex; gap: 10px; width: 100%; padding: 0 6px; }
         .ob-view { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        .ob-view .vh { color: var(--accent); display: flex; }
+        .ob-view .vh { color: var(--accent-ink); display: flex; }
         .ob-view .vb { width: 100%; height: 92px; border-radius: 12px; border: 1.5px solid var(--navy-soft);
             background: var(--kakao-bg); padding: 8px; display: flex; flex-direction: column; gap: 5px; }
         .ob-view .bb { height: 13px; border-radius: 7px; background: #fff; width: 74%; }
@@ -362,7 +385,7 @@
         @keyframes obVu { 0%, 100% { transform: scaleY(0.45); } 50% { transform: scaleY(1); } }
         .ob-help { margin-top: 10px; display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--accent-soft);
             border-radius: 12px; padding: 9px 11px; background: var(--panel); font-size: 12.5px;
-            font-weight: 700; color: var(--accent); text-align: left; }
+            font-weight: 700; color: var(--accent-ink); text-align: left; }
         @media (prefers-reduced-motion: reduce) {
             .ob-stage > * { animation-duration: 0.01s; }
             .ob-vu i { animation: none; }
@@ -411,21 +434,21 @@
         .voice-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; text-align: left; }
         .voice-item { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--navy-soft);
             border-radius: 13px; padding: 10px 12px; background: #fff; cursor: pointer; transition: border-color .15s, background .15s; }
-        .voice-item:hover { border-color: var(--accent); }
-        .voice-item.on { border-color: var(--accent); background: var(--accent-soft); }
+        .voice-item:hover { border-color: var(--accent-ink); }
+        .voice-item.on { border-color: var(--accent-ink); background: var(--accent-soft); }
         .voice-item .vi-emoji { font-size: 20px; flex-shrink: 0; }
         .voice-item .vi-txt { flex: 1; min-width: 0; }
         .voice-item .vi-name { font-size: 13.5px; font-weight: 800; color: var(--navy); }
         .voice-item .vi-desc { font-size: 11px; color: var(--muted); margin-top: 1px; }
         .voice-item .vi-play { flex-shrink: 0; border: 1.5px solid var(--accent-soft); background: #fff;
             border-radius: 10px; width: 34px; height: 30px; font-size: 14px; cursor: pointer; }
-        .voice-item .vi-play:hover { border-color: var(--accent); }
+        .voice-item .vi-play:hover { border-color: var(--accent-ink); }
         .voice-item .vi-play:disabled { opacity: 0.45; cursor: default; }
 
         /* ── 인앱 브라우저 안내 게이트 (카톡·인스타 DM 등에서 열렸을 때) ── */
         .inapp-gate { position: fixed; inset: 0; z-index: 3000; background: rgba(35,29,26,0.72); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 18px; }
         .inapp-gate.hidden { display: none; }
-        .inapp-card { background: #fff; border-radius: 22px; padding: 26px 20px 18px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 24px 60px -20px rgba(0,0,0,0.5); max-height: calc(92vh / var(--ui-zoom)); overflow-y: auto; }
+        .inapp-card { background: var(--panel); border-radius: var(--r-l); padding: 28px 22px 20px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 24px 60px -20px rgba(0,0,0,0.5); max-height: calc(92vh / var(--ui-zoom)); overflow-y: auto; }
         .inapp-emoji { font-size: 40px; line-height: 1; margin-bottom: 8px; }
         .inapp-card h2 { margin: 0 0 10px; font-size: 18px; color: var(--navy); }
         .inapp-body { margin: 0 0 12px; font-size: 13.5px; line-height: 1.6; color: #55607A; white-space: pre-line; }
@@ -435,12 +458,12 @@
 
         .lang-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(61,44,38,0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; }
         .lang-overlay.hidden { display: none; }
-        .lang-box { border-radius: 24px; padding: 26px 22px; max-width: 540px; width: 100%; box-shadow: var(--shadow); text-align: center; max-height: calc(90vh / var(--ui-zoom)); overflow-y: auto; }
+        .lang-box { box-shadow: var(--shadow-l); border-radius: 24px; padding: 26px 22px; max-width: 540px; width: 100%; box-shadow: var(--shadow); text-align: center; max-height: calc(90vh / var(--ui-zoom)); overflow-y: auto; }
         .lang-box h2 { margin: 0 0 4px; font-size: 17px; }
         .lang-box p { margin: 0 0 16px; font-size: 12px; color: var(--muted); }
         .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
         .lang-item { display: flex; align-items: center; gap: 9px; border: 1.5px solid var(--accent-soft); background: #F7F4EC; border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 700; color: var(--ink); cursor: pointer; transition: transform 0.12s, border-color 0.2s, background 0.2s; text-align: left; }
-        .lang-item:hover { transform: translateY(-1px); border-color: var(--accent); background: #EAF0EB; }
+        .lang-item:hover { transform: translateY(-1px); border-color: var(--accent-ink); background: #EAF0EB; }
         .lang-item .flag { font-size: 20px; }
 
         /* ── 녹음 동의 모달 ── */
@@ -487,7 +510,7 @@
         .stage-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
         .stage-chip { font-size: 10px; font-weight: 700; border-radius: 8px; padding: 2px 7px; background: #EDE8DC; color: #7A8AA0; border: 1px solid #E0E7EF; }
         .stage-chip.done { background: #DDF3E4; color: #2E7D4F; border-color: #BCE5CB; }
-        .score-big { font-size: 44px; font-weight: 900; color: var(--accent); margin: 6px 0 0; }
+        .score-big { font-size: 44px; font-weight: 900; color: var(--accent-ink); margin: 6px 0 0; }
         .score-sub { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
         .result-stages { text-align: left; margin: 0 0 14px; display: flex; flex-direction: column; gap: 5px; }
         .result-stages div { font-size: 12px; font-weight: 700; }
@@ -500,11 +523,40 @@
         .dice-btn { border: 1.5px solid var(--accent-soft); background: #EAF0EB; border-radius: 10px; width: 42px; font-size: 17px; cursor: pointer; flex-shrink: 0; transition: transform 0.15s; }
         .dice-btn:hover:not(:disabled) { transform: rotate(-18deg) scale(1.08); }
         .dice-btn:disabled { opacity: 0.35; cursor: default; }
-        .rp-style-hint { color: #3D4B45; background: var(--accent-soft); border-radius: 8px; padding: 4px 10px; display: inline-block; }
+        .rp-style-hint { color: var(--accent-ink); background: var(--accent-soft); border-radius: 8px; padding: 4px 10px; display: inline-block; }
         /* 추천 예시를 입력창 아래에 '전부' 보이도록(플레이스홀더는 잘려서 안 보이던 문제) — 탭하면 채워짐 */
-        .sg-hint { margin-top: 5px; font-size: 12px; line-height: 1.45; color: #3D4B45; background: var(--accent-soft); border-radius: 9px; padding: 6px 10px; cursor: pointer; word-break: break-word; white-space: normal; transition: background 0.15s; }
+        .sg-hint { margin-top: 6px; font-size: var(--t-ko-s); line-height: 1.55; color: var(--accent-ink); background: var(--accent-soft); border-radius: var(--r-s); padding: 9px 13px; cursor: pointer; word-break: break-word; white-space: normal; transition: background 0.15s; }
         .sg-hint:hover { background: var(--accent); color: #fff; }
         .sg-hint .sg-tap { opacity: 0.7; font-weight: 700; margin-left: 4px; }
+
+        /* ── 키보드 초점 ──
+           교실 PC에서 탭 키로 조작할 때 지금 어디에 있는지 보이게 한다.
+           마우스 클릭에는 뜨지 않도록 :focus-visible만 쓴다. */
+        :focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 3px; border-radius: 4px; }
+        .home-card:focus-visible, .action-btn:focus-visible, .ptt-btn:focus-visible { outline-offset: 4px; }
+
+        /* ── 턴 신호 — 지금 누구 차례인지 화면 가장자리로 알린다 ──
+           음성 대화에서 가장 중요한 정보는 "지금 내가 말할 차례인가"인데,
+           그동안 12px 글자와 9px 점으로만 알렸다. 화면에서 제일 작은 것이
+           제일 중요한 정보였던 셈. 가장자리에 얹으면 글자를 안 봐도 주변시로 안다.
+           한지 창에 빛이 스미는 정도로만 — 대화를 가리지 않는다. */
+        .turn-edge { position: fixed; inset: 0; z-index: 60; pointer-events: none;
+            opacity: 0; transition: opacity 0.5s ease; }
+        body[data-screen="chat"][data-turn="listening"] .turn-edge {
+            opacity: 1;
+            box-shadow: inset 0 0 0 2.5px rgba(74,124,116,0.55),
+                        inset 0 0 46px -10px rgba(74,124,116,0.42);
+            animation: turn-breathe 3.4s ease-in-out infinite;
+        }
+        body[data-screen="chat"][data-turn="speaking"] .turn-edge {
+            opacity: 1;
+            box-shadow: inset 0 0 0 2px rgba(201,146,46,0.32),
+                        inset 0 0 40px -14px rgba(201,146,46,0.30);
+        }
+        @keyframes turn-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.52; } }
+        @media (prefers-reduced-motion: reduce) {
+            body[data-screen="chat"][data-turn="listening"] .turn-edge { animation: none; }
+        }
 
         /* ── 단계 달성 연출: 한옥 장지문 ──
            징 소리와 함께 창호지 문 두 짝이 스르륵 닫혔다가 다시 열린다.
@@ -597,7 +649,7 @@
         /* ── 발화 연습 (듣고 따라 말하기 → 말차례 교환) ── */
         .stage-item.clickable { cursor: pointer; transition: transform 0.12s, border-color 0.2s, box-shadow 0.2s; }
         /* 첫 단계 박스: 눌러보라고 살짝 흔들며 강조 (호버/포커스 시 멈춤) */
-        .stage-item.nudge { animation: stageNudge 1.9s ease-in-out infinite; border-color: var(--accent); box-shadow: 0 4px 14px -6px rgba(74,124,116,0.45); }
+        .stage-item.nudge { animation: stageNudge 1.9s ease-in-out infinite; border-color: var(--accent-ink); box-shadow: 0 4px 14px -6px rgba(74,124,116,0.45); }
         .stage-item.nudge:hover { animation: none; }
         @keyframes stageNudge {
             0%, 62%, 100% { transform: translateX(0) scale(1); }
@@ -607,7 +659,7 @@
             94% { transform: translateX(0) scale(1); }
         }
         @media (prefers-reduced-motion: reduce) { .stage-item.nudge { animation: none; } }
-        .stage-item.clickable:hover { transform: translateY(-1px); border-color: var(--accent); box-shadow: 0 4px 12px -6px rgba(74,124,116,0.4); }
+        .stage-item.clickable:hover { transform: translateY(-1px); border-color: var(--accent-ink); box-shadow: 0 4px 12px -6px rgba(74,124,116,0.4); }
         .st-side { float: right; display: flex; gap: 4px; align-items: center; }
         .st-mic-hint { font-size: 13px; opacity: 0.55; }
         .st-badge { font-size: 10px; font-weight: 800; color: #2E7D4F; background: #DDF3E4; border: 1px solid #BCE5CB; border-radius: 8px; padding: 2px 7px; }
@@ -617,19 +669,19 @@
         .pr-cue-row.hidden { display: none; }
         .pr-cue-row .profile { width: 42px; height: 42px; border-radius: 14px; overflow: hidden; flex-shrink: 0; background: #fff; border: 1px solid #EEE; }
         .pr-cue-row .profile img { width: 100%; height: 100%; object-fit: cover; }
-        .pr-cue-bubble { background: #EDE8DC; border-radius: 16px; border-bottom-left-radius: 4px; padding: 14px 18px; font-size: 18px; font-weight: 700; text-align: left; max-width: 88%; line-height: 1.55; }
-        .pr-target { position: relative; font-size: 17px; font-weight: 800; line-height: 1.55; background: #FFFBF0; border: 1.5px solid var(--kakao-yellow); border-radius: 14px; border-bottom-right-radius: 4px; padding: 13px 15px; margin: 16px 0 8px; }
+        .pr-cue-bubble { background: #EDE8DC; border-radius: 18px; border-bottom-left-radius: 5px; padding: 16px 20px; font-size: var(--t-ko-m); font-weight: 700; text-align: left; max-width: 88%; line-height: 1.55; }
+        .pr-target { position: relative; font-size: var(--t-ko-l); font-weight: 800; line-height: 1.5; background: #FFFBF0; border: 1.5px solid var(--sand); border-radius: 14px; border-bottom-right-radius: 4px; padding: 13px 15px; margin: 16px 0 8px; }
         .pr-listen-btn { border: 1.5px solid var(--navy-soft); background: #fff; color: var(--navy); border-radius: 10px; padding: 6px 14px; font-size: 12px; font-weight: 800; cursor: pointer; margin-top: 4px; }
         .pr-listen-btn:hover { background: var(--navy-soft); }
         /* 발화 연습 마이크 버튼: '눌러서 말하기'(.ptt-btn)와 동일한 UI(넓은 알약·네이비) */
-        .pr-mic { display: flex; align-items: center; justify-content: center; gap: 9px; border: none; width: calc(100% - 20px); max-width: 340px; height: auto; border-radius: 16px; font-size: 16px; font-weight: 800; line-height: 1.3; user-select: none; -webkit-user-select: none; touch-action: none; background: var(--danger); color: #fff; cursor: pointer; box-shadow: 0 8px 20px -8px rgba(61,90,128,0.55); transition: transform 0.1s, background 0.15s, box-shadow 0.15s; margin: 14px auto 0; padding: 18px 16px; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none; }
+        .pr-mic { display: flex; align-items: center; justify-content: center; gap: 9px; border: none; width: calc(100% - 20px); max-width: 340px; height: auto; border-radius: 16px; font-size: 16px; font-weight: 800; line-height: 1.3; user-select: none; -webkit-user-select: none; touch-action: none; background: var(--danger); color: #fff; cursor: pointer; box-shadow: 0 8px 20px -8px rgba(58,48,34,0.34); transition: transform 0.1s, background 0.15s, box-shadow 0.15s; margin: 14px auto 0; padding: 18px 16px; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none; }
         .pr-mic:hover:not(:disabled) { background: #A34E38; }
         .pr-mic.rec { background: #8E4231; animation: pulse 0.9s ease-in-out infinite; }
         .pr-mic:disabled { opacity: 0.35; cursor: default; }
         .pr-mic-label { font-size: 11px; font-weight: 700; color: var(--muted); margin: 6px 0 0; min-height: 15px; }
         .pr-feedback { min-height: 44px; margin-top: 8px; font-size: 14px; font-weight: 800; }
         .pr-feedback .fb-main.great, .pr-feedback .fb-main.ok { color: #2E7D4F; }
-        .pr-feedback .fb-main.retry { color: var(--danger); }
+        .pr-feedback .fb-main.retry { color: var(--danger-ink); }
         .pr-feedback .fb-heard { font-size: 12px; color: #6E6357; font-weight: 600; margin-top: 3px; }
         .pr-dots { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
         .pr-dot { width: 9px; height: 9px; border-radius: 50%; background: #E0D8D0; transition: background 0.25s; }
@@ -647,13 +699,19 @@
             75% { transform: translate(3px, -2px); }
             87% { transform: translate(-2px, 1px); }
         }
-        body.zap-shake { animation: zapShake 0.45s linear; }
+        /* ★ body가 아니라 패널을 흔든다.
+           <body>에 transform을 걸면 position:fixed 자식들의 기준이 바뀌고
+           스크롤 앵커링이 풀려서 화면이 맨 위로 튄다. 예전 증상의 원인. */
+        .app.zap-shake, .home-screen.zap-shake { animation: zapShake 0.45s linear; }
+        @media (prefers-reduced-motion: reduce) {
+            .app.zap-shake, .home-screen.zap-shake { animation: none; }
+        }
 
         /* ── 앱 다운로드(PWA 설치) 버튼 ── */
-        .app-dl-btn { border: none; border-radius: 999px; padding: 8px 22px; font-size: 12px; font-weight: 800; color: #fff; background: var(--navy); cursor: pointer; box-shadow: 0 4px 12px -4px rgba(61,90,128,0.55); transition: transform 0.12s; }
+        .app-dl-btn { border: none; border-radius: 999px; padding: 8px 22px; font-size: 12px; font-weight: 800; color: #fff; background: var(--navy); cursor: pointer; box-shadow: 0 4px 12px -4px rgba(58,48,34,0.34); transition: transform 0.12s; }
         .app-dl-btn:hover { transform: translateY(-1px); }
         /* 홈 맨 아래 앱 다운로드 버튼 */
-        .home-dl-btn { margin: 6px auto 0; border: none; border-radius: 999px; padding: 12px 30px; font-size: 14px; font-weight: 800; color: #fff; background: var(--navy); cursor: pointer; box-shadow: 0 8px 20px -8px rgba(61,90,128,0.6); transition: transform 0.12s, background 0.15s; }
+        .home-dl-btn { margin: 6px auto 0; border: none; border-radius: 999px; padding: 12px 30px; font-size: 14px; font-weight: 800; color: #fff; background: var(--navy); cursor: pointer; box-shadow: var(--shadow-m); transition: transform 0.12s, background 0.15s; }
         .home-dl-btn:hover { transform: translateY(-2px); background: #3A6259; }
         .home-dl-btn[hidden] { display: none; }
 
@@ -664,14 +722,23 @@
         .export-btn { padding: 10px 18px; }
         .mode-btn { padding: 11px 4px; font-size: 13px; }
         /* 핵심 인터랙션인 '눌러서 말하기'를 가장 크고 또렷하게 */
-        .ptt-btn { padding: 20px 16px; font-size: 17px; border-radius: 18px; box-shadow: 0 8px 20px -8px rgba(61,90,128,0.55); }
-        .ptt-btn:not(:disabled):not(.talking) { background: linear-gradient(180deg, #47658F, #3D5A80); }
+        /* 폰에서 버튼을 키운다. 색은 위에서 정한 것(장단 / 주제 대화 진녹색)을 그대로 쓴다 —
+           예전엔 여기서 남색 그라데이션으로 덮어써서 "버튼 색이 자꾸 바뀐다"는 문제가 났다. */
+        .ptt-btn { padding: 20px 16px; font-size: var(--t-ko-s); border-radius: var(--r-m); box-shadow: var(--shadow-m); }
         .quick-btn { padding: 9px 4px; font-size: 12px; }
-        .bubble { font-size: 16px; line-height: 1.55; } /* 대화창 가독성 — 폰트 확대 */
-        .chat-header .info h2 { font-size: 15px; }
+        .bubble { font-size: var(--t-ko-m); line-height: 1.62; } /* 폰에서 한 단계 더 — 학습 층 */
+        .chat-header .info h2 { font-size: var(--t-ui-l); }
         .progress-track { height: 12px; }
-        .progress-bar.over { box-shadow: 0 0 10px rgba(244,162,97,0.85); }
-        .rp-input:focus, .name-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(96,181,194,0.22); background: #fff; }
+        /* 100% 초과 = 확장 중. 흔들림 대신 진행 바가 계속 타오르는 것으로 알린다.
+           매 턴 흔들면 대화에 집중할 수 없다 — 놀람은 한 번, 상태는 계속. */
+        .progress-bar.over { box-shadow: 0 0 10px rgba(244,162,97,0.85);
+            animation: burn 2.2s ease-in-out infinite; }
+        @keyframes burn {
+            0%, 100% { box-shadow: 0 0 9px rgba(201,146,46,0.55); }
+            50%      { box-shadow: 0 0 18px 2px rgba(201,146,46,0.92); }
+        }
+        @media (prefers-reduced-motion: reduce) { .progress-bar.over { animation: none; } }
+        .rp-input:focus, .name-input:focus { outline: none; border-color: var(--accent-ink); box-shadow: 0 0 0 3px rgba(96,181,194,0.22); background: #fff; }
         .rp-field label { font-size: 12px; }
         .rp-input { padding: 11px 12px; font-size: 14px; }
         .dice-btn { font-size: 18px; width: 46px; }
@@ -728,12 +795,15 @@
         /* 단청 띠를 팝업과 왼쪽 패널 위쪽에 (배경으로 그려 스크롤해도 그대로) */
         .lang-box, .character-panel {
             background:
+                /* 오방색을 칸으로 자르지 않고 서로 스미게 두면 띠 하나로 읽힌다.
+                   단청을 옮기되 장식이 아니라 마감선이 되게 하는 것 — 절제가 곧 세련. */
                 linear-gradient(90deg,
-                    var(--accent) 0 20%, var(--dan-gold) 20% 40%, var(--danger) 40% 60%,
-                    #EFE6D2 60% 80%, #4A4740 80% 100%) top left / 100% 3px no-repeat,
+                    var(--accent) 0%, var(--accent) 14%, var(--dan-gold) 30%,
+                    var(--danger) 48%, #E4D8BE 66%, #4A4740 88%, #4A4740 100%)
+                    top left / 100% 2.5px no-repeat,
                 var(--panel);
         }
-        .ov-x { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border: none; border-radius: 11px; background: var(--accent-soft); color: var(--accent); font-size: 15px; font-weight: 800; cursor: pointer; z-index: 5; transition: background 0.15s, transform 0.12s; }
+        .ov-x { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border: none; border-radius: 11px; background: var(--accent-soft); color: var(--accent-ink); font-size: 15px; font-weight: 800; cursor: pointer; z-index: 5; transition: background 0.15s, transform 0.12s; }
         .ov-x:hover { background: #CBD6DC; transform: scale(1.05); }
 
         /* ── 모드 버튼 크기 차등: 주제 대화(핵심 과업) 크게, 자유 수다 작게 ── */
@@ -772,7 +842,7 @@
             width: 100%; max-width: 480px; min-height: calc(98vh / var(--ui-zoom)); gap: 12px; position: relative; text-align: center; padding: 12px 0 14px; }
         /* 상단 헤더: 제목(왼쪽) · 버튼(오른쪽) */
         .home-header { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 4px; margin-bottom: 4px; }
-        .home-title { font-size: 21px; font-weight: 900; margin: 0; color: var(--ink); letter-spacing: -0.4px; text-align: left; line-height: 1.2;
+        .home-title { font-size: var(--t-ko-l); font-weight: 900; margin: 0; color: var(--ink); letter-spacing: -0.4px; text-align: left; line-height: 1.2;
             display: flex; align-items: center; gap: 9px; min-width: 0; }
         .home-logo { width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; object-fit: cover;
             box-shadow: 0 3px 10px -4px rgba(58,48,34,0.45); }
@@ -781,7 +851,7 @@
             color: var(--ink); border-radius: 999px; height: 38px; min-width: 38px; padding: 0 13px; font-size: 12.5px;
             font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
             transition: transform 0.12s, background 0.2s, border-color 0.2s; backdrop-filter: blur(4px); }
-        .home-top .home-ico:hover { transform: translateY(-1px); background: #fff; border-color: var(--accent); }
+        .home-top .home-ico:hover { transform: translateY(-1px); background: #fff; border-color: var(--accent-ink); }
         .home-top .home-ico.icon-only { padding: 0; justify-content: center; }
         /* 좁은 화면: 라벨 숨기고 아이콘만 (버튼 넘침 방지) */
         @media (max-width: 560px) {
@@ -838,7 +908,7 @@
         .hist-list { display: flex; flex-direction: column; gap: 8px; max-height: calc(46vh / var(--ui-zoom)); overflow-y: auto; margin: 6px 0 4px; text-align: left; }
         .hist-item { border: 1.5px solid var(--accent-soft); border-radius: 12px; padding: 11px 13px; background: var(--panel);
             cursor: pointer; transition: transform 0.12s, border-color 0.2s; }
-        .hist-item:hover { transform: translateY(-1px); border-color: var(--accent); }
+        .hist-item:hover { transform: translateY(-1px); border-color: var(--accent-ink); }
         .hist-item .hi-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
         .hist-item .hi-title { font-size: 13.5px; font-weight: 800; color: var(--ink); }
         .hist-item .hi-date { font-size: 11px; color: var(--muted); font-weight: 600; flex-shrink: 0; }
@@ -853,10 +923,10 @@
         .chat-panel.slide-in { animation: chatSlideDown 0.5s cubic-bezier(.2,.8,.3,1); }
 
         /* ══════════ 영상통화 뷰 (호아랑 크게 보기) — 횡 슬라이드 ══════════ */
-        .hv-open-btn { margin-left: auto; border: 1.5px solid var(--accent-soft); background: rgba(255,255,255,0.72); color: var(--accent);
+        .hv-open-btn { margin-left: auto; border: 1.5px solid var(--accent-soft); background: rgba(255,255,255,0.72); color: var(--accent-ink);
             border-radius: 999px; height: 34px; padding: 0 13px; font-size: 12.5px; font-weight: 800; cursor: pointer; flex-shrink: 0;
             display: inline-flex; align-items: center; gap: 5px; transition: transform 0.12s, background 0.2s, border-color 0.2s; }
-        .hv-open-btn:hover:not(:disabled) { transform: translateY(-1px); background: #fff; border-color: var(--accent); }
+        .hv-open-btn:hover:not(:disabled) { transform: translateY(-1px); background: #fff; border-color: var(--accent-ink); }
         .hv-open-btn:disabled { opacity: 0.4; cursor: default; }
         /* 영상통화 — 어두운 남색이 답답해서 한지빛 밝은 화면으로 (v32) */
         .ham-view { position: fixed; inset: 0; z-index: 80; display: flex; flex-direction: column; align-items: center;
@@ -866,14 +936,14 @@
         .hv-top { width: 100%; max-width: 760px; display: flex; align-items: center; justify-content: space-between;
             padding: calc(14px + env(safe-area-inset-top)) 18px 6px; box-sizing: border-box; }
         .hv-name { color: var(--navy); font-weight: 800; font-size: 15px; }
-        .hv-back { border: 1.5px solid var(--accent-soft); background: var(--panel); color: var(--accent); border-radius: 999px; height: 38px; padding: 0 16px;
+        .hv-back { border: 1.5px solid var(--accent-soft); background: var(--panel); color: var(--accent-ink); border-radius: 999px; height: 38px; padding: 0 16px;
             font-size: 13.5px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
             box-shadow: 0 4px 12px -6px rgba(58,48,34,0.4); transition: background 0.18s, transform 0.12s; }
         .hv-back:hover { background: var(--accent-soft); transform: translateY(-1px); }
         /* 🪜 버튼 — 카드가 나오는 자리 바로 위 오른쪽에 붙여 둔다 */
         .hv-scf-btn { position: absolute; right: 12px; z-index: 41;
             bottom: calc(300px + env(safe-area-inset-bottom));
-            border: 1.5px solid var(--accent-soft); background: var(--panel); color: var(--accent); border-radius: 999px;
+            border: 1.5px solid var(--accent-soft); background: var(--panel); color: var(--accent-ink); border-radius: 999px;
             height: 40px; padding: 0 15px; font-size: 13.5px; font-weight: 800; cursor: pointer;
             display: inline-flex; align-items: center; gap: 6px; font-family: inherit;
             box-shadow: 0 6px 16px -6px rgba(58,48,34,0.45); transition: background 0.18s, transform 0.12s; }
@@ -888,7 +958,7 @@
         .hv-stage-slot .stage .stage-glow { opacity: 0.55; background: radial-gradient(circle at 50% 60%, rgba(111,167,156,0.42), transparent 72%); }
         /* 호아랑 말풍선 — 캐릭터 '머리 위'에 뜨고 꼬리는 아래(캐릭터)를 향한다 */
         .hv-caption { align-self: center; max-width: min(88%, 560px); margin: 0 0 4px; background: #fff; color: var(--ink);
-            font-size: 15.5px; font-weight: 700; line-height: 1.5; text-align: center; padding: 12px 18px; border-radius: 18px;
+            font-size: var(--t-ko-m); font-weight: 700; line-height: 1.55; text-align: center; padding: 14px 20px; border-radius: 20px;
             border: 1.5px solid #A9C4BB;
             box-shadow: 0 12px 28px -12px rgba(58,48,34,0.55); position: relative; opacity: 0; transform: translateY(-6px);
             transition: opacity 0.25s, transform 0.25s; flex-shrink: 0; }
@@ -925,7 +995,7 @@
         
         .hv-controls .ptt-btn:disabled { background: #DDD7C9; color: #6A6254; }
         .hv-controls .quick-bar { background: transparent; padding: 0; }
-        .hv-controls .quick-btn { background: var(--panel); border-color: var(--accent-soft); color: var(--accent); }
+        .hv-controls .quick-btn { background: var(--panel); border-color: var(--accent-soft); color: var(--accent-ink); }
         .hv-controls .quick-btn:disabled { opacity: 0.45; }
 
         /* ── 대화 화면 상단 접이식 "⚙️ 대화 스타일" (자유 수다에서만) ── */
@@ -973,8 +1043,8 @@
 <!-- ═══ 앱 시작 영상 (한옥 장지문이 열리고 호아랑이 나온다) ═══
      같은 세션에서 한 번만 재생하고, 끝나면 스스로 사라진다. -->
 <div class="splash" id="splash">
-    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=54">
-        <source src="/static/intro.mp4?v=54" type="video/mp4">
+    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=57">
+        <source src="/static/intro.mp4?v=57" type="video/mp4">
     </video>
     <button type="button" class="splash-skip" id="splashSkip">건너뛰기 ›</button>
 </div>
@@ -1121,7 +1191,7 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png?v=54" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=57" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
         <div class="result-cards">
             <div class="r-card score"><div class="r-label" id="rcScoreLbl"></div><div class="r-inner" id="rcScoreVal">0</div></div>
@@ -1143,7 +1213,7 @@
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png?v=54" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=57" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
@@ -1164,7 +1234,7 @@
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=54" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=57" alt="호아랑">
         <div class="freefb-icon">💬</div>
         <h2 id="freeFbTitleEl" style="margin:6px 0;">💬</h2>
         <p class="consent-text" id="freeFbBodyEl" style="text-align:center;"></p>
@@ -1176,13 +1246,14 @@
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=54" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=57" alt="호아랑"></div>
 </div>
+<div class="turn-edge" aria-hidden="true"></div>
 <!-- 배경 영상 — 화면 전체를 채우고 그 위에 글자·카드가 놓인다 -->
 <div class="home-bg" aria-hidden="true">
-    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=54" alt="">
+    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=57" alt="">
     <video class="hb-main" id="homeLoop" playsinline muted loop autoplay preload="auto"
-           poster="/static/home_loop.jpg?v=54" src="/static/home_loop.mp4?v=54"></video>
+           poster="/static/home_loop.jpg?v=57" src="/static/home_loop.mp4?v=57"></video>
     <div class="home-bg-veil"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
@@ -1190,7 +1261,7 @@
     <!-- 상단: 제목(왼쪽) · 버튼(오른쪽) -->
     <div class="home-header">
         <h1 class="home-title">
-            <img class="home-logo" src="/static/icon-192.png?v=54" alt="">
+            <img class="home-logo" src="/static/icon-192.png?v=57" alt="">
             <span id="homeTitleEl">호아랑</span>
         </h1>
         <div class="home-top">
@@ -1226,7 +1297,7 @@
 <!-- 설치 관문 — 웹으로는 쓸 수 없다. 언어를 고르고, 그 언어로 설치 안내를 받는다. -->
 <div class="inapp-gate hidden" id="installGate">
     <div class="inapp-card">
-        <img class="ig-icon" src="/static/icon-192.png?v=54" alt="">
+        <img class="ig-icon" src="/static/icon-192.png?v=57" alt="">
         <!-- ① 언어(나라) 선택 -->
         <div id="igStep1">
             <h2>🌏 언어 선택 · Select Your Language</h2>
@@ -1265,7 +1336,7 @@
 <div class="lang-overlay hidden" id="notifOverlay">
     <div class="lang-box" style="max-width:380px;">
         <button type="button" class="ov-x" id="notifX">✕</button>
-        <div class="notif-art"><img src="/static/ham_smile.png?v=54" alt=""></div>
+        <div class="notif-art"><img src="/static/ham_smile.png?v=57" alt=""></div>
         <h2 id="notifTitleEl" style="margin-bottom:8px;"></h2>
         <p class="consent-text" id="notifBodyEl" style="margin-bottom:14px;"></p>
         <div class="consent-actions">
@@ -1290,7 +1361,7 @@
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=54" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=57" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -1324,7 +1395,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png?v=54" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=57" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -1377,7 +1448,7 @@
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png?v=54" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=57" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span><svg class="ic"><use href="#ic-video"></use></svg></span><span id="hamViewBtnLbl"></span></button>
@@ -1418,7 +1489,7 @@
         <!-- 눌러서 말하기(push-to-talk): 누르는 동안만 녹음·전송, 떼면 '발화 끝'을 서버로 명시 →
              Gemini 자동감지의 30~60초 지연을 우회해 텍스트 버튼처럼 즉시 반응 -->
         <button id="pttBtn" class="ptt-btn" disabled>🎤 눌러서 말하기</button>
-        <div class="ptt-hint" hidden>⌨️ 스페이스바(꾹) · 리모컨 버튼(한 번씩 눌러 시작/종료)으로도 말할 수 있어요</div>
+        <div class="ptt-hint" id="pttKeyHintEl" hidden></div>
         <div class="quick-bar">
             <button class="quick-btn" data-qkey="qSlow" data-emoji="🐢" disabled>🐢 천천히</button>
             <button class="quick-btn" data-qkey="qAgain" data-emoji="🔁" disabled>🔁 다시 한 번</button>
@@ -1453,7 +1524,7 @@
 <!-- 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 (발화 연습 시작 등) -->
 <div class="ham-peek" id="hamPeek" aria-hidden="true">
     <div class="hp-bubble" id="hamPeekText"></div>
-    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=54" alt="">
+    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=57" alt="">
 </div>
 
 <!-- 대화의 문턱 연출 — 한옥 장지문 -->
@@ -1466,11 +1537,11 @@
 <!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <!-- 발화 연습 배경 — '통통(가야금)', 사용자 볼륨의 20%로 아주 은은하게 -->
-<audio id="prBgm" src="/static/practice_bgm.mp3?v=54" loop preload="none"></audio>
+<audio id="prBgm" src="/static/practice_bgm.mp3?v=57" loop preload="none"></audio>
 <!-- 단계 달성 — 전통악기 징 -->
-<audio id="gongSfx" src="/static/gong.mp3?v=54" preload="auto"></audio>
+<audio id="gongSfx" src="/static/gong.mp3?v=57" preload="auto"></audio>
 <!-- 주제 대화·자유 수다 진행 중 배경 — 「How are you 가야금」 -->
-<audio id="chatBgm" src="/static/chat_bgm.mp3?v=54" loop preload="none"></audio>
+<audio id="chatBgm" src="/static/chat_bgm.mp3?v=57" loop preload="none"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -1482,7 +1553,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v54 (2026-08-01)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v57 (2026-08-02)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -1546,7 +1617,7 @@
         const hp = document.getElementById("hamPeek");
         if (hp) hp.classList.remove("show");
         try { hvScaffoldHide(); } catch (e) {}
-        document.body.classList.remove("zap-shake");
+        document.querySelectorAll(".zap-shake").forEach(el => el.classList.remove("zap-shake"));
     }
     let flowBusy = false;                // 전환이 도는 동안 같은 입력을 막는다
     function flowLock(ms) {
@@ -2074,6 +2145,80 @@
              vcN:["Garçon","Fille","Homme adulte","Femme adulte","Personne âgée"], vcD:["Voix d'origine de Hoarang · lumineuse","Jeune et claire","Voix masculine posée","Voix féminine claire","Voix âgée"] },
     };
     for (const _l in I18N_VOICE) { if (I18N[_l]) Object.assign(I18N[_l], I18N_VOICE[_l]); }
+    /* 뒤늦게 발견된 번역 구멍 메우기(v57) — 한국어만 있어 다른 언어에서 한국어가 그대로 나오던 것들.
+       ① sgTapFill  추천 발화 칩의 '눌러 채우기'
+       ② rpTopic*   주제 대화 설정의 주제 칸 (영어·중국어만 있었다)
+       ③ appDl*     홈의 앱 설치 안내창 */
+    const I18N_FILL = {
+        en: { sgTapFill:"Tap to fill",
+              appDlTitle:"📱 Install as an app", appDlInstall:"Install now", appDlClose:"Close",
+              appDlBody:"Add it to your home screen to use it full-screen like an app.\n\n📱 iPhone (Safari): Share ⬆️ → 'Add to Home Screen'\n🤖 Android (Chrome): Menu ⋮ → 'Install app' (or 'Add to Home screen')\n💻 PC (Chrome·Edge): Click the install icon ⊕ in the address bar" },
+        zh: { sgTapFill:"点击填入",
+              appDlTitle:"📱 安装为应用", appDlInstall:"立即安装", appDlClose:"关闭",
+              appDlBody:"添加到主屏幕后就能像应用一样全屏使用。\n\n📱 iPhone（Safari）：分享 ⬆️ →「添加到主屏幕」\n🤖 安卓（Chrome）：菜单 ⋮ →「安装应用」（或「添加到主屏幕」）\n💻 电脑（Chrome·Edge）：点击地址栏右侧的安装图标 ⊕" },
+        ja: { sgTapFill:"タップして入力", rpTopicLbl:"テーマ（必須）", rpTopicPh:"例）服屋さんで買い物する",
+              appDlTitle:"📱 アプリとして入れる", appDlInstall:"今すぐインストール", appDlClose:"閉じる",
+              appDlBody:"ホーム画面に追加すると、アプリのように全画面で使えます。\n\n📱 iPhone（Safari）：共有 ⬆️ →「ホーム画面に追加」\n🤖 Android（Chrome）：メニュー ⋮ →「アプリをインストール」（または「ホーム画面に追加」）\n💻 PC（Chrome・Edge）：アドレスバー右のインストールアイコン ⊕" },
+        vi: { sgTapFill:"Chạm để điền", rpTopicLbl:"Chủ đề (bắt buộc)", rpTopicPh:"vd) Mua đồ ở cửa hàng quần áo",
+              appDlTitle:"📱 Cài như một ứng dụng", appDlInstall:"Cài ngay", appDlClose:"Đóng",
+              appDlBody:"Thêm vào màn hình chính để dùng toàn màn hình như một ứng dụng.\n\n📱 iPhone (Safari): Chia sẻ ⬆️ → 'Thêm vào MH chính'\n🤖 Android (Chrome): Menu ⋮ → 'Cài đặt ứng dụng'\n💻 PC (Chrome·Edge): Nhấn biểu tượng cài đặt ⊕ trên thanh địa chỉ" },
+        th: { sgTapFill:"แตะเพื่อกรอก", rpTopicLbl:"หัวข้อ (จำเป็น)", rpTopicPh:"เช่น ซื้อของที่ร้านเสื้อผ้า",
+              appDlTitle:"📱 ติดตั้งเป็นแอป", appDlInstall:"ติดตั้งเลย", appDlClose:"ปิด",
+              appDlBody:"เพิ่มไว้ที่หน้าจอหลักเพื่อใช้เต็มจอเหมือนแอป\n\n📱 iPhone (Safari): แชร์ ⬆️ → 'เพิ่มไปยังหน้าจอโฮม'\n🤖 Android (Chrome): เมนู ⋮ → 'ติดตั้งแอป'\n💻 PC (Chrome·Edge): กดไอคอนติดตั้ง ⊕ ในแถบที่อยู่" },
+        id: { sgTapFill:"Ketuk untuk isi", rpTopicLbl:"Topik (wajib)", rpTopicPh:"mis. Belanja di toko baju",
+              appDlTitle:"📱 Pasang sebagai aplikasi", appDlInstall:"Pasang sekarang", appDlClose:"Tutup",
+              appDlBody:"Tambahkan ke layar utama agar bisa dipakai layar penuh seperti aplikasi.\n\n📱 iPhone (Safari): Bagikan ⬆️ → 'Tambahkan ke Layar Utama'\n🤖 Android (Chrome): Menu ⋮ → 'Pasang aplikasi'\n💻 PC (Chrome·Edge): Klik ikon pasang ⊕ di bilah alamat" },
+        mn: { sgTapFill:"Дарж бөглөх", rpTopicLbl:"Сэдэв (заавал)", rpTopicPh:"ж нь) Хувцасны дэлгүүрт худалдан авалт хийх",
+              appDlTitle:"📱 Апп болгож суулгах", appDlInstall:"Одоо суулгах", appDlClose:"Хаах",
+              appDlBody:"Үндсэн дэлгэцэд нэмбэл апп шиг бүтэн дэлгэцээр ашиглана.\n\n📱 iPhone (Safari): Хуваалцах ⬆️ → 'Үндсэн дэлгэцэд нэмэх'\n🤖 Android (Chrome): Цэс ⋮ → 'Апп суулгах'\n💻 PC (Chrome·Edge): Хаягийн мөрний суулгах дүрс ⊕" },
+        uz: { sgTapFill:"Bosib to'ldirish", rpTopicLbl:"Mavzu (majburiy)", rpTopicPh:"mas.) Kiyim do'konida xarid qilish",
+              appDlTitle:"📱 Ilova sifatida o'rnatish", appDlInstall:"Hozir o'rnatish", appDlClose:"Yopish",
+              appDlBody:"Bosh ekranga qo'shsangiz, ilovadek to'liq ekranda ishlatasiz.\n\n📱 iPhone (Safari): Ulashish ⬆️ → 'Bosh ekranga qo'shish'\n🤖 Android (Chrome): Menyu ⋮ → 'Ilovani o'rnatish'\n💻 PC (Chrome·Edge): Manzil satridagi ⊕ belgisini bosing" },
+        ru: { sgTapFill:"Нажмите, чтобы вставить", rpTopicLbl:"Тема (обязательно)", rpTopicPh:"напр. Покупки в магазине одежды",
+              appDlTitle:"📱 Установить как приложение", appDlInstall:"Установить сейчас", appDlClose:"Закрыть",
+              appDlBody:"Добавьте на главный экран, чтобы пользоваться на весь экран как приложением.\n\n📱 iPhone (Safari): Поделиться ⬆️ → «На экран Домой»\n🤖 Android (Chrome): Меню ⋮ → «Установить приложение»\n💻 ПК (Chrome·Edge): Значок установки ⊕ в адресной строке" },
+        es: { sgTapFill:"Toca para rellenar", rpTopicLbl:"Tema (obligatorio)", rpTopicPh:"ej.) Comprar en una tienda de ropa",
+              appDlTitle:"📱 Instalar como app", appDlInstall:"Instalar ahora", appDlClose:"Cerrar",
+              appDlBody:"Añádela a la pantalla de inicio para usarla a pantalla completa como una app.\n\n📱 iPhone (Safari): Compartir ⬆️ → 'Añadir a inicio'\n🤖 Android (Chrome): Menú ⋮ → 'Instalar aplicación'\n💻 PC (Chrome·Edge): Icono de instalación ⊕ en la barra de direcciones" },
+        fr: { sgTapFill:"Toucher pour remplir", rpTopicLbl:"Thème (obligatoire)", rpTopicPh:"ex.) Faire des achats dans une boutique",
+              appDlTitle:"📱 Installer comme application", appDlInstall:"Installer maintenant", appDlClose:"Fermer",
+              appDlBody:"Ajoutez-la à l'écran d'accueil pour l'utiliser en plein écran comme une application.\n\n📱 iPhone (Safari) : Partager ⬆️ → « Sur l'écran d'accueil »\n🤖 Android (Chrome) : Menu ⋮ → « Installer l'application »\n💻 PC (Chrome·Edge) : Icône d'installation ⊕ dans la barre d'adresse" },
+    };
+    for (const _l in I18N_FILL) { if (I18N[_l]) Object.assign(I18N[_l], I18N_FILL[_l]); }
+    /* 키보드·리모컨 안내(v57) — HTML에 한국어로 박혀 있어 어느 언어로 봐도 한국어였다 */
+    const I18N_KEYHINT = {
+        ko: { pttKeyHint:"⌨️ 스페이스바(꾹) · 리모컨 버튼(한 번씩 눌러 시작/종료)으로도 말할 수 있어요" },
+        en: { pttKeyHint:"⌨️ You can also talk with the Spacebar (hold) or a remote button (press to start/stop)" },
+        zh: { pttKeyHint:"⌨️ 也可以按住空格键，或用遥控器按钮（按一下开始／结束）来说话" },
+        ja: { pttKeyHint:"⌨️ スペースキー（長押し）やリモコンのボタン（1回ずつ押して開始／終了）でも話せます" },
+        vi: { pttKeyHint:"⌨️ Bạn cũng có thể nói bằng phím Space (giữ) hoặc nút điều khiển từ xa (nhấn để bắt đầu/kết thúc)" },
+        th: { pttKeyHint:"⌨️ พูดได้โดยกดค้างที่ Spacebar หรือปุ่มรีโมท (กดหนึ่งครั้งเพื่อเริ่ม/จบ)" },
+        id: { pttKeyHint:"⌨️ Bisa juga bicara dengan Spasi (tahan) atau tombol remote (tekan untuk mulai/selesai)" },
+        mn: { pttKeyHint:"⌨️ Зайн товч (дарж барих) эсвэл алсын удирдлагын товчоор (нэг дарж эхлэх/дуусгах) бас ярьж болно" },
+        uz: { pttKeyHint:"⌨️ Bo'sh joy tugmasi (bosib turing) yoki pult tugmasi (bosib boshlash/tugatish) bilan ham gapirish mumkin" },
+        ru: { pttKeyHint:"⌨️ Говорить можно и пробелом (удерживая), и кнопкой пульта (нажмите, чтобы начать/закончить)" },
+        es: { pttKeyHint:"⌨️ También puedes hablar con la barra espaciadora (mantenla pulsada) o el botón del mando (pulsa para empezar/terminar)" },
+        fr: { pttKeyHint:"⌨️ Vous pouvez aussi parler avec la barre d'espace (maintenue) ou le bouton de la télécommande (appuyez pour démarrer/arrêter)" },
+    };
+    for (const _l in I18N_KEYHINT) { if (I18N[_l]) Object.assign(I18N[_l], I18N_KEYHINT[_l]); }
+    /* 서버 오류 문구(v57) — 서버는 한국어로 보내므로 코드로 받아 화면 언어로 바꾼다.
+       키 이름 규칙: 서버가 보내는 code 앞에 err_ 를 붙인다 (err_rp_expired 등).
+       새 코드가 생겨도 사전에 키만 추가하면 자동으로 번역된다. */
+    const I18N_ERR = {
+        ko: { err_rp_expired:"대화 계획이 만료되었어요. 설정을 다시 만들어 주세요." },
+        en: { err_rp_expired:"The conversation plan has expired. Please set it up again." },
+        zh: { err_rp_expired:"对话计划已过期，请重新设置。" },
+        ja: { err_rp_expired:"会話プランの有効期限が切れました。もう一度設定してください。" },
+        vi: { err_rp_expired:"Kế hoạch hội thoại đã hết hạn. Hãy thiết lập lại nhé." },
+        th: { err_rp_expired:"แผนการสนทนาหมดอายุแล้ว กรุณาตั้งค่าใหม่" },
+        id: { err_rp_expired:"Rencana percakapan sudah kedaluwarsa. Silakan atur ulang." },
+        mn: { err_rp_expired:"Ярианы төлөвлөгөөний хугацаа дууссан. Дахин тохируулна уу." },
+        uz: { err_rp_expired:"Suhbat rejasi muddati tugadi. Qaytadan sozlang." },
+        ru: { err_rp_expired:"План разговора истёк. Пожалуйста, настройте его заново." },
+        es: { err_rp_expired:"El plan de conversación ha caducado. Configúralo de nuevo." },
+        fr: { err_rp_expired:"Le plan de conversation a expiré. Veuillez le reconfigurer." },
+    };
+    for (const _l in I18N_ERR) { if (I18N[_l]) Object.assign(I18N[_l], I18N_ERR[_l]); }
 
     let uiLang = localStorage.getItem("uiLang") || null;
     let lastStatus = null; // { state, key } — 언어 변경 시 상태 문구 갱신용
@@ -2131,6 +2276,8 @@
         document.getElementById("homeNameLbl").textContent = t("homeName");
         document.getElementById("homeHistoryLbl").textContent = t("homeHistory");
         document.getElementById("hamViewBtnLbl").textContent = t("hvOpen");
+        document.getElementById("hamViewBtn").title = t("hvOpen");   // 툴팁도 모국어로
+        document.getElementById("pttKeyHintEl").textContent = t("pttKeyHint");
         document.getElementById("hamViewCloseLbl").textContent = t("hvClose");
         document.getElementById("csbTitleEl").textContent = t("csbTitle");
         document.getElementById("freeFbCloseBtn").textContent = t("freeFbClose");
@@ -2215,7 +2362,7 @@
             const w = document.createElement("div");
             w.className = "ob-hero";
             w.innerHTML = '<img class="ob-ham" alt=""><span class="ob-hello"></span>';
-            w.querySelector("img").src = "/static/ham_smile.png?v=54";
+            w.querySelector("img").src = "/static/ham_smile.png?v=57";
             w.querySelector(".ob-hello").textContent = t("obHello");
             return w;
         },
@@ -2299,7 +2446,7 @@
             const v = w.querySelectorAll(".ob-view");
             v[0].querySelector(".vl").textContent = stripLeadEmoji(t("hvClose"));
             v[1].querySelector(".vl").textContent = stripLeadEmoji(t("hvOpen"));
-            v[1].querySelector("img").src = "/static/ham_idle.png?v=54";
+            v[1].querySelector("img").src = "/static/ham_idle.png?v=57";
             return w;
         },
         function talk() {                       // ⑥ 말하기 버튼 · 도움말 · 이어폰
@@ -3762,13 +3909,19 @@
         fxTone(c, "square", 900, 60, t0 + 0.08, 0.14, 0.04);
     }
     let zapTimer = null;
-    function screenZap() { // 화면 전체 전기 충격 셰이크 + 사운드
+    let zapDone = false;   // 한 세션에 한 번만 — 100%를 처음 넘는 순간에만 놀래킨다
+    function screenZap() {
+        if (zapDone) return;
+        zapDone = true;
         playZap();
-        document.body.classList.remove("zap-shake");
-        void document.body.offsetWidth; // 리플로우 강제 — 애니메이션 재시작
-        document.body.classList.add("zap-shake");
+        // 화면(body)이 아니라 현재 보이는 패널을 흔든다 — body를 흔들면 스크롤이 튄다
+        const el = document.querySelector('body[data-screen="home"]') ? document.querySelector(".home-screen") : document.querySelector(".app");
+        if (!el) return;
+        el.classList.remove("zap-shake");
+        void el.offsetWidth;            // 리플로우 강제 — 애니메이션 재시작
+        el.classList.add("zap-shake");
         clearTimeout(zapTimer);
-        zapTimer = setTimeout(() => document.body.classList.remove("zap-shake"), 500);
+        zapTimer = setTimeout(() => el.classList.remove("zap-shake"), 500);
     }
 
     function renderProgress() {
@@ -4702,8 +4855,14 @@
                 rpStagesState = msg.stages || rpStagesState;
                 renderProgress();
                 const nowDone = rpStagesState.filter(s => s.done).length;
-                if (rpPercent > 100 && rpPercent > prevPct) screenZap();  // 확장 중! ⚡ 화면 흔들림
-                else if (nowDone > prevDone) playDing();  // 단계 달성 — 짧은 딩동만 (문 연출은 대화 시작·종료에서만)
+                if (rpPercent > 100 && rpPercent > prevPct) {
+                    // 100%를 '처음 넘는 순간'에만 한 번 놀래킨다.
+                    // 그 뒤의 확장은 진행 바가 계속 타오르는 것(.over)으로 알린다 —
+                    // 턴마다 흔들면 대화에 집중할 수 없다.
+                    screenZap();
+                } else if (nowDone > prevDone) {
+                    playDing();   // 단계 달성 — 짧은 딩동 (문 연출은 대화 시작·종료에서만)
+                }
             } else if (msg.type === "hint") {
                 // 🪜 비계 응답 — 패널이 열려 있을 때만 표시
                 clearTimeout(scfTimer);
@@ -4716,8 +4875,12 @@
                 renderProgress();
                 if (rpEnding) concludeRoleplay();
             } else if (msg.type === "error") {
-                // 서버가 보내는 에러 코드를 사용자 언어로 표시
+                // 서버가 보내는 에러 코드를 사용자 언어로 표시.
+                // 사전에 err_<code> 키가 있으면 그것을 쓰고, 없으면 서버 문구를 그대로 보여 준다.
+                const dict = I18N[uiLang] || I18N.ko;
+                const errKey = "err_" + (msg.code || "");
                 if (msg.code === "server_full") alert(t("errFull"));
+                else if (msg.code && (errKey in dict || errKey in I18N.ko)) alert(t(errKey));
                 else alert(msg.message || t("errGeneric"));
             }
         };
@@ -4789,6 +4952,7 @@
         document.body.classList.remove("in-convo");
         progressWrap.classList.add("hidden");
         rpPercent = 0;
+        zapDone = false;   // 다음 대화에서는 100% 돌파를 다시 축하한다
         rpStagesState = [];
         progressBar.style.width = "0%";
         progressBar.classList.remove("over");
@@ -4885,8 +5049,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png?v=54", smile: "/static/ham_smile.png?v=54",
-        surprised: "/static/ham_surprised.png?v=54", shy: "/static/ham_shy.png?v=54",
+        idle: "/static/ham_idle.png?v=57", smile: "/static/ham_smile.png?v=57",
+        surprised: "/static/ham_surprised.png?v=57", shy: "/static/ham_shy.png?v=57",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -4899,6 +5063,8 @@
         statusText.textContent = t(key);
         headerStatus.textContent = t(key);
         statusDot.className = "dot " + (state === "connecting" ? "idle" : state);
+        // 화면 가장자리 턴 신호에 상태를 넘긴다 (글자를 못 봐도 차례를 알도록)
+        document.body.dataset.turn = (state === "listening" || state === "speaking") ? state : "";
         if (!stage.classList.contains("surprised") && !stage.classList.contains("paused")) {
             stage.classList.remove("listening", "speaking");
             if (state === "speaking") { stage.classList.add("speaking"); setHamExpr("smile"); }
@@ -4958,7 +5124,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png?v=54";
+                img.src = "/static/hamster.png?v=57";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");

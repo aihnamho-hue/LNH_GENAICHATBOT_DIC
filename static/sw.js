@@ -4,12 +4,12 @@
 // ★ 전략: 네트워크 우선(network-first). 예전엔 캐시 우선이라 캐릭터 이미지를
 //   교체해도 옛 이미지(마사마사 햄스터)가 계속 보이는 문제가 있었다.
 //   이제 온라인이면 항상 새 파일을 받고, 오프라인일 때만 캐시로 대체한다.
-const CACHE_NAME = 'hoarang-v34';
+const CACHE_NAME = 'hoarang-v35';
 const STATIC_ASSETS = [
-  '/static/hamster.png?v=57',
-  '/static/icon-192.png?v=57',
-  '/static/icon-512.png?v=57',
-  '/static/manifest.json?v=57'
+  '/static/hamster.png?v=58',
+  '/static/icon-192.png?v=58',
+  '/static/icon-512.png?v=58',
+  '/static/manifest.json?v=58'
 ];
 
 self.addEventListener('install', (event) => {

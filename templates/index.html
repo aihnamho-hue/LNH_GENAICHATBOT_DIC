@@ -6,26 +6,26 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json?v=59">
+    <link rel="manifest" href="/static/manifest.json?v=60">
     <meta name="theme-color" content="#4A7C74">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=59">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=59">
-    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=59" crossorigin>
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=60">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=60">
+    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=60" crossorigin>
     <style>
         /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansMedium.woff2?v=59") format("woff2");
+            src: url("/static/fonts/GmarketSansMedium.woff2?v=60") format("woff2");
             font-weight: 400 600; font-style: normal; font-display: swap;
         }
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansBold.woff2?v=59") format("woff2");
+            src: url("/static/fonts/GmarketSansBold.woff2?v=60") format("woff2");
             font-weight: 700 900; font-style: normal; font-display: swap;
         }
         :root {
@@ -521,6 +521,44 @@
         .result-stages .ok { color: #2E7D4F; }
         .result-stages .no { color: #B8A99E; }
 
+        /* ── 대화문 듣기 — 연습 전에 모델 대화를 듣고 관찰하는 화면 ── */
+        .sc-play { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%;
+            margin: 2px 0 12px; border: none; border-radius: 16px; cursor: pointer; font-family: inherit;
+            background: linear-gradient(180deg, #6FA79C, #4E8578); color: #fff;
+            font-size: 15px; font-weight: 900; padding: 14px 16px;
+            box-shadow: 0 10px 22px -10px rgba(58,48,34,0.65);
+            animation: scPulse 1.9s ease-in-out infinite; }
+        .sc-play:active { transform: scale(0.98); }
+        .sc-play .sc-play-ico { font-size: 18px; line-height: 1; }
+        /* 재생 중에는 흔들림을 멈춘다 — 들을 때 시선이 흔들리면 안 된다 */
+        .sc-play.playing { animation: none; background: linear-gradient(180deg, #C9922E, #A8791F); }
+        @keyframes scPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 10px 22px -10px rgba(58,48,34,0.65); }
+            50% { transform: scale(1.035); box-shadow: 0 14px 28px -10px rgba(78,133,120,0.75); }
+        }
+        @media (prefers-reduced-motion: reduce) { .sc-play { animation: none; } }
+        .sc-list { text-align: left; display: flex; flex-direction: column; gap: 6px; margin: 0 0 14px;
+            max-height: calc(46vh / var(--ui-zoom)); overflow-y: auto; padding: 2px; }
+        /* 기능 단계 구분선 — 어디서 단계가 바뀌는지 보인다 */
+        .sc-stage { display: flex; align-items: center; gap: 7px; margin: 6px 0 2px; }
+        .sc-stage:first-child { margin-top: 0; }
+        .sc-stage .sc-st-name { font-size: 10.5px; font-weight: 900; color: var(--accent-ink);
+            background: var(--accent-soft); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+        .sc-stage .sc-st-line { flex: 1; height: 1px; background: #E0D9C8; }
+        .sc-line { border: 1.5px solid #E7E0D2; background: #FBF9F3; border-radius: 13px;
+            padding: 8px 11px; cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.1s; }
+        .sc-line:active { transform: scale(0.99); }
+        /* 학습자가 맡을 줄 — 연습할 발화라 또렷하게 구분한다 */
+        .sc-line.mine { background: #EDF4F1; border-color: #A9C4BB; }
+        .sc-line.on { border-color: var(--dan-gold); background: #FFF6E2; }
+        .sc-who { font-size: 10px; font-weight: 900; color: var(--muted); margin-bottom: 2px; }
+        .sc-line.mine .sc-who { color: var(--accent-ink); }
+        .sc-text { font-size: var(--t-ko-s); font-weight: 700; color: var(--ink); line-height: 1.5; }
+        .sc-native { font-size: 11.5px; font-weight: 600; color: var(--muted); line-height: 1.4;
+            margin-top: 4px; display: none; }
+        .sc-line.open .sc-native { display: block; }
+        .sc-tap { font-size: 10px; font-weight: 700; color: var(--muted); text-align: center; margin: 0 0 8px; }
+
         /* ── 상호작용 대화 능력(IDC) 점검 — 결과 화면의 요소별 프로파일 ── */
         .idc-head { display: flex; align-items: baseline; gap: 6px; margin: 4px 0 8px; text-align: left; }
         .idc-head .idc-h-title { font-size: 13px; font-weight: 900; color: var(--accent-ink); }
@@ -777,8 +815,17 @@
         }
 
         /* ── 🪜 비계(스캐폴딩) 버튼·패널 ── */
-        .scf-btn { border: 1.5px solid var(--accent-soft); background: #EAF0EB; border-radius: 8px; padding: 2px 9px; font-size: 14px; cursor: pointer; transition: transform 0.12s; }
-        .scf-btn:hover { transform: translateY(-1px); }
+        /* 🪜 비계 — 빠른 요청 버튼 바로 위. 막혔을 때 눈에 바로 들어와야 한다. */
+        .scf-dock { padding: 6px 10px 0; }
+        .scf-dock.hidden { display: none; }
+        .scf-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px;
+            border: 1.5px solid #C6B27A; background: linear-gradient(180deg, #FFF6E2, #F6E7C2);
+            color: #7A5E18; border-radius: 12px; padding: 9px 12px; font-size: 13px; font-weight: 800;
+            font-family: inherit; cursor: pointer; transition: transform 0.12s, background 0.15s; }
+        .scf-btn .scf-ico { display: inline-flex; }
+        .scf-btn:hover { transform: translateY(-1px); background: linear-gradient(180deg, #FFF9EC, #F9EDD0); }
+        .scf-btn:active { transform: scale(0.99); }
+        .scf-btn:disabled { opacity: 0.45; cursor: default; }
         .scf-panel { margin-top: 7px; background: #F3F0E8; border: 1.5px solid var(--accent-soft); border-radius: 10px; padding: 8px 10px; text-align: left; }
         .scf-panel.hidden { display: none; }
         .scf-title { font-size: 11px; font-weight: 800; color: #3D4B45; margin-bottom: 5px; }
@@ -847,6 +894,15 @@
         .float-ham.speaking { box-shadow: 0 0 0 5px rgba(255,140,90,0.35), 0 8px 20px -6px rgba(61,44,38,0.35); }
         /* 플로팅 호아랑(우상단)는 제거 — 대화 화면에 불필요 */
         .float-ham { display: none !important; }
+
+        /* ── 주제 대화: 채팅 맨 위 캐릭터를 숨긴다 ──
+           화면이 위아래로 길어 채팅을 보는 동안에는 어차피 캐릭터가 시야 밖으로 나간다.
+           호아랑의 반응을 보고 싶으면 영상통화 버튼으로 크게 본다.
+           단, 노드는 그대로 두어야 영상통화가 이 무대를 옮겨다 쓸 수 있다
+           (그래서 .character-panel 안에 있을 때만 숨긴다 — 영상통화로 옮겨 가면 다시 보인다). */
+        body.rp-chat .character-panel .stage,
+        body.rp-chat .character-panel .status,
+        body.rp-chat .character-panel .title { display: none; }
 
         /* ══════════ 방안 A: 화면 상태 (home | chat | feedback) ══════════
            최상위 컨테이너 클래스 하나(body[data-screen])로 해당 블록만 보이게 토글. */
@@ -964,9 +1020,22 @@
             font-size: 13.5px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
             box-shadow: 0 4px 12px -6px rgba(58,48,34,0.4); transition: background 0.18s, transform 0.12s; }
         .hv-back:hover { background: var(--accent-soft); transform: translateY(-1px); }
-        /* 🪜 버튼 — 카드가 나오는 자리 바로 위 오른쪽에 붙여 둔다 */
+        /* ── 영상통화 기능 단계 표시 — 상단 이름줄 바로 아래 ── */
+        .hv-stages { width: 100%; max-width: 560px; padding: 2px 18px 6px; box-sizing: border-box; zoom: var(--ui-zoom); }
+        .hv-stages[hidden] { display: none; }
+        .hv-st-top { display: flex; justify-content: space-between; align-items: center;
+            font-size: 11px; font-weight: 800; color: var(--navy); margin-bottom: 3px; }
+        .hv-st-track { height: 7px; background: #E3DCCB; border-radius: 999px; overflow: hidden; }
+        .hv-st-bar { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, #6FA79C, #4E8578);
+            transition: width 0.45s cubic-bezier(.2,.8,.3,1); }
+        .hv-st-bar.over { background: linear-gradient(90deg, #C9922E, #E0B457); }
+        .hv-st-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+        .hv-st-chips .stage-chip { font-size: 9.5px; padding: 2px 6px; }
+
+        /* 🪜 버튼 — 카드가 나오는 자리 위 오른쪽. 카드 높이를 못 넘게 묶어 두어야 겹치지 않는다.
+           (카드 bottom 172 + 카드 최대높이 158 + 사이 12 = 342) */
         .hv-scf-btn { position: absolute; right: 12px; z-index: 41;
-            bottom: calc(300px + env(safe-area-inset-bottom));
+            bottom: calc(342px + env(safe-area-inset-bottom));
             border: 1.5px solid var(--accent-soft); background: var(--panel); color: var(--accent-ink); border-radius: 999px;
             height: 40px; padding: 0 15px; font-size: 13.5px; font-weight: 800; cursor: pointer;
             display: inline-flex; align-items: center; gap: 6px; font-family: inherit;
@@ -994,7 +1063,8 @@
         .hv-caption::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
             margin-top: -2px; border: 9px solid transparent; border-top-color: #fff; }
         /* ── 영상통화 비계 — 오른쪽 가장자리에서 빼꼼 나왔다가 스스로 사라진다 ── */
-        .hv-scaffold { position: absolute; right: 0; top: auto; bottom: calc(190px + env(safe-area-inset-bottom)); z-index: 40; width: min(78vw, 268px);
+        .hv-scaffold { position: absolute; right: 0; top: auto; bottom: calc(172px + env(safe-area-inset-bottom)); z-index: 40; width: min(78vw, 268px);
+            max-height: 158px; box-sizing: border-box;
             background: var(--panel); color: var(--ink); border-radius: 16px 0 0 16px;
             border: 1.5px solid var(--accent-soft); border-right: none;
             box-shadow: -10px 12px 30px -14px rgba(0,0,0,0.55); padding: 11px 13px 12px;
@@ -1006,7 +1076,8 @@
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 10px -4px rgba(0,0,0,0.5); }
         .hvs-title { font-size: 11px; font-weight: 800; color: var(--navy); margin: 0 0 6px 18px; }
-        .hvs-list { display: flex; flex-direction: column; gap: 5px; }
+        /* 제안이 길어도 카드가 버튼 쪽으로 자라지 않게 — 넘치면 카드 안에서 스크롤 */
+        .hvs-list { display: flex; flex-direction: column; gap: 5px; max-height: 104px; overflow-y: auto; }
         .hvs-list button { border: none; text-align: left; background: var(--accent-soft); color: #3D4B45;
             border-radius: 10px; padding: 7px 10px; font-size: 12.5px; font-weight: 700; cursor: pointer;
             font-family: inherit; line-height: 1.4; }
@@ -1067,8 +1138,8 @@
 <!-- ═══ 앱 시작 영상 (한옥 장지문이 열리고 호아랑이 나온다) ═══
      같은 세션에서 한 번만 재생하고, 끝나면 스스로 사라진다. -->
 <div class="splash" id="splash">
-    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=59">
-        <source src="/static/intro.mp4?v=59" type="video/mp4">
+    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=60">
+        <source src="/static/intro.mp4?v=60" type="video/mp4">
     </video>
     <button type="button" class="splash-skip" id="splashSkip">건너뛰기 ›</button>
 </div>
@@ -1197,6 +1268,25 @@
     </div>
 </div>
 <!-- 기능단계 브리핑 (대화 시작 전 안내) -->
+<!-- 대화문 듣기 — 교실 '도입'의 모델 대화 관찰(3.4.2)에 해당.
+     설정한 목적으로 만든 대화문을 먼저 듣고, 그 다음에 대화 단계로 넘어간다. -->
+<div class="lang-overlay hidden" id="rpScriptOverlay">
+    <div class="lang-box" style="max-width:560px;">
+        <button type="button" class="ov-x" id="rpScriptX">✕</button>
+        <h2 id="rpScriptTitleEl">🎧</h2>
+        <p id="rpScriptScenario" style="font-size:12px; color:#6E6357; margin:0 0 4px; font-weight:700;"></p>
+        <p class="rp-note" id="rpScriptGuideEl" style="text-align:center;"></p>
+        <!-- 전체 듣기 — 학습자가 놓치지 않게 계속 움직인다 -->
+        <button type="button" class="sc-play" id="rpScPlayBtn">
+            <span class="sc-play-ico" id="rpScPlayIco">▶</span>
+            <span id="rpScPlayLbl"></span>
+        </button>
+        <div class="sc-list" id="rpScriptList"></div>
+        <div class="consent-actions">
+            <button class="action-btn" id="rpScNextBtn"></button>
+        </div>
+    </div>
+</div>
 <div class="lang-overlay hidden" id="rpBriefOverlay">
     <div class="lang-box" style="max-width:520px;">
         <button type="button" class="ov-x" id="rpBriefX">✕</button>
@@ -1215,7 +1305,7 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png?v=59" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=60" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
         <div class="result-cards">
             <div class="r-card score"><div class="r-label" id="rcScoreLbl"></div><div class="r-inner" id="rcScoreVal">0</div></div>
@@ -1246,7 +1336,7 @@
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png?v=59" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=60" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
@@ -1267,7 +1357,7 @@
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=59" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=60" alt="호아랑">
         <div class="freefb-icon">💬</div>
         <h2 id="freeFbTitleEl" style="margin:6px 0;">💬</h2>
         <p class="consent-text" id="freeFbBodyEl" style="text-align:center;"></p>
@@ -1279,14 +1369,14 @@
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=59" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=60" alt="호아랑"></div>
 </div>
 <div class="turn-edge" aria-hidden="true"></div>
 <!-- 배경 영상 — 화면 전체를 채우고 그 위에 글자·카드가 놓인다 -->
 <div class="home-bg" aria-hidden="true">
-    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=59" alt="">
+    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=60" alt="">
     <video class="hb-main" id="homeLoop" playsinline muted loop autoplay preload="auto"
-           poster="/static/home_loop.jpg?v=59" src="/static/home_loop.mp4?v=59"></video>
+           poster="/static/home_loop.jpg?v=60" src="/static/home_loop.mp4?v=60"></video>
     <div class="home-bg-veil"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
@@ -1294,7 +1384,7 @@
     <!-- 상단: 제목(왼쪽) · 버튼(오른쪽) -->
     <div class="home-header">
         <h1 class="home-title">
-            <img class="home-logo" src="/static/icon-192.png?v=59" alt="">
+            <img class="home-logo" src="/static/icon-192.png?v=60" alt="">
             <span id="homeTitleEl">호아랑</span>
         </h1>
         <div class="home-top">
@@ -1330,7 +1420,7 @@
 <!-- 설치 관문 — 웹으로는 쓸 수 없다. 언어를 고르고, 그 언어로 설치 안내를 받는다. -->
 <div class="inapp-gate hidden" id="installGate">
     <div class="inapp-card">
-        <img class="ig-icon" src="/static/icon-192.png?v=59" alt="">
+        <img class="ig-icon" src="/static/icon-192.png?v=60" alt="">
         <!-- ① 언어(나라) 선택 -->
         <div id="igStep1">
             <h2>🌏 언어 선택 · Select Your Language</h2>
@@ -1369,7 +1459,7 @@
 <div class="lang-overlay hidden" id="notifOverlay">
     <div class="lang-box" style="max-width:380px;">
         <button type="button" class="ov-x" id="notifX">✕</button>
-        <div class="notif-art"><img src="/static/ham_smile.png?v=59" alt=""></div>
+        <div class="notif-art"><img src="/static/ham_smile.png?v=60" alt=""></div>
         <h2 id="notifTitleEl" style="margin-bottom:8px;"></h2>
         <p class="consent-text" id="notifBodyEl" style="margin-bottom:14px;"></p>
         <div class="consent-actions">
@@ -1394,7 +1484,7 @@
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=59" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=60" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -1428,7 +1518,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png?v=59" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=60" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -1481,7 +1571,7 @@
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png?v=59" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=60" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span><svg class="ic"><use href="#ic-video"></use></svg></span><span id="hamViewBtnLbl"></span></button>
@@ -1498,18 +1588,10 @@
         <div class="progress-wrap hidden" id="progressWrap">
             <div class="progress-top">
                 <span id="progressLabel"></span>
-                <span style="display:flex; gap:8px; align-items:center;">
-                    <!-- 🪜 비계(스캐폴딩): 지금 단계에서 쓸 수 있는, 연습했던 표현을 보여줌 -->
-                    <button type="button" class="scf-btn" id="scfBtn"><svg class="ic"><use href="#ic-hint"></use></svg></button>
-                    <span id="progressPct">0%</span>
-                </span>
+                <span id="progressPct">0%</span>
             </div>
             <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
             <div class="stage-chips" id="stageChips"></div>
-            <div class="scf-panel hidden" id="scfPanel">
-                <div class="scf-title" id="scfTitleEl"></div>
-                <div class="scf-list" id="scfList"></div>
-            </div>
         </div>
         <div class="chat-log" id="chatLog">
             <div class="empty-state" id="emptyState">
@@ -1523,6 +1605,19 @@
              Gemini 자동감지의 30~60초 지연을 우회해 텍스트 버튼처럼 즉시 반응 -->
         <button id="pttBtn" class="ptt-btn" disabled>🎤 눌러서 말하기</button>
         <div class="ptt-hint" id="pttKeyHintEl" hidden></div>
+        <!-- 🪜 비계(스캐폴딩): 지금 단계에서 쓸 수 있는, 연습했던 표현을 보여줌.
+             진행률 막대 구석에 있을 땐 눈에 띄지 않아, 학습자가 막혔을 때 손이 가는
+             자리(빠른 요청 버튼 바로 위)로 내렸다. 주제 대화에서만 보인다. -->
+        <div class="scf-dock hidden" id="scfDock">
+            <button type="button" class="scf-btn" id="scfBtn">
+                <span class="scf-ico"><svg class="ic"><use href="#ic-hint"></use></svg></span>
+                <span id="scfBtnLbl"></span>
+            </button>
+            <div class="scf-panel hidden" id="scfPanel">
+                <div class="scf-title" id="scfTitleEl"></div>
+                <div class="scf-list" id="scfList"></div>
+            </div>
+        </div>
         <div class="quick-bar">
             <button class="quick-btn" data-qkey="qSlow" data-emoji="🐢" disabled>🐢 천천히</button>
             <button class="quick-btn" data-qkey="qAgain" data-emoji="🔁" disabled>🔁 다시 한 번</button>
@@ -1542,6 +1637,15 @@
         <span class="hv-name">🐯 <span id="hvNameEl">호아랑</span></span>
         <button type="button" class="hv-back" id="hamViewClose"><span><svg class="ic"><use href="#ic-chat"></use></svg></span><span id="hamViewCloseLbl"></span></button>
     </div>
+    <!-- 기능 단계 — 채팅 화면에만 있어서 영상통화로 넘어오면 지금 어디쯤인지 알 수 없었다.
+         진행률과 단계 칩을 같은 내용으로 여기에도 띄운다. 주제 대화에서만 보인다. -->
+    <div class="hv-stages" id="hvStages" hidden>
+        <div class="hv-st-top">
+            <span id="hvStLabel"></span><span id="hvStPct">0%</span>
+        </div>
+        <div class="hv-st-track"><div class="hv-st-bar" id="hvStBar"></div></div>
+        <div class="hv-st-chips" id="hvStChips"></div>
+    </div>
     <!-- 말풍선은 캐릭터와 한 덩어리로 묶어 '머리 바로 위'에 뜨게 한다 -->
     <div class="hv-stage-slot" id="hvStageSlot">
         <div class="hv-caption" id="hvCaption"></div>
@@ -1557,7 +1661,7 @@
 <!-- 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 (발화 연습 시작 등) -->
 <div class="ham-peek" id="hamPeek" aria-hidden="true">
     <div class="hp-bubble" id="hamPeekText"></div>
-    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=59" alt="">
+    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=60" alt="">
 </div>
 
 <!-- 대화의 문턱 연출 — 한옥 장지문 -->
@@ -1570,11 +1674,11 @@
 <!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <!-- 발화 연습 배경 — '통통(가야금)', 사용자 볼륨의 20%로 아주 은은하게 -->
-<audio id="prBgm" src="/static/practice_bgm.mp3?v=59" loop preload="none"></audio>
+<audio id="prBgm" src="/static/practice_bgm.mp3?v=60" loop preload="none"></audio>
 <!-- 단계 달성 — 전통악기 징 -->
-<audio id="gongSfx" src="/static/gong.mp3?v=59" preload="auto"></audio>
+<audio id="gongSfx" src="/static/gong.mp3?v=60" preload="auto"></audio>
 <!-- 주제 대화·자유 수다 진행 중 배경 — 「How are you 가야금」 -->
-<audio id="chatBgm" src="/static/chat_bgm.mp3?v=59" loop preload="none"></audio>
+<audio id="chatBgm" src="/static/chat_bgm.mp3?v=60" loop preload="none"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -1586,7 +1690,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v59 (2026-08-06)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v60 (2026-08-06)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -2311,6 +2415,47 @@
               idc_listen:"Écouter en réagissant", idc_nonverbal:"Réagir par le geste et le visage", idc_context:"Parler selon l'interlocuteur" },
     };
     for (const _l in I18N_IDC) { if (I18N[_l]) Object.assign(I18N[_l], I18N_IDC[_l]); }
+    /* 대화문 듣기 화면(v60) — 연습 전에 모델 대화를 듣고 관찰하는 자리.
+       scfBtnLbl은 🪜 비계 버튼이 진행률 구석에서 내려오면서 생긴 라벨. */
+    const I18N_SC = {
+        ko: { scTitle:"🎧 먼저 들어 보기", scGuide:"이런 대화를 하게 돼요. 한 번 들어 보고, 안 들린 말은 눌러서 다시 들어 보세요.",
+              scPlayAll:"처음부터 듣기", scStop:"멈추기", scNext:"대화 단계 보기 →",
+              doorScript:"먼저 들어 보기", scfBtnLbl:"뭐라고 말하지? 도와줘" },
+        en: { scTitle:"🎧 Listen first", scGuide:"This is the kind of talk you'll have. Listen once, then tap any line you missed to hear it again.",
+              scPlayAll:"Play from the start", scStop:"Stop", scNext:"See the stages →",
+              doorScript:"Listen first", scfBtnLbl:"What do I say? Help me" },
+        zh: { scTitle:"🎧 先听一遍", scGuide:"你将进行这样的对话。先听一遍，没听清的句子点一下再听。",
+              scPlayAll:"从头播放", scStop:"停止", scNext:"查看对话步骤 →",
+              doorScript:"先听一遍", scfBtnLbl:"该怎么说？帮帮我" },
+        ja: { scTitle:"🎧 まず聞いてみる", scGuide:"こんな会話をします。一度聞いて、聞き取れなかった行はタップしてもう一度どうぞ。",
+              scPlayAll:"最初から聞く", scStop:"止める", scNext:"会話の段階を見る →",
+              doorScript:"まず聞いてみる", scfBtnLbl:"何て言おう？助けて" },
+        vi: { scTitle:"🎧 Nghe trước đã", scGuide:"Bạn sẽ trò chuyện như thế này. Nghe một lượt, câu nào chưa rõ thì chạm vào để nghe lại.",
+              scPlayAll:"Phát từ đầu", scStop:"Dừng", scNext:"Xem các bước hội thoại →",
+              doorScript:"Nghe trước đã", scfBtnLbl:"Nói gì đây? Giúp mình với" },
+        th: { scTitle:"🎧 ฟังก่อน", scGuide:"คุณจะได้คุยแบบนี้ ลองฟังสักรอบ ประโยคไหนไม่ชัดให้แตะเพื่อฟังซ้ำ",
+              scPlayAll:"เล่นตั้งแต่ต้น", scStop:"หยุด", scNext:"ดูขั้นตอนการสนทนา →",
+              doorScript:"ฟังก่อน", scfBtnLbl:"จะพูดว่าอะไรดี ช่วยหน่อย" },
+        id: { scTitle:"🎧 Dengar dulu", scGuide:"Beginilah percakapan yang akan kamu lakukan. Dengar sekali, lalu ketuk baris yang tak tertangkap untuk mengulang.",
+              scPlayAll:"Putar dari awal", scStop:"Berhenti", scNext:"Lihat tahap percakapan →",
+              doorScript:"Dengar dulu", scfBtnLbl:"Harus bilang apa? Bantu aku" },
+        mn: { scTitle:"🎧 Эхлээд сонсоцгооё", scGuide:"Ийм яриа хийх болно. Нэг сонсоод, сонсогдоогүй мөрөө дараад дахин сонсоорой.",
+              scPlayAll:"Эхнээс нь сонсох", scStop:"Зогсоох", scNext:"Ярианы үе шатыг харах →",
+              doorScript:"Эхлээд сонсох", scfBtnLbl:"Юу гэж хэлэх вэ? Тусал" },
+        uz: { scTitle:"🎧 Avval tinglang", scGuide:"Shunday suhbat qilasiz. Bir marta tinglang, tushunmagan qatorni bosib qayta eshiting.",
+              scPlayAll:"Boshidan tinglash", scStop:"To'xtatish", scNext:"Suhbat bosqichlarini ko'rish →",
+              doorScript:"Avval tinglang", scfBtnLbl:"Nima deyman? Yordam bering" },
+        ru: { scTitle:"🎧 Сначала послушайте", scGuide:"Вот такой разговор вас ждёт. Послушайте целиком, а непонятную строку нажмите и прослушайте ещё раз.",
+              scPlayAll:"Слушать с начала", scStop:"Стоп", scNext:"Посмотреть этапы разговора →",
+              doorScript:"Сначала послушать", scfBtnLbl:"Что сказать? Помоги" },
+        es: { scTitle:"🎧 Escucha primero", scGuide:"Vas a tener una conversación así. Escúchala entera y toca la línea que no hayas pillado para repetirla.",
+              scPlayAll:"Escuchar desde el principio", scStop:"Parar", scNext:"Ver las fases →",
+              doorScript:"Escucha primero", scfBtnLbl:"¿Qué digo? Ayúdame" },
+        fr: { scTitle:"🎧 Écoutez d'abord", scGuide:"Voici le genre de conversation qui vous attend. Écoutez une fois, puis touchez la ligne que vous n'avez pas saisie pour la réentendre.",
+              scPlayAll:"Écouter depuis le début", scStop:"Arrêter", scNext:"Voir les étapes →",
+              doorScript:"Écoutez d'abord", scfBtnLbl:"Je dis quoi ? Aide-moi" },
+    };
+    for (const _l in I18N_SC) { if (I18N[_l]) Object.assign(I18N[_l], I18N_SC[_l]); }
     /* 서버 오류 문구(v57) — 서버는 한국어로 보내므로 코드로 받아 화면 언어로 바꾼다.
        키 이름 규칙: 서버가 보내는 code 앞에 err_ 를 붙인다 (err_rp_expired 등).
        새 코드가 생겨도 사전에 키만 추가하면 자동으로 번역된다. */
@@ -2415,6 +2560,12 @@
         document.getElementById("rpBriefGuideEl").textContent = t("rpBriefGuide");
         document.getElementById("rpBeginBtn").textContent = t("rpBegin");
         document.getElementById("rpEditBtn").textContent = t("rpEdit");
+        // 대화문 듣기 화면 + 🪜 비계 버튼 라벨
+        document.getElementById("rpScriptTitleEl").textContent = t("scTitle");
+        document.getElementById("rpScriptGuideEl").textContent = t("scGuide");
+        document.getElementById("rpScNextBtn").textContent = t("scNext");
+        document.getElementById("rpScPlayLbl").textContent = t("scPlayAll");
+        document.getElementById("scfBtnLbl").textContent = t("scfBtnLbl");
         document.getElementById("rpResultTitleEl").textContent = t("rpResultTitle");
         document.getElementById("rpCloseBtn").textContent = t("rpHome");
         document.getElementById("rpGoalDice").title = t("sgDice");
@@ -2472,7 +2623,7 @@
             const w = document.createElement("div");
             w.className = "ob-hero";
             w.innerHTML = '<img class="ob-ham" alt=""><span class="ob-hello"></span>';
-            w.querySelector("img").src = "/static/ham_smile.png?v=59";
+            w.querySelector("img").src = "/static/ham_smile.png?v=60";
             w.querySelector(".ob-hello").textContent = t("obHello");
             return w;
         },
@@ -2556,7 +2707,7 @@
             const v = w.querySelectorAll(".ob-view");
             v[0].querySelector(".vl").textContent = stripLeadEmoji(t("hvClose"));
             v[1].querySelector(".vl").textContent = stripLeadEmoji(t("hvOpen"));
-            v[1].querySelector("img").src = "/static/ham_idle.png?v=59";
+            v[1].querySelector("img").src = "/static/ham_idle.png?v=60";
             return w;
         },
         function talk() {                       // ⑥ 말하기 버튼 · 도움말 · 이어폰
@@ -2807,7 +2958,8 @@
     }
     function goHome() {
         // 전환 시 떠 있던 오버레이 정리 (홈은 깨끗한 상태로)
-        [rpResultOverlay, rpBriefOverlay, rpSetupOverlay, freeFbOverlay].forEach(o => o.classList.add("hidden"));
+        try { scHalt(); } catch (e) {}   // 대화문 재생 중이면 멈춘다
+        [rpResultOverlay, rpBriefOverlay, rpScriptOverlay, rpSetupOverlay, freeFbOverlay].forEach(o => o.classList.add("hidden"));
         setScreen("home");
     }
     function goChat() { setScreen("chat"); }
@@ -2820,7 +2972,7 @@
        (누를 때마다 실제 화면을 보고 판단하므로 상태가 어긋날 일이 없다) */
     const BACK_OVERLAYS = [          // 위(가장 최근에 뜬 것)에서부터 검사
         "prOverlay", "histOverlay", "voiceOverlay", "appDlOverlay",
-        "rpResultOverlay", "freeFbOverlay", "rpBriefOverlay", "rpSetupOverlay",
+        "rpResultOverlay", "freeFbOverlay", "rpBriefOverlay", "rpScriptOverlay", "rpSetupOverlay",
         "consentOverlay", "nameOverlay", "earphoneOverlay", "introOverlay",
     ];
     function handleBackPress() {
@@ -2982,7 +3134,7 @@
             return !!el && !el.classList.contains("hidden");
         };
         // 대화 단계(브리핑)와 발화 연습에서는 「통통 가야금」이 은은하게 깔린다.
-        scenePractice = open("prOverlay") || open("rpBriefOverlay");
+        scenePractice = open("prOverlay") || open("rpBriefOverlay") || open("rpScriptOverlay");
         sceneQuiet = false;
         updateBgm();
     }
@@ -3052,7 +3204,7 @@
     // 창이 열리고 닫히는 걸 직접 감시 → 여닫는 코드를 일일이 고치지 않아도 자동 반영
     try {
         const sceneObs = new MutationObserver(recomputeAudioScene);
-        ["prOverlay", "rpSetupOverlay", "rpBriefOverlay"].forEach((id) => {
+        ["prOverlay", "rpSetupOverlay", "rpBriefOverlay", "rpScriptOverlay"].forEach((id) => {
             const el = document.getElementById(id);
             if (el) sceneObs.observe(el, { attributes: true, attributeFilter: ["class"] });
         });
@@ -3192,9 +3344,10 @@
         hvControls.appendChild(quickBarEl);
         hvCaption.textContent = lastCaption || "";
         hvCaption.classList.toggle("show", !!lastCaption);
-        // 🪜 비계는 주제 대화일 때만 (진행률 표시와 같은 조건)
+        // 🪜 비계와 기능 단계 표시는 주제 대화일 때만 (채팅 진행률과 같은 조건)
         const hvScf = document.getElementById("hvScfBtn");
         if (hvScf) hvScf.hidden = !rpSessionActive;
+        renderHvStages();
         hamView.classList.add("show");
         // 비계는 학습자가 🪜를 눌렀을 때만 나온다 (자동으로 튀어나오지 않음)
         hamView.setAttribute("aria-hidden", "false");
@@ -3281,7 +3434,7 @@
             rpPracticed = {};   // 새 계획 → 연습 기록 초기화
             openPractice._doorShown = false;   // 새 계획이면 연습 문 연출도 처음부터
             rpSetupOverlay.classList.add("hidden");
-            showBriefing(true);   // 계획을 막 만든 참 → 문 열림 + 호아랑 등장 + 단계 차례 등장
+            showScript();   // ① 모델 대화문을 먼저 듣고 → ② 대화 단계로
         } catch (e) {
             console.warn("계획 생성 실패:", e);
             alert(t("rpPlanFail") + "\n\n(" + (e && e.message ? e.message : e) + ")");
@@ -3353,6 +3506,146 @@
             });
         }
     }
+
+    /* ══════════ 대화문 듣기 ══════════
+       연습에 들어가기 전에, 설정한 목적으로 만든 모델 대화를 먼저 듣고 관찰한다.
+       교실 수업의 '도입' 단계에서 교재 대화문을 보며 흐름을 모델링하는 자리에 해당한다(3.4.2).
+       ▶ 전체 듣기로 처음부터 끝까지 듣고, 안 들린 줄은 그 줄만 눌러 다시 듣는다.
+       줄을 누르면 모국어 번역도 함께 펼쳐진다. */
+    const rpScriptOverlay = document.getElementById("rpScriptOverlay");
+    /* 두 역할을 귀로 구분할 수 있게 목소리를 나눈다.
+       상대 역은 배역에 맞춰 서버가 고르게 두고(빈 값), 학습자 역은 그와 겹치지 않는 목소리로 읽는다.
+       학습자가 홈에서 고른 목소리(voicePref)가 상대 역에 쓰이므로, 그것과 다른 것을 고른다.
+       — 안 그러면 두 사람이 같은 목소리로 읽혀 누가 말하는지 귀로 구분이 안 된다. */
+    function scMyVoice() {
+        const used = String(voicePref || "").toLowerCase();
+        if (used === "girl" || used === "woman" || used === "elder_f") return "man";
+        return "girl";
+    }
+    let scPlaying = false, scStop = false, scTimer = null;
+
+    function scLineEls() { return [...document.getElementById("rpScriptList").querySelectorAll(".sc-line")]; }
+    function scHighlight(i) {
+        scLineEls().forEach((el, k) => el.classList.toggle("on", k === i));
+        const el = scLineEls()[i];
+        if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+    function scSetPlaying(on) {
+        scPlaying = on;
+        const btn = document.getElementById("rpScPlayBtn");
+        btn.classList.toggle("playing", on);
+        document.getElementById("rpScPlayIco").textContent = on ? "⏸" : "▶";
+        document.getElementById("rpScPlayLbl").textContent = t(on ? "scStop" : "scPlayAll");
+    }
+    function scHalt() {
+        scStop = true;
+        clearTimeout(scTimer);
+        try { if (prLastSrc) prLastSrc.stop(); } catch (e) {}
+        try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+        scSetPlaying(false);
+        scLineEls().forEach(el => el.classList.remove("on"));
+    }
+    // 한 줄 재생 — 역할에 맞는 목소리로. 재생 길이를 알 수 없으므로 글자 수로 어림잡아 기다린다.
+    async function scSpeak(line) {
+        const voice = line.speaker === "user" ? scMyVoice() : "";
+        await ttsPlay(line.text, voice);
+        return Math.min(7000, 900 + line.text.length * 165);
+    }
+    async function scPlayAll() {
+        const lines = (rpPlan && rpPlan.script) || [];
+        if (!lines.length) return;
+        scStop = false;
+        scSetPlaying(true);
+        for (let i = 0; i < lines.length; i++) {
+            if (scStop) break;
+            scHighlight(i);
+            let wait = 2200;
+            try { wait = await scSpeak(lines[i]); } catch (e) { console.warn("대화문 재생 실패:", e); }
+            if (scStop) break;
+            // 다음 줄 음성을 미리 받아 둔다 — 줄 사이가 끊기지 않게
+            if (lines[i + 1] && lines[i + 1].speaker !== "user") ttsPrefetch(lines[i + 1].text);
+            await new Promise(r => { scTimer = setTimeout(r, wait); });
+        }
+        if (!scStop) { scLineEls().forEach(el => el.classList.remove("on")); }
+        scSetPlaying(false);
+    }
+    document.getElementById("rpScPlayBtn").addEventListener("click", () => {
+        if (scPlaying) scHalt(); else scPlayAll();
+    });
+
+    function renderScript() {
+        const box = document.getElementById("rpScriptList");
+        box.innerHTML = "";
+        const lines = (rpPlan && rpPlan.script) || [];
+        let lastStage = -1;
+        lines.forEach((ln, i) => {
+            // 기능 단계가 바뀌는 자리에 구분선을 넣는다 → 다음 화면의 '대화 단계'와 이어진다
+            if (ln.stage !== lastStage) {
+                lastStage = ln.stage;
+                const st = (rpPlan.stages || [])[ln.stage];
+                if (st) {
+                    const head = document.createElement("div");
+                    head.className = "sc-stage";
+                    const nm = document.createElement("span");
+                    nm.className = "sc-st-name";
+                    nm.textContent = (ln.stage + 1) + ". " + st.name;
+                    const bar = document.createElement("span");
+                    bar.className = "sc-st-line";
+                    head.appendChild(nm); head.appendChild(bar);
+                    box.appendChild(head);
+                }
+            }
+            const row = document.createElement("div");
+            row.className = "sc-line" + (ln.speaker === "user" ? " mine" : "");
+            const who = document.createElement("div");
+            who.className = "sc-who";
+            who.textContent = (ln.speaker === "user" ? "🙋 " : "🐯 ") +
+                (ln.speaker === "user" ? rpPlan.user_role : rpPlan.ai_role);
+            const tx = document.createElement("div");
+            tx.className = "sc-text";
+            tx.textContent = ln.text;
+            row.appendChild(who); row.appendChild(tx);
+            if (ln.native) {
+                const nv = document.createElement("div");
+                nv.className = "sc-native";
+                nv.textContent = ln.native;
+                row.appendChild(nv);
+            }
+            // 줄을 누르면 ① 전체 재생을 멈추고 ② 그 줄만 다시 들려주고 ③ 모국어를 펼친다
+            row.addEventListener("click", () => {
+                if (scPlaying) scHalt();
+                row.classList.toggle("open");
+                scHighlight(i);
+                scSpeak(ln).catch(e => console.warn("줄 재생 실패:", e));
+            });
+            box.appendChild(row);
+        });
+    }
+
+    function showScript() {
+        if (!rpPlan) { openRpSetup(); return; }
+        // 대화문 생성이 실패했으면 듣기를 건너뛰고 바로 단계로 (대화는 그대로 할 수 있어야 한다)
+        if (!rpPlan.script || !rpPlan.script.length) { showBriefing(true); return; }
+        document.getElementById("rpScriptTitleEl").textContent = t("scTitle");
+        document.getElementById("rpScriptGuideEl").textContent = t("scGuide");
+        document.getElementById("rpScNextBtn").textContent = t("scNext");
+        scSetPlaying(false);
+        document.getElementById("rpScriptScenario").textContent =
+            "🎭 " + rpPlan.topic_ko + " · 🎯 " + rpPlan.goal_ko + " · 📍 " + rpPlan.place_ko +
+            " · 🙋 " + rpPlan.user_role + " ↔ 🐯 " + rpPlan.ai_role;
+        renderScript();
+        rpScriptOverlay.classList.remove("hidden");
+        openDoor(t("doorScript"));
+        // 첫 줄 음성을 미리 받아 둔다 — ▶를 누르자마자 소리가 나게
+        fxAfter(400, () => ttsPrefetch(rpPlan.script[0].text));
+    }
+    function leaveScript() { scHalt(); rpScriptOverlay.classList.add("hidden"); }
+    document.getElementById("rpScNextBtn").addEventListener("click", () => {
+        if (!flowLock(900)) return;
+        leaveScript();
+        showBriefing(true);
+    });
+    document.getElementById("rpScriptX").addEventListener("click", () => { leaveScript(); goHome(); });
 
     /* 대화 계획을 만든 뒤 → '대화 흐름' 문이 열리고 → 호아랑이 나와 말을 걸고
        → 단계가 첫 번째부터 차례로 나타난다. 그 다음 단계를 누르면 발화 연습 문이 열린다. */
@@ -4046,11 +4339,35 @@
             c.textContent = (s.done ? "✓ " : "") + s.name;
             stageChips.appendChild(c);
         });
+        renderHvStages();
+    }
+    /* 영상통화에도 같은 진행 상황을 띄운다 — 캐릭터를 크게 보는 동안에도
+       지금 어느 단계인지 알 수 있어야 한다. */
+    function renderHvStages() {
+        const wrap = document.getElementById("hvStages");
+        if (!wrap) return;
+        wrap.hidden = !rpSessionActive;
+        if (!rpSessionActive) return;
+        document.getElementById("hvStPct").textContent = rpPercent + "%";
+        document.getElementById("hvStLabel").textContent =
+            rpPercent > 100 ? t("rpOverLabel") : t("progressLabel");
+        const bar = document.getElementById("hvStBar");
+        bar.style.width = Math.min(100, rpPercent) + "%";
+        bar.classList.toggle("over", rpPercent > 100);
+        const chips = document.getElementById("hvStChips");
+        chips.innerHTML = "";
+        rpStagesState.forEach(s => {
+            const c = document.createElement("span");
+            c.className = "stage-chip" + (s.done ? " done" : "");
+            c.textContent = (s.done ? "✓ " : "") + s.name;
+            chips.appendChild(c);
+        });
     }
 
     /* ── 🪜 비계(스캐폴딩): 지금 대화 맥락에서 '내 차례에 할 수 있는 대답' 2개를
        서버(웹소켓)로 요청해 보여준다. 연습 표현과 같거나 유사하게 생성되고,
        응답이 없으면 현재 단계의 연습 표현으로 폴백. 탭하면 들려준다. ── */
+    const scfDock = document.getElementById("scfDock");
     const scfBtn = document.getElementById("scfBtn");
     const scfPanel = document.getElementById("scfPanel");
     let scfTimer = null;
@@ -4921,6 +5238,8 @@
                 ? rpPlan.stages.map(s => ({ name: s.name, native: s.native || "", done: false }))
                 : [];
             progressWrap.classList.toggle("hidden", !rpSessionActive);
+            scfDock.classList.toggle("hidden", !rpSessionActive);   // 🪜는 주제 대화에서만
+            document.body.classList.toggle("rp-chat", rpSessionActive);  // 채팅 맨 위 캐릭터 숨김
             chatStyleBar.classList.add("hidden");   // 말투는 캐릭터 패널에 배치 (접이식 바 미사용)
             // 대화창이 스르륵 슬라이드 다운 (대화 시작 연출)
             const cp = document.querySelector(".chat-panel");
@@ -5104,6 +5423,8 @@
         // 과업 진행률·기능 단계 표시도 리셋 (결과 화면은 rpFinal 사본을 쓰므로 안전)
         document.body.classList.remove("in-convo");
         progressWrap.classList.add("hidden");
+        scfDock.classList.add("hidden");
+        document.body.classList.remove("rp-chat");
         rpPercent = 0;
         zapDone = false;   // 다음 대화에서는 100% 돌파를 다시 축하한다
         rpStagesState = [];
@@ -5202,8 +5523,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png?v=59", smile: "/static/ham_smile.png?v=59",
-        surprised: "/static/ham_surprised.png?v=59", shy: "/static/ham_shy.png?v=59",
+        idle: "/static/ham_idle.png?v=60", smile: "/static/ham_smile.png?v=60",
+        surprised: "/static/ham_surprised.png?v=60", shy: "/static/ham_shy.png?v=60",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -5277,7 +5598,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png?v=59";
+                img.src = "/static/hamster.png?v=60";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");

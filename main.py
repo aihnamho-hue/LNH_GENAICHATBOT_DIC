@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v59"
+APP_VERSION = "v60"
 APP_DATE = "2026-08-06"
 
 app = FastAPI()
@@ -696,6 +696,29 @@ def _normalize_expr(e) -> dict | None:
     return {"text": text, "cue": cue} if text else None
 
 
+def _validate_script(raw, n_stages: int) -> list:
+    """모델 대화문 정리 — 교실 '도입'의 모델 대화 관찰 자료(3.4.2).
+    한 줄이라도 어긋나면 그 줄만 버리고, 전체가 너무 짧으면 빈 목록으로 돌려
+    클라이언트가 듣기 단계를 건너뛰게 한다(대화 자체는 그대로 진행)."""
+    if not isinstance(raw, list):
+        return []
+    lines = []
+    for it in raw[:16]:
+        if not isinstance(it, dict):
+            continue
+        text = _clean_str(it.get("text"), 90)
+        if not text:
+            continue
+        who = "user" if str(it.get("speaker", "")).lower().startswith("u") else "ai"
+        st = _clamp_int(it.get("stage"), 0, max(0, n_stages - 1), 0)
+        lines.append({"speaker": who, "text": text,
+                      "native": _clean_str(it.get("native"), 110), "stage": st})
+    # 양쪽이 최소 두 번씩은 말해야 '대화문'이라 할 수 있다
+    if len(lines) < 6 or sum(1 for l in lines if l["speaker"] == "user") < 2:
+        return []
+    return lines
+
+
 def _validate_plan(data) -> dict | None:
     """모델이 만든 계획 JSON을 방어적으로 정리. 단계 4~6개 보장."""
     if not isinstance(data, dict):
@@ -723,6 +746,7 @@ def _validate_plan(data) -> dict | None:
         "user_role": _clean_str(data.get("user_role"), 40) or "학습자",
         "ai_role": _clean_str(data.get("ai_role"), 40) or "대화 상대",
         "stages": stages,
+        "script": _validate_script(data.get("script"), len(stages)),
     }
 
 
@@ -879,15 +903,25 @@ async def roleplay_setup(request: Request):
      학습자가 먼저 말을 여는 표현이라도, 그 직전에 올 법한 상대의 말을 자연스럽게 만들어 넣어라.
      예) text "이거 얼마예요?"가 첫 발화라면 cue는 "어서 오세요, 뭐 찾으세요?" 처럼.
      인사로 시작하는 표현이면 cue도 상대의 인사·호객으로.
+4) script — 위 기능단계를 처음부터 끝까지 밟아 가는 **모델 대화문** 10~14줄.
+   학습자가 연습에 들어가기 전에 듣고 관찰할 자료다. 교재의 제시 대화문을 대신하되 실제 구어에 가깝게 쓴다.
+   - 각 줄: speaker("user" = {my_role or '학습자'} / "ai" = {ai_role or '상대'}), text(한국어 발화), stage(해당 기능단계 번호 0부터), native.
+   - stage 번호는 반드시 0부터 차례로 올라가야 하며, 위 stages의 단계를 하나도 빠뜨리지 마라.
+   - 첫 줄은 {ai_role or '상대'}(speaker="ai")로 시작하고, 두 사람이 번갈아 말하게 하라. 한 사람이 두 줄 이어 말해도 되지만 세 줄 이상은 안 된다.
+   - 한 줄은 한 문장 또는 짧은 두 문장. 국제 통용 표준 교육과정 중급(4급 이하) 어휘·문법으로.
+   - 문어체 금지. 담화표지("아", "음", "그럼", "네네"), 맞장구, 조각문 같은 입말의 특징을 자연스럽게 담아라.
+   - 위 expressions에 쓴 표현들이 이 대화문 안에 자연스럽게 들어가게 하라. 학습자가 들은 것을 그대로 연습하게 된다.
+   - {native_line.replace('각 단계의 native 필드에 name의', '각 줄의 native 필드에 text의') if native else 'native 필드는 빈 문자열로 둔다.'}
 
 JSON만 출력하라. 스키마:
-{{"topic_ko":"","goal_ko":"","place_ko":"","user_role":"","ai_role":"","stages":[{{"name":"","native":"","desc":"","expressions":[{{"text":"","cue":""}}]}}]}}"""
+{{"topic_ko":"","goal_ko":"","place_ko":"","user_role":"","ai_role":"","stages":[{{"name":"","native":"","desc":"","expressions":[{{"text":"","cue":""}}]}}],"script":[{{"speaker":"ai","text":"","native":"","stage":0}}]}}"""
 
-    data = await _gen_json(prompt, timeout_s=40.0)
+    # 대화문까지 함께 만드느라 길어졌다 — 넉넉히 기다린다
+    data = await _gen_json(prompt, timeout_s=55.0)
     plan = _validate_plan(data)
     if plan is None and not (data is None and _quota_exhausted()):
         # 쿼터 소진이 아닐 때만 1회 재시도 (429에서 재시도는 쿼터 낭비)
-        data = await _gen_json(prompt, timeout_s=40.0)
+        data = await _gen_json(prompt, timeout_s=55.0)
         plan = _validate_plan(data)
     if plan is None:
         raise HTTPException(status_code=502, detail=("plan_generation_failed | " + _fail_reason(data))[:250])
@@ -895,7 +929,9 @@ JSON만 출력하라. 스키마:
     _rp_cleanup()
     plan_id = base64.urlsafe_b64encode(os.urandom(9)).decode()
     _roleplay_plans[plan_id] = {"plan": plan, "style": style, "at": time.time()}
-    print(f"[상황극] 계획 생성: {plan['topic_ko']} / 목적: {plan['goal_ko']} / 단계 {len(plan['stages'])}개")
+    print(f"[상황극] 계획 생성: {plan['topic_ko']} / 목적: {plan['goal_ko']} / "
+          f"단계 {len(plan['stages'])}개 / 대화문 {len(plan['script'])}줄"
+          + ("" if plan["script"] else " (대화문 없음 — 듣기 단계 건너뜀)"))
     return {"id": plan_id, "plan": plan}
 
 

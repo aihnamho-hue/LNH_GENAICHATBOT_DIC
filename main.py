@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v65"
+APP_VERSION = "v66"
 APP_DATE = "2026-08-07"
 
 app = FastAPI()
@@ -31,8 +31,52 @@ templates = Jinja2Templates(directory="templates")
 # 2026-08-07: templates/index.html 만 깃헙에서 갱신되지 않는 사고가 있었다
 # (main.py 는 v64 인데 화면은 v60). 원인을 못 찾아 **파일 이름을 바꿔** 피해 간다.
 # app.html 이 있으면 그것을, 없으면 예전 index.html 을 쓴다.
-TEMPLATE_NAME = "app.html" if Path("templates/app.html").exists() else "index.html"
-print(f"[서버] 화면 파일 = templates/{TEMPLATE_NAME}")
+_BASE_TEMPLATE = "app.html" if Path("templates/app.html").exists() else "index.html"
+
+# ── 응급 런타임 패치 ──
+# 2026-08-07: 깃헙에 main.py 는 올라가는데 templates/index.html 만 계속 옛 버전(v60)에
+# 머무는 사고가 있었다. 원인을 못 찾는 동안 앱이 통째로 먹통이었다(클릭·소리 모두 죽음).
+# 그래서 **확실히 올라가는 main.py 쪽에서** 화면 파일을 시작할 때 한 번 고쳐 쓴다.
+# 화면 파일이 최신이면 아무 일도 일어나지 않는다(이미 고쳐진 코드라 찾지 못하므로).
+_RUNTIME_FIXES = [
+    # ★ goHome() 이 선언 전의 const 를 참조 → 재방문 사용자는 로드 직후 스크립트가 통째로 멈춘다.
+    #   그 뒤의 클릭 핸들러가 하나도 안 붙어 버튼이 죽고, 오디오 초기화도 안 돼 소리도 죽는다.
+    (
+        '[rpResultOverlay, rpBriefOverlay, rpScriptOverlay, rpSetupOverlay, freeFbOverlay]'
+        '.forEach(o => o.classList.add("hidden"));',
+        '["rpResultOverlay","rpBriefOverlay","rpScriptOverlay","rpSetupOverlay","freeFbOverlay"]'
+        '.forEach(_id => { const _o = document.getElementById(_id); if (_o) _o.classList.add("hidden"); });',
+    ),
+]
+
+
+def _build_runtime_template() -> str:
+    """화면 파일을 읽어 치명 버그를 때운 사본을 만들고, 그 파일 이름을 돌려준다."""
+    src = Path("templates") / _BASE_TEMPLATE
+    try:
+        html = src.read_text(encoding="utf-8")
+    except Exception as e:
+        print(f"[서버] 화면 파일을 못 읽음({e}) — 원본 그대로 사용")
+        return _BASE_TEMPLATE
+    applied = 0
+    for bad, good in _RUNTIME_FIXES:
+        if bad in html:
+            html = html.replace(bad, good)
+            applied += 1
+    if not applied:
+        print(f"[서버] 화면 파일 = templates/{_BASE_TEMPLATE} (응급 패치 불필요)")
+        return _BASE_TEMPLATE
+    out = Path("templates") / "_runtime.html"
+    try:
+        out.write_text(html, encoding="utf-8")
+    except Exception as e:
+        print(f"[서버] 응급 패치본을 못 씀({e}) — 원본 그대로 사용")
+        return _BASE_TEMPLATE
+    print(f"[서버] ⚠️ 화면 파일이 낡아 응급 패치 {applied}건 적용 — templates/_runtime.html 사용")
+    return "_runtime.html"
+
+
+TEMPLATE_NAME = _build_runtime_template()
 print(f"[서버] 호아랑 서버 시작 — 버전 {APP_VERSION}")
 
 # 햄스터 이미지 등 정적 파일 서빙
@@ -1566,7 +1610,7 @@ async def version_check():
     """
     tpl = ""
     try:
-        t = Path(f"templates/{TEMPLATE_NAME}").read_text(encoding="utf-8", errors="ignore")
+        t = Path(f"templates/{_BASE_TEMPLATE}").read_text(encoding="utf-8", errors="ignore")
         m = re.search(r'APP_VERSION = "(v\d+)', t)
         tpl = m.group(1) if m else ""
     except Exception:
@@ -1575,6 +1619,8 @@ async def version_check():
         "server": APP_VERSION,          # main.py
         "screen": tpl,                  # 실제로 쓰는 화면 파일의 버전
         "template": TEMPLATE_NAME,      # 어느 파일을 읽었는지
+        "base": _BASE_TEMPLATE,         # 원본 파일 이름
+        "patched": TEMPLATE_NAME == "_runtime.html",   # true = 화면 파일이 낡아 응급 패치 중
         "match": (tpl == APP_VERSION),  # ★ 이게 false 면 화면 파일이 안 올라간 것
         "date": APP_DATE,
         "sessions": _active_sessions,

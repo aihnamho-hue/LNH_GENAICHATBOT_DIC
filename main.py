@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v60"
+APP_VERSION = "v61"
 APP_DATE = "2026-08-06"
 
 app = FastAPI()
@@ -42,7 +42,7 @@ client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 # 공개 배포 시 비용 남용 방지 장치
 # - MAX_CONCURRENT_SESSIONS: 동시 접속 가능한 대화 세션 수 제한
 # ============================================================
-MAX_CONCURRENT_SESSIONS = int(os.environ.get("MAX_CONCURRENT_SESSIONS", "5"))
+MAX_CONCURRENT_SESSIONS = int(os.environ.get("MAX_CONCURRENT_SESSIONS", "24"))   # Render 스탠다드 기준. 한 학급(15명) + 여유
 _active_sessions = 0
 _session_lock = asyncio.Lock()
 

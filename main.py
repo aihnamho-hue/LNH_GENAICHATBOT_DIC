@@ -22,8 +22,8 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v63"
-APP_DATE = "2026-08-06"
+APP_VERSION = "v64"
+APP_DATE = "2026-08-07"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -1548,6 +1548,31 @@ async def home_loops():
     if not out:
         out = [{"mp4": "/static/home_loop.mp4", "jpg": "/static/home_loop.jpg"}]
     return {"loops": out}
+
+
+@app.get("/version")
+async def version_check():
+    """서버 코드와 화면 파일의 버전이 서로 맞는지 한눈에 확인한다.
+
+    깃헙에 main.py만 올라가고 templates/index.html이 빠지면 겉보기엔 배포가 된 것 같은데
+    화면은 옛날 것이 돈다. 그 사고를 다시 겪지 않으려고 만든 자리다.
+    배포 후 이 주소를 열어 match 가 true 인지만 보면 된다.
+    """
+    tpl = ""
+    try:
+        t = Path("templates/index.html").read_text(encoding="utf-8", errors="ignore")
+        m = re.search(r'APP_VERSION = "(v\d+)', t)
+        tpl = m.group(1) if m else ""
+    except Exception:
+        pass
+    return {
+        "server": APP_VERSION,          # main.py
+        "screen": tpl,                  # templates/index.html
+        "match": (tpl == APP_VERSION),  # ★ 이게 false 면 화면 파일이 안 올라간 것
+        "date": APP_DATE,
+        "sessions": _active_sessions,
+        "max_sessions": MAX_CONCURRENT_SESSIONS,
+    }
 
 
 @app.get("/healthz")

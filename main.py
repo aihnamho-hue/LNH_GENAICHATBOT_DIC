@@ -22,11 +22,17 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v64"
+APP_VERSION = "v65"
 APP_DATE = "2026-08-07"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+# ── 화면 파일 이름 ──
+# 2026-08-07: templates/index.html 만 깃헙에서 갱신되지 않는 사고가 있었다
+# (main.py 는 v64 인데 화면은 v60). 원인을 못 찾아 **파일 이름을 바꿔** 피해 간다.
+# app.html 이 있으면 그것을, 없으면 예전 index.html 을 쓴다.
+TEMPLATE_NAME = "app.html" if Path("templates/app.html").exists() else "index.html"
+print(f"[서버] 화면 파일 = templates/{TEMPLATE_NAME}")
 print(f"[서버] 호아랑 서버 시작 — 버전 {APP_VERSION}")
 
 # 햄스터 이미지 등 정적 파일 서빙
@@ -1560,14 +1566,15 @@ async def version_check():
     """
     tpl = ""
     try:
-        t = Path("templates/index.html").read_text(encoding="utf-8", errors="ignore")
+        t = Path(f"templates/{TEMPLATE_NAME}").read_text(encoding="utf-8", errors="ignore")
         m = re.search(r'APP_VERSION = "(v\d+)', t)
         tpl = m.group(1) if m else ""
     except Exception:
         pass
     return {
         "server": APP_VERSION,          # main.py
-        "screen": tpl,                  # templates/index.html
+        "screen": tpl,                  # 실제로 쓰는 화면 파일의 버전
+        "template": TEMPLATE_NAME,      # 어느 파일을 읽었는지
         "match": (tpl == APP_VERSION),  # ★ 이게 false 면 화면 파일이 안 올라간 것
         "date": APP_DATE,
         "sessions": _active_sessions,
@@ -1716,7 +1723,7 @@ async def rp_diag(test: int = 0, models: int = 0):
 
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
-    resp = templates.TemplateResponse(request=request, name="index.html")
+    resp = templates.TemplateResponse(request=request, name=TEMPLATE_NAME)
     # 브라우저가 옛 index.html을 캐시해서 "고쳤는데 그대로"가 되는 것 방지
     resp.headers["Cache-Control"] = "no-store"
     resp.headers["X-App-Version"] = f"{APP_VERSION} ({APP_DATE})"

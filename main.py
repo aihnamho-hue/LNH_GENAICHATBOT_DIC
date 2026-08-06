@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v66"
+APP_VERSION = "v67"
 APP_DATE = "2026-08-07"
 
 app = FastAPI()
@@ -31,7 +31,25 @@ templates = Jinja2Templates(directory="templates")
 # 2026-08-07: templates/index.html 만 깃헙에서 갱신되지 않는 사고가 있었다
 # (main.py 는 v64 인데 화면은 v60). 원인을 못 찾아 **파일 이름을 바꿔** 피해 간다.
 # app.html 이 있으면 그것을, 없으면 예전 index.html 을 쓴다.
-_BASE_TEMPLATE = "app.html" if Path("templates/app.html").exists() else "index.html"
+# ── 화면 파일 찾기 ──
+# 2026-08-07: 깃헙 업로드에서 **루트 파일(main.py)은 올라가는데 templates/ 하위는 안 올라가는**
+# 일이 반복됐다. 그래서 화면 파일을 루트에 둬도 되게 했다.
+# 루트에 app.html 이 있으면 그것을 templates/ 로 옮겨 쓴다 — 업로드가 훨씬 쉬워진다.
+def _resolve_base_template() -> str:
+    root = Path("app.html")
+    if root.exists():
+        try:
+            shutil.copyfile(root, Path("templates") / "app.html")
+            print("[서버] 루트의 app.html 을 화면 파일로 사용")
+            return "app.html"
+        except Exception as e:
+            print(f"[서버] 루트 app.html 복사 실패({e})")
+    if Path("templates/app.html").exists():
+        return "app.html"
+    return "index.html"
+
+
+_BASE_TEMPLATE = _resolve_base_template()
 
 # ── 응급 런타임 패치 ──
 # 2026-08-07: 깃헙에 main.py 는 올라가는데 templates/index.html 만 계속 옛 버전(v60)에

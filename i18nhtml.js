@@ -1,6 +1,6 @@
 // HTML에 박힌 한국어 중, JS가 번역해 덮어쓰지 않는 것 찾기
 const fs=require("fs"), {JSDOM}=require("jsdom");
-const SRC="/sessions/gifted-youthful-edison/mnt/음성 대화형 챗봇/templates/index.html";
+const SRC=process.argv[2]||require("path").join(__dirname,"templates","index.html");
 const html=fs.readFileSync(SRC,"utf8");
 const script=html.match(/<script>([\s\S]*)<\/script>/)[1];
 const dom=new JSDOM(html.replace(/<script>[\s\S]*?<\/script>/g,""));

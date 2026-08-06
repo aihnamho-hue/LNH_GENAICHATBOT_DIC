@@ -1,6 +1,6 @@
 // JS가 찾는 id / 클래스가 HTML에 실제로 있는지 — vuBars·homeBubble 사고 유형 예방
 const fs=require("fs"), {JSDOM}=require("jsdom");
-const SRC="/sessions/gifted-youthful-edison/mnt/음성 대화형 챗봇/templates/index.html";
+const SRC=process.argv[2]||require("path").join(__dirname,"templates","index.html");
 const html=fs.readFileSync(SRC,"utf8");
 const script=html.match(/<script>([\s\S]*)<\/script>/)[1];
 const d=new JSDOM(html.replace(/<script>[\s\S]*?<\/script>/g,"")).window.document;

@@ -1,6 +1,6 @@
 // 학습자 모국어(12개) 번역 완전성 검사
 const fs=require("fs"), vm=require("vm");
-const SRC="/sessions/gifted-youthful-edison/mnt/음성 대화형 챗봇/templates/index.html";
+const SRC=process.argv[2]||require("path").join(__dirname,"templates","index.html");
 const html=fs.readFileSync(SRC,"utf8");
 const script=html.match(/<script>([\s\S]*)<\/script>/)[1];
 

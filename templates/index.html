@@ -6,26 +6,26 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json?v=58">
+    <link rel="manifest" href="/static/manifest.json?v=59">
     <meta name="theme-color" content="#4A7C74">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=58">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=58">
-    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=58" crossorigin>
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=59">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=59">
+    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=59" crossorigin>
     <style>
         /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansMedium.woff2?v=58") format("woff2");
+            src: url("/static/fonts/GmarketSansMedium.woff2?v=59") format("woff2");
             font-weight: 400 600; font-style: normal; font-display: swap;
         }
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansBold.woff2?v=58") format("woff2");
+            src: url("/static/fonts/GmarketSansBold.woff2?v=59") format("woff2");
             font-weight: 700 900; font-style: normal; font-display: swap;
         }
         :root {
@@ -520,6 +520,26 @@
         .result-stages div { font-size: 12px; font-weight: 700; }
         .result-stages .ok { color: #2E7D4F; }
         .result-stages .no { color: #B8A99E; }
+
+        /* ── 상호작용 대화 능력(IDC) 점검 — 결과 화면의 요소별 프로파일 ── */
+        .idc-head { display: flex; align-items: baseline; gap: 6px; margin: 4px 0 8px; text-align: left; }
+        .idc-head .idc-h-title { font-size: 13px; font-weight: 900; color: var(--accent-ink); }
+        .idc-head .idc-h-sub { font-size: 11px; font-weight: 700; color: var(--muted); }
+        .idc-list { text-align: left; display: flex; flex-direction: column; gap: 6px; margin: 0 0 10px; }
+        .idc-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 9px; border-radius: 12px;
+                   background: #F7F4EC; border: 1px solid #E7E0D2; }
+        .idc-row.na { background: #F3F1EE; border-style: dashed; opacity: 0.75; }
+        .idc-grade { flex: none; width: 34px; text-align: center; font-size: 11px; font-weight: 900;
+                     border-radius: 8px; padding: 3px 0; color: #fff; }
+        .idc-grade.hi { background: #58CC02; }
+        .idc-grade.mid { background: #E6A700; }
+        .idc-grade.lo { background: #C9A79A; }
+        .idc-grade.na { background: #CFC7BA; }
+        .idc-body { min-width: 0; }
+        .idc-name { font-size: 12px; font-weight: 800; color: var(--ink); }
+        .idc-why { font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+        .idc-note { font-size: 10.5px; font-weight: 600; color: var(--muted); text-align: left;
+                    margin: 0 0 12px; line-height: 1.4; }
 
         /* ── 주제 자동 추천 (예) 표시 + 🎲 목적 재추첨 ── */
         .rp-input-row { display: flex; gap: 6px; }
@@ -1047,8 +1067,8 @@
 <!-- ═══ 앱 시작 영상 (한옥 장지문이 열리고 호아랑이 나온다) ═══
      같은 세션에서 한 번만 재생하고, 끝나면 스스로 사라진다. -->
 <div class="splash" id="splash">
-    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=58">
-        <source src="/static/intro.mp4?v=58" type="video/mp4">
+    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=59">
+        <source src="/static/intro.mp4?v=59" type="video/mp4">
     </video>
     <button type="button" class="splash-skip" id="splashSkip">건너뛰기 ›</button>
 </div>
@@ -1195,7 +1215,7 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png?v=58" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=59" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
         <div class="result-cards">
             <div class="r-card score"><div class="r-label" id="rcScoreLbl"></div><div class="r-inner" id="rcScoreVal">0</div></div>
@@ -1203,6 +1223,15 @@
             <div class="r-card time"><div class="r-label" id="rcTimeLbl"></div><div class="r-inner" id="rcTimeVal">0:00</div></div>
         </div>
         <div class="result-stages" id="rpResultStages"></div>
+        <!-- 상호작용 대화 능력(IDC) 점검 — 모형의 '점검·성찰' 국면.
+             〈표 42〉의 중급 평가 기준으로 요소별 상·중·하를 보인다.
+             비언어적 행위는 교실에서 배우는 요소라 회색으로만 두고 총점에서 뺀다. -->
+        <div class="idc-head" id="idcHead" style="display:none;">
+            <span class="idc-h-title" id="idcTitleEl"></span>
+            <span class="idc-h-sub" id="idcSubEl"></span>
+        </div>
+        <div class="idc-list" id="rpIdcList"></div>
+        <p class="idc-note" id="idcNoteEl" style="display:none;"></p>
         <p class="rp-note" id="rpSavedNoteEl" style="text-align:center;"></p>
         <div class="consent-actions"><button class="action-btn" id="rpCloseBtn"></button></div>
     </div>
@@ -1217,7 +1246,7 @@
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png?v=58" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=59" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
@@ -1238,7 +1267,7 @@
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=58" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=59" alt="호아랑">
         <div class="freefb-icon">💬</div>
         <h2 id="freeFbTitleEl" style="margin:6px 0;">💬</h2>
         <p class="consent-text" id="freeFbBodyEl" style="text-align:center;"></p>
@@ -1250,14 +1279,14 @@
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=58" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=59" alt="호아랑"></div>
 </div>
 <div class="turn-edge" aria-hidden="true"></div>
 <!-- 배경 영상 — 화면 전체를 채우고 그 위에 글자·카드가 놓인다 -->
 <div class="home-bg" aria-hidden="true">
-    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=58" alt="">
+    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=59" alt="">
     <video class="hb-main" id="homeLoop" playsinline muted loop autoplay preload="auto"
-           poster="/static/home_loop.jpg?v=58" src="/static/home_loop.mp4?v=58"></video>
+           poster="/static/home_loop.jpg?v=59" src="/static/home_loop.mp4?v=59"></video>
     <div class="home-bg-veil"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
@@ -1265,7 +1294,7 @@
     <!-- 상단: 제목(왼쪽) · 버튼(오른쪽) -->
     <div class="home-header">
         <h1 class="home-title">
-            <img class="home-logo" src="/static/icon-192.png?v=58" alt="">
+            <img class="home-logo" src="/static/icon-192.png?v=59" alt="">
             <span id="homeTitleEl">호아랑</span>
         </h1>
         <div class="home-top">
@@ -1301,7 +1330,7 @@
 <!-- 설치 관문 — 웹으로는 쓸 수 없다. 언어를 고르고, 그 언어로 설치 안내를 받는다. -->
 <div class="inapp-gate hidden" id="installGate">
     <div class="inapp-card">
-        <img class="ig-icon" src="/static/icon-192.png?v=58" alt="">
+        <img class="ig-icon" src="/static/icon-192.png?v=59" alt="">
         <!-- ① 언어(나라) 선택 -->
         <div id="igStep1">
             <h2>🌏 언어 선택 · Select Your Language</h2>
@@ -1340,7 +1369,7 @@
 <div class="lang-overlay hidden" id="notifOverlay">
     <div class="lang-box" style="max-width:380px;">
         <button type="button" class="ov-x" id="notifX">✕</button>
-        <div class="notif-art"><img src="/static/ham_smile.png?v=58" alt=""></div>
+        <div class="notif-art"><img src="/static/ham_smile.png?v=59" alt=""></div>
         <h2 id="notifTitleEl" style="margin-bottom:8px;"></h2>
         <p class="consent-text" id="notifBodyEl" style="margin-bottom:14px;"></p>
         <div class="consent-actions">
@@ -1365,7 +1394,7 @@
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=58" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=59" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -1399,7 +1428,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png?v=58" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=59" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -1452,7 +1481,7 @@
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png?v=58" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=59" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span><svg class="ic"><use href="#ic-video"></use></svg></span><span id="hamViewBtnLbl"></span></button>
@@ -1528,7 +1557,7 @@
 <!-- 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 (발화 연습 시작 등) -->
 <div class="ham-peek" id="hamPeek" aria-hidden="true">
     <div class="hp-bubble" id="hamPeekText"></div>
-    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=58" alt="">
+    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=59" alt="">
 </div>
 
 <!-- 대화의 문턱 연출 — 한옥 장지문 -->
@@ -1541,11 +1570,11 @@
 <!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <!-- 발화 연습 배경 — '통통(가야금)', 사용자 볼륨의 20%로 아주 은은하게 -->
-<audio id="prBgm" src="/static/practice_bgm.mp3?v=58" loop preload="none"></audio>
+<audio id="prBgm" src="/static/practice_bgm.mp3?v=59" loop preload="none"></audio>
 <!-- 단계 달성 — 전통악기 징 -->
-<audio id="gongSfx" src="/static/gong.mp3?v=58" preload="auto"></audio>
+<audio id="gongSfx" src="/static/gong.mp3?v=59" preload="auto"></audio>
 <!-- 주제 대화·자유 수다 진행 중 배경 — 「How are you 가야금」 -->
-<audio id="chatBgm" src="/static/chat_bgm.mp3?v=58" loop preload="none"></audio>
+<audio id="chatBgm" src="/static/chat_bgm.mp3?v=59" loop preload="none"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -1557,7 +1586,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v58 (2026-08-02)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v59 (2026-08-06)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -2216,6 +2245,72 @@
         fr: { pttKeyHint:"⌨️ Vous pouvez aussi parler avec la barre d'espace (maintenue) ou le bouton de la télécommande (appuyez pour démarrer/arrêter)" },
     };
     for (const _l in I18N_KEYHINT) { if (I18N[_l]) Object.assign(I18N[_l], I18N_KEYHINT[_l]); }
+    /* 상호작용 대화 능력(IDC) 점검 문구 — 결과 화면의 요소별 프로파일.
+       요소 이름은 논문 〈표 33〉의 9요소. 키 규칙: idc_<서버가 보내는 key>.
+       비언어적 행위(idc_nonverbal)는 교실에서 배우므로 등급 없이 이름만 보인다. */
+    const I18N_IDC = {
+        ko: { idcTitle:"상호작용 대화 능력", idcHi:"잘함", idcMid:"보통", idcLo:"연습",
+              idcNote:"※ 비언어적 행위(시선·표정·고개 끄덕임)는 교실에서 선생님과 연습하는 요소예요. 점수에는 넣지 않아요.",
+              idc_stage:"대화 단계 만들기", idc_topic:"이야깃거리 이끌기", idc_move:"주고받기 조절",
+              idc_turn:"말차례 나누기", idc_repair:"막혔을 때 되살리기", idc_strategy:"모를 때 돌려 말하기",
+              idc_listen:"맞장구치며 듣기", idc_nonverbal:"몸짓·표정으로 반응하기", idc_context:"상대에 맞춰 말하기" },
+        en: { idcTitle:"Interactional dialogue skills", idcHi:"Great", idcMid:"OK", idcLo:"Practice",
+              idcNote:"※ Non-verbal behaviour (eye contact, expression, nodding) is practised with your teacher in class, so it is not scored here.",
+              idc_stage:"Building the stages of a talk", idc_topic:"Leading the topic", idc_move:"Steering the give-and-take",
+              idc_turn:"Sharing turns", idc_repair:"Repairing a breakdown", idc_strategy:"Working around words you don't know",
+              idc_listen:"Listening with reactions", idc_nonverbal:"Reacting with gesture and face", idc_context:"Matching how you speak to the person" },
+        zh: { idcTitle:"互动对话能力", idcHi:"很好", idcMid:"一般", idcLo:"再练",
+              idcNote:"※ 非语言行为（眼神、表情、点头）要在课堂上和老师一起练习，因此不计入分数。",
+              idc_stage:"搭建对话的步骤", idc_topic:"带动话题", idc_move:"调节一来一往",
+              idc_turn:"轮流说话", idc_repair:"卡住时重新接上", idc_strategy:"不会说时绕着说",
+              idc_listen:"边听边回应", idc_nonverbal:"用手势和表情回应", idc_context:"看对象调整说法" },
+        ja: { idcTitle:"やりとりの力", idcHi:"よくできた", idcMid:"ふつう", idcLo:"れんしゅう",
+              idcNote:"※ 非言語の行動（視線・表情・うなずき）は教室で先生と練習する要素なので、点数には入れません。",
+              idc_stage:"会話の段取りを作る", idc_topic:"話題を引っぱる", idc_move:"やりとりを調整する",
+              idc_turn:"話す番を分け合う", idc_repair:"つまずいたとき立て直す", idc_strategy:"言えないとき言いかえる",
+              idc_listen:"あいづちを打ちながら聞く", idc_nonverbal:"しぐさ・表情で反応する", idc_context:"相手に合わせて話す" },
+        vi: { idcTitle:"Năng lực hội thoại tương tác", idcHi:"Tốt", idcMid:"Tạm ổn", idcLo:"Cần luyện",
+              idcNote:"※ Hành vi phi ngôn ngữ (ánh mắt, nét mặt, gật đầu) được luyện với giáo viên trên lớp nên không tính điểm ở đây.",
+              idc_stage:"Dựng các bước của cuộc trò chuyện", idc_topic:"Dẫn dắt chủ đề", idc_move:"Điều chỉnh qua lại",
+              idc_turn:"Chia lượt nói", idc_repair:"Nối lại khi bị tắc", idc_strategy:"Nói vòng khi chưa biết từ",
+              idc_listen:"Nghe và đáp lại", idc_nonverbal:"Phản ứng bằng cử chỉ, nét mặt", idc_context:"Nói phù hợp với người đối diện" },
+        th: { idcTitle:"ความสามารถในการสนทนาโต้ตอบ", idcHi:"ดีมาก", idcMid:"พอใช้", idcLo:"ฝึกต่อ",
+              idcNote:"※ พฤติกรรมอวัจนภาษา (สายตา สีหน้า การพยักหน้า) ฝึกกับครูในห้องเรียน จึงไม่นำมาคิดคะแนน",
+              idc_stage:"วางลำดับขั้นของบทสนทนา", idc_topic:"นำเรื่องที่คุย", idc_move:"ปรับการโต้ตอบไปมา",
+              idc_turn:"แบ่งกันพูด", idc_repair:"กู้บทสนทนาเมื่อติดขัด", idc_strategy:"เลี่ยงพูดเมื่อไม่รู้คำ",
+              idc_listen:"ฟังพร้อมตอบรับ", idc_nonverbal:"ตอบรับด้วยท่าทางและสีหน้า", idc_context:"พูดให้เหมาะกับคู่สนทนา" },
+        id: { idcTitle:"Kemampuan percakapan interaktif", idcHi:"Bagus", idcMid:"Cukup", idcLo:"Latihan",
+              idcNote:"※ Perilaku nonverbal (tatapan, ekspresi, anggukan) dilatih bersama guru di kelas, jadi tidak dinilai di sini.",
+              idc_stage:"Menyusun tahap percakapan", idc_topic:"Menggiring topik", idc_move:"Mengatur tanya-jawab",
+              idc_turn:"Berbagi giliran bicara", idc_repair:"Memulihkan saat macet", idc_strategy:"Memutar kata saat tak tahu",
+              idc_listen:"Mendengar sambil menanggapi", idc_nonverbal:"Menanggapi dengan gerak dan mimik", idc_context:"Menyesuaikan bicara dengan lawan bicara" },
+        mn: { idcTitle:"Харилцан ярианы чадвар", idcHi:"Сайн", idcMid:"Дунд", idcLo:"Дасгал",
+              idcNote:"※ Үг бус илэрхийлэл (харц, царай, толгой дохих) нь ангид багштайгаа дадлагажуулдаг тул энд оноонд ордоггүй.",
+              idc_stage:"Ярианы үе шатыг бүрдүүлэх", idc_topic:"Сэдвийг хөтлөх", idc_move:"Асуулт хариултыг зохицуулах",
+              idc_turn:"Ярих ээлжээ хуваах", idc_repair:"Тасарсан үед сэргээх", idc_strategy:"Үг мэдэхгүй үед тойруулж хэлэх",
+              idc_listen:"Хариу үзүүлж сонсох", idc_nonverbal:"Дохио, царайгаар хариулах", idc_context:"Ярилцагчдаа тохируулан ярих" },
+        uz: { idcTitle:"Muloqot qobiliyati", idcHi:"Zo'r", idcMid:"O'rtacha", idcLo:"Mashq",
+              idcNote:"※ Nutqsiz xatti-harakat (nigoh, yuz ifodasi, bosh irg'ash) sinfda o'qituvchi bilan mashq qilinadi, shuning uchun bu yerda baholanmaydi.",
+              idc_stage:"Suhbat bosqichlarini qurish", idc_topic:"Mavzuni yetaklash", idc_move:"Savol-javobni boshqarish",
+              idc_turn:"Gapirish navbatini bo'lishish", idc_repair:"Tiqilib qolganda tiklash", idc_strategy:"So'zni bilmaganda aylanib aytish",
+              idc_listen:"Javob berib tinglash", idc_nonverbal:"Imo-ishora va yuz bilan javob berish", idc_context:"Suhbatdoshga moslab gapirish" },
+        ru: { idcTitle:"Умение вести диалог", idcHi:"Отлично", idcMid:"Неплохо", idcLo:"Тренировать",
+              idcNote:"※ Невербальное поведение (взгляд, мимика, кивки) отрабатывается с преподавателем в классе, поэтому здесь не оценивается.",
+              idc_stage:"Выстраивать этапы разговора", idc_topic:"Вести тему", idc_move:"Управлять обменом репликами",
+              idc_turn:"Делить очередь говорить", idc_repair:"Восстанавливать разговор при сбое", idc_strategy:"Обходиться без нужного слова",
+              idc_listen:"Слушать и откликаться", idc_nonverbal:"Отвечать жестом и мимикой", idc_context:"Говорить сообразно собеседнику" },
+        es: { idcTitle:"Competencia conversacional", idcHi:"Muy bien", idcMid:"Regular", idcLo:"A practicar",
+              idcNote:"※ La conducta no verbal (mirada, expresión, asentir) se practica con el profesor en clase, así que no puntúa aquí.",
+              idc_stage:"Construir las fases de la conversación", idc_topic:"Llevar el tema", idc_move:"Regular el toma y daca",
+              idc_turn:"Repartir los turnos de habla", idc_repair:"Recuperar la conversación al atascarte", idc_strategy:"Dar un rodeo cuando falta la palabra",
+              idc_listen:"Escuchar reaccionando", idc_nonverbal:"Reaccionar con gestos y expresión", idc_context:"Hablar según con quién hablas" },
+        fr: { idcTitle:"Compétence d'interaction", idcHi:"Très bien", idcMid:"Correct", idcLo:"À travailler",
+              idcNote:"※ Le comportement non verbal (regard, expression, hochement de tête) se travaille avec l'enseignant en classe : il n'est donc pas noté ici.",
+              idc_stage:"Construire les étapes de la conversation", idc_topic:"Mener le sujet", idc_move:"Régler les échanges",
+              idc_turn:"Partager les tours de parole", idc_repair:"Relancer quand ça bloque", idc_strategy:"Contourner un mot qui manque",
+              idc_listen:"Écouter en réagissant", idc_nonverbal:"Réagir par le geste et le visage", idc_context:"Parler selon l'interlocuteur" },
+    };
+    for (const _l in I18N_IDC) { if (I18N[_l]) Object.assign(I18N[_l], I18N_IDC[_l]); }
     /* 서버 오류 문구(v57) — 서버는 한국어로 보내므로 코드로 받아 화면 언어로 바꾼다.
        키 이름 규칙: 서버가 보내는 code 앞에 err_ 를 붙인다 (err_rp_expired 등).
        새 코드가 생겨도 사전에 키만 추가하면 자동으로 번역된다. */
@@ -2377,7 +2472,7 @@
             const w = document.createElement("div");
             w.className = "ob-hero";
             w.innerHTML = '<img class="ob-ham" alt=""><span class="ob-hello"></span>';
-            w.querySelector("img").src = "/static/ham_smile.png?v=58";
+            w.querySelector("img").src = "/static/ham_smile.png?v=59";
             w.querySelector(".ob-hello").textContent = t("obHello");
             return w;
         },
@@ -2461,7 +2556,7 @@
             const v = w.querySelectorAll(".ob-view");
             v[0].querySelector(".vl").textContent = stripLeadEmoji(t("hvClose"));
             v[1].querySelector(".vl").textContent = stripLeadEmoji(t("hvOpen"));
-            v[1].querySelector("img").src = "/static/ham_idle.png?v=58";
+            v[1].querySelector("img").src = "/static/ham_idle.png?v=59";
             return w;
         },
         function talk() {                       // ⑥ 말하기 버튼 · 도움말 · 이어폰
@@ -4088,11 +4183,52 @@
         rpEnding = false;
         clearTimeout(finalScoreTimer);
         actionBtn.disabled = false;
-        if (!rpFinal) rpFinal = { percent: rpPercent, score: rpPercent, stages: rpStagesState };
+        if (!rpFinal) rpFinal = { percent: rpPercent, score: rpPercent, stages: rpStagesState, idc: [], idcTotal: 0 };
         stopSession(); // 대화 저장(녹음+기록+메타)은 여기서 자동 수행
         // 대화 화면에서 문이 닫히고 → 다 닫히면 그 뒤에서 결과 화면으로 바뀐다
         closeDoorThen(t("doorEnd"), showRpResult);
     }
+    /* 상호작용 대화 능력(IDC) 프로파일 렌더 — 요소별 상·중·하와 한 줄 근거.
+       요소 이름은 학습자의 모국어로 보인다(사전 키: idc_<key>).
+       비언어적 행위는 교실에서 배우는 요소라 '—'로만 두고 총점에서 뺀다. */
+    function renderIdcProfile(items, total) {
+        const list = document.getElementById("rpIdcList");
+        const head = document.getElementById("idcHead");
+        const note = document.getElementById("idcNoteEl");
+        list.innerHTML = "";
+        if (!items.length) { head.style.display = "none"; note.style.display = "none"; return; }
+        head.style.display = "flex";
+        document.getElementById("idcTitleEl").textContent = t("idcTitle");
+        document.getElementById("idcSubEl").textContent = total + t("rpPts");
+        const gradeLbl = { hi: t("idcHi"), mid: t("idcMid"), lo: t("idcLo"), na: "—" };
+        items.forEach(it => {
+            const row = document.createElement("div");
+            row.className = "idc-row" + (it.scored ? "" : " na");
+            const g = document.createElement("span");
+            g.className = "idc-grade " + (it.grade || "na");
+            g.textContent = gradeLbl[it.grade] || "—";
+            const body = document.createElement("div");
+            body.className = "idc-body";
+            const nm = document.createElement("div");
+            nm.className = "idc-name";
+            // 사전에 번역이 있으면 모국어로, 없으면 서버가 준 한국어 이름으로.
+            // (키를 변수로 만들어 부른다 — err_ 규칙과 같은 방식)
+            const nameKey = "idc_" + it.key;
+            nm.textContent = t(nameKey) || it.name;
+            body.appendChild(nm);
+            if (it.why) {
+                const w = document.createElement("div");
+                w.className = "idc-why";
+                w.textContent = it.why;
+                body.appendChild(w);
+            }
+            row.appendChild(g); row.appendChild(body);
+            list.appendChild(row);
+        });
+        note.style.display = "block";
+        note.textContent = t("idcNote");
+    }
+
     function showRpResult() {
         // 듀오링고식 통계 카드: 점수 · 내 발화 수 · 대화 시간
         document.getElementById("rcScoreLbl").textContent = t("rcScore");
@@ -4111,6 +4247,7 @@
             d.textContent = (s.done ? "✓ " : "— ") + s.name + (s.native ? " · " + s.native : "");
             box.appendChild(d);
         });
+        renderIdcProfile(rpFinal.idc || [], rpFinal.idcTotal || 0);
         document.getElementById("rpSavedNoteEl").textContent = t("rpSavedNote");
         goFeedback();                       // 결과 = 피드백 화면
         rpResultOverlay.classList.remove("hidden");
@@ -4884,7 +5021,8 @@
                 if (!scfPanel.classList.contains("hidden")) renderScaffoldItems(msg.items || [], msg.stage || "");
             } else if (msg.type === "final_score") {
                 // 종료 버튼에 대한 서버의 최종 분석 결과 — 퍼센트를 점수로 치환
-                rpFinal = { percent: msg.percent || 0, score: msg.score || 0, stages: msg.stages || rpStagesState };
+                rpFinal = { percent: msg.percent || 0, score: msg.score || 0, stages: msg.stages || rpStagesState,
+                            idc: msg.idc || [], idcTotal: msg.idcTotal || 0 };
                 rpPercent = rpFinal.percent;
                 rpStagesState = rpFinal.stages;
                 renderProgress();
@@ -5064,8 +5202,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png?v=58", smile: "/static/ham_smile.png?v=58",
-        surprised: "/static/ham_surprised.png?v=58", shy: "/static/ham_shy.png?v=58",
+        idle: "/static/ham_idle.png?v=59", smile: "/static/ham_smile.png?v=59",
+        surprised: "/static/ham_surprised.png?v=59", shy: "/static/ham_shy.png?v=59",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -5139,7 +5277,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png?v=58";
+                img.src = "/static/hamster.png?v=59";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");

@@ -1,6 +1,6 @@
 // 100% 초과 구간에서 "흔들림은 한 번, 버닝은 유지"인지 확인
 const fs=require("fs");
-const src=fs.readFileSync("/sessions/gifted-youthful-edison/mnt/음성 대화형 챗봇/templates/index.html","utf8");
+const src=fs.readFileSync(process.argv[2]||require("path").join(__dirname,"templates","index.html"),"utf8");
 let fail=0; const ok=(n,c)=>{console.log((c?"  ✅ ":"  ❌ ")+n); if(!c)fail++;};
 
 ok("body를 흔들지 않는다", !/document\.body\.classList\.(add|remove)\("zap-shake"\)/.test(src));

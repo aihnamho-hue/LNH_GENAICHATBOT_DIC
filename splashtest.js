@@ -1,6 +1,6 @@
 // 인트로 영상을 누를 때, 그 클릭이 뒷화면 버튼까지 뚫고 가는지 확인
 const fs=require("fs"), {JSDOM}=require("jsdom");
-const SRC="/sessions/gifted-youthful-edison/mnt/음성 대화형 챗봇/templates/index.html";
+const SRC=process.argv[2]||require("path").join(__dirname,"templates","index.html");
 const html=fs.readFileSync(SRC,"utf8");
 let fail=0; const ok=(n,c)=>{console.log((c?"  ✅ ":"  ❌ ")+n); if(!c)fail++;};
 

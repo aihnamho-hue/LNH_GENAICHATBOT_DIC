@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v67"
+APP_VERSION = "v69"
 APP_DATE = "2026-08-07"
 
 app = FastAPI()
@@ -36,6 +36,19 @@ templates = Jinja2Templates(directory="templates")
 # 일이 반복됐다. 그래서 화면 파일을 루트에 둬도 되게 했다.
 # 루트에 app.html 이 있으면 그것을 templates/ 로 옮겨 쓴다 — 업로드가 훨씬 쉬워진다.
 def _resolve_base_template() -> str:
+    # ① 압축본이 있으면 그것을 먼저 푼다.
+    #    화면 파일이 500KB가 넘어 깃헙 업로드가 자꾸 중간에 끊겼다.
+    #    gzip 으로 90KB 정도가 되면 훨씬 안정적으로 올라간다.
+    gz = Path("app.html.gz")
+    if gz.exists():
+        try:
+            import gzip as _gz
+            data = _gz.decompress(gz.read_bytes())
+            (Path("templates") / "app.html").write_bytes(data)
+            print(f"[서버] app.html.gz 를 풀어 화면 파일로 사용 ({len(data):,} 바이트)")
+            return "app.html"
+        except Exception as e:
+            print(f"[서버] app.html.gz 해제 실패({e})")
     root = Path("app.html")
     if root.exists():
         try:

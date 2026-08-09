@@ -22,8 +22,8 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v71"
-APP_DATE = "2026-08-07"
+APP_VERSION = "v73"
+APP_DATE = "2026-08-09"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -496,7 +496,23 @@ IDC_ELEMENTS = [
 IDC_BY_KEY = {e["key"]: e for e in IDC_ELEMENTS}
 # 유발·평가 대상 = 교실 전담(✕)을 뺀 나머지. 총점도 이 요소들로만 낸다.
 IDC_TRAINABLE = [e for e in IDC_ELEMENTS if e["media"] != "class"]
+
+# ── 오늘의 퀘스트 가운데 '세는 것'만으로는 판정할 수 없는 것들 ──
+# 로그의 낱말만 봐서는 알 수 없고 대화의 흐름을 읽어야 하는 행동이다.
+# 진행률 분석과 같은 호출에서 함께 판정한다(따로 부르면 비용·지연이 두 배).
+# 모두 논문 3.3 IDC 요소 안에 있다.
+QUEST_LLM = [
+    {"id": "qRefuse",  "el": "move",     "desc": "상대의 제안·요청을 완곡하게라도 거절한 적이 있다"},
+    {"id": "qAlt",     "el": "move",     "desc": "거절하거나 곤란할 때 다른 방법·대안을 스스로 제안한 적이 있다"},
+    {"id": "qCond",    "el": "move",     "desc": "'~하면 ~할게요'처럼 조건을 붙여 협상한 적이 있다"},
+    {"id": "qHold",    "el": "move",     "desc": "상대가 한 번 거절·난색을 보였는데도 물러서지 않고 다시 요청한 적이 있다"},
+    {"id": "qCircum",  "el": "strategy", "desc": "낱말이 떠오르지 않을 때 다른 말로 돌려 설명한 적이 있다"},
+    {"id": "qReturn",  "el": "topic",    "desc": "다른 화제로 옮겼다가 원래 화제로 스스로 돌아온 적이 있다"},
+    {"id": "qNewTopic","el": "topic",    "desc": "과업과 별개로 새로운 화제를 스스로 꺼낸 적이 있다"},
+    {"id": "qSelfFix", "el": "repair",   "desc": "말하다가 스스로 틀린 것을 알아채고 고쳐 말한 적이 있다"},
+]
 IDC_SCORED_KEYS = [e["key"] for e in IDC_TRAINABLE]
+_QUEST_IDS = {q["id"] for q in QUEST_LLM}
 
 # 비계 수준 — 실현 횟수에 따라 3 → 2 → 1로 내려간다(페이딩).
 IDC_LEVEL_MODEL = 3    # 모델링: 네가 시범을 보이고 학습자가 이어받게 한다
@@ -2056,6 +2072,7 @@ async def _handle_session(websocket: WebSocket):
     convo = []           # [{"role":"user"|"ai","text":str}] — 같은 화자 연속 조각은 병합
     rp_progress = {
         "done": set(),                 # 충족된 단계 인덱스 (단조 증가)
+        "quests": set(),               # 학습자가 해낸 퀘스트 id (누적)
         "total": len(rp_plan["stages"]) if rp_plan else 0,
         "completed_at_turns": None,    # 전 단계 충족 시점의 학습자 턴 수 (100% 초과 계산 기준)
         "percent": 0,
@@ -2081,6 +2098,7 @@ async def _handle_session(websocket: WebSocket):
                 {"name": s["name"], "native": s.get("native", ""), "done": i in rp_progress["done"]}
                 for i, s in enumerate(rp_plan["stages"])
             ],
+            "quests": sorted(rp_progress["quests"]),   # 오늘의 퀘스트 중 해낸 것
         }
 
     def _idc_absorb(keys) -> None:
@@ -2145,6 +2163,7 @@ async def _handle_session(websocket: WebSocket):
                 f"{i}. {s['name']}: {s['desc']}" for i, s in enumerate(rp_plan["stages"]))
             idc_txt = "\n".join(
                 f"- {e['key']}: {e['name']} — {e['sub']}" for e in IDC_TRAINABLE)
+            quest_txt = "\n".join(f"- {q['id']}: {q['desc']}" for q in QUEST_LLM)
             prompt = f"""다음은 한국어 학습자의 상황극 대화 기록이다.
 과업 — 주제: {rp_plan['topic_ko']} / 달성 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']}
 
@@ -2157,13 +2176,16 @@ async def _handle_session(websocket: WebSocket):
 [상호작용 대화 능력 요소]
 {idc_txt}
 
-두 가지를 판정하라.
+세 가지를 판정하라.
 (1) done — 위 대화에서 이미 실현(충족)된 기능단계의 번호를 모두.
     판정 기준: 그 단계의 의사소통 기능이 대화에서 실제로 수행되었으면 충족이다. 표현이 서툴러도 기능이 이루어졌으면 인정한다. 아직 시도되지 않았거나 실패한 단계는 제외한다.
 (2) idc — 위 요소 가운데 **학습자가** 실제로 수행한 것의 key를 모두.
     ★상대(챗봇)가 한 것은 세지 마라. 학습자의 발화에서 확인되는 것만 고른다.
     표현이 서툴러도 그 기능을 해냈으면 인정한다. 해당 없으면 빈 배열.
-JSON만 출력: {{"done":[번호,...],"idc":["key",...]}}"""
+(3) quest — 아래 목록 가운데 **학습자가** 실제로 한 것의 id를 모두. 없으면 빈 배열.
+{quest_txt}
+
+JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...]}}"""
             data = await _gen_json(prompt, timeout_s=15.0)
             if isinstance(data, dict):
                 for i in data.get("done") or []:
@@ -2174,6 +2196,10 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...]}}"""
                     if 0 <= idx < rp_progress["total"]:
                         rp_progress["done"].add(idx)
                 _idc_absorb(data.get("idc"))
+                # 퀘스트는 한 번 해내면 계속 인정한다(누적)
+                for q in data.get("quest") or []:
+                    if isinstance(q, str) and q in _QUEST_IDS:
+                        rp_progress["quests"].add(q)
             turns = _user_turns()
             # 완료 판정: 모든 단계 충족 OR 마지막(마무리) 단계에 도달.
             # 중간 기능단계 하나를 건너뛰었어도 마무리 단계까지 갔으면 과업은 끝난 것으로 본다

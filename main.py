@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v79"
+APP_VERSION = "v81"
 APP_DATE = "2026-08-11"
 
 app = FastAPI()
@@ -945,6 +945,89 @@ JSON만 출력: {{"goals":["","",""],"place":"","my_role":"","ai_role":"","style
         raise HTTPException(status_code=502, detail=("suggest_failed | " + _fail_reason(data))[:250])
     print(f"[상황극] 추천 생성: 입력='{place or goal or topic}' → 목적 {sug['goals']}")
     return sug
+
+
+# ══════════ 교재 사진에서 상황 읽어 오기 ══════════
+# 학습자가 교실에서 배운 그 페이지를 찍어 오면, 장소·목적·역할·말투를 뽑아
+# 설정 칸을 미리 채운다. 앱에서 아무 상황이나 만들면 그날 배운 내용과 따로 놀지만,
+# 교재를 찍어 넣으면 교실 수업이 그대로 확장 연습으로 이어진다(설계 원칙 P9).
+#
+# ★ 사진은 저장하지 않는다. 교재는 저작물이므로 설정만 뽑고 그 자리에서 버린다.
+#   추출 결과는 반드시 학습자가 확인·수정한 뒤에 쓴다(잘못 뽑히면 엉뚱한 연습이 된다).
+MAX_PHOTO_BYTES = 8 * 1024 * 1024
+_PHOTO_MIME = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
+
+
+@app.post("/roleplay-from-photo")
+async def roleplay_from_photo(photo: UploadFile = File(...), lang: str = Form(default="ko")):
+    """교재 말하기 페이지 사진 → 장소·목적·내 역할·상대 역할·말투 추출."""
+    mime = (photo.content_type or "").split(";")[0].strip().lower()
+    if mime not in _PHOTO_MIME:
+        raise HTTPException(status_code=415, detail="unsupported_image")
+    raw = await photo.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="empty_image")
+    if len(raw) > MAX_PHOTO_BYTES:
+        raise HTTPException(status_code=413, detail="image_too_large")
+
+    ui_lang = _clean_str(lang, 5).lower()
+    native = LANG_NAMES.get(ui_lang, "")
+    native_line = f"- native: 위 값을 {native}로 옮긴 것 (없으면 빈 문자열)" if native else "- native: 빈 문자열"
+
+    prompt = f"""이 사진은 한국어 교재의 말하기 활동 페이지다. 대화문·삽화·지시문을 읽고
+학습자가 연습할 '상황'을 뽑아라.
+
+뽑을 것 (모두 한국어로, 짧게)
+- place: 대화가 일어나는 장소 (예: 옷 가게, 병원 접수처). 없으면 대화 내용으로 추정한다.
+- goal: 학습자가 이루려는 목적 한 문장 (예: 마음에 드는 옷을 사기)
+- myRole: 학습자가 맡을 역할 (예: 손님)
+- aiRole: 상대가 맡을 역할 (예: 가게 점원)
+- style: "polite"(존댓말) 또는 "banmal"(반말). 대화문의 종결어미로 판단한다.
+- topic: 이 활동의 주제 (예: 물건 사기)
+{native_line}
+
+규칙
+- 사진에 없는 내용을 지어내지 마라. 판단이 안 되는 항목은 빈 문자열로 둔다.
+- 교재 문장을 그대로 베끼지 말고, 상황을 요약해서 적는다.
+- 한국어 교재가 아니거나 말하기 활동이 아니면 모든 값을 빈 문자열로 둔다.
+
+JSON만 출력:
+{{"place":"","goal":"","myRole":"","aiRole":"","style":"","topic":"","native":{{"place":"","goal":"","myRole":"","aiRole":""}}}}"""
+
+    try:
+        cfg = types.GenerateContentConfig(
+            response_mime_type="application/json", temperature=0.2,
+            thinking_config=types.ThinkingConfig(thinking_budget=0))
+        resp = await asyncio.wait_for(
+            client.aio.models.generate_content(
+                model=_analysis_model["name"],
+                contents=[types.Part.from_bytes(data=raw, mime_type=mime), prompt],
+                config=cfg),
+            timeout=30.0)
+        data = _parse_json_loose(getattr(resp, "text", "") or "")
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="photo_timeout")
+    except Exception as e:
+        print(f"[교재사진] 분석 실패: {e}")
+        raise HTTPException(status_code=502, detail="photo_failed")
+    finally:
+        raw = b""          # ★ 사진은 여기서 버린다 — 어디에도 저장하지 않는다
+
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=502, detail="photo_parse_failed")
+    nat = data.get("native") if isinstance(data.get("native"), dict) else {}
+    out = {
+        "place": _clean_str(data.get("place"), 60),
+        "goal": _clean_str(data.get("goal"), 120),
+        "myRole": _clean_str(data.get("myRole"), 40),
+        "aiRole": _clean_str(data.get("aiRole"), 40),
+        "topic": _clean_str(data.get("topic"), 80),
+        "style": data.get("style") if data.get("style") in ("polite", "banmal") else "",
+        "native": {k: _clean_str(nat.get(k), 120) for k in ("place", "goal", "myRole", "aiRole")},
+    }
+    out["ok"] = bool(out["place"] or out["goal"])
+    print(f"[교재사진] 추출 {'성공' if out['ok'] else '실패(읽을 수 없음)'} — {out['place']} / {out['goal']}")
+    return out
 
 
 @app.post("/roleplay-setup")
@@ -2322,8 +2405,8 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
         for e in IDC_ELEMENTS:
             k = e["key"]
             if e["media"] == "class":
-                items.append({"key": k, "name": e["name"], "layer": e["layer"],
-                              "grade": "na", "why": "", "scored": False})
+                # 비언어적 행위(✕)는 교실이 담당한다 → 화면에도 넣지 않는다.
+                # 회색 줄로라도 두면 학습자가 '못 한 항목'으로 읽는다.
                 continue
             if k in graded:
                 grade, why = graded[k]["grade"], graded[k]["why"]

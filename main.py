@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v82"
+APP_VERSION = "v83"
 APP_DATE = "2026-08-11"
 
 app = FastAPI()
@@ -783,14 +783,16 @@ def _clean_str(v, limit: int) -> str:
 
 
 def _normalize_expr(e) -> dict | None:
-    """표현 항목 정규화 — 신형 {"text","cue"} / 구형 "문자열" 모두 수용.
-    cue = 그 표현을 자연스럽게 이끌어내는 상대방 발화 (발화 연습의 말차례 교환용)."""
+    """표현 항목 정규화 — 신형 {"text","cue","follow"} / 구형 "문자열" 모두 수용.
+    cue    = text 앞에 올 상대 발화 (비어 있으면 학습자가 먼저 말하는 자리)
+    follow = text 뒤에 올 상대의 반응 (3항 연속체일 때만)"""
     if isinstance(e, dict):
         text = _clean_str(e.get("text"), 60)
         cue = _clean_str(e.get("cue"), 60)
     else:
         text, cue = _clean_str(e, 60), ""
-    return {"text": text, "cue": cue} if text else None
+    follow = _clean_str(e.get("follow"), 60) if isinstance(e, dict) else ""
+    return {"text": text, "cue": cue, "follow": follow} if text else None
 
 
 def _validate_script(raw, n_stages: int) -> list:
@@ -1082,12 +1084,24 @@ async def roleplay_setup(request: Request):
    - desc: 이 단계에서 일어나는 일 한 문장.
    - expressions: 학습자({my_role or '학습자'} 역할)가 이 단계에서 쓸 만한 자연스러운 한국어 표현 2~3개. 실제 구어체로.
      표현과 cue는 모두 국제 통용 한국어 표준 교육과정 중급(4급 이하) 어휘·문법 범위로 작성하라.
-     각 표현은 객체로: text = 학습자 발화, cue = 그 발화가 자연스러운 대답이 되는 상대방({ai_role or '상대'}) 발화.
-     예) cue "어떻게 오셨어요?" → text "택배 좀 부치려고 하는데요".
-     ★ cue는 발화 연습의 '가→나' 말차례 교환에 쓰이므로 **모든 표현에 반드시 채워라. 빈 문자열 금지.**
-     학습자가 먼저 말을 여는 표현이라도, 그 직전에 올 법한 상대의 말을 자연스럽게 만들어 넣어라.
-     예) text "이거 얼마예요?"가 첫 발화라면 cue는 "어서 오세요, 뭐 찾으세요?" 처럼.
-     인사로 시작하는 표현이면 cue도 상대의 인사·호객으로.
+     각 표현은 객체로 만든다: {{"text":"","cue":"","follow":""}}
+       · text   — 학습자가 말할 발화 (필수)
+       · cue    — text 바로 앞에 올 상대({ai_role or '상대'})의 발화.
+                  **학습자가 먼저 말을 여는 자리면 빈 문자열로 둔다.**
+       · follow — text 바로 뒤에 올 상대의 반응. **3항 연속체로 연습시킬 때만** 채우고,
+                  두 마디로 끝나는 자리면 빈 문자열로 둔다.
+
+     ★ 말차례 연쇄를 다양하게 짜라. 질문–응답만 반복하지 마라.
+       대화이동 관리 능력은 인접쌍 하나로 길러지지 않는다.
+       - 학습자 선행형(cue 빈 문자열): 인사·요청·제안을 학습자가 먼저 여는 자리.
+         예) text "선생님, 안녕하세요!" / cue "" / follow "어, 안녕하세요. 잘 지냈어요?"
+       - 2항형: cue → text 로 끝나는 자리.
+         예) cue "어떻게 오셨어요?" / text "택배 좀 부치려고 하는데요" / follow ""
+       - 3항형(제안–수락/거절–반응): 상대의 반응까지 들어야 뜻이 완성되는 자리.
+         예) cue "이건 3만 원이에요" / text "좀 비싼데요, 깎아 주시면 안 될까요?"
+             follow "그럼 2만 5천 원에 드릴게요"
+     ★ 한 단계 안의 표현들이 모두 같은 형태가 되지 않게 하라.
+       특히 대화를 여는 단계에서는 **학습자가 먼저 말하는 형태(cue 빈 문자열)를 반드시 하나 이상** 넣어라.
 4) script — 위 기능단계를 처음부터 끝까지 밟아 가는 **모델 대화문** 10~14줄.
    학습자가 연습에 들어가기 전에 듣고 관찰할 자료다. 교재의 제시 대화문을 대신하되 실제 구어에 가깝게 쓴다.
    - 각 줄: speaker("user" = {my_role or '학습자'} / "ai" = {ai_role or '상대'}), text(한국어 발화), stage(해당 기능단계 번호 0부터), native.
@@ -1099,7 +1113,7 @@ async def roleplay_setup(request: Request):
    - {native_line.replace('각 단계의 native 필드에 name의', '각 줄의 native 필드에 text의') if native else 'native 필드는 빈 문자열로 둔다.'}
 
 JSON만 출력하라. 스키마:
-{{"topic_ko":"","goal_ko":"","place_ko":"","user_role":"","ai_role":"","stages":[{{"name":"","native":"","desc":"","expressions":[{{"text":"","cue":""}}]}}],"script":[{{"speaker":"ai","text":"","native":"","stage":0}}]}}"""
+{{"topic_ko":"","goal_ko":"","place_ko":"","user_role":"","ai_role":"","stages":[{{"name":"","native":"","desc":"","expressions":[{{"text":"","cue":"","follow":""}}]}}],"script":[{{"speaker":"ai","text":"","native":"","stage":0}}]}}"""
 
     # 대화문까지 함께 만드느라 길어졌다 — 넉넉히 기다린다
     data = await _gen_json(prompt, timeout_s=55.0)

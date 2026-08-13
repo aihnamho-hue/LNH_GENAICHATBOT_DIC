@@ -22,8 +22,8 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v83"
-APP_DATE = "2026-08-11"
+APP_VERSION = "v84"
+APP_DATE = "2026-08-13"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -559,11 +559,15 @@ def build_mko_block(levels: dict | None = None, counts: dict | None = None) -> s
    - 학습자가 물어야 할 것을 네가 먼저 알려주지 마라.
    - 학습자가 끝내야 할 대화를 네가 끝내지 마라.
    - 학습자가 고를 것을 네가 골라 주지 마라.
-② 도움은 필요한 만큼만, 그리고 점점 줄여라. 학습자가 한 번 해낸 것은 다음부터 도와주지 마라.
-③ 못 하는 것은 어려운 말로 밀어붙여서가 아니라, 그것이 필요해지는 '자리'를 만들어서 끌어내라.
-④ 학습자가 스스로 해내면 그 순간을 짧게 짚어 줘라. 다만 수업하듯 설명하지는 마라.
+② 학습자의 발화가 두 어절 이하이거나 뜻이 흐리면 **반드시 되물어라**. 넘겨짚어 대답하는 순간
+   학습자는 명료화에 응답할 기회를 잃는다. ("뭐를 말씀하시는 거예요?", "○○요? 아니면 ○○요?")
+③ 학습자가 말을 고르느라 침묵하면 채우지 말고 3초쯤 기다려라. 그래도 막히면 답이 아니라
+   채움말을 권하라 — "'음…', '그러니까…' 하면서 천천히 생각해도 돼요."
+④ 도움은 필요한 만큼만, 그리고 점점 줄여라. 학습자가 한 번 해낸 것은 다음부터 도와주지 마라.
+⑤ 못 하는 것은 어려운 말로 밀어붙여서가 아니라, 그것이 필요해지는 '자리'를 만들어서 끌어내라.
+⑥ 학습자가 스스로 해내면 그 순간을 짧게 짚어 줘라. 다만 수업하듯 설명하지는 마라.
    예) "오 지금 그거 좋았어요!" 한 마디면 충분하다.
-⑤ 위 원칙과 배역 연기가 부딪히면 배역 안에서 푸는 길을 찾아라. 극을 깨고 선생님으로 나오지 마라.
+⑦ 위 원칙과 배역 연기가 부딪히면 배역 안에서 푸는 길을 찾아라. 극을 깨고 선생님으로 나오지 마라.
 {idc_focus_block(levels, counts)}
 [하지 말 것]
 - 요소 이름("맞장구", "명료화 요구", "기능 단계")을 학습자에게 말하지 마라. 대화 밖으로 나가는 순간 극이 깨진다.
@@ -792,7 +796,8 @@ def _normalize_expr(e) -> dict | None:
     else:
         text, cue = _clean_str(e, 60), ""
     follow = _clean_str(e.get("follow"), 60) if isinstance(e, dict) else ""
-    return {"text": text, "cue": cue, "follow": follow} if text else None
+    idc = e.get("idc") if isinstance(e, dict) and e.get("idc") in IDC_SCORED_KEYS else ""
+    return {"text": text, "cue": cue, "follow": follow, "idc": idc} if text else None
 
 
 def _validate_script(raw, n_stages: int) -> list:
@@ -1084,7 +1089,10 @@ async def roleplay_setup(request: Request):
    - desc: 이 단계에서 일어나는 일 한 문장.
    - expressions: 학습자({my_role or '학습자'} 역할)가 이 단계에서 쓸 만한 자연스러운 한국어 표현 2~3개. 실제 구어체로.
      표현과 cue는 모두 국제 통용 한국어 표준 교육과정 중급(4급 이하) 어휘·문법 범위로 작성하라.
-     각 표현은 객체로 만든다: {{"text":"","cue":"","follow":""}}
+     각 표현은 객체로 만든다: {{"text":"","cue":"","follow":"","idc":""}}
+       · idc — 이 표현이 주로 기르는 상호작용 요소 하나:
+         stage(단계 조직)|topic(화제)|move(대화이동)|turn(차례)|repair(단절 수정)|strategy(전략)|listen(듣기 반응)|context(맥락·존대)
+         한 단계 안에서 요소가 겹치지 않게 안배하라 — 모두 move면 대화이동만 연습하게 된다.
        · text   — 학습자가 말할 발화 (필수)
        · cue    — text 바로 앞에 올 상대({ai_role or '상대'})의 발화.
                   **학습자가 먼저 말을 여는 자리면 빈 문자열로 둔다.**
@@ -1113,7 +1121,7 @@ async def roleplay_setup(request: Request):
    - {native_line.replace('각 단계의 native 필드에 name의', '각 줄의 native 필드에 text의') if native else 'native 필드는 빈 문자열로 둔다.'}
 
 JSON만 출력하라. 스키마:
-{{"topic_ko":"","goal_ko":"","place_ko":"","user_role":"","ai_role":"","stages":[{{"name":"","native":"","desc":"","expressions":[{{"text":"","cue":"","follow":""}}]}}],"script":[{{"speaker":"ai","text":"","native":"","stage":0}}]}}"""
+{{"topic_ko":"","goal_ko":"","place_ko":"","user_role":"","ai_role":"","stages":[{{"name":"","native":"","desc":"","expressions":[{{"text":"","cue":"","follow":"","idc":""}}]}}],"script":[{{"speaker":"ai","text":"","native":"","stage":0}}]}}"""
 
     # 대화문까지 함께 만드느라 길어졌다 — 넉넉히 기다린다
     data = await _gen_json(prompt, timeout_s=55.0)
@@ -2140,6 +2148,20 @@ async def _handle_session(websocket: WebSocket):
     rp_plan = None
     rp_style = "auto"
     rp_id = websocket.query_params.get("rp", "").strip()[:32]
+    # 기기가 보관해 온 IDC 실현 누적 횟수 — "stage:2,repair:1" 꼴.
+    # 근접발달영역은 세션을 넘어 이동한다: 어제 자율 수준까지 간 요소를
+    # 오늘 다시 모델링부터 시작하면 비계가 아니라 방해다.
+    prev_counts = {}
+    try:
+        for pair in websocket.query_params.get("idc", "").split(","):
+            if ":" not in pair:
+                continue
+            k, v = pair.split(":", 1)
+            k = k.strip()
+            if k in IDC_SCORED_KEYS:
+                prev_counts[k] = min(max(int(v), 0), 99)
+    except (ValueError, TypeError):
+        prev_counts = {}
     if rp_id:
         entry = _roleplay_plans.get(rp_id)
         if entry and time.time() - entry["at"] <= _RP_PLAN_TTL:
@@ -2153,9 +2175,15 @@ async def _handle_session(websocket: WebSocket):
 
     # ── IDC 비계 상태 (더 유능한 타인의 페이딩) ──
     # counts: 요소별 실현 누적 횟수 / levels: 3 모델링 → 2 촉진 → 1 자율
+    def _level_from(nc: int) -> int:
+        if nc >= IDC_FADE_AT[IDC_LEVEL_PROMPT]:
+            return IDC_LEVEL_SOLO
+        if nc >= IDC_FADE_AT[IDC_LEVEL_MODEL]:
+            return IDC_LEVEL_PROMPT
+        return IDC_LEVEL_MODEL
     idc_state = {
-        "counts": {k: 0 for k in IDC_SCORED_KEYS},
-        "levels": {k: IDC_LEVEL_MODEL for k in IDC_SCORED_KEYS},
+        "counts": {k: prev_counts.get(k, 0) for k in IDC_SCORED_KEYS},
+        "levels": {k: _level_from(prev_counts.get(k, 0)) for k in IDC_SCORED_KEYS},
         "last_focus": "",     # 직전에 주입한 유발 지시의 대상 (같으면 다시 안 보냄)
         "final": None,        # 종료 시 산출한 9요소 프로파일
     }
@@ -2167,7 +2195,10 @@ async def _handle_session(websocket: WebSocket):
                                               idc_state["levels"], idc_state["counts"])
         print(f"[서버] 상황극 세션 — 주제={rp_plan['topic_ko']}, D={d}, P={p}, 화계={rp_style}, 이름={user_name or '(없음)'}")
     else:
-        system_prompt = build_system_prompt(d, p, ui_lang, user_name)
+        # 자유 수다에도 MKO 블록을 붙인다 — IDC는 상황극 전용 능력이 아니다.
+        # 오히려 과업이 없는 자유 대화에서 화제·차례 관리가 순수하게 드러난다.
+        system_prompt = build_system_prompt(d, p, ui_lang, user_name) \
+            + build_mko_block(idc_state["levels"], idc_state["counts"])
         print(f"[서버] 클라이언트 연결 성공 — 친밀도(D)={d}, 지위(P)={p}, 언어={ui_lang or 'ko'}, 이름={user_name or '(없음)'}")
 
     # ── 상황극 진행 상태 (자유 수다에서는 사용 안 함) ──
@@ -2175,6 +2206,8 @@ async def _handle_session(websocket: WebSocket):
     rp_progress = {
         "done": set(),                 # 충족된 단계 인덱스 (단조 증가)
         "quests": set(),               # 학습자가 해낸 퀘스트 id (누적)
+        "abc": "",                     # 대화 유형 판정 A/B/C (이남호·이찬규 2025)
+        "chains": {"시작": 0, "역시작": 0, "수정": 0, "고수": 0},   # 대화이동 연쇄 (학습자)
         "total": len(rp_plan["stages"]) if rp_plan else 0,
         "completed_at_turns": None,    # 전 단계 충족 시점의 학습자 턴 수 (100% 초과 계산 기준)
         "percent": 0,
@@ -2224,7 +2257,7 @@ async def _handle_session(websocket: WebSocket):
         end_of_turn=False라서 이 지시만으로는 호아랑이 말하지 않는다.
         학습자가 다음에 말할 때 그 맥락과 함께 읽힌다. 대상이 그대로면 보내지 않는다."""
         sess = live["session"]
-        if sess is None or rp_plan is None:
+        if sess is None:          # 자유 수다에도 비계 갱신을 보낸다
             return
         block = idc_focus_block(idc_state["levels"], idc_state["counts"])
         sig = "|".join(f"{k}{idc_state['levels'][k]}" for k in IDC_SCORED_KEYS)
@@ -2246,7 +2279,7 @@ async def _handle_session(websocket: WebSocket):
     async def run_analysis(final: bool = False):
         """대화 로그를 보고 어떤 기능단계가 충족됐는지 판정 → 진행률 갱신·전송.
         릴레이(오디오)와 별개의 백그라운드 태스크로 돌며 이벤트루프를 막지 않는다."""
-        if rp_plan is None or rp_progress["running"]:
+        if rp_progress["running"]:
             return
         if not final:
             # 디바운스: 새 내용이 없거나 6초 안 지났으면 건너뜀
@@ -2258,16 +2291,24 @@ async def _handle_session(websocket: WebSocket):
             return
         rp_progress["running"] = True
         try:
-            transcript = "\n".join(
-                f"{'학습자(' + rp_plan['user_role'] + ')' if m['role'] == 'user' else '상대(' + rp_plan['ai_role'] + ')'}: {m['text'].strip()}"
-                for m in convo[-60:] if m["text"].strip())
-            stages_txt = "\n".join(
-                f"{i}. {s['name']}: {s['desc']}" for i, s in enumerate(rp_plan["stages"]))
+            if rp_plan:
+                transcript = "\n".join(
+                    f"{'학습자(' + rp_plan['user_role'] + ')' if m['role'] == 'user' else '상대(' + rp_plan['ai_role'] + ')'}: {m['text'].strip()}"
+                    for m in convo[-60:] if m["text"].strip())
+                stages_txt = "\n".join(
+                    f"{i}. {s['name']}: {s['desc']}" for i, s in enumerate(rp_plan["stages"]))
+                task_line = f"과업 — 주제: {rp_plan['topic_ko']} / 달성 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']}"
+            else:
+                transcript = "\n".join(
+                    f"{'학습자' if m['role'] == 'user' else '상대'}: {m['text'].strip()}"
+                    for m in convo[-60:] if m["text"].strip())
+                stages_txt = "(자유 대화 — 기능단계 없음. done은 빈 배열로 두라)"
+                task_line = "과업 — 자유 주제 대화"
             idc_txt = "\n".join(
                 f"- {e['key']}: {e['name']} — {e['sub']}" for e in IDC_TRAINABLE)
             quest_txt = "\n".join(f"- {q['id']}: {q['desc']}" for q in QUEST_LLM)
-            prompt = f"""다음은 한국어 학습자의 상황극 대화 기록이다.
-과업 — 주제: {rp_plan['topic_ko']} / 달성 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']}
+            prompt = f"""다음은 한국어 학습자의 대화 기록이다.
+{task_line}
 
 [기능단계 목록]
 {stages_txt}
@@ -2278,7 +2319,7 @@ async def _handle_session(websocket: WebSocket):
 [상호작용 대화 능력 요소]
 {idc_txt}
 
-세 가지를 판정하라.
+다섯 가지를 판정하라.
 (1) done — 위 대화에서 이미 실현(충족)된 기능단계의 번호를 모두.
     판정 기준: 그 단계의 의사소통 기능이 대화에서 실제로 수행되었으면 충족이다. 표현이 서툴러도 기능이 이루어졌으면 인정한다. 아직 시도되지 않았거나 실패한 단계는 제외한다.
 (2) idc — 위 요소 가운데 **학습자가** 실제로 수행한 것의 key를 모두.
@@ -2286,8 +2327,15 @@ async def _handle_session(websocket: WebSocket):
     표현이 서툴러도 그 기능을 해냈으면 인정한다. 해당 없으면 빈 배열.
 (3) quest — 아래 목록 가운데 **학습자가** 실제로 한 것의 id를 모두. 없으면 빈 배열.
 {quest_txt}
+(4) abc — 지금까지의 대화가 어느 유형인지 (이남호·이찬규 2025의 기능단계 유형론).
+    "A" 단순형: 목적을 향해 곧장 가는 직선적 전개.
+    "B" 반복형: 같은 기능 단계(질문-응답 등)가 맴돌며 반복됨.
+    "C" 확장형: 목적 달성 후에도 재개·부가 화제로 대화가 확장됨.
+(5) chains — **학습자가** 수행한 대화이동 연쇄의 횟수.
+    시작(먼저 화제·요청을 엶) / 역시작(상대의 시작에 질문으로 되받음) /
+    수정(자기 발화를 고쳐 다시 말함) / 고수(거절·난색에도 재요청).
 
-JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...]}}"""
+JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc":"A|B|C","chains":{{"시작":0,"역시작":0,"수정":0,"고수":0}}}}"""
             data = await _gen_json(prompt, timeout_s=15.0)
             if isinstance(data, dict):
                 for i in data.get("done") or []:
@@ -2298,6 +2346,18 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...]}}"""
                     if 0 <= idx < rp_progress["total"]:
                         rp_progress["done"].add(idx)
                 _idc_absorb(data.get("idc"))
+                # (4) 대화 유형 — 마지막 판정을 유지 (대화가 진행되며 A→C로 옮겨 갈 수 있다)
+                if data.get("abc") in ("A", "B", "C"):
+                    rp_progress["abc"] = data["abc"]
+                # (5) 대화이동 연쇄 — 최대값 유지 (판정 흔들림에 뒤로 가지 않게)
+                ch = data.get("chains")
+                if isinstance(ch, dict):
+                    for k in ("시작", "역시작", "수정", "고수"):
+                        try:
+                            v = int(ch.get(k, 0))
+                        except (TypeError, ValueError):
+                            continue
+                        rp_progress["chains"][k] = max(rp_progress["chains"][k], min(v, 30))
                 # 퀘스트는 한 번 해내면 계속 인정한다(누적)
                 for q in data.get("quest") or []:
                     if isinstance(q, str) and q in _QUEST_IDS:
@@ -2381,7 +2441,7 @@ JSON만 출력: {{"hints":["",""]}}"""
         """종료 시 1회 — 대화 전체를 〈표 42〉의 중급 평가 기준으로 재어 9요소 프로파일을 만든다.
         등급 상(2)·중(1)·하(0), 총점은 교실 전담 요소(비언어적 행위)를 빼고 100점으로 환산."""
         blank = {"items": [], "total": 0}
-        if rp_plan is None or not convo:
+        if not convo:
             return blank
         transcript = "\n".join(
             f"{'학습자' if m['role'] == 'user' else '상대'}: {m['text'].strip()}"
@@ -2389,7 +2449,7 @@ JSON만 출력: {{"hints":["",""]}}"""
         rubric = "\n".join(
             f"[{e['key']}] {e['name']}\n  기준: {e['criteria']}" for e in IDC_TRAINABLE)
         prompt = f"""너는 한국어 말하기 평가 전문가다. 아래는 중급 한국어 학습자가 챗봇과 수행한 역할극 대화다.
-과업 — 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']} / 학습자 역할: {rp_plan['user_role']}
+{f"과업 — 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']} / 학습자 역할: {rp_plan['user_role']}" if rp_plan else "과업 — 자유 주제 대화 (기능 단계 범주는 대화를 열고 이어가고 맺는 능력으로 재라)"}
 
 [대화 기록]
 {transcript}
@@ -2443,14 +2503,13 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
     async def send_final_score():
         """종료 버튼 → 마지막 분석을 마치고 퍼센트를 점수로, IDC 프로파일을 함께 전송."""
         idc = {"items": [], "total": 0}
-        if rp_plan is not None:
-            for _ in range(40):  # 진행 중 분석이 있으면 최대 8초 대기
-                if not rp_progress["running"]:
-                    break
-                await asyncio.sleep(0.2)
-            await run_analysis(final=True)
-            idc = await run_idc_profile()
-            idc_state["final"] = idc
+        for _ in range(40):  # 진행 중 분석이 있으면 최대 8초 대기
+            if not rp_progress["running"]:
+                break
+            await asyncio.sleep(0.2)
+        await run_analysis(final=True)          # 자유 수다도 idc·퀘스트·유형을 최종 판정
+        idc = await run_idc_profile()           # 사후 피드백 — 두 모드 공통
+        idc_state["final"] = idc
         payload = _progress_payload() if rp_plan else {"stages": [], "percent": 0}
         await websocket.send_text(json.dumps({
             "type": "final_score",
@@ -2459,6 +2518,10 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
             "stages": payload.get("stages", []),
             "idc": idc["items"],
             "idcTotal": idc["total"],
+            "abc": rp_progress["abc"],                      # 대화 유형 A/B/C
+            "chains": rp_progress["chains"],                # 대화이동 연쇄 횟수
+            "idcCounts": dict(idc_state["counts"]),         # 기기 저장용 — 다음 세션 페이딩에 쓴다
+            "quests": sorted(rp_progress["quests"]),
         }))
         print(f"[상황극] 최종 점수 전송: 진행률 {rp_progress['percent']}점 / IDC {idc['total']}점")
 

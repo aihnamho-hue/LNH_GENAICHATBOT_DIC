@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v84"
+APP_VERSION = "v85"
 APP_DATE = "2026-08-13"
 
 app = FastAPI()
@@ -885,7 +885,7 @@ def _validate_suggest(data) -> dict | None:
 
 @app.post("/roleplay-suggest")
 async def roleplay_suggest(request: Request):
-    """장소나 목적 중 하나만 적으면 나머지(목적 3단계·장소·역할·화계)를 '예)'로 자동 추천.
+    """장소나 목적 중 하나만 적으면 나머지(목적 3단계·장소·역할·말투)를 '예)'로 자동 추천.
     목적은 ①교재형(이상적) ②일상형(흔히 겪는) ③엉뚱형(뜻밖의 상황) 3단계 —
     클라이언트가 랜덤으로 하나를 보여주고 🎲 버튼으로 순환·재추첨한다."""
     try:
@@ -934,8 +934,8 @@ async def roleplay_suggest(request: Request):
 2) place: 이 대화가 벌어질 전형적인 장소. 학습자가 적었다면 그것을 자연스럽게 다듬어라.
 3) my_role: 학습자 역할 (예: "손님").
 4) ai_role: 상대(챗봇) 역할 (예: "점원").
-5) style: 이 관계에서 자연스러운 화계 — "polite"(존댓말) 또는 "banmal"(반말).
-6) style_reason: 그 화계가 자연스러운 이유 한 구절 (15자 내외, 예: "처음 보는 점원과 손님 사이").
+5) style: 이 관계에서 자연스러운 말투 — "polite"(존댓말) 또는 "banmal"(반말).
+6) style_reason: 그 말투가 자연스러운 이유 한 구절 (15자 내외, 예: "처음 보는 점원과 손님 사이").
 7) d: 두 역할의 친밀도 추천값 0~100 (0=처음 보는 사이, 50=아는 사이, 100=절친). 예: 점원↔손님=10.
 8) p: 학습자의 상대적 지위 추천값 0~100 (0=학습자가 아랫사람, 50=대등, 100=학습자가 윗사람/손님). 예: 손님=75, 면접 지원자=15.
 
@@ -1143,9 +1143,9 @@ JSON만 출력하라. 스키마:
 
 
 _STYLE_RULES = {
-    "polite": "화계: 존댓말(해요체) 고정. 아래 페이더 규칙과 충돌하면 이 화계 지시가 우선한다.",
-    "banmal": "화계: 반말(해체) 고정. 아래 페이더 규칙과 충돌하면 이 화계 지시가 우선한다.",
-    "auto": "화계: 페이더 좌표(D/P)를 따른다.",
+    "polite": "말투: 존댓말(해요체) 고정. 아래 페이더 규칙과 충돌하면 이 말투 지시가 우선한다.",
+    "banmal": "말투: 반말(해체) 고정. 아래 페이더 규칙과 충돌하면 이 말투 지시가 우선한다.",
+    "auto": "말투: 페이더 좌표(D/P)를 따른다.",
 }
 
 
@@ -2193,7 +2193,7 @@ async def _handle_session(websocket: WebSocket):
     if rp_plan:
         system_prompt = build_roleplay_prompt(d, p, ui_lang, user_name, rp_plan, rp_style,
                                               idc_state["levels"], idc_state["counts"])
-        print(f"[서버] 상황극 세션 — 주제={rp_plan['topic_ko']}, D={d}, P={p}, 화계={rp_style}, 이름={user_name or '(없음)'}")
+        print(f"[서버] 상황극 세션 — 주제={rp_plan['topic_ko']}, D={d}, P={p}, 말투={rp_style}, 이름={user_name or '(없음)'}")
     else:
         # 자유 수다에도 MKO 블록을 붙인다 — IDC는 상황극 전용 능력이 아니다.
         # 오히려 과업이 없는 자유 대화에서 화제·차례 관리가 순수하게 드러난다.
@@ -2463,7 +2463,14 @@ JSON만 출력: {{"hints":["",""]}}"""
 - "lo"(하): 시도가 없거나 기능이 이루어지지 않았다.
 판정 원칙: 표현의 정확성이 아니라 **상호작용 기능의 수행 여부**로 재라. 문법이 틀려도 기능을 해냈으면 인정한다.
 기회 자체가 없었던 범주는 "mid"로 두고 why에 그 사실을 적어라.
-why는 학습자가 읽을 한 문장(30자 이내)으로, 실제 발화를 근거로 들어 칭찬 또는 다음 목표를 말하라. 반드시 한국어로.
+why는 학습자가 읽을 한 문장(30자 이내). 실제 발화를 근거로 칭찬하거나 다음에 해 볼 것을 말하라.
+★ 읽는 사람은 한국어를 배우는 중급 학습자다. **다음 말은 절대 쓰지 마라** —
+  화행, 레지스터, 담화, 대화이동, 기능 단계, 의사소통 전략, 명료화, 구인, 발화 순서, 연속체.
+  대신 학습자가 바로 아는 말로 풀어 써라.
+  예) "적절한 화행을 시작하지 못했습니다" → "먼저 말을 걸어 보면 좋겠어요"
+      "레지스터를 선택하지 못했습니다"     → "상대에 맞는 높임말을 써 보세요"
+      "기능 단계가 나타나지 않았습니다"     → "인사하고 끝인사까지 해 보세요"
+  '~하지 못했습니다'보다 '~해 보세요'처럼 다음에 할 일로 적어라. 반드시 한국어로.
 JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
         try:
             data = await _gen_json(prompt, timeout_s=25.0)
@@ -2573,7 +2580,7 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
             if rp_plan:
                 first_msg = (f"(상황극 시작 — 학습자가 아직 말이 없다) 너는 지금 {rp_plan['place_ko']}의 {rp_plan['ai_role']}(이)야. "
                              f"학습자({rp_plan['user_role']})에게 이 상황에 맞는 자연스러운 첫 발화를 건네라. "
-                             "설정된 화계와 페이더에 맞게, 1~2문장으로 짧게.")
+                             "설정된 말투와 페이더에 맞게, 1~2문장으로 짧게.")
             else:
                 first_msg = "(대화 시작 — 학습자가 아직 말이 없다) 지금 설정된 친밀도·지위 페이더에 맞는 말투로 첫인사를 건네고, 가벼운 질문 하나로 대화를 열어줘."
 
@@ -2677,24 +2684,4 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                             await websocket.send_text(json.dumps({"type": "turn_complete"}))
                             if rp_plan is not None:
                                 # 단계 충족 분석은 백그라운드로 — 오디오 릴레이를 막지 않음
-                                asyncio.create_task(run_analysis())
-
-            send_task = asyncio.create_task(client_to_gemini())
-            recv_task = asyncio.create_task(gemini_to_client())
-            done, pending = await asyncio.wait(
-                [send_task, recv_task], return_when=asyncio.FIRST_EXCEPTION
-            )
-            for task in pending:
-                task.cancel()
-            greeter_task.cancel()
-
-    except WebSocketDisconnect:
-        print("[서버] 클라이언트 연결 종료")
-    except Exception as e:
-        print(f"[시스템 오류] {e}")
-    finally:
-        try:
-            await websocket.close()
-        except:
-            pass
-        print("[서버] 세션 종료")
+                          

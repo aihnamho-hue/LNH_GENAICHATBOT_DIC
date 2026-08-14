@@ -11,12 +11,15 @@ const dom=new JSDOM(html,{runScripts:"dangerously",url:"https://korean-dic.onren
 const w=dom.window, d=w.document;
 setTimeout(()=>{
   console.log("── 결과 두 장 ──");
-  ok("쪽1·쪽2가 있다", !!d.getElementById("resPage1") && !!d.getElementById("resPage2"));
-  ok("쪽1에 점수·발화·시간", !!d.querySelector("#resPage1 #rcScoreVal") && !!d.querySelector("#resPage1 #rcTimeVal"));
-  ok("쪽1에 기능 단계·유형", !!d.querySelector("#resPage1 #rpResultStages") && !!d.querySelector("#resPage1 #rpAbcRow"));
-  ok("쪽2에 상호작용 대화 능력", !!d.querySelector("#resPage2 #rpIdcList"));
-  ok("다음/이전 버튼", !!d.getElementById("resNextBtn") && !!d.getElementById("resPrevBtn"));
-  ok("쪽 표시 점 2개", d.querySelectorAll(".res-dot").length===2);
+  // v88 — 결과는 네 장: ⓪ 자기 성찰 ① 대화 흐름 ② 상호작용 대화 능력 ③ 총평
+  ok("네 장이 다 있다", [0,1,2,3].every(i => !!d.getElementById("resPage" + i)));
+  ok("⓪ 스스로 매기는 별 다섯", d.querySelectorAll("#resPage0 .self-star").length === 5);
+  ok("① 점수·발화·시간", !!d.querySelector("#resPage1 #rcScoreVal") && !!d.querySelector("#resPage1 #rcTimeVal"));
+  ok("① 기능 단계·유형", !!d.querySelector("#resPage1 #rpResultStages") && !!d.querySelector("#resPage1 #rpAbcRow"));
+  ok("② 상호작용 대화 능력", !!d.querySelector("#resPage2 #rpIdcList"));
+  ok("③ 총평은 줄글", !!d.querySelector("#resPage3 #rpReviewEl"));
+  ok("쪽 표시 점 4개", d.querySelectorAll(".res-dot").length === 4);
+  ok("이전·다음이 한 줄 두 칸", /\.res-actions \{[^}]*grid-template-columns: 1fr 1fr/.test(html));
   ok("쪽 문구 12개 언어", (html.match(/resNext:"/g)||[]).length===12);
   console.log("── 용어 쉬움 ──");
   ok("어려운 말 금지 지시", /다음 말은 절대 쓰지 마라/.test(py) && /화행, 레지스터, 담화/.test(py));

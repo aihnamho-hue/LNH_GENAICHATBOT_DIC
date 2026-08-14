@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v87"
+APP_VERSION = "v88"
 APP_DATE = "2026-08-14"
 
 app = FastAPI()
@@ -528,6 +528,9 @@ QUEST_LLM = [
     {"id": "qSelfFix", "el": "repair",   "desc": "말하다가 스스로 틀린 것을 알아채고 고쳐 말한 적이 있다"},
 ]
 IDC_SCORED_KEYS = [e["key"] for e in IDC_TRAINABLE]
+# 발화 연습(한 차례 주고받기)으로 실제로 기를 수 있는 요소만.
+# 'stage'(기능 단계의 조직)는 대화 전체의 흐름이라 한 문장 연습의 목표가 될 수 없다.
+EXPR_IDC_KEYS = [k for k in IDC_SCORED_KEYS if k != "stage"]
 _QUEST_IDS = {q["id"] for q in QUEST_LLM}
 
 # 비계 수준 — 실현 횟수에 따라 3 → 2 → 1로 내려간다(페이딩).
@@ -815,7 +818,11 @@ def _normalize_expr(e) -> dict | None:
     else:
         text, cue = _clean_str(e, 60), ""
     follow = _clean_str(e.get("follow"), 60) if isinstance(e, dict) else ""
-    idc = e.get("idc") if isinstance(e, dict) and e.get("idc") in IDC_SCORED_KEYS else ""
+    # 발화 연습은 한 차례의 주고받기를 익히는 자리다. '기능 단계'는 대화 전체의
+    # 조직이라 한 문장 연습으로 기를 수 없다 — 태그로 붙으면 학습자에게 거짓말이 된다.
+    idc = e.get("idc") if isinstance(e, dict) and e.get("idc") in EXPR_IDC_KEYS else ""
+    if not idc:
+        idc = "move"          # 기본은 대화이동 관리
     return {"text": text, "cue": cue, "follow": follow, "idc": idc} if text else None
 
 
@@ -842,6 +849,79 @@ def _validate_script(raw, n_stages: int) -> list:
     return lines
 
 
+# ── 말투 섞임 검사 ──
+# 한 화자가 한 대화 안에서 존댓말과 반말을 오가면 학습자가 배울 본이 되지 못한다.
+# 문장 끝만 보고 판정한다(형태소 분석 없이도 종결어미로 충분히 갈린다).
+# 존댓말 종결: -요 / -ㅂ니다 / -습니까 / -세요 / -십시오 / -지요 …
+# 반말 종결:   -야 / -어 / -아 / -지 / -니 / -냐 / -데 / -래 / -자 / -군 / -네 …
+# ※ "네", "응", "어" 처럼 그 자체가 대답인 한 마디는 판정하지 않는다.
+_ONE_WORD = {"네", "예", "응", "어", "아", "음", "그래", "글쎄", "야"}
+
+
+def _speech_level(text: str) -> str:
+    """한 발화의 말투 — "polite" / "banmal" / "" (판정 불가).
+    형태소 분석 없이 마지막 어절의 종결형만 본다. 종결어미만으로 충분히 갈린다."""
+    t = (text or "").strip().rstrip("!?.…~♪ ")
+    if not t:
+        return ""
+    # 마지막 문장만 본다("네, 그럼요. 무슨 일이에요?" → "무슨 일이에요")
+    for sep in (". ", "? ", "! ", "…"):
+        if sep in t:
+            t = t.split(sep)[-1].strip().rstrip("!?.…~ ")
+    if not t or t in _ONE_WORD:
+        return ""
+    for e in ("요", "니다", "니까", "세요", "십시오", "ㅂ니다"):
+        if t.endswith(e):
+            return "polite"
+    for e in ("야", "어", "아", "지", "니", "냐", "데", "래", "자", "군", "네",
+              "거든", "잖아", "구나", "든지", "든가", "니까"):
+        if t.endswith(e):
+            return "banmal"
+    return ""
+
+
+def _style_mixed(script: list) -> bool:
+    """한 화자가 존댓말과 반말을 함께 쓰면 True.
+    한 줄만 어긋나도 학습자에게는 그것이 곧 배울 본이 되므로 관대하게 넘기지 않는다.
+    다만 판정된 줄이 3줄 미만이면 표본이 모자라 판단을 미룬다."""
+    tally = {"user": {"polite": 0, "banmal": 0}, "ai": {"polite": 0, "banmal": 0}}
+    for l in script or []:
+        lv = _speech_level(l.get("text", ""))
+        if lv:
+            tally[l.get("speaker", "ai")][lv] += 1
+    for t in tally.values():
+        if t["polite"] + t["banmal"] >= 3 and min(t["polite"], t["banmal"]) >= 1:
+            return True
+    return False
+
+
+def _link_expr_to_script(stages: list, script: list) -> None:
+    """발화 연습의 cue·follow를 실제 대화문에서 끌어온다.
+    학습자가 '먼저 듣기'에서 들은 흐름과 연습이 어긋나면 두 활동이 따로 논다.
+    표현의 text와 가장 비슷한 학습자 줄을 찾아, 그 앞뒤 상대 발화를 cue·follow로 삼는다."""
+    import difflib
+    if not script:
+        return
+    for si, st in enumerate(stages):
+        for e in st.get("expressions") or []:
+            best, score = -1, 0.0
+            for i, l in enumerate(script):
+                if l["speaker"] != "user":
+                    continue
+                r = difflib.SequenceMatcher(None, e["text"], l["text"]).ratio()
+                if l["stage"] == si:
+                    r += 0.15          # 같은 단계면 우선
+                if r > score:
+                    best, score = i, r
+            if best < 0 or score < 0.45:
+                continue               # 대화문에 없는 표현은 그대로 둔다
+            prev = script[best - 1] if best > 0 else None
+            nxt = script[best + 1] if best + 1 < len(script) else None
+            e["cue"] = prev["text"] if (prev and prev["speaker"] == "ai") else ""
+            if e.get("follow"):
+                e["follow"] = nxt["text"] if (nxt and nxt["speaker"] == "ai") else ""
+
+
 def _validate_plan(data) -> dict | None:
     """모델이 만든 계획 JSON을 방어적으로 정리. 단계 4~6개 보장."""
     if not isinstance(data, dict):
@@ -862,6 +942,9 @@ def _validate_plan(data) -> dict | None:
         })
     if len(stages) < 3:
         return None
+    script = _validate_script(data.get("script"), len(stages))
+    # 발화 연습을 대화문에 붙인다 — 들은 것과 연습하는 것이 같아야 한다
+    _link_expr_to_script(stages, script)
     return {
         "topic_ko": _clean_str(data.get("topic_ko"), 60) or "자유 주제",
         "goal_ko": _clean_str(data.get("goal_ko"), 100) or "대화 목적 달성",
@@ -869,7 +952,7 @@ def _validate_plan(data) -> dict | None:
         "user_role": _clean_str(data.get("user_role"), 40) or "학습자",
         "ai_role": _clean_str(data.get("ai_role"), 40) or "대화 상대",
         "stages": stages,
-        "script": _validate_script(data.get("script"), len(stages)),
+        "script": script,
     }
 
 
@@ -1077,9 +1160,34 @@ async def roleplay_setup(request: Request):
     my_role = _clean_str(body.get("myRole"), 40)
     ai_role = _clean_str(body.get("aiRole"), 40)
     style = body.get("style") if body.get("style") in ("polite", "banmal", "auto") else "auto"
+    # 페이더 좌표 — 대화문과 표현의 말투를 여기에 맞춘다.
+    # 지금까지 style을 받아만 놓고 프롬프트에 넘기지 않아, 모델 대화문과
+    # 발화 연습이 설정한 말투를 무시하고 제멋대로 나왔다(v88에서 고침).
+    d_val = _clamp_int(body.get("d"), 0, 100, 30)
+    p_val = _clamp_int(body.get("p"), 0, 100, 50)
     ui_lang = _clean_str(body.get("lang"), 5).lower()
     if not topic and not goal and not place:
         raise HTTPException(status_code=400, detail="topic_goal_or_place_required")
+
+    # ── 말투(레지스터) 지시 ──
+    # 학습자가 고른 말투와 페이더(친밀도 D·지위 P)를 대화문·표현에 그대로 반영한다.
+    # 한 사람이 한 대화 안에서 반말과 존댓말을 섞으면 학습자가 배울 본이 되지 못한다.
+    if style == "polite":
+        style_line = (f"두 사람 모두 **존댓말(해요체/합쇼체)** 로 말한다. "
+                      f"{ai_role or '상대'}도 반말을 쓰지 않는다.")
+    elif style == "banmal":
+        style_line = ("두 사람 모두 **반말(해체)** 로 말한다. "
+                      "'-요'로 끝나는 존댓말을 쓰지 않는다.")
+    else:
+        # auto — 페이더 좌표로 관계를 읽는다. D 높으면 가깝고, P 높으면 학습자가 윗사람.
+        close = "가까운 사이" if d_val >= 60 else ("서먹한 사이" if d_val <= 30 else "보통 사이")
+        rank = ("학습자가 윗사람" if p_val >= 65 else
+                "학습자가 아랫사람" if p_val <= 35 else "둘이 대등")
+        style_line = (
+            f"두 사람의 관계는 **{close}**이고 **{rank}**이다(친밀도 {d_val}, 지위 {p_val}).\n"
+            f"   이 관계에 맞는 말투를 **각 화자마다 하나로 정해** 대화문과 표현 전체에 똑같이 써라.\n"
+            f"   윗사람이 아랫사람에게 반말을 쓰기로 했으면 끝까지 반말이고, "
+            f"아랫사람은 끝까지 존댓말이다. 중간에 바뀌면 안 된다.")
 
     native = LANG_NAMES.get(ui_lang, "")
     native_line = f"학습자의 모국어는 {native}다. 각 단계의 native 필드에 name의 {native} 번역을 넣어라." if native \
@@ -1096,6 +1204,13 @@ async def roleplay_setup(request: Request):
 - 학습자 역할: {my_role or "(미입력 — 추정)"}
 - 챗봇(호아랑) 역할: {ai_role or "(미입력 — 학습자 역할의 상대역으로 추정)"}
 
+[★ 말투 — 이것을 어기면 전부 다시 만들어야 한다]
+{style_line}
+- **한 사람은 처음부터 끝까지 한 가지 말투만 쓴다.** 대화문(script)과 표현(expressions) 모두에서.
+  나쁜 예) 같은 사람이 "무슨 일이야?"(반말)라고 했다가 "무슨 일이에요?"(존댓말)로 바꾸는 것.
+- 학습자가 쓸 표현(expressions)의 말투는 학습자({my_role or '학습자'})의 말투를 따른다.
+- cue와 follow는 상대({ai_role or '상대'})의 말이므로 상대의 말투를 따른다.
+
 [요구사항]
 1) topic_ko, goal_ko, place_ko, user_role, ai_role — 모두 자연스러운 한국어로. 빈 항목은 목적에 맞게 합리적으로 추정.
 2) stages — 이 목적의 실제 대화가 거치는 기능단계 4~6개를 순서대로.
@@ -1110,7 +1225,9 @@ async def roleplay_setup(request: Request):
      표현과 cue는 모두 국제 통용 한국어 표준 교육과정 중급(4급 이하) 어휘·문법 범위로 작성하라.
      각 표현은 객체로 만든다: {{"text":"","cue":"","follow":"","idc":""}}
        · idc — 이 표현이 주로 기르는 상호작용 요소 하나:
-         stage(단계 조직)|topic(화제)|move(대화이동)|turn(차례)|repair(단절 수정)|strategy(전략)|listen(듣기 반응)|context(맥락·존대)
+         move(대화이동)|topic(화제)|turn(차례)|repair(단절 수정)|strategy(전략)|listen(듣기 반응)|context(맥락·존대)
+         ★ 발화 연습은 '한 차례 주고받기'를 익히는 자리다. 기본은 move(대화이동)이며,
+           대화 전체의 흐름인 '기능 단계'는 여기서 기를 수 없으니 쓰지 마라.
          한 단계 안에서 요소가 겹치지 않게 안배하라 — 모두 move면 대화이동만 연습하게 된다.
        · text   — 학습자가 말할 발화 (필수)
        · cue    — text 바로 앞에 올 상대({ai_role or '상대'})의 발화.
@@ -1145,6 +1262,11 @@ JSON만 출력하라. 스키마:
     # 대화문까지 함께 만드느라 길어졌다 — 넉넉히 기다린다
     data = await _gen_json(prompt, timeout_s=55.0)
     plan = _validate_plan(data)
+    # 말투가 섞인 대화문은 본보기가 못 된다 — 한 번만 다시 만들어 본다.
+    # (두 번째 것도 섞였으면 그냥 쓴다. 연습 자체를 막을 일은 아니다.)
+    if plan is not None and _style_mixed(plan.get("script")):
+        print("[상황극] 대화문 말투가 섞임 — 다시 생성")
+        plan = None
     if plan is None and not (data is None and _quota_exhausted()):
         # 쿼터 소진이 아닐 때만 1회 재시도 (429에서 재시도는 쿼터 낭비)
         data = await _gen_json(prompt, timeout_s=55.0)
@@ -2532,6 +2654,53 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
               " ".join(f"{i['key']}:{i['grade']}" for i in items if i["scored"]))
         return {"items": items, "total": total}
 
+    async def run_review(idc_items: list) -> str:
+        """총평 — 등급표 말고 사람이 쓴 것 같은 줄글로.
+        요소별 상·중·하는 '무엇이 부족한가'는 알려 주지만 '어떻게 말했는가'는 못 담는다.
+        실제 발화를 짚어 칭찬하고 고칠 곳을 알려 주는 선생님의 말이 따로 있어야 한다."""
+        if not convo:
+            return ""
+        transcript = "\n".join(
+            f"{'학습자' if m['role'] == 'user' else '상대'}: {m['text'].strip()}"
+            for m in convo[-80:] if m["text"].strip())
+        graded = "\n".join(
+            f"- {it.get('name', '')}: {it.get('grade', '')}" for it in (idc_items or [])[:9])
+        task_line = (f"과업 — 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']} / "
+                     f"학습자 역할: {rp_plan['user_role']}") if rp_plan else "자유 주제 대화"
+        prompt = f"""너는 따뜻하고 꼼꼼한 한국어 선생님이다. 방금 대화 연습을 마친 중급 학습자에게
+말로 해 주듯 총평을 써라.
+
+{task_line}
+
+[대화 기록]
+{transcript}
+
+[요소별 판정 참고]
+{graded}
+
+[쓰는 법]
+- 200~320자. 줄글 두세 문단. 목록·번호·표를 쓰지 마라.
+- **학습자가 실제로 한 말을 따옴표로 한두 개 인용하라.** 인용 없는 칭찬은 빈말이다.
+- 순서: ① 이번 대화에서 잘한 것(구체적으로) → ② 다음에 이렇게 해 보자 한 가지
+  → ③ 짧은 격려. ②는 하나만 골라라. 여러 개를 주면 아무것도 남지 않는다.
+- 틀린 문장을 고쳐 줄 때는 "○○보다 △△가 더 자연스러워요"처럼 대안을 함께 줘라.
+- 반드시 한국어. 중급(4급 이하) 어휘·문법. '-해요'체로 다정하게.
+- ★ 다음 말은 절대 쓰지 마라 — 화행, 레지스터, 담화, 대화이동, 기능 단계,
+  의사소통 전략, 명료화, 구인, 발화 순서, 연속체. 학습자가 바로 아는 말로 풀어 써라.
+- 못한 것을 늘어놓지 마라. 학습자가 다시 해 보고 싶어지게 쓰는 것이 목적이다.
+
+총평 글만 출력하라. 제목도 인사말도 붙이지 마라."""
+        try:
+            resp = await asyncio.wait_for(
+                client.aio.models.generate_content(
+                    model=_analysis_model["name"], contents=prompt,
+                    config=types.GenerateContentConfig(temperature=0.7)),
+                timeout=25.0)
+            return re.sub(r"\n{3,}", "\n\n", (getattr(resp, "text", "") or "").strip())[:900]
+        except Exception as e:
+            print(f"[총평] 생성 실패: {e}")
+            return ""
+
     async def send_final_score():
         """종료 버튼 → 마지막 분석을 마치고 퍼센트를 점수로, IDC 프로파일을 함께 전송."""
         idc = {"items": [], "total": 0}
@@ -2542,6 +2711,7 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
         await run_analysis(final=True)          # 자유 대화도 idc·퀘스트·유형을 최종 판정
         idc = await run_idc_profile()           # 사후 피드백 — 두 모드 공통
         idc_state["final"] = idc
+        review = await run_review(idc.get("items"))   # 선생님의 총평(줄글)
         payload = _progress_payload() if rp_plan else {"stages": [], "percent": 0}
         await websocket.send_text(json.dumps({
             "type": "final_score",
@@ -2552,6 +2722,7 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
             "idcTotal": idc["total"],
             "abc": rp_progress["abc"],                      # 대화 유형 A/B/C
             "chains": rp_progress["chains"],                # 대화이동 연쇄 횟수
+            "review": review,                              # 총평(줄글) — 결과 넷째 장
             "idcCounts": dict(idc_state["counts"]),         # 기기 저장용 — 다음 세션 페이딩에 쓴다
             "quests": sorted(rp_progress["quests"]),
         }))

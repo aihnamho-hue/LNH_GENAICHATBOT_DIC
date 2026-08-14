@@ -6,26 +6,26 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json?v=86">
+    <link rel="manifest" href="/static/manifest.json?v=87">
     <meta name="theme-color" content="#4A7C74">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=86">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=86">
-    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=86" crossorigin>
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=87">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=87">
+    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=87" crossorigin>
     <style>
         /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansMedium.woff2?v=86") format("woff2");
+            src: url("/static/fonts/GmarketSansMedium.woff2?v=87") format("woff2");
             font-weight: 400 600; font-style: normal; font-display: swap;
         }
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansBold.woff2?v=86") format("woff2");
+            src: url("/static/fonts/GmarketSansBold.woff2?v=87") format("woff2");
             font-weight: 700 900; font-style: normal; font-display: swap;
         }
         :root {
@@ -205,8 +205,8 @@
             transition: height 0.09s linear; }
         .ptt-label { min-width: 0; }
 
-        /* 주제 대화에서는 진녹색 버튼 (자유 수다는 장단 주홍) */
-        /* 주제 대화는 진녹(송화색 계열) — 자유 수다의 장단과 한눈에 구분되게 */
+        /* 주제 대화에서는 진녹색 버튼 (자유 대화는 장단 주홍) */
+        /* 주제 대화는 진녹(송화색 계열) — 자유 대화의 장단과 한눈에 구분되게 */
         body[data-mode="rp"] .ptt-btn, body[data-mode="rp"] .pr-mic { background: var(--pine); }
         body[data-mode="rp"] .ptt-btn:hover:not(:disabled) { background: #295137; }
         body[data-mode="rp"] .ptt-btn.talking { background: #23472F; box-shadow: 0 0 0 6px rgba(46,91,62,0.26); }
@@ -272,7 +272,7 @@
         .splash video { width: 100%; height: 100%; object-fit: contain; display: block; }
         /* ★ 사라지는 동안에도 클릭을 계속 막는다.
            예전엔 여기서 pointer-events:none 을 걸어, 인트로를 누른 그 손가락의
-           click 이 뒤에 있던 「주제 대화」·「자유 수다」 카드에 그대로 꽂혔다.
+           click 이 뒤에 있던 「주제 대화」·「자유 대화」 카드에 그대로 꽂혔다.
            (터치는 pointerdown → touchend → click 순서라 오버레이가 먼저 투명해진다) */
         .splash.gone { opacity: 0; }
         /* 안내용 표시 — 실제로는 화면 아무 데나 눌러도 넘어간다 */
@@ -965,7 +965,7 @@
         .ov-x { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border: none; border-radius: 11px; background: var(--accent-soft); color: var(--accent-ink); font-size: 15px; font-weight: 800; cursor: pointer; z-index: 5; transition: background 0.15s, transform 0.12s; }
         .ov-x:hover { background: #CBD6DC; transform: scale(1.05); }
 
-        /* ── 모드 버튼 크기 차등: 주제 대화(핵심 과업) 크게, 자유 수다 작게 ── */
+        /* ── 모드 버튼 크기 차등: 주제 대화(핵심 과업) 크게, 자유 대화 작게 ── */
         #modeRpBtn { flex: 2.1; font-size: 14px; padding: 14px 4px; }
         #modeFreeBtn { flex: 1; font-size: 12px; padding: 11px 4px; }
 
@@ -988,7 +988,7 @@
            호아랑의 반응을 보고 싶으면 영상통화 버튼으로 크게 본다.
            단, 노드는 그대로 두어야 영상통화가 이 무대를 옮겨다 쓸 수 있다
            (그래서 .character-panel 안에 있을 때만 숨긴다 — 영상통화로 옮겨 가면 다시 보인다). */
-        /* 채팅으로 대화하는 동안에는 맨 위 캐릭터를 숨긴다 — 주제 대화·자유 수다 모두.
+        /* 채팅으로 대화하는 동안에는 맨 위 캐릭터를 숨긴다 — 주제 대화·자유 대화 모두.
            채팅을 보는 동안에는 어차피 캐릭터가 시야 밖이라 세로만 잡아먹는다.
            노드는 그대로 두어 영상통화가 이 무대를 옮겨 쓰는 구조는 건드리지 않는다. */
         body.rp-chat .character-panel .stage,
@@ -1074,7 +1074,7 @@
         body[data-screen="home"] .home-sub { display: none; }   /* 영상이 인사를 대신한다 */
 
         .home-sub { font-size: 16px; color: var(--muted); margin: 0; line-height: 1.5; font-weight: 700; }
-        .home-card { width: 100%; display: flex; align-items: center; gap: 16px; text-align: left;
+        .home-card { width: 86%; margin-left: auto; margin-right: auto; display: flex; align-items: center; gap: 16px; text-align: left;
             border: none; border-radius: 22px; padding: 10px 18px; gap: 12px; cursor: pointer; position: relative; overflow: hidden;
             box-shadow: var(--shadow); transition: transform 0.16s cubic-bezier(.2,.8,.3,1), box-shadow 0.2s; color: #fff; }
         .home-card::after { content: ""; position: absolute; inset: 0;
@@ -1094,7 +1094,7 @@
         .back-btn { left: 12px; right: auto; font-size: 17px; font-weight: 700; }
 
         /* ── 지난 대화(히스토리) 오버레이 ── */
-        .hist-list { display: flex; flex-direction: column; gap: 8px; max-height: calc(34vh / var(--ui-zoom)); overflow-y: auto; margin: 6px 0 4px; text-align: left; }
+        .hist-list { display: flex; flex-direction: column; gap: 8px; max-height: calc(52vh / var(--ui-zoom)); overflow-y: auto; margin: 6px 0 4px; text-align: left; }
         .hist-item { border: 1.5px solid var(--accent-soft); border-radius: 12px; padding: 11px 13px; background: var(--panel);
             cursor: pointer; transition: transform 0.12s, border-color 0.2s; }
         .hist-item:hover { transform: translateY(-1px); border-color: var(--accent-ink); }
@@ -1104,6 +1104,16 @@
         .hist-item .hi-preview { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.45;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .hist-empty { font-size: 13px; color: var(--muted); padding: 24px 0; }
+        /* 항목을 누르면 그 자리에서 펼쳐진다 — 목록을 떠나지 않으므로
+           여러 대화를 견주어 보기 쉽다. 다시 누르면 접힌다. */
+        .hist-item .hi-body { display: none; text-align: left; white-space: pre-wrap; word-break: break-word;
+            font-size: 12.5px; line-height: 1.6; color: var(--ink); background: var(--sand-soft);
+            border-radius: 10px; padding: 10px 12px; margin-top: 9px;
+            max-height: calc(34vh / var(--ui-zoom)); overflow-y: auto; }
+        .hist-item.open { border-color: var(--accent-ink); }
+        .hist-item.open .hi-body { display: block; }
+        .hist-item.open .hi-preview { display: none; }
+        .hist-item .hi-caret { font-size: 11px; color: var(--muted); margin-left: 6px; }
         .hist-detail { text-align: left; max-height: calc(38vh / var(--ui-zoom)); overflow-y: auto; white-space: pre-wrap;
             font-size: 13px; line-height: 1.6; color: var(--ink); background: var(--sand-soft); border-radius: 12px; padding: 14px; }
 
@@ -1202,7 +1212,7 @@
         .hv-controls .quick-btn { background: var(--panel); border-color: var(--accent-soft); color: var(--accent-ink); }
         .hv-controls .quick-btn:disabled { opacity: 0.45; }
 
-        /* ── 대화 화면 상단 접이식 "⚙️ 대화 스타일" (자유 수다에서만) ── */
+        /* ── 대화 화면 상단 접이식 "⚙️ 대화 스타일" (자유 대화에서만) ── */
         .chat-style-bar { margin-bottom: 8px; border: 1.5px solid var(--accent-soft);
             border-radius: 12px; background: var(--panel); overflow: hidden; }
         .chat-style-bar.hidden { display: none; }
@@ -1215,7 +1225,7 @@
         .chat-style-bar.open .csb-body { display: block; }
         .csb-body .fader-section { display: block; padding: 0; }
 
-        /* ── 자유 수다 피드백 스텁 화면 ── */
+        /* ── 자유 대화 피드백 스텁 화면 ── */
         .freefb-icon { font-size: 40px; }
         .freefb-todo { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 8px 0; }
 
@@ -1248,8 +1258,8 @@
 <!-- ═══ 앱 시작 영상 (한옥 장지문이 열리고 호아랑이 나온다) ═══
      같은 세션에서 한 번만 재생하고, 끝나면 스스로 사라진다. -->
 <div class="splash" id="splash">
-    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=86">
-        <source src="/static/intro.mp4?v=86" type="video/mp4">
+    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=87">
+        <source src="/static/intro.mp4?v=87" type="video/mp4">
     </video>
     <button type="button" class="splash-skip" id="splashSkip">건너뛰기 ›</button>
 </div>
@@ -1422,7 +1432,7 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png?v=86" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=87" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
         <div class="res-page" id="resPage1">
         <div class="result-cards">
@@ -1463,13 +1473,13 @@
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png?v=86" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=87" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
         <!-- 3항 연속체 — 학습자 발화 뒤에 올 상대의 반응 -->
         <div class="pr-cue-row hidden" id="prFollowRow">
-            <div class="profile"><img src="/static/hamster.png?v=86" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=87" alt=""></div>
             <div class="pr-cue-bubble" id="prFollowText"></div>
         </div>
         <button type="button" class="pr-listen-btn" id="prListenBtn">🔊</button>
@@ -1484,16 +1494,16 @@
         </div>
     </div>
 </div>
-<!-- 자유 수다 피드백 화면 (스텁) — 평가 축은 '상호작용 능력'이나 구체 항목 미정.
+<!-- 자유 대화 피드백 화면 (스텁) — 평가 축은 '상호작용 능력'이나 구체 항목 미정.
      TODO: <한국어 대화 상호작용 교육 모형> 문서로 채울 것. 지금은 격려 + 홈 복귀만. -->
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=86" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=87" alt="호아랑">
         <div class="freefb-icon">💬</div>
         <h2 id="freeFbTitleEl" style="margin:6px 0;"></h2>
 
-        <!-- 사후 피드백 — 자유 수다도 IDC 프로파일을 받는다 (표 42 기준) -->
+        <!-- 사후 피드백 — 자유 대화도 IDC 프로파일을 받는다 (표 42 기준) -->
         <div class="idc-head" id="freeIdcHead" style="display:none;">
             <span class="idc-h-title" id="freeIdcTitle"></span>
             <span class="idc-h-sub" id="freeIdcSub"></span>
@@ -1505,19 +1515,19 @@
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=86" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=87" alt="호아랑"></div>
 </div>
 <div class="turn-edge" aria-hidden="true"></div>
 <!-- 다른 창(앱)에서 쓰는 중이라 이 창은 물러났음을 알린다 -->
 <div class="other-window hidden" id="otherWindowNote"><span id="otherWindowMsg"></span></div>
 <!-- 배경 영상 — 화면 전체를 채우고 그 위에 글자·카드가 놓인다 -->
 <button type="button" class="qz-btn" id="qzBtn">
-    <img id="qzBtnImg" src="/static/qz_hello.png?v=86" alt=""><span class="qz-dot"></span>
+    <img id="qzBtnImg" src="/static/qz_hello.png?v=87" alt=""><span class="qz-dot"></span>
 </button>
 <div class="home-bg" aria-hidden="true">
-    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=86" alt="">
+    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=87" alt="">
     <video class="hb-main" id="homeLoop" playsinline muted loop autoplay preload="auto"
-           poster="/static/home_loop.jpg?v=86" src="/static/home_loop.mp4?v=86"></video>
+           poster="/static/home_loop.jpg?v=87" src="/static/home_loop.mp4?v=87"></video>
     <div class="home-bg-veil"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
@@ -1525,7 +1535,7 @@
     <!-- 상단: 제목(왼쪽) · 버튼(오른쪽) -->
     <div class="home-header">
         <h1 class="home-title">
-            <img class="home-logo" id="homeLogoBtn" src="/static/icon-192.png?v=86" alt="" role="button" tabindex="0">
+            <img class="home-logo" id="homeLogoBtn" src="/static/icon-192.png?v=87" alt="" role="button" tabindex="0">
             <span id="homeTitleEl">호아랑</span>
         </h1>
         <div class="home-top">
@@ -1558,7 +1568,7 @@
 <!-- 설치 관문 — 웹으로는 쓸 수 없다. 언어를 고르고, 그 언어로 설치 안내를 받는다. -->
 <div class="inapp-gate hidden" id="installGate">
     <div class="inapp-card">
-        <img class="ig-icon" src="/static/icon-192.png?v=86" alt="">
+        <img class="ig-icon" src="/static/icon-192.png?v=87" alt="">
         <!-- ① 언어(나라) 선택 -->
         <div id="igStep1">
             <h2>🌏 언어 선택 · Select Your Language</h2>
@@ -1615,7 +1625,7 @@
 <div class="lang-overlay hidden" id="notifOverlay">
     <div class="lang-box" style="max-width:380px;">
         <button type="button" class="ov-x" id="notifX">✕</button>
-        <div class="notif-art"><img src="/static/ham_smile.png?v=86" alt=""></div>
+        <div class="notif-art"><img src="/static/ham_smile.png?v=87" alt=""></div>
         <h2 id="notifTitleEl" style="margin-bottom:8px;"></h2>
         <p class="consent-text" id="notifBodyEl" style="margin-bottom:14px;"></p>
         <div class="consent-actions">
@@ -1640,7 +1650,7 @@
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=86" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=87" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -1674,7 +1684,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png?v=86" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=87" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -1686,7 +1696,7 @@
         <!-- 지연 진단: 📶왕복지연 · ⬆업로드적체 · ⏱최근 응답 소요 -->
         <div id="netStat" style="font-size:10px; color:var(--muted); min-height:13px; text-align:center;"></div>
 
-        <!-- 모드 선택: 주제 대화(상황극) / 자유 수다 — 주제 대화가 앞 -->
+        <!-- 모드 선택: 주제 대화(상황극) / 자유 대화 — 주제 대화가 앞 -->
         <div class="mode-toggle">
             <button class="mode-btn" id="modeRpBtn"></button>
             <button class="mode-btn" id="modeFreeBtn"></button>
@@ -1727,12 +1737,12 @@
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png?v=86" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=87" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span><svg class="ic"><use href="#ic-video"></use></svg></span><span id="hamViewBtnLbl"></span></button>
         </div>
-        <!-- 접이식 "⚙️ 대화 스타일" — 자유 수다에서만 표시(기본값 즉시 시작, 필요 시 펼침).
+        <!-- 접이식 "⚙️ 대화 스타일" — 자유 대화에서만 표시(기본값 즉시 시작, 필요 시 펼침).
              주제 대화의 D/P는 설정 화면에서 정해지므로 여기선 숨김. 페이더는 JS가 이 안으로 옮긴다. -->
         <div class="chat-style-bar hidden" id="chatStyleBar">
             <button type="button" class="csb-toggle" id="csbToggle">
@@ -1783,8 +1793,6 @@
         <!-- 푸터: 안내문 대신 앱 다운로드(PWA 설치) 버튼 — 업로드 상태 알림도 이 자리에 잠깐 표시됨 -->
         <div class="chat-footer" id="chatFooter"></div>
     </div>
-    <!-- 제작자 크레딧 -->
-    <div class="credit">공동체에 대한 공헌 · LeeNamho · Email: namho1210@naver.com</div>
 </div>
 <!-- ═══ 영상통화 뷰 (호아랑 크게 보기) — 대화 화면에서 오른쪽에서 슬라이드 인 ═══
      실제 캐릭터 무대(#stage)와 발화 버튼(#pttBtn)·빠른요청을 이 안으로 옮겨 애니메이션·핸들러를 그대로 유지 -->
@@ -1817,7 +1825,7 @@
 <!-- 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 (발화 연습 시작 등) -->
 <div class="ham-peek" id="hamPeek" aria-hidden="true">
     <div class="hp-bubble" id="hamPeekText"></div>
-    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=86" alt="">
+    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=87" alt="">
 </div>
 
 <!-- 대화의 문턱 연출 — 한옥 장지문 -->
@@ -1830,11 +1838,11 @@
 <!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <!-- 발화 연습 배경 — '통통(가야금)', 사용자 볼륨의 20%로 아주 은은하게 -->
-<audio id="prBgm" src="/static/practice_bgm.mp3?v=86" loop preload="none"></audio>
+<audio id="prBgm" src="/static/practice_bgm.mp3?v=87" loop preload="none"></audio>
 <!-- 단계 달성 — 전통악기 징 -->
-<audio id="gongSfx" src="/static/gong.mp3?v=86" preload="auto"></audio>
-<!-- 주제 대화·자유 수다 진행 중 배경 — 「How are you 가야금」 -->
-<audio id="chatBgm" src="/static/chat_bgm.mp3?v=86" loop preload="none"></audio>
+<audio id="gongSfx" src="/static/gong.mp3?v=87" preload="auto"></audio>
+<!-- 주제 대화·자유 대화 진행 중 배경 — 「How are you 가야금」 -->
+<audio id="chatBgm" src="/static/chat_bgm.mp3?v=87" loop preload="none"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -1846,7 +1854,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v86 (2026-08-14)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v87 (2026-08-14)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -2030,7 +2038,7 @@
     let sessionStartedAt = null;
 
     /* ── 주제 대화(상황극) 상태 ── */
-    let mode = "free";                 // "free" 자유 수다 | "rp" 주제 대화
+    let mode = "free";                 // "free" 자유 대화 | "rp" 주제 대화
     let rpId = null, rpPlan = null, rpStyle = "auto";
     let rpPercent = 0, rpStagesState = [];
     let rpSessionActive = false;       // 현재(직전) 세션이 상황극인지
@@ -2067,7 +2075,7 @@
        빠른 요청 버튼(천천히/다시 한 번/쉽게/빨리빨리)과 실제 대화 내용은
        한국어 학습 콘텐츠이므로 번역하지 않는다. */
     const I18N = {
-        ko: { title:"🐯 호아랑과 한국어 수다", subtitle:"마이크를 켜고 호아랑과 자연스럽게 대화해 보세요", speaking:"말하는 중...", ready:"연결 준비 완료", waiting:"대기 중", styleTitle:"🎚️ 대화 스타일 조절", distLabel:"친밀도 (Distance)", powerLabel:"사용자 지위 (Power)", distLow:"낯선 사이", distHigh:"절친", powerLow:"하급자", powerHigh:"상급자", distLv:["낯선 사이","아는 사이","적당한 사이","친한 사이","절친 (BFF)"], powerLv:["하급자","약간 아래","대등한 관계","약간 위","상급자 (VIP)"], placeholder:"접속 코드 (필요한 경우에만 입력)", btnStart:"대화 시작하기", btnStop:"대화 종료하기", btnPause:"⏸️ 일시정지", btnResume:"▶️ 재개", btnExport:"📄 대화 내보내기 (.txt)", empty:"대화를 시작하면<br>카카오톡처럼 대화가 표시됩니다", footer:"🎤 버튼을 누른 채로 한국어로 말하고, 손을 떼면 호아랑이 대답해요", stConnecting:"서버 연결 중...", stListening:"듣고 있어요... (마이크 활성)", stSpeaking:"호아랑이 말하고 있어요", stSpeakNow:"말씀하세요!", stClosed:"연결 종료됨", stPaused:"일시정지됨 — ▶️ 누르면 재개", errAccess:"접속 코드가 올바르지 않습니다.", errFull:"지금은 사용자가 많아요. 잠시 후 다시 시도해 주세요.", errGeneric:"연결에 실패했어요.", consentTitle:"🎙️ 녹음 안내", consentBody:"학습 기록 제공과 서비스 개선을 위해 대화 음성과 대화 내용이 자동으로 녹음되어 서버에 저장돼요. 동의하면 대화가 시작됩니다.", consentAgree:"동의하고 시작하기", consentCancel:"취소", upUploading:"🎙️ 대화 녹음 저장 중...", upDone:"✅ 대화 녹음이 저장되었어요", upFail:"⚠️ 녹음 저장에 실패했어요", kakaoNotice:"카카오톡 브라우저에서는 파일 저장 등 일부 기능이 제한돼요.", kakaoOpen:"기본 브라우저로 열기", kakaoExportMsg:"카카오톡 브라우저에서는 파일 저장이 지원되지 않아요. 대화 기록은 세션 종료 시 서버에 자동 저장되었어요. 파일로 받으려면 기본 브라우저(Chrome/Safari)로 열어주세요.", earTitle:"🎧 이어폰을 사용해 주세요", earBody:"스피커로 들으면 호아랑 목소리가 마이크로 들어가서 대화가 자꾸 끊길 수 있어요. 이어폰을 쓰면 훨씬 잘 들리고 대화도 매끄러워요!", earOk:"알겠어요!", qSlow:"천천히", qAgain:"다시 한 번", qEasy:"쉽게", qFast:"빨리빨리", nameTitle:"👋 이름이 뭐예요?", namePh:"이름 (별명도 좋아요)", nameOk:"확인", modeFree:"🗣️ 자유 수다", modeRp:"🎭 주제 대화", rpTitle:"🎭 주제 대화 설정", rpIntro:"모국어로 적어도 괜찮아요 — 호아랑이 알아들어요", rpTopicLbl:"주제 (필수)", rpTopicPh:"예) 옷 가게에서 물건 사기", rpGoalLbl:"대화의 달성 목적", rpGoalPh:"원하는 대화 목적을 자유롭게 넣어 보세요!", rpPlaceLbl:"대화 장소", rpPlacePh:"예) 동네 옷 가게", rpMyRoleLbl:"내 역할", rpMyRolePh:"예) 손님", rpAiRoleLbl:"호아랑 역할", rpAiRolePh:"예) 점원", rpStyleLbl:"말투", segAuto:"자동 (페이더)", rpFaderNote:"친밀도·지위 페이더로 말투(말투)가 자동으로 정해져요", rpMake:"대화 계획 만들기", rpMaking:"계획을 만드는 중... ⏳", rpCancel:"취소", rpBriefTitle:"🗺️ 대화 단계", rpBriefGuide:"단계를 누르면 그 단계의 표현을 미리 연습할 수 있어요 🎤 대화 중 단계가 충족되면 진행 바가 자동으로 차올라요. 충분히 연습했다 싶으면 대화를 시작하세요!", rpBegin:"이 설정으로 대화 시작", rpEdit:"설정 고치기", progressLabel:"", rpOverLabel:"확장 중! 🔥", rpResultTitle:"🏆 오늘의 대화 결과", rpPts:"점", rpScoreSub:"과업 진행률이 그대로 점수가 되었어요", rpSavedNote:"대화 기록이 자동 저장되었어요", rpClose:"닫기", rpNeedTopic:"대화 장소나 달성 목적 중 하나는 적어 주세요!", rpPlanFail:"계획 만들기에 실패했어요. 잠시 후 다시 시도해 주세요.", rpScoring:"🧮 점수 계산 중...", pttHold:"🎤 눌러서 말하기", pttTalking:"🔴 말하는 중 — 떼면 전송", stThinking:"🐯 호아랑이 듣고 있어요...", stPushHint:"", sgLoading:"💡 추천 만드는 중...", sgDice:"다른 목적 추천 (교재형→일상형→엉뚱형)", sgPolite:"존댓말", sgBanmal:"반말", prTitle:"🎤 발화 연습", prStepRepeat:"① 듣고 따라 말하기", prStepReply:"② 대답해 보기", prRepeatHint:"문장을 듣고 똑같이 따라 말해 보세요", prReplyHint:"호아랑의 말을 듣고 아래 문장으로 대답해 보세요", prListen:"🔊 다시 듣기", prMicIdle:"", prMicRec:"🔴 듣는 중... 다 말했으면 다시 누르세요", prGreat:"완벽해요! 👏", prGood:"좋아요! 👍", prRetry:"조금 달랐어요 — 한 번 더!", prNoSpeech:"목소리가 안 들렸어요 — 다시 눌러 보세요", prHeard:"내가 한 말", prSkip:"건너뛰기 →", prAllDone:"🎉 이 단계 연습 완료!", prClose:"닫기", prNoSR:"이 브라우저는 음성 인식을 지원하지 않아요. 듣고 큰 소리로 따라 말한 뒤 아래 버튼으로 넘어가세요.", prSaidIt:"✅ 말해 봤어요 → 다음", prPracticed:"✅ 연습함", appDownload:"📱 앱 다운로드", appInstallHint:"브라우저 메뉴에서 '홈 화면에 추가'를 누르면 앱으로 설치할 수 있어요. iPhone은 공유 버튼(⬆️) → '홈 화면에 추가'!", stYouFirst:"🎤 먼저 말을 걸어 보세요!", scfTitle:"🪜 이렇게 말해 보세요", scfNone:"이 단계의 추천 표현이 없어요", rcScore:"점수", rcTurns:"내 발화", rcTime:"대화 시간", prStt:"🧠 알아듣는 중...", introTitle:"🐯 호아랑과 한국어 수다!", introBody:"호아랑은 여러분이 원하는 상황에서 '진짜 한국어 말하기' 실력을 키워 주는 음성 대화 앱이에요.\n\n🎭 주제 대화: 장소와 목적만 정하면 대화 계획이 만들어져요. 단계별 표현을 미리 연습하고, 실전처럼 상황극으로 말해 보세요. 진행률이 그대로 점수가 돼요.\n🗣️ 자유 수다: 호아랑과 편하게 아무 이야기나!\n🎚️ 친밀도·지위를 조절하면 말투가 달라져요.\n🪜 대화 중 막히면 사다리 버튼이 도와줘요.", introOk:"좋아요, 시작할게요!", homeSub:"무엇을 하고 싶어요?", hcRpTitle:"주제 대화", hcRpDesc:"상황을 정하고 목표를 향해 대화 연습 · 점수와 학교 랭킹", hcFreeTitle:"자유 수다", hcFreeDesc:"호아랑과 편하게 아무 이야기나", csbTitle:"⚙️ 대화 스타일", backConfirm:"대화를 끝낼까요? 지금까지의 대화는 저장돼요.", freeFbTitle:"오늘도 수고했어요!", freeFbBody:"호아랑과 자유롭게 대화했어요. 상호작용 능력 피드백은 곧 추가될 예정이에요.", freeFbClose:"🏠 홈으로", rpHome:"🏠 홈으로", egPrefix:"예) ", sgTapFill:"눌러 채우기", appDlTitle:"📱 앱으로 설치하기", appDlBody:"홈 화면에 추가하면 앱처럼 전체 화면으로 쓸 수 있어요.\n\n📱 아이폰(Safari): 아래 공유 버튼 ⬆️ → '홈 화면에 추가'\n🤖 안드로이드(Chrome): 메뉴 ⋮ → '앱 설치'(또는 '홈 화면에 추가')\n💻 PC(Chrome·Edge): 주소창 오른쪽 설치 아이콘 ⊕ 클릭", appDlInstall:"지금 설치하기", appDlClose:"닫기" },
+        ko: { title:"🐯 호아랑과 한국어 수다", subtitle:"마이크를 켜고 호아랑과 자연스럽게 대화해 보세요", speaking:"말하는 중...", ready:"연결 준비 완료", waiting:"대기 중", styleTitle:"🎚️ 대화 스타일 조절", distLabel:"친밀도 (Distance)", powerLabel:"사용자 지위 (Power)", distLow:"낯선 사이", distHigh:"절친", powerLow:"하급자", powerHigh:"상급자", distLv:["낯선 사이","아는 사이","적당한 사이","친한 사이","절친 (BFF)"], powerLv:["하급자","약간 아래","대등한 관계","약간 위","상급자 (VIP)"], placeholder:"접속 코드 (필요한 경우에만 입력)", btnStart:"대화 시작하기", btnStop:"대화 종료하기", btnPause:"⏸️ 일시정지", btnResume:"▶️ 재개", btnExport:"📄 대화 내보내기 (.txt)", empty:"대화를 시작하면<br>카카오톡처럼 대화가 표시됩니다", footer:"🎤 버튼을 누른 채로 한국어로 말하고, 손을 떼면 호아랑이 대답해요", stConnecting:"서버 연결 중...", stListening:"듣고 있어요... (마이크 활성)", stSpeaking:"호아랑이 말하고 있어요", stSpeakNow:"말씀하세요!", stClosed:"연결 종료됨", stPaused:"일시정지됨 — ▶️ 누르면 재개", errAccess:"접속 코드가 올바르지 않습니다.", errFull:"지금은 사용자가 많아요. 잠시 후 다시 시도해 주세요.", errGeneric:"연결에 실패했어요.", consentTitle:"🎙️ 녹음 안내", consentBody:"학습 기록 제공과 서비스 개선을 위해 대화 음성과 대화 내용이 자동으로 녹음되어 서버에 저장돼요. 동의하면 대화가 시작됩니다.", consentAgree:"동의하고 시작하기", consentCancel:"취소", upUploading:"🎙️ 대화 녹음 저장 중...", upDone:"✅ 대화 녹음이 저장되었어요", upFail:"⚠️ 녹음 저장에 실패했어요", kakaoNotice:"카카오톡 브라우저에서는 파일 저장 등 일부 기능이 제한돼요.", kakaoOpen:"기본 브라우저로 열기", kakaoExportMsg:"카카오톡 브라우저에서는 파일 저장이 지원되지 않아요. 대화 기록은 세션 종료 시 서버에 자동 저장되었어요. 파일로 받으려면 기본 브라우저(Chrome/Safari)로 열어주세요.", earTitle:"🎧 이어폰을 사용해 주세요", earBody:"스피커로 들으면 호아랑 목소리가 마이크로 들어가서 대화가 자꾸 끊길 수 있어요. 이어폰을 쓰면 훨씬 잘 들리고 대화도 매끄러워요!", earOk:"알겠어요!", qSlow:"천천히", qAgain:"다시 한 번", qEasy:"쉽게", qFast:"빨리빨리", nameTitle:"👋 이름이 뭐예요?", namePh:"이름 (별명도 좋아요)", nameOk:"확인", modeFree:"🗣️ 자유 대화", modeRp:"🎭 주제 대화", rpTitle:"🎭 주제 대화 설정", rpIntro:"모국어로 적어도 괜찮아요 — 호아랑이 알아들어요", rpTopicLbl:"주제 (필수)", rpTopicPh:"예) 옷 가게에서 물건 사기", rpGoalLbl:"대화의 달성 목적", rpGoalPh:"원하는 대화 목적을 자유롭게 넣어 보세요!", rpPlaceLbl:"대화 장소", rpPlacePh:"예) 동네 옷 가게", rpMyRoleLbl:"내 역할", rpMyRolePh:"예) 손님", rpAiRoleLbl:"호아랑 역할", rpAiRolePh:"예) 점원", rpStyleLbl:"말투", segAuto:"자동 (페이더)", rpFaderNote:"친밀도·지위 페이더로 말투(말투)가 자동으로 정해져요", rpMake:"대화 계획 만들기", rpMaking:"계획을 만드는 중... ⏳", rpCancel:"취소", rpBriefTitle:"🗺️ 대화 단계", rpBriefGuide:"단계를 누르면 그 단계의 표현을 미리 연습할 수 있어요 🎤 대화 중 단계가 충족되면 진행 바가 자동으로 차올라요. 충분히 연습했다 싶으면 대화를 시작하세요!", rpBegin:"이 설정으로 대화 시작", rpEdit:"설정 고치기", progressLabel:"", rpOverLabel:"확장 중! 🔥", rpResultTitle:"🏆 오늘의 대화 결과", rpPts:"점", rpScoreSub:"과업 진행률이 그대로 점수가 되었어요", rpSavedNote:"대화 기록이 자동 저장되었어요", rpClose:"닫기", rpNeedTopic:"대화 장소나 달성 목적 중 하나는 적어 주세요!", rpPlanFail:"계획 만들기에 실패했어요. 잠시 후 다시 시도해 주세요.", rpScoring:"🧮 점수 계산 중...", pttHold:"🎤 눌러서 말하기", pttTalking:"🔴 말하는 중 — 떼면 전송", stThinking:"🐯 호아랑이 듣고 있어요...", stPushHint:"", sgLoading:"💡 추천 만드는 중...", sgDice:"다른 목적 추천 (교재형→일상형→엉뚱형)", sgPolite:"존댓말", sgBanmal:"반말", prTitle:"🎤 발화 연습", prStepRepeat:"① 듣고 따라 말하기", prStepReply:"② 대답해 보기", prRepeatHint:"문장을 듣고 똑같이 따라 말해 보세요", prReplyHint:"호아랑의 말을 듣고 아래 문장으로 대답해 보세요", prListen:"🔊 다시 듣기", prMicIdle:"", prMicRec:"🔴 듣는 중... 다 말했으면 다시 누르세요", prGreat:"완벽해요! 👏", prGood:"좋아요! 👍", prRetry:"조금 달랐어요 — 한 번 더!", prNoSpeech:"목소리가 안 들렸어요 — 다시 눌러 보세요", prHeard:"내가 한 말", prSkip:"건너뛰기 →", prAllDone:"🎉 이 단계 연습 완료!", prClose:"닫기", prNoSR:"이 브라우저는 음성 인식을 지원하지 않아요. 듣고 큰 소리로 따라 말한 뒤 아래 버튼으로 넘어가세요.", prSaidIt:"✅ 말해 봤어요 → 다음", prPracticed:"✅ 연습함", appDownload:"📱 앱 다운로드", appInstallHint:"브라우저 메뉴에서 '홈 화면에 추가'를 누르면 앱으로 설치할 수 있어요. iPhone은 공유 버튼(⬆️) → '홈 화면에 추가'!", stYouFirst:"🎤 먼저 말을 걸어 보세요!", scfTitle:"🪜 이렇게 말해 보세요", scfNone:"이 단계의 추천 표현이 없어요", rcScore:"점수", rcTurns:"내 발화", rcTime:"대화 시간", prStt:"🧠 알아듣는 중...", introTitle:"🐯 호아랑과 한국어 수다!", introBody:"호아랑은 여러분이 원하는 상황에서 '진짜 한국어 말하기' 실력을 키워 주는 음성 대화 앱이에요.\n\n🎭 주제 대화: 장소와 목적만 정하면 대화 계획이 만들어져요. 단계별 표현을 미리 연습하고, 실전처럼 상황극으로 말해 보세요. 진행률이 그대로 점수가 돼요.\n🗣️ 자유 대화: 호아랑과 편하게 아무 이야기나!\n🎚️ 친밀도·지위를 조절하면 말투가 달라져요.\n🪜 대화 중 막히면 사다리 버튼이 도와줘요.", introOk:"좋아요, 시작할게요!", homeSub:"무엇을 하고 싶어요?", hcRpTitle:"주제 대화", hcRpDesc:"상황을 정하고 목표를 향해 대화 연습 · 점수와 학교 랭킹", hcFreeTitle:"자유 대화", hcFreeDesc:"호아랑과 편하게 아무 이야기나", csbTitle:"⚙️ 대화 스타일", backConfirm:"대화를 끝낼까요? 지금까지의 대화는 저장돼요.", freeFbTitle:"오늘도 수고했어요!", freeFbBody:"호아랑과 자유롭게 대화했어요. 상호작용 능력 피드백은 곧 추가될 예정이에요.", freeFbClose:"🏠 홈으로", rpHome:"🏠 홈으로", egPrefix:"예) ", sgTapFill:"눌러 채우기", appDlTitle:"📱 앱으로 설치하기", appDlBody:"홈 화면에 추가하면 앱처럼 전체 화면으로 쓸 수 있어요.\n\n📱 아이폰(Safari): 아래 공유 버튼 ⬆️ → '홈 화면에 추가'\n🤖 안드로이드(Chrome): 메뉴 ⋮ → '앱 설치'(또는 '홈 화면에 추가')\n💻 PC(Chrome·Edge): 주소창 오른쪽 설치 아이콘 ⊕ 클릭", appDlInstall:"지금 설치하기", appDlClose:"닫기" },
         en: { title:"🐯 Korean Chat with Hoarang", subtitle:"Turn on your mic and chat naturally with Hoarang", speaking:"Speaking...", ready:"Ready to connect", waiting:"Waiting", styleTitle:"🎚️ Conversation Style", distLabel:"Closeness (Distance)", powerLabel:"Your Status (Power)", distLow:"Strangers", distHigh:"Best friends", powerLow:"Junior", powerHigh:"Senior", distLv:["Strangers","Acquaintances","Casual","Close","Best friends (BFF)"], powerLv:["Junior","Slightly below","Equal","Slightly above","Senior (VIP)"], placeholder:"Access code (only if required)", btnStart:"Start Conversation", btnStop:"End Conversation", btnPause:"⏸️ Pause", btnResume:"▶️ Resume", btnExport:"📄 Export Transcript (.txt)", empty:"Start a conversation and<br>messages will appear here like a chat app", footer:"🎤 Hold the button and speak Korean; release and Hoarang replies", stConnecting:"Connecting to server...", stListening:"Listening... (mic on)", stSpeaking:"Hoarang is talking", stSpeakNow:"Go ahead, speak!", stClosed:"Disconnected", stPaused:"Paused — press ▶️ to resume", errAccess:"Incorrect access code.", errFull:"Too many users right now. Please try again later.", errGeneric:"Connection failed.", consentTitle:"🎙️ Recording notice", consentBody:"To provide your learning records and improve the service, the conversation audio and transcript are automatically recorded and saved to our server. Agree to start the conversation.", consentAgree:"Agree & Start", consentCancel:"Cancel", upUploading:"🎙️ Saving recording...", upDone:"✅ Recording saved", upFail:"⚠️ Failed to save recording", kakaoNotice:"Some features (like file saving) are limited in the KakaoTalk browser.", kakaoOpen:"Open in browser", kakaoExportMsg:"File download is not supported in the KakaoTalk browser. Your transcript was saved to the server automatically. To download it as a file, open this page in Chrome/Safari.", earTitle:"🎧 Please use earphones", earBody:"With the speaker on, Hoarang's voice can leak into your mic and keep cutting the conversation off. Earphones make everything much smoother!", earOk:"Got it!", qSlow:"Slower", qAgain:"One more time", qEasy:"Simpler", qFast:"Full speed", nameTitle:"👋 What's your name?", namePh:"Your name (nickname is fine)", nameOk:"OK", modeFree:"🗣️ Free Chat", modeRp:"🎭 Topic Practice", rpTitle:"🎭 Topic Practice Setup", rpIntro:"You can write in your own language — Hoarang will understand", rpTopicLbl:"Topic (required)", rpTopicPh:"e.g. Buying clothes at a store", rpGoalLbl:"Goal of the conversation", rpGoalPh:"Type any conversation goal you want!", rpPlaceLbl:"Place", rpPlacePh:"e.g. A local clothing store", rpMyRoleLbl:"My role", rpMyRolePh:"e.g. Customer", rpAiRoleLbl:"Hoarang's role", rpAiRolePh:"e.g. Clerk", rpStyleLbl:"Speech level", segAuto:"Auto (faders)", rpFaderNote:"Speech level is set automatically by the closeness & status faders", rpMake:"Create Conversation Plan", rpMaking:"Creating plan... ⏳", rpCancel:"Cancel", rpBriefTitle:"🗺️ Dialogue Stages", rpBriefGuide:"Tap a stage to practice its expressions first 🎤 During the talk the bar fills as stages are fulfilled. Start whenever you feel ready!", rpBegin:"Start with These Settings", rpEdit:"Edit Settings", progressLabel:"", rpOverLabel:"Extending! 🔥", rpResultTitle:"🏆 Today's Result", rpPts:" pts", rpScoreSub:"Your task progress became your score", rpSavedNote:"Transcript saved automatically", rpClose:"Close", rpNeedTopic:"Please fill in at least the place or the goal!", rpPlanFail:"Failed to create the plan. Please try again.", rpScoring:"🧮 Calculating score...", pttHold:"🎤 Hold to talk", pttTalking:"🔴 Talking — release to send", stThinking:"🐯 Hoarang is listening...", stPushHint:"", sgLoading:"💡 Making suggestions...", sgDice:"Another goal (textbook→everyday→wacky)", sgPolite:"존댓말 (polite)", sgBanmal:"반말 (casual)", prTitle:"🎤 Speaking Practice", prStepRepeat:"① Listen & repeat", prStepReply:"② Reply to Hoarang", prRepeatHint:"Listen and say the sentence just like you heard it", prReplyHint:"Listen to Hoarang and reply with the sentence below", prListen:"🔊 Listen again", prMicIdle:"", prMicRec:"🔴 Listening... tap again when done", prGreat:"Perfect! 👏", prGood:"Nice! 👍", prRetry:"Not quite — one more try!", prNoSpeech:"Couldn't hear you — tap and try again", prHeard:"You said", prSkip:"Skip →", prAllDone:"🎉 Stage practice complete!", prClose:"Close", prNoSR:"This browser doesn't support speech recognition. Listen, repeat aloud, then tap the button below.", prSaidIt:"✅ I said it → next", prPracticed:"✅ Practiced", appDownload:"📱 Get the App", appInstallHint:"Open your browser menu and tap 'Add to Home Screen' to install. On iPhone: Share (⬆️) → 'Add to Home Screen'.", stYouFirst:"🎤 Say something first!", scfTitle:"🪜 Try saying this", scfNone:"No suggested expressions for this stage", rcScore:"Score", rcTurns:"My turns", rcTime:"Time", prStt:"🧠 Recognizing...", introTitle:"🐯 Welcome to Hoarang!", introBody:"Hoarang is a voice-chat app that builds your real Korean speaking skills in the situations YOU choose.\n\n🎭 Topic Practice: pick a place & goal and get a conversation plan. Practice key expressions first, then role-play for real. Your progress becomes your score.\n🗣️ Free Chat: talk about anything with Hoarang!\n🎚️ Adjust closeness & status to change the speech style.\n🪜 Stuck mid-talk? The ladder button helps.", introOk:"Let's go!", homeSub:"What would you like to do?", hcRpTitle:"Topic Practice", hcRpDesc:"Set a scene, practice toward a goal · score & school ranking", hcFreeTitle:"Free Chat", hcFreeDesc:"Chat about anything with Hoarang", csbTitle:"⚙️ Conversation Style", backConfirm:"End the conversation? Your progress is saved.", freeFbTitle:"Great job today!", freeFbBody:"You chatted freely with Hoarang. Interaction-skill feedback is coming soon.", freeFbClose:"🏠 Home", rpHome:"🏠 Home", egPrefix:"e.g. " },
         zh: { title:"🐯 和Hoarang用韩语畅聊", subtitle:"打开麦克风，和Hoarang自然地用韩语聊天吧", speaking:"正在说话…", ready:"准备就绪", waiting:"等待中", styleTitle:"🎚️ 对话风格设置", distLabel:"亲密度 (Distance)", powerLabel:"用户地位 (Power)", distLow:"陌生人", distHigh:"挚友", powerLow:"下级", powerHigh:"上级", distLv:["陌生人","认识的人","普通关系","亲近的人","挚友 (BFF)"], powerLv:["下级","稍低","平等关系","稍高","上级 (VIP)"], placeholder:"访问码（仅在需要时输入）", btnStart:"开始对话", btnStop:"结束对话", btnPause:"⏸️ 暂停", btnResume:"▶️ 继续", btnExport:"📄 导出对话记录 (.txt)", empty:"开始对话后<br>消息会像聊天软件一样显示在这里", footer:"请用韩语自由交谈 · Hoarang说话时也可以随时插话", stConnecting:"正在连接服务器…", stListening:"正在聆听…（麦克风开启）", stSpeaking:"Hoarang正在说话", stSpeakNow:"请说吧！", stClosed:"连接已断开", stPaused:"已暂停 — 按▶️继续", errAccess:"访问码不正确。", errFull:"当前用户过多，请稍后再试。", errGeneric:"连接失败。", consentTitle:"🎙️ 录音提示", consentBody:"为保存学习记录并改进服务，对话语音和内容将被自动录制并保存到服务器。同意后即可开始对话。", consentAgree:"同意并开始", consentCancel:"取消", upUploading:"🎙️ 正在保存录音…", upDone:"✅ 录音已保存", upFail:"⚠️ 录音保存失败", kakaoNotice:"在KakaoTalk内置浏览器中，文件保存等部分功能受限。", kakaoOpen:"用默认浏览器打开", kakaoExportMsg:"KakaoTalk内置浏览器不支持文件下载。对话记录已自动保存到服务器。如需下载文件，请用Chrome/Safari打开本页。", earTitle:"🎧 建议使用耳机", earBody:"使用扬声器时，Hoarang的声音会进入麦克风，导致对话频繁中断。戴上耳机体验会好很多！", earOk:"知道了！", qSlow:"慢一点", qAgain:"再说一遍", qEasy:"简单点", qFast:"正常速度", nameTitle:"👋 你叫什么名字？", namePh:"姓名（昵称也可以）", nameOk:"确定", modeFree:"🗣️ 自由聊天", modeRp:"🎭 主题对话", rpTitle:"🎭 主题对话设置", rpIntro:"可以用母语填写 — Hoarang能听懂", rpTopicLbl:"主题（必填）", rpTopicPh:"例）在服装店买东西", rpGoalLbl:"对话目标", rpGoalPh:"自由输入你想要的对话目标吧！", rpPlaceLbl:"对话地点", rpPlacePh:"例）家附近的服装店", rpMyRoleLbl:"我的角色", rpMyRolePh:"例）顾客", rpAiRoleLbl:"Hoarang的角色", rpAiRolePh:"例）店员", rpStyleLbl:"敬语等级", segAuto:"自动（推子）", rpFaderNote:"语气（敬语等级）由亲密度和地位推子自动决定", rpMake:"生成对话计划", rpMaking:"正在生成计划... ⏳", rpCancel:"取消", rpBriefTitle:"🗺️ 对话步骤", rpBriefGuide:"点击步骤可先练习该步骤的表达 🎤 对话中完成步骤时进度条会自动上升。觉得练够了就开始对话吧！", rpBegin:"用此设置开始对话", rpEdit:"修改设置", progressLabel:"", rpOverLabel:"扩展中！🔥", rpResultTitle:"🏆 今日对话结果", rpPts:"分", rpScoreSub:"任务进度直接换算成了分数", rpSavedNote:"对话记录已自动保存", rpClose:"关闭", rpNeedTopic:"请至少填写对话地点或目标！", rpPlanFail:"计划生成失败，请稍后重试。", rpScoring:"🧮 正在计算分数...", sgLoading:"💡 正在生成推荐...", sgDice:"换一个目标（教材型→日常型→搞怪型）", sgPolite:"존댓말（敬语）", sgBanmal:"반말（非敬语）", prTitle:"🎤 口语练习", prStepRepeat:"① 听后跟读", prStepReply:"② 听后应答", prRepeatHint:"听句子并照样说出来", prReplyHint:"听Hoarang说的话，用下面的句子回答", prListen:"🔊 再听一遍", prMicIdle:"", prMicRec:"🔴 正在听……说完再点一次", prGreat:"完美！👏", prGood:"很好！👍", prRetry:"有点不一样——再试一次！", prNoSpeech:"没听到声音——请再试一次", prHeard:"我说的话", prSkip:"跳过 →", prAllDone:"🎉 本步骤练习完成！", prClose:"关闭", prNoSR:"此浏览器不支持语音识别。请听后大声跟读，然后点下方按钮继续。", prSaidIt:"✅ 我说过了 → 下一个", prPracticed:"✅ 已练习", pttHold:"🎤 按住说话", pttTalking:"🔴 正在说——松开发送", stThinking:"🐯 Hoarang正在听...", stPushHint:"", appDownload:"📱 下载App", appInstallHint:"在浏览器菜单中点『添加到主屏幕』即可安装。iPhone：分享(⬆️)→『添加到主屏幕』。", stYouFirst:"🎤 先开口打个招呼吧！", scfTitle:"🪜 可以这样说", scfNone:"本步骤没有推荐表达", rcScore:"分数", rcTurns:"我的发话", rcTime:"对话时间", prStt:"🧠 识别中...", introTitle:"🐯 欢迎来到Hoarang！", introBody:"Hoarang是一款语音对话应用，在你想要的情境中培养真正的韩语口语能力。\n\n🎭 主题对话：设定地点和目标即可生成对话计划。先练习各步骤表达，再进行情景实战，进度即分数。\n🗣️ 自由聊天：和Hoarang随便聊！\n🎚️ 调节亲密度·地位即可改变语气。\n🪜 卡住时点梯子按钮获取帮助。", introOk:"好，开始吧！", egPrefix:"例）" },
         ja: { title:"🐯 ホアランと韓国語おしゃべり", subtitle:"マイクをオンにして、ホアランと自然に会話してみましょう", speaking:"話しています…", ready:"接続準備完了", waiting:"待機中", styleTitle:"🎚️ 会話スタイル設定", distLabel:"親密度 (Distance)", powerLabel:"ユーザーの地位 (Power)", distLow:"初対面", distHigh:"親友", powerLow:"目下", powerHigh:"目上", distLv:["初対面","知り合い","ほどほど","親しい仲","親友 (BFF)"], powerLv:["目下","やや下","対等な関係","やや上","目上 (VIP)"], placeholder:"アクセスコード（必要な場合のみ）", btnStart:"会話を始める", btnStop:"会話を終える", btnPause:"⏸️ 一時停止", btnResume:"▶️ 再開", btnExport:"📄 会話記録を保存 (.txt)", empty:"会話を始めると<br>チャットのように表示されます", footer:"韓国語で自由に話してみましょう · ホアランの話に割り込んでもOK", stConnecting:"サーバーに接続中…", stListening:"聞いています…（マイクON）", stSpeaking:"ホアランが話しています", stSpeakNow:"どうぞ話してください！", stClosed:"接続終了", stPaused:"一時停止中 — ▶️で再開", errAccess:"アクセスコードが正しくありません。", errFull:"現在利用者が多いため、しばらくしてからお試しください。", errGeneric:"接続に失敗しました。", consentTitle:"🎙️ 録音のお知らせ", consentBody:"学習記録の提供とサービス改善のため、会話の音声と内容が自動的に録音されサーバーに保存されます。同意すると会話が始まります。", consentAgree:"同意して開始", consentCancel:"キャンセル", upUploading:"🎙️ 録音を保存中…", upDone:"✅ 録音を保存しました", upFail:"⚠️ 録音の保存に失敗しました", kakaoNotice:"カカオトーク内ブラウザではファイル保存など一部機能が制限されます。", kakaoOpen:"既定のブラウザで開く", kakaoExportMsg:"カカオトーク内ブラウザではファイル保存ができません。会話記録はセッション終了時にサーバーへ自動保存されました。ファイルとして保存するにはChrome/Safariで開いてください。", earTitle:"🎧 イヤホンのご使用をおすすめします", earBody:"スピーカーだとホアランの声がマイクに入り、会話が途切れやすくなります。イヤホンを使うとずっと快適です！", earOk:"わかった！", qSlow:"ゆっくり", qAgain:"もう一回", qEasy:"やさしく", qFast:"普通の速さ", nameTitle:"👋 お名前は？", namePh:"名前（ニックネームでもOK）", nameOk:"OK", modeFree:"🗣️ フリートーク", modeRp:"🎭 テーマ会話", rpTitle:"🎭 テーマ会話の設定", rpIntro:"母語で書いてもOK — ホアランが理解します", rpGoalLbl:"会話の達成目標", rpGoalPh:"話したい会話の目標を自由に入れてみましょう！", rpPlaceLbl:"会話の場所", rpPlacePh:"例）近所の服屋", rpMyRoleLbl:"私の役割", rpMyRolePh:"例）客", rpAiRoleLbl:"ホアランの役割", rpAiRolePh:"例）店員", rpStyleLbl:"話し方（スピーチレベル）", segAuto:"自動（フェーダー）", rpFaderNote:"親密度・地位フェーダーで話し方が自動的に決まります", rpMake:"会話プランを作る", rpMaking:"プラン作成中... ⏳", rpCancel:"キャンセル", rpBriefTitle:"🗺️ 会話ステップ", rpBriefGuide:"ステップをタップすると表現を先に練習できます 🎤 会話中にステップを達成するとバーが自動で上がります。準備ができたら始めましょう！", rpBegin:"この設定で会話を始める", rpEdit:"設定を直す", progressLabel:"", rpOverLabel:"拡張中！🔥", rpResultTitle:"🏆 今日の会話結果", rpPts:"点", rpScoreSub:"タスク進行率がそのまま点数になりました", rpSavedNote:"会話記録は自動保存されました", rpClose:"閉じる", rpNeedTopic:"場所か目標のどちらかは書いてください！", rpPlanFail:"プラン作成に失敗しました。しばらくしてからもう一度お試しください。", rpScoring:"🧮 採点中...", pttHold:"🎤 押して話す", pttTalking:"🔴 話し中 — 離すと送信", stThinking:"🐯 ホアランが聞いています...", stPushHint:"", sgLoading:"💡 おすすめ作成中...", sgDice:"別の目標（教科書型→日常型→意外型）", sgPolite:"존댓말（敬語）", sgBanmal:"반말（タメ口）", prTitle:"🎤 発話練習", prStepRepeat:"① 聞いてリピート", prStepReply:"② 返事してみる", prRepeatHint:"文を聞いて同じように言ってみましょう", prReplyHint:"ホアランの言葉を聞いて下の文で答えましょう", prListen:"🔊 もう一度聞く", prMicIdle:"", prMicRec:"🔴 聞いています... 話し終わったらもう一度押してください", prGreat:"完璧！👏", prGood:"いいね！👍", prRetry:"少し違いました — もう一回！", prNoSpeech:"声が聞こえませんでした — もう一度押してください", prHeard:"私が言ったこと", prSkip:"スキップ →", prAllDone:"🎉 このステップの練習完了！", prClose:"閉じる", prNoSR:"このブラウザは音声認識に対応していません。聞いて声に出してから下のボタンで進んでください。", prSaidIt:"✅ 言ってみた → 次へ", prPracticed:"✅ 練習済み", appDownload:"📱 アプリをダウンロード", appInstallHint:"ブラウザのメニューから「ホーム画面に追加」でインストールできます。iPhoneは共有(⬆️)→「ホーム画面に追加」！", stYouFirst:"🎤 先に話しかけてみましょう！", scfTitle:"🪜 こう言ってみましょう", scfNone:"このステップのおすすめ表現はありません", rcScore:"スコア", rcTurns:"私の発話", rcTime:"会話時間", prStt:"🧠 認識中...", introTitle:"🐯 ホアランへようこそ！", introBody:"ホアランは、あなたが望むシチュエーションで『本物の韓国語会話力』を育てる音声チャットアプリです。\n\n🎭 テーマ会話：場所と目標を決めると会話プランが作られます。表現を先に練習してから、本番のようにロールプレイ。進行率がスコアになります。\n🗣️ フリートーク：ホアランと気軽におしゃべり！\n🎚️ 親密度・地位を調節すると話し方が変わります。\n🪜 会話中に詰まったら、はしごボタンが助けてくれます。", introOk:"よし、はじめよう！", egPrefix:"例）" },
@@ -2081,9 +2089,9 @@
         fr: { title:"🐯 Papoter en coréen avec Hoarang", subtitle:"Activez le micro et discutez naturellement avec Hoarang", speaking:"En train de parler...", ready:"Prêt à se connecter", waiting:"En attente", styleTitle:"🎚️ Style de conversation", distLabel:"Proximité (Distance)", powerLabel:"Statut de l'utilisateur (Power)", distLow:"Inconnus", distHigh:"Meilleurs amis", powerLow:"Subordonné", powerHigh:"Supérieur", distLv:["Inconnus","Connaissances","Neutre","Proches","Meilleurs amis (BFF)"], powerLv:["Subordonné","Un peu en dessous","D'égal à égal","Un peu au-dessus","Supérieur (VIP)"], placeholder:"Code d'accès (si nécessaire)", btnStart:"Commencer la conversation", btnStop:"Terminer la conversation", btnPause:"⏸️ Pause", btnResume:"▶️ Reprendre", btnExport:"📄 Exporter la conversation (.txt)", empty:"Commencez une conversation :<br>les messages s'affichent comme dans un chat", footer:"Parlez librement en coréen · Vous pouvez interrompre Hoarang", stConnecting:"Connexion au serveur...", stListening:"J'écoute... (micro activé)", stSpeaking:"Hoarang parle", stSpeakNow:"À vous de parler !", stClosed:"Connexion terminée", stPaused:"En pause — appuyez sur ▶️ pour reprendre", errAccess:"Code d'accès incorrect.", errFull:"Trop d'utilisateurs actuellement. Réessayez plus tard.", errGeneric:"Échec de la connexion.", consentTitle:"🎙️ Avis d'enregistrement", consentBody:"Pour conserver votre suivi d'apprentissage et améliorer le service, l'audio et le contenu de la conversation sont automatiquement enregistrés et sauvegardés sur le serveur. Acceptez pour commencer.", consentAgree:"Accepter et commencer", consentCancel:"Annuler", upUploading:"🎙️ Sauvegarde de l'enregistrement...", upDone:"✅ Enregistrement sauvegardé", upFail:"⚠️ Échec de la sauvegarde", kakaoNotice:"Certaines fonctions (sauvegarde de fichiers) sont limitées dans le navigateur KakaoTalk.", kakaoOpen:"Ouvrir dans le navigateur", kakaoExportMsg:"Le navigateur KakaoTalk ne permet pas de télécharger des fichiers. La transcription a été sauvegardée automatiquement sur le serveur. Pour obtenir le fichier, ouvrez cette page dans Chrome/Safari.", earTitle:"🎧 Écouteurs recommandés", earBody:"Avec le haut-parleur, la voix de Hoarang peut entrer dans le micro et couper sans cesse la conversation. C'est bien mieux avec des écouteurs !", earOk:"Compris !", qSlow:"Plus lentement", qAgain:"Encore une fois", qEasy:"Plus simple", qFast:"Vitesse normale", nameTitle:"👋 Comment tu t'appelles ?", namePh:"Ton nom (un surnom, ça marche)", nameOk:"OK", modeFree:"🗣️ Discussion libre", modeRp:"🎭 Dialogue à thème", rpTitle:"🎭 Réglage du dialogue à thème", rpIntro:"Tu peux écrire dans ta langue — Hoarang comprend", rpGoalLbl:"Objectif de la conversation", rpGoalPh:"Écris librement l'objectif de ton choix !", rpPlaceLbl:"Lieu de la conversation", rpPlacePh:"ex.) Boutique de vêtements du quartier", rpMyRoleLbl:"Mon rôle", rpMyRolePh:"ex.) Client", rpAiRoleLbl:"Rôle de Hoarang", rpAiRolePh:"ex.) Vendeur", rpStyleLbl:"Registre (façon de parler)", segAuto:"Auto (faders)", rpFaderNote:"Le registre est réglé automatiquement par les faders de proximité et de statut", rpMake:"Créer le plan de conversation", rpMaking:"Création du plan... ⏳", rpCancel:"Annuler", rpBriefTitle:"🗺️ Étapes du dialogue", rpBriefGuide:"Touche une étape pour t'entraîner d'abord aux expressions 🎤 Pendant le dialogue, la barre monte quand une étape est accomplie. Lance-toi quand tu es prêt !", rpBegin:"Commencer avec ces réglages", rpEdit:"Modifier les réglages", progressLabel:"", rpOverLabel:"En extension ! 🔥", rpResultTitle:"🏆 Résultat du jour", rpPts:" pts", rpScoreSub:"Ta progression est devenue ta note", rpSavedNote:"Transcription enregistrée automatiquement", rpClose:"Fermer", rpNeedTopic:"Indique au moins le lieu ou l'objectif !", rpPlanFail:"Échec de la création du plan. Réessaie plus tard.", rpScoring:"🧮 Calcul du score...", pttHold:"🎤 Maintiens pour parler", pttTalking:"🔴 En train de parler — relâche pour envoyer", stThinking:"🐯 Hoarang écoute...", stPushHint:"", sgLoading:"💡 Préparation des suggestions...", sgDice:"Autre objectif (manuel→quotidien→inattendu)", sgPolite:"존댓말 (poli)", sgBanmal:"반말 (familier)", prTitle:"🎤 Entraînement oral", prStepRepeat:"① Écoute et répète", prStepReply:"② Réponds à Hoarang", prRepeatHint:"Écoute la phrase et redis-la à l'identique", prReplyHint:"Écoute Hoarang et réponds avec la phrase ci-dessous", prListen:"🔊 Réécouter", prMicIdle:"", prMicRec:"🔴 J'écoute... touche à nouveau quand tu as fini", prGreat:"Parfait ! 👏", prGood:"Très bien ! 👍", prRetry:"Pas tout à fait — encore une fois !", prNoSpeech:"Je ne t'ai pas entendu — réessaie", prHeard:"J'ai dit", prSkip:"Passer →", prAllDone:"🎉 Entraînement de cette étape terminé !", prClose:"Fermer", prNoSR:"Ce navigateur ne prend pas en charge la reconnaissance vocale. Écoute, répète à voix haute puis touche le bouton ci-dessous.", prSaidIt:"✅ Je l'ai dit → suivant", prPracticed:"✅ Entraîné", appDownload:"📱 Télécharger l'appli", appInstallHint:"Ouvre le menu du navigateur et touche 'Ajouter à l'écran d'accueil'. Sur iPhone : Partager (⬆️) → 'Sur l'écran d'accueil'.", stYouFirst:"🎤 Lance la conversation !", scfTitle:"🪜 Essaie de dire ça", scfNone:"Pas d'expressions pour cette étape", rcScore:"Score", rcTurns:"Mes répliques", rcTime:"Durée", prStt:"🧠 Reconnaissance...", introTitle:"🐯 Bienvenue chez Hoarang !", introBody:"Hoarang est une appli de conversation vocale qui développe ta 'vraie' expression orale en coréen, dans les situations de ton choix.\n\n🎭 Dialogue à thème : choisis un lieu et un objectif, un plan de conversation est créé. Entraîne-toi aux expressions puis joue la scène comme en vrai. Ta progression devient ta note.\n🗣️ Discussion libre : parle de tout avec Hoarang !\n🎚️ Règle proximité et statut pour changer le registre.\n🪜 Bloqué ? Le bouton échelle t'aide.", introOk:"C'est parti !", egPrefix:"ex.) " }
     };
     /* ── 홈/네비/히스토리 문구를 전 언어에 병합 (거대한 언어 줄을 건드리지 않고 한 곳에서 관리).
-       이렇게 하지 않으면 ko/en 외 언어에서 '주제 대화·자유 수다'가 한국어로 남는 버그가 생긴다. ── */
+       이렇게 하지 않으면 ko/en 외 언어에서 '주제 대화·자유 대화'가 한국어로 남는 버그가 생긴다. ── */
     const I18N_NAV = {
-        ko: { homeSub:"무엇을 하고 싶어요?", hcRpTitle:"주제 대화", hcRpDesc:"상황을 정하고 목표를 향해 대화 연습", hcFreeTitle:"자유 수다", hcFreeDesc:"호아랑과 편하게 아무 이야기나", csbTitle:"⚙️ 대화 스타일", backConfirm:"대화를 끝낼까요? 지금까지의 대화는 저장돼요.", freeFbTitle:"오늘도 수고했어요!", freeFbBody:"호아랑과 자유롭게 대화했어요. 상호작용 능력 피드백은 곧 추가될 예정이에요.", freeFbClose:"🏠 홈으로", rpHome:"🏠 홈으로", homeName:"이름 바꾸기", homeHistory:"지난 대화", histTitle:"🗂️ 지난 대화", histClose:"닫기", histEmpty:"아직 저장된 대화가 없어요. 대화를 마치면 여기에 기록돼요." },
+        ko: { homeSub:"무엇을 하고 싶어요?", hcRpTitle:"주제 대화", hcRpDesc:"상황을 정하고 목표를 향해 대화 연습", hcFreeTitle:"자유 대화", hcFreeDesc:"호아랑과 편하게 아무 이야기나", csbTitle:"⚙️ 대화 스타일", backConfirm:"대화를 끝낼까요? 지금까지의 대화는 저장돼요.", freeFbTitle:"오늘도 수고했어요!", freeFbBody:"호아랑과 자유롭게 대화했어요. 상호작용 능력 피드백은 곧 추가될 예정이에요.", freeFbClose:"🏠 홈으로", rpHome:"🏠 홈으로", homeName:"이름 바꾸기", homeHistory:"지난 대화", histTitle:"🗂️ 지난 대화", histClose:"닫기", histEmpty:"아직 저장된 대화가 없어요. 대화를 마치면 여기에 기록돼요." },
         en: { homeSub:"What would you like to do?", hcRpTitle:"Topic Practice", hcRpDesc:"Set a scene and practice toward a goal", hcFreeTitle:"Free Chat", hcFreeDesc:"Chat about anything with Hoarang", csbTitle:"⚙️ Conversation Style", backConfirm:"End the conversation? Your progress is saved.", freeFbTitle:"Great job today!", freeFbBody:"You chatted freely with Hoarang. Interaction-skill feedback is coming soon.", freeFbClose:"🏠 Home", rpHome:"🏠 Home", homeName:"Change name", homeHistory:"History", histTitle:"🗂️ Past conversations", histClose:"Close", histEmpty:"No saved conversations yet. They'll appear here after you finish a chat." },
         zh: { homeSub:"你想做什么？", hcRpTitle:"主题对话", hcRpDesc:"设定情境，朝目标练习对话", hcFreeTitle:"自由聊天", hcFreeDesc:"和Hoarang随便聊聊", csbTitle:"⚙️ 对话风格", backConfirm:"结束对话吗？目前的对话会被保存。", freeFbTitle:"今天也辛苦啦！", freeFbBody:"你和Hoarang自由地聊了天。互动能力反馈即将推出。", freeFbClose:"🏠 回首页", rpHome:"🏠 回首页", homeName:"改名字", homeHistory:"历史对话", histTitle:"🗂️ 历史对话", histClose:"关闭", histEmpty:"还没有保存的对话。聊完后会显示在这里。" },
         ja: { homeSub:"何をしますか？", hcRpTitle:"テーマ会話", hcRpDesc:"場面を決めて目標に向かって会話練習", hcFreeTitle:"フリートーク", hcFreeDesc:"ホアランと気軽におしゃべり", csbTitle:"⚙️ 会話スタイル", backConfirm:"会話を終わりますか？ここまでの会話は保存されます。", freeFbTitle:"今日もおつかれさま！", freeFbBody:"ホアランと自由に会話しました。やり取り能力のフィードバックは近日追加予定です。", freeFbClose:"🏠 ホームへ", rpHome:"🏠 ホームへ", homeName:"名前を変更", homeHistory:"会話履歴", histTitle:"🗂️ 会話履歴", histClose:"閉じる", histEmpty:"まだ保存された会話はありません。会話を終えるとここに記録されます。" },
@@ -2989,7 +2997,7 @@
     }
     function questToday(mode) {
         // 홈과 결과가 다른 목록을 보이지 않도록 mode 를 고정한다.
-        // 예전엔 홈은 "rp", 자유 수다 결과는 "free" 로 뽑아 서로 달랐다.
+        // 예전엔 홈은 "rp", 자유 대화 결과는 "free" 로 뽑아 서로 달랐다.
         mode = "rp";
         const d = new Date();
         const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
@@ -3024,7 +3032,7 @@
         const im = document.getElementById("qzBtnImg");
         if (!im) return;
         qzFaceIdx = (qzFaceIdx + 1) % QZ_FACES.length;
-        im.src = "/static/" + QZ_FACES[qzFaceIdx] + ".png?v=86";
+        im.src = "/static/" + QZ_FACES[qzFaceIdx] + ".png?v=87";
     }
     function questBtnSync() {
         const b = document.getElementById("qzBtn");
@@ -3160,7 +3168,7 @@
             try { obRender(); } catch (e) {}
         }
         document.getElementById("introOkBtn").textContent = t("introOk");
-        /* 홈 화면 · 자유수다 피드백 · 히스토리 (방안 A) */
+        /* 홈 화면 · 자유대화 피드백 · 히스토리 (방안 A) */
         document.getElementById("homeTitleEl").textContent = t("charName");
         document.getElementById("hvNameEl").textContent = t("charName");
         const _sk = document.getElementById("splashSkip");   // 인트로가 아직 떠 있으면 문구도 맞춰 준다
@@ -3274,7 +3282,7 @@
             const w = document.createElement("div");
             w.className = "ob-hero";
             w.innerHTML = '<img class="ob-ham" alt=""><span class="ob-hello"></span>';
-            w.querySelector("img").src = "/static/ham_smile.png?v=86";
+            w.querySelector("img").src = "/static/ham_smile.png?v=87";
             w.querySelector(".ob-hello").textContent = t("obHello");
             return w;
         },
@@ -3358,7 +3366,7 @@
             const v = w.querySelectorAll(".ob-view");
             v[0].querySelector(".vl").textContent = stripLeadEmoji(t("hvClose"));
             v[1].querySelector(".vl").textContent = stripLeadEmoji(t("hvOpen"));
-            v[1].querySelector("img").src = "/static/ham_idle.png?v=86";
+            v[1].querySelector("img").src = "/static/ham_idle.png?v=87";
             return w;
         },
         function talk() {                       // ⑥ 말하기 버튼 · 도움말 · 이어폰
@@ -3549,7 +3557,7 @@
         if (isConnected) {
             // 상황극이면 종료 전에 최종 분석 → 점수 치환을 기다린다
             if (rpSessionActive) endRoleplaySession();
-            else endFreeSession();   // 자유 수다 → 피드백 화면
+            else endFreeSession();   // 자유 대화 → 피드백 화면
             return;
         }
         if (mode === "rp") { rpId ? showBriefing() : openRpSetup(); return; }
@@ -3589,7 +3597,7 @@
        ④ 종료 버튼 → 진행률이 점수로 치환 + 대화 자동 저장 */
     /* ── 페이더 위치 제어 ──
        시작 시 페이더는 접혀 있고, 모드를 고르면 나타난다.
-       · 자유 수다 → 왼쪽 패널에서 슬라이드 다운(아래 '대화 시작하기'로 바로 시작)
+       · 자유 대화 → 왼쪽 패널에서 슬라이드 다운(아래 '대화 시작하기'로 바로 시작)
        · 주제 대화 → 설정 다이얼로그의 '말투' 칸으로 이동해 설정
        페이더 노드(distSlider/powerSlider)는 하나뿐이라 어디에 있든 값이 공유된다. */
     const faderSection = document.getElementById("faderSection");
@@ -3604,8 +3612,13 @@
     /* ══════════ 방안 A: 화면 상태 전환 (home | chat | feedback) ══════════
        라우터 없이 body[data-screen] 하나로 홈/대화/피드백 블록만 토글한다. */
     function setScreen(s) {
-        if (document.body.dataset.screen !== s) fxReset();   // 화면이 바뀌면 지난 연출은 정리
+        const changed = document.body.dataset.screen !== s;
+        if (changed) fxReset();   // 화면이 바뀌면 지난 연출은 정리
         document.body.dataset.screen = s;
+        // 홈으로 돌아올 때마다 배경 영상을 새로 뽑는다(마루·경회루·노들섬…)
+        if (changed && s === "home" && window.homeLoopReroll) {
+            try { window.homeLoopReroll(false); } catch (e) {}
+        }
     }
     function goHome() {
         try { questBtnSync(); } catch (e) {}
@@ -3675,7 +3688,7 @@
     }
 
     /* ── 페이더 위치 제어 (페이더 노드는 하나 — 어디에 있든 값 공유) ──
-       · 자유 수다 → 캐릭터 패널의 '대화 시작하기' 위에 펼쳐 배치 (전처럼, 숨기지 않음)
+       · 자유 대화 → 캐릭터 패널의 '대화 시작하기' 위에 펼쳐 배치 (전처럼, 숨기지 않음)
        · 주제 대화 → 설정 다이얼로그의 말투 칸(rpFaderSlot)으로 이동 */
     function revealFaderInPanel() {
         if (faderSection.parentElement !== charPanel) charPanel.insertBefore(faderSection, exportBtn);
@@ -3696,14 +3709,14 @@
         modeRpBtn.classList.toggle("active", m === "rp");
     }
 
-    /* ── 홈 카드: 🎬 주제 대화 / ☕ 자유 수다 (기존 .mode-toggle 대체) ── */
+    /* ── 홈 카드: 🎬 주제 대화 / ☕ 자유 대화 (기존 .mode-toggle 대체) ── */
     function enterTopicSetup() {   // 주제 대화 → 시나리오 설정 → 브리핑 → 대화
         if (!flowLock()) return;
         setMode("rp");
         moveFaderToDialog();
         openRpSetup();             // 홈 위에 설정 오버레이를 띄운다 (대화 시작 시 goChat)
     }
-    function enterFreeChat() {     // 자유 수다 → 곧장 대화 전용 화면 (말투는 시작 버튼 위에)
+    function enterFreeChat() {     // 자유 대화 → 곧장 대화 전용 화면 (말투는 시작 버튼 위에)
         if (!flowLock(1200)) return;
         wakeServer();      // 대화가 곧 시작된다 — 서버를 미리 깨워 둔다
         setMode("free");
@@ -3741,15 +3754,24 @@
             v.load(); tryPlay();
         }
 
+        // 받아 둔 목록. 홈에 돌아올 때마다 여기서 새로 뽑는다 —
+        // 한 번만 뽑으면 앱을 다시 켜기 전까지 같은 풍경만 보게 된다.
+        let loops = [];
+        function reroll() {
+            if (loops.length < 2) { tryPlay(); return; }      // 한 개뿐이면 그대로 둔다
+            let pick = loops[Math.floor(Math.random() * loops.length)];
+            // 같은 것이 뽑혔으면 한 번만 다시 굴린다(연달아 같은 풍경 방지)
+            if (v.currentSrc && v.currentSrc.indexOf(pick.mp4) !== -1)
+                pick = loops[Math.floor(Math.random() * loops.length)];
+            if (v.currentSrc && v.currentSrc.indexOf(pick.mp4) !== -1) tryPlay();
+            else use(pick);
+        }
+        window.homeLoopReroll = reroll;
+
         tryPlay();   // 기본 영상(home_loop.mp4)을 먼저 튼다 — 목록을 기다리지 않는다
         fetch("/home-loops")
             .then(r => r.json())
-            .then(d => {
-                const arr = (d && Array.isArray(d.loops)) ? d.loops : [];
-                if (arr.length < 2) return;                       // 한 개뿐이면 그대로 둔다
-                const pick = arr[Math.floor(Math.random() * arr.length)];
-                if (pick && !v.currentSrc.endsWith(pick.mp4)) use(pick);
-            })
+            .then(d => { loops = (d && Array.isArray(d.loops)) ? d.loops : []; reroll(); })
             .catch(() => {});
 
         // 영상을 못 받으면 기본 영상으로 되돌린다(그래도 안 되면 포스터가 남는다)
@@ -3960,6 +3982,7 @@
         try { localStorage.setItem(HIST_KEY, JSON.stringify(list)); } catch (e) {}
     }
     function openHistory() {
+        histCurrent = null;
         histDetail.classList.add("hidden");
         histExportBtn.classList.add("hidden");
         histList.classList.remove("hidden");
@@ -3974,27 +3997,34 @@
             e.className = "hist-empty"; e.textContent = t("histEmpty");
             histList.appendChild(e); return;
         }
-        // 창이 길어져 내보내기·닫기 버튼이 밀리지 않도록 최근 3개만 보인다
-        list.slice(0, 3).forEach((it, i) => {
+        // 저장된 대화를 전부 보인다. 항목을 누르면 그 자리에서 기록이 펼쳐지고
+        // 다시 누르면 접힌다 — 목록을 떠나지 않으므로 앞뒤 대화를 견주어 보기 쉽다.
+        list.forEach((it, i) => {
             const div = document.createElement("div");
             div.className = "hist-item";
             const emoji = it.mode === "rp" ? "🎬" : "☕";
             const dt = new Date(it.ts).toLocaleString(uiLang || "ko");
             div.innerHTML = '<div class="hi-top"><span class="hi-title">' + emoji + " " + escapeHtml(it.title || "") +
                 '</span><span class="hi-date">' + escapeHtml(dt) + '</span></div>' +
-                '<div class="hi-preview">' + escapeHtml(it.preview || "") + '</div>';
-            div.addEventListener("click", () => showHistDetail(i));
+                '<div class="hi-preview">' + escapeHtml(it.preview || "") + '</div>' +
+                '<div class="hi-body">' + escapeHtml(it.text || "") + '</div>';
+            div.addEventListener("click", () => toggleHistItem(div, i));
             histList.appendChild(div);
         });
     }
-    function showHistDetail(i) {
-        const it = loadHistory()[i];
-        if (!it) return;
-        histCurrent = it;
-        histDetail.textContent = it.text || "";
-        histList.classList.add("hidden");
-        histDetail.classList.remove("hidden");
-        histExportBtn.classList.remove("hidden");
+    function toggleHistItem(div, i) {
+        const wasOpen = div.classList.contains("open");
+        // 한 번에 하나만 펼친다 — 여러 개가 열리면 어느 대화를 내보내는지 모호해진다
+        histList.querySelectorAll(".hist-item.open").forEach(el => el.classList.remove("open"));
+        if (wasOpen) {                       // 다시 누르면 접힌다
+            histCurrent = null;
+            histExportBtn.classList.add("hidden");
+            return;
+        }
+        div.classList.add("open");
+        histCurrent = loadHistory()[i] || null;
+        histExportBtn.classList.toggle("hidden", !histCurrent);
+        try { div.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) {}
     }
     histExportBtn.addEventListener("click", () => {
         if (!histCurrent) return;
@@ -4009,10 +4039,12 @@
         a.click(); URL.revokeObjectURL(url);
     });
     function closeHistory() {
-        if (!histDetail.classList.contains("hidden")) {
-            histDetail.classList.add("hidden");
+        // 펼쳐 둔 것이 있으면 먼저 접고, 없으면 창을 닫는다
+        const open = histList.querySelector(".hist-item.open");
+        if (open) {
+            open.classList.remove("open");
+            histCurrent = null;
             histExportBtn.classList.add("hidden");
-            histList.classList.remove("hidden");   // 상세 → 목록으로
         } else {
             histOverlay.classList.add("hidden");
         }
@@ -4079,13 +4111,13 @@
         if (isConnected) {
             if (!confirm(t("backConfirm"))) return;
             if (rpSessionActive) endRoleplaySession();   // → 결과(피드백) 화면
-            else endFreeSession();                       // → 자유수다 피드백 화면
+            else endFreeSession();                       // → 자유대화 피드백 화면
         } else {
             goHome();
         }
     });
 
-    /* ── 자유 수다 종료 → 서버 최종 분석(IDC 프로파일) → 피드백 화면 → 홈 ──
+    /* ── 자유 대화 종료 → 서버 최종 분석(IDC 프로파일) → 피드백 화면 → 홈 ──
        상황극과 같은 길: end_session 을 보내고 final_score 를 기다렸다가 화면을 바꾼다.
        서버가 늦으면 9초 뒤 빈 프로파일로라도 넘어간다. */
     let freeEnding = false, freeEndTimer = null;
@@ -6494,8 +6526,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png?v=86", smile: "/static/ham_smile.png?v=86",
-        surprised: "/static/ham_surprised.png?v=86", shy: "/static/ham_shy.png?v=86",
+        idle: "/static/ham_idle.png?v=87", smile: "/static/ham_smile.png?v=87",
+        surprised: "/static/ham_surprised.png?v=87", shy: "/static/ham_shy.png?v=87",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -6569,7 +6601,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png?v=86";
+                img.src = "/static/hamster.png?v=87";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");

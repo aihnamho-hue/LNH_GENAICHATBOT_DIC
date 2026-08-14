@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v86"
+APP_VERSION = "v87"
 APP_DATE = "2026-08-14"
 
 app = FastAPI()
@@ -1177,14 +1177,14 @@ def build_roleplay_prompt(d: int, p: int, ui_lang: str, user_name: str,
         f"  {i + 1}. {s['name']} — {s['desc']}" for i, s in enumerate(plan["stages"]))
     rp_block = f"""
 
-# ★★★ 상황극 모드 (자유 수다가 아님 — 이 블록이 최우선) ★★★
+# ★★★ 상황극 모드 (자유 대화가 아님 — 이 블록이 최우선) ★★★
 지금은 '주제 대화 연습(상황극)'이다. 학습자가 직접 설정한 과업:
 - 주제: {plan['topic_ko']}
 - 대화의 달성 목적: {plan['goal_ko']}
 - 장소: {plan['place_ko']}
 - 학습자 역할: {plan['user_role']} / 너의 역할: {plan['ai_role']}
 너는 호아랑인 채로 '{plan['ai_role']}' 역할을 연기한다. 역할에 몰입하되 호아랑의 온기는 유지해.
-- [목소리 나이] 위 '목소리와 말투의 나이'(어린 아이 톤)는 자유 수다일 때 규칙이다.
+- [목소리 나이] 위 '목소리와 말투의 나이'(어린 아이 톤)는 자유 대화일 때 규칙이다.
   지금은 배역을 맡았으니 '{plan['ai_role']}'에게 어울리는 나이·말투로 말해라.
   배역이 어른이면 어른답게, 또래면 또래답게. 배역이 아이가 아닌데 아이 목소리를 흉내 내지 마라.
 {_STYLE_RULES.get(style, _STYLE_RULES['auto'])}
@@ -1245,7 +1245,7 @@ def pick_voice(ai_role: str = "", override: str = "") -> str:
     """대화 상대(호아랑이 맡은 배역)에 어울리는 목소리 이름을 고른다.
 
     - 학습자가 홈에서 목소리를 직접 고르면(override) 그것을 최우선으로 쓴다.
-    - 자유 수다처럼 배역이 없으면 호아랑 본래 목소리(남자아이).
+    - 자유 대화처럼 배역이 없으면 호아랑 본래 목소리(남자아이).
     - 배역에 성별·나이가 드러나 있으면 반영한다.
     - 직업 이름만 있어 성별을 알 수 없으면 넘겨짚지 않고, 역할 이름을 해시해
       성인 남성/여성 중 하나를 고정 배정한다(같은 역할이면 항상 같은 목소리).
@@ -2215,14 +2215,14 @@ async def _handle_session(websocket: WebSocket):
                                               idc_state["levels"], idc_state["counts"])
         print(f"[서버] 상황극 세션 — 주제={rp_plan['topic_ko']}, D={d}, P={p}, 말투={rp_style}, 이름={user_name or '(없음)'}")
     else:
-        # 자유 수다에도 MKO 블록을 붙인다 — IDC는 상황극 전용 능력이 아니다.
+        # 자유 대화에도 MKO 블록을 붙인다 — IDC는 상황극 전용 능력이 아니다.
         # 오히려 과업이 없는 자유 대화에서 화제·차례 관리가 순수하게 드러난다.
         system_prompt = build_system_prompt(d, p, ui_lang, user_name) \
             + build_mko_block(idc_state["levels"], idc_state["counts"],
                               native=LANG_NAMES.get(ui_lang, ""))
         print(f"[서버] 클라이언트 연결 성공 — 친밀도(D)={d}, 지위(P)={p}, 언어={ui_lang or 'ko'}, 이름={user_name or '(없음)'}")
 
-    # ── 상황극 진행 상태 (자유 수다에서는 사용 안 함) ──
+    # ── 상황극 진행 상태 (자유 대화에서는 사용 안 함) ──
     convo = []           # [{"role":"user"|"ai","text":str}] — 같은 화자 연속 조각은 병합
     rp_progress = {
         "done": set(),                 # 충족된 단계 인덱스 (단조 증가)
@@ -2278,7 +2278,7 @@ async def _handle_session(websocket: WebSocket):
         end_of_turn=False라서 이 지시만으로는 호아랑이 말하지 않는다.
         학습자가 다음에 말할 때 그 맥락과 함께 읽힌다. 대상이 그대로면 보내지 않는다."""
         sess = live["session"]
-        if sess is None:          # 자유 수다에도 비계 갱신을 보낸다
+        if sess is None:          # 자유 대화에도 비계 갱신을 보낸다
             return
         block = idc_focus_block(idc_state["levels"], idc_state["counts"],
                                 native=LANG_NAMES.get(ui_lang, ""))
@@ -2539,7 +2539,7 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
             if not rp_progress["running"]:
                 break
             await asyncio.sleep(0.2)
-        await run_analysis(final=True)          # 자유 수다도 idc·퀘스트·유형을 최종 판정
+        await run_analysis(final=True)          # 자유 대화도 idc·퀘스트·유형을 최종 판정
         idc = await run_idc_profile()           # 사후 피드백 — 두 모드 공통
         idc_state["final"] = idc
         payload = _progress_payload() if rp_plan else {"stages": [], "percent": 0}
@@ -2561,7 +2561,7 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
     #    주제 대화에서 배역(점원·선생님·아주머니 등)을 맡으면 그에 맞는 목소리로 자동 전환.
     #    학습자가 홈에서 직접 고른 값(voice)이 있으면 그게 최우선. ──
     voice_name = pick_voice(rp_plan.get("ai_role", "") if rp_plan else "", voice_pref)
-    print(f"[서버] 목소리 = {voice_name} (배역={rp_plan.get('ai_role','-') if rp_plan else '자유수다'}, 선택={voice_pref or 'auto'})")
+    print(f"[서버] 목소리 = {voice_name} (배역={rp_plan.get('ai_role','-') if rp_plan else '자유대화'}, 선택={voice_pref or 'auto'})")
 
     config_kwargs = dict(
         response_modalities=[types.Modality.AUDIO],

@@ -6,26 +6,26 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json?v=67">
+    <link rel="manifest" href="/static/manifest.json?v=86">
     <meta name="theme-color" content="#4A7C74">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=67">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=67">
-    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=67" crossorigin>
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=86">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=86">
+    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=86" crossorigin>
     <style>
         /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansMedium.woff2?v=67") format("woff2");
+            src: url("/static/fonts/GmarketSansMedium.woff2?v=86") format("woff2");
             font-weight: 400 600; font-style: normal; font-display: swap;
         }
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansBold.woff2?v=67") format("woff2");
+            src: url("/static/fonts/GmarketSansBold.woff2?v=86") format("woff2");
             font-weight: 700 900; font-style: normal; font-display: swap;
         }
         :root {
@@ -104,7 +104,7 @@
         @media (max-width: 820px) { .app { grid-template-columns: 1fr; } }
 
         /* ── 왼쪽 패널 ── */
-        .character-panel { position: relative; background: var(--panel); border-radius: 24px; box-shadow: var(--shadow); padding: 20px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; overflow-y: auto; max-height: calc(92vh / var(--ui-zoom)); }
+        .character-panel { position: relative; max-height: calc(96vh / var(--ui-zoom)); overflow-y: auto; background: var(--panel); border-radius: 24px; box-shadow: var(--shadow); padding: 20px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; overflow-y: auto; max-height: calc(92vh / var(--ui-zoom)); }
         .lang-btn { position: absolute; top: 12px; right: 12px; z-index: 5; border: 1.5px solid var(--navy-soft); background: #fff; border-radius: 10px; width: 34px; height: 30px; font-size: 15px; cursor: pointer; transition: transform 0.12s; }
         .lang-btn:hover { transform: translateY(-1px); }
         .title { text-align: center; }
@@ -403,7 +403,9 @@
         .ham-peek.show { transform: translateX(0); opacity: 1; visibility: visible; }
         .hp-ham { width: clamp(84px, 24vw, 118px); height: auto; flex-shrink: 0;
             filter: drop-shadow(0 10px 18px rgba(58,48,34,0.35)); transform: translateX(12%); }
-        .hp-bubble { position: relative; background: #fff; border: 1.5px solid #A9C4BB; border-radius: 16px;
+        /* 「오늘의 퀘스트」 제목만 굵고, 아래 항목은 같은 크기로 얇게 */
+        .hp-bubble .qz-items { display: block; font-weight: 400; margin-top: 4px; }
+        .hp-bubble { white-space: pre-line; text-align: left; position: relative; background: #fff; border: 1.5px solid #A9C4BB; border-radius: 16px;
             padding: 11px 14px; font-size: 14px; font-weight: 800; line-height: 1.45; color: var(--ink);
             max-width: min(52vw, 260px); margin-bottom: 22px;
             box-shadow: 0 12px 28px -12px rgba(58,48,34,0.55); }
@@ -411,9 +413,75 @@
             border: 9px solid transparent; border-left-color: #A9C4BB; }
         .hp-bubble::after { content: ""; position: absolute; left: 100%; bottom: 14px; margin-left: -2.5px;
             border: 8px solid transparent; border-left-color: #fff; }
+        /* 퀘스트 안내는 오른쪽 위 버튼 바로 아래에서 나온다 — 버튼과 말풍선이 떨어져 있으면
+           무엇을 눌러서 나온 것인지 알기 어렵다. (기본 빼꼼은 발화 연습용이라 아래쪽 그대로) */
+        /* 퀘스트 안내는 버튼과 같은 높이(화면 중앙)에서 옆으로 미끄러져 나온다.
+           기본 빼꼼(발화 연습용)은 아래쪽 자리 그대로. */
+        .ham-peek.qz { bottom: auto; top: 50%; transform: translate(105%, -50%); align-items: center; }
+        .ham-peek.qz.show { transform: translate(0, -50%); }
+        .ham-peek.qz .hp-bubble::before, .ham-peek.qz .hp-bubble::after { bottom: auto; top: 50%; margin-top: -8px; }
         @media (prefers-reduced-motion: reduce) { .ham-peek { transition-duration: 0.15s; } }
 
         /* ── 앱 설치 권유 화면 — 사이트를 열면 가장 먼저 뜬다 ── */
+        /* 오늘의 퀘스트 카드 */
+        /* 오늘의 퀘스트 — 홈에서는 작은 호아랑 버튼 하나만 (자리를 차지하지 않게) */
+        /* 화면을 3열 4행으로 봤을 때 오른쪽 열, F와 I 사이(세로 60%)에 놓는다.
+           카드 위쪽 여백이라 대화 버튼을 가리지 않는다. */
+        /* 만드는 데 쓴 것들 */
+        .src-list { text-align: left; margin: 4px 0 14px; }
+        .src-row { display: flex; gap: 10px; padding: 7px 0; border-top: 1px solid var(--accent-soft); font-size: 12.5px; line-height: 1.5; }
+        .src-row:first-child { border-top: none; }
+        .src-k { flex: 0 0 62px; font-weight: 800; color: var(--accent-ink); }
+        .src-v { flex: 1; min-width: 0; color: var(--ink); word-break: keep-all; }
+        .pr-idc-badge { display: inline-block; margin: 2px auto 4px; padding: 3px 10px; border-radius: 999px;
+            background: var(--accent-soft); color: var(--accent-ink); font-size: 11px; font-weight: 800; }
+        .res-page.hidden { display: none; }
+        .res-dots { display: flex; justify-content: center; gap: 6px; margin: 10px 0 4px; }
+        .res-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-soft); }
+        .res-dot.on { background: var(--accent); }
+        .rp-abc { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 8px 0 2px;
+            font-size: var(--t-ui-m); font-weight: 800; color: var(--ink); }
+        .abc-badge { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+            color: #fff; font-weight: 900; font-size: 14px; }
+        .abc-A { background: var(--muted); } .abc-B { background: var(--dan-gold); } .abc-C { background: var(--accent); }
+        .qz-btn { position: fixed; right: 12px; top: 50%; transform: translateY(-50%);
+            z-index: 1100; width: 46px; height: 46px; border-radius: 50%; padding: 0;
+            border: 2px solid var(--sand); background: var(--panel); cursor: pointer;
+            box-shadow: var(--shadow-m); display: none; place-items: center; }
+        body[data-screen="home"] .qz-btn { display: grid; }
+        /* 설정·발화 연습·듣기 같은 창이 떠 있는 동안에는 감춘다.
+           이 창들은 홈 화면 위에 뜨므로 data-screen 만으로는 걸러지지 않는다. */
+        body.ov-open .qz-btn { display: none !important; }
+        .qz-btn img { width: 78%; height: 78%; object-fit: contain; }
+        .qz-btn:active { transform: translateY(-50%) scale(0.94); }
+        .qz-dot { position: absolute; top: -2px; right: -2px; width: 13px; height: 13px;
+            border-radius: 50%; background: var(--danger); border: 2px solid var(--panel); }
+        .qz-btn.seen .qz-dot { display: none; }
+        .qz-row.pop { animation: qzPop 0.42s cubic-bezier(.34,1.56,.64,1); }
+        @keyframes qzPop { 0% { transform: scale(0.94); opacity: 0.5; } 60% { transform: scale(1.04); } 100% { transform: scale(1); opacity: 1; } }
+        /* IDC 도장판 — 논문 〈표 32〉 구성 요소를 칸으로 */
+        .st-box { background: var(--panel); border-color: var(--accent-soft); }
+        .st-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .st-cell { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+            padding: 7px 3px; border-radius: var(--r-s); background: var(--bg);
+            border: 1.5px dashed var(--accent-soft); color: var(--muted); }
+        .st-cell.on { border-style: solid; border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+        .st-cell.pop { animation: qzPop 0.5s cubic-bezier(.34,1.56,.64,1); }
+        .st-mark { font-size: 15px; line-height: 1; }
+        .st-nm { font-size: 10px; font-weight: 700; text-align: center; word-break: keep-all; line-height: 1.2; }
+        .st-cnt { position: absolute; top: -5px; right: -3px; min-width: 15px; height: 15px; border-radius: 8px;
+            background: var(--danger); color: #fff; font-size: 9.5px; font-weight: 900; line-height: 15px; text-align: center; }
+        @media (prefers-reduced-motion: reduce) { .qz-row.pop, .st-cell.pop { animation: none; } }
+        .qz-box { width: 100%; margin: 10px 0 0; background: var(--sand-soft); border: 1.5px solid var(--sand);
+            border-radius: var(--r-m); padding: 11px 14px; text-align: left; }
+        .qz-box:empty { display: none; }
+        .qz-head { font-size: var(--t-ui-m); font-weight: 900; color: var(--danger-ink); margin-bottom: 7px; }
+        .qz-row { display: flex; align-items: center; gap: 8px; font-size: var(--t-ko-s);
+            line-height: 1.45; color: var(--ink); padding: 3px 0; }
+        .qz-row.ok { color: var(--accent-ink); font-weight: 800; }
+        .qz-mark { flex-shrink: 0; width: 1.1em; text-align: center; font-weight: 900; }
+        .qz-txt { flex: 1; min-width: 0; word-break: keep-all; }
+        .qz-lv { flex-shrink: 0; font-size: 11px; color: var(--dan-gold); letter-spacing: -1px; }
         .other-window { position: fixed; left: 0; right: 0; top: 0; z-index: 4500;
             background: var(--danger-ink); color: #fff; font-size: 13px; font-weight: 700;
             text-align: center; padding: 10px 14px; line-height: 1.4; }
@@ -493,7 +561,7 @@
         .mode-btn:disabled { opacity: 0.45; cursor: default; transform: none; }
         .rp-field { text-align: left; margin-bottom: 10px; }
         .rp-field label { display: block; font-size: 11px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
-        .rp-input { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: 10px; border: 1.5px solid var(--accent-soft); font-size: 13px; background: #F7F4EC; color: var(--ink); }
+        .rp-input { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: 10px; border: 1.5px solid var(--accent-soft); font-size: 12.5px; background: #F7F4EC; color: var(--ink); }
         .rp-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .style-seg { display: flex; gap: 6px; }
         .seg-btn { flex: 1; border: 1.5px solid var(--navy-soft); background: #fff; border-radius: 10px; padding: 8px 4px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--ink); }
@@ -584,6 +652,17 @@
                     margin: 0 0 12px; line-height: 1.4; }
 
         /* ── 주제 자동 추천 (예) 표시 + 🎲 목적 재추첨 ── */
+        /* 📷 교재 사진으로 채우기 */
+        .photo-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+            margin: 0 0 12px; padding: 11px 14px; border-radius: var(--r-m); cursor: pointer;
+            border: 1.5px dashed var(--sand); background: var(--sand-soft);
+            color: var(--danger-ink); font-family: inherit; font-size: 13.5px; font-weight: 800; }
+        .photo-btn:hover:not(:disabled) { border-style: solid; }
+        .photo-btn:disabled { opacity: 0.6; cursor: default; }
+        .photo-msg { margin: -6px 0 12px; font-size: 12px; line-height: 1.5; text-align: center;
+            color: var(--muted); white-space: pre-line; }
+        .photo-msg.err { color: var(--danger-ink); }
+        .rp-field.filled .rp-input { border-color: var(--accent); background: #FBFEFC; }
         .rp-input-row { display: flex; gap: 6px; }
         .rp-input-row .rp-input { flex: 1; min-width: 0; }
         .dice-btn { border: 1.5px solid var(--accent-soft); background: #EAF0EB; border-radius: 10px; width: 42px; font-size: 17px; cursor: pointer; flex-shrink: 0; transition: transform 0.15s; }
@@ -591,7 +670,7 @@
         .dice-btn:disabled { opacity: 0.35; cursor: default; }
         .rp-style-hint { color: var(--accent-ink); background: var(--accent-soft); border-radius: 8px; padding: 4px 10px; display: inline-block; }
         /* 추천 예시를 입력창 아래에 '전부' 보이도록(플레이스홀더는 잘려서 안 보이던 문제) — 탭하면 채워짐 */
-        .sg-hint { margin-top: 6px; font-size: var(--t-ko-s); line-height: 1.55; color: var(--accent-ink); background: var(--accent-soft); border-radius: var(--r-s); padding: 9px 13px; cursor: pointer; word-break: break-word; white-space: normal; transition: background 0.15s; }
+        .sg-hint { margin-top: 5px; font-size: 13px; line-height: 1.55; color: var(--accent-ink); background: var(--accent-soft); border-radius: var(--r-s); padding: 9px 13px; cursor: pointer; word-break: break-word; white-space: normal; transition: background 0.15s; }
         .sg-hint:hover { background: var(--accent); color: #fff; }
         .sg-hint .sg-tap { opacity: 0.7; font-weight: 700; margin-left: 4px; }
 
@@ -627,7 +706,10 @@
         /* ── 단계 달성 연출: 한옥 장지문 ──
            징 소리와 함께 창호지 문 두 짝이 스르륵 닫혔다가 다시 열린다.
            별도 이미지 없이 창살(격자)은 CSS 그라데이션으로 그린다. */
-        .jangji { position: fixed; inset: 0; z-index: 900; pointer-events: none; display: none; }
+        /* ★ 문이 떠 있는 동안에는 뒤쪽을 막는다. 예전엔 pointer-events:none 이라
+           문을 누른 손가락이 뒤에 있던 버튼을 눌러 버렸다. 누르면 문이 빨리 걷힌다. */
+        .jangji { position: fixed; inset: 0; z-index: 900; pointer-events: auto; display: none; cursor: pointer; }
+        .jangji.fade { pointer-events: none; }   /* 걷히는 중엔 통과 */
         .jangji.on { display: block; }
         .jangji-leaf {
             position: absolute; top: 0; bottom: 0; width: 52%;
@@ -655,8 +737,10 @@
         .jangji-word {
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.9);
             opacity: 0; font-size: clamp(30px, 8.4vw, 52px); font-weight: 900; color: #2E3338;  /* 창호지 위의 먹빛 */
-            letter-spacing: -0.01em; text-align: center; white-space: pre-line; line-height: 1.3;
-            max-width: 86%; text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+            letter-spacing: -0.01em; text-align: center; white-space: pre-line; line-height: 1.35;
+            /* 한국어는 어절(띄어쓰기) 단위로만 줄을 바꾼다 — 글자 중간에서 잘리면 읽기 어렵다 */
+            word-break: keep-all; overflow-wrap: break-word; text-wrap: balance;
+            max-width: 78%; text-shadow: 0 1px 0 rgba(255,255,255,0.6);
         }
         /* ① 열기 — 대화가 시작될 때. 닫힌 문에서 시작해 좌우로 열린다 */
         .jangji.opening .jangji-l { animation: doorOpenL 3.2s cubic-bezier(0.36, 0.02, 0.2, 1) forwards; }
@@ -806,7 +890,7 @@
         @media (prefers-reduced-motion: reduce) { .progress-bar.over { animation: none; } }
         .rp-input:focus, .name-input:focus { outline: none; border-color: var(--accent-ink); box-shadow: 0 0 0 3px rgba(96,181,194,0.22); background: #fff; }
         .rp-field label { font-size: 12px; }
-        .rp-input { padding: 11px 12px; font-size: 14px; }
+        .rp-input { padding: 10px 11px; font-size: 13px; }
         .dice-btn { font-size: 18px; width: 46px; }
         .lang-box { border: 1px solid rgba(61,44,38,0.06); }
         .consent-actions .action-btn { padding: 14px 18px; }
@@ -910,9 +994,16 @@
         body.rp-chat .character-panel .stage,
         body.rp-chat .character-panel .status,
         body.rp-chat .character-panel .title,
-        body.in-convo .character-panel .stage,
-        body.in-convo .character-panel .status,
-        body.in-convo .character-panel .title { display: none; }
+        /* 채팅으로 대화하는 화면에서는 캐릭터·제목을 감춘다 — 채팅만 보므로 세로만 잡아먹는다.
+           크게 보고 싶으면 영상통화 버튼을 쓴다. 노드는 남겨 두어 영상통화가 옮겨 쓰는 구조는 그대로. */
+        body[data-screen="chat"] .character-panel .stage,
+        body[data-screen="chat"] .character-panel .title { display: none; }
+        /* 대화 중에는 '대화 내보내기'를 감춘다 — 지금 쓸 일이 없고 자리만 차지한다.
+           대화가 끝나면 다시 나타나 그대로 내려받을 수 있다. */
+        /* 대화 화면의 내보내기는 뺐지만, '지난 대화'에서는 TXT로 받을 수 있어야 한다
+           (수업 B에서 활동물을 공유하는 교실 연계 통로) */
+        .export-btn { display: none !important; }
+        #histExportBtn { display: inline-block !important; }
 
         /* ══════════ 방안 A: 화면 상태 (home | chat | feedback) ══════════
            최상위 컨테이너 클래스 하나(body[data-screen])로 해당 블록만 보이게 토글. */
@@ -927,14 +1018,16 @@
         .mode-toggle { display: none !important; }
 
         /* ── 홈 화면 ── */
-        body[data-screen="home"] { background: radial-gradient(130% 90% at 50% -10%, #E7EDEF 0%, var(--bg) 55%); }
+        body[data-screen="home"] { padding: 0; background: radial-gradient(130% 90% at 50% -10%, #E7EDEF 0%, var(--bg) 55%); }
         .home-screen { flex-direction: column; align-items: center; justify-content: flex-start;
-            width: 100%; max-width: 480px; min-height: calc(90vh / var(--ui-zoom)); gap: 10px; position: relative; text-align: center; padding: 10px 0 12px; }
+            width: 100%; max-width: min(480px, calc(100vh * 9 / 16 / var(--ui-zoom) - 24px)); min-height: calc(100dvh / var(--ui-zoom)); gap: 8px; position: relative; text-align: center; padding: 10px 0 12px; }
         /* 상단 헤더: 제목(왼쪽) · 버튼(오른쪽) */
-        .home-header { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 4px; margin-bottom: 4px; }
+        /* ★ 헤더만 위에 두고 남는 공간을 전부 여기서 먹는다 → 카드는 항상 화면 아래에 붙는다.
+           여백(vh)으로 밀던 방식은 화면 크기마다 결과가 달라져 못 쓴다. */
+        .home-header { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 4px; margin-bottom: auto; }
         .home-title { font-size: var(--t-ko-l); font-weight: 900; margin: 0; color: var(--ink); letter-spacing: -0.4px; text-align: left; line-height: 1.2;
             display: flex; align-items: center; gap: 9px; min-width: 0; }
-        .home-logo { width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; object-fit: cover;
+        .home-logo { width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; object-fit: cover; cursor: pointer;
             box-shadow: 0 3px 10px -4px rgba(58,48,34,0.45); }
         .home-top { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
         .home-top .home-ico { border: 1.5px solid var(--accent-soft); background: rgba(255,255,255,0.7);
@@ -960,23 +1053,29 @@
         .hb-main { position: absolute; top: -7%; left: 50%; transform: translateX(-50%);
             width: min(100%, calc(100vh * 9 / 16)); height: auto; aspect-ratio: 9 / 16;
             object-fit: cover; display: block; }
+        /* 폰에서는 좌우를 자르지 않는다(자르면 너무 확대돼 보인다).
+           폭을 꽉 채워 원래 크기대로 두고, 아래 남는 자리는 막(veil)의 짙은
+           그러데이션이 한지빛으로 스며들게 해서 '여백'이 아니라 '바탕'으로 읽히게 한다. */
+        @media (max-aspect-ratio: 9 / 16) {
+            .hb-main { top: 0; width: 100%; height: auto; aspect-ratio: 9 / 16; object-fit: cover; }
+        }
         .home-bg-veil { position: absolute; inset: 0;
             background: linear-gradient(180deg,
-                rgba(244,240,230,0.80) 0%, rgba(244,240,230,0.22) 18%,
-                rgba(244,240,230,0.14) 42%, rgba(244,240,230,0.42) 60%,
-                rgba(244,240,230,0.88) 76%, rgba(244,240,230,0.97) 100%); }
+                rgba(244,240,230,0.80) 0%, rgba(244,240,230,0.20) 16%,
+                rgba(244,240,230,0.12) 40%, rgba(244,240,230,0.55) 62%,
+                rgba(244,240,230,0.96) 78%, #F4F0E6 100%); }
         body[data-screen="home"] .home-bg { display: block; }
         body:not([data-screen="home"]) .home-bg { display: none; }
         /* 배경 위에 놓이는 것들 */
         body[data-screen="home"] .home-screen > * { position: relative; z-index: 1; }
         .home-screen { z-index: 1; }
-        .home-hero { flex: 1 1 auto; min-height: calc(26vh / var(--ui-zoom)); }   /* 호아랑이 보이도록 비워 두는 자리 */
+        .home-hero { display: none; }   /* 빈 여백 자리는 더 이상 필요 없다 */   /* 호아랑이 보이도록 비워 두는 자리 */
         .home-header .home-title { text-shadow: 0 1px 3px rgba(244,240,230,0.9); }
         body[data-screen="home"] .home-sub { display: none; }   /* 영상이 인사를 대신한다 */
 
         .home-sub { font-size: 16px; color: var(--muted); margin: 0; line-height: 1.5; font-weight: 700; }
         .home-card { width: 100%; display: flex; align-items: center; gap: 16px; text-align: left;
-            border: none; border-radius: 22px; padding: 12px 20px; cursor: pointer; position: relative; overflow: hidden;
+            border: none; border-radius: 22px; padding: 10px 18px; gap: 12px; cursor: pointer; position: relative; overflow: hidden;
             box-shadow: var(--shadow); transition: transform 0.16s cubic-bezier(.2,.8,.3,1), box-shadow 0.2s; color: #fff; }
         .home-card::after { content: ""; position: absolute; inset: 0;
             background: radial-gradient(120% 140% at 100% 0%, rgba(255,255,255,0.22), transparent 60%); pointer-events: none; }
@@ -984,18 +1083,18 @@
         .home-card:active { transform: translateY(-1px); }
         .hc-rp { background: linear-gradient(135deg, #2A4A55 0%, #4A7C74 100%); }
         .hc-free { background: linear-gradient(135deg, #7E5238 0%, #9C6A45 100%); }
-        .hc-emoji { font-size: 34px; line-height: 1; flex-shrink: 0; width: 56px; height: 56px; border-radius: 16px;
+        .hc-emoji { font-size: 34px; line-height: 1; flex-shrink: 0; width: 44px; height: 44px; border-radius: 16px;
             background: rgba(255,255,255,0.16); display: flex; align-items: center; justify-content: center; }
         .hc-txt { display: flex; flex-direction: column; gap: 3px; }
-        .hc-title { font-size: 18px; font-weight: 900; letter-spacing: -0.2px; }
-        .hc-desc { font-size: 12.5px; font-weight: 600; opacity: 0.94; line-height: 1.45; }
+        .hc-title { font-size: 17px; font-weight: 900; letter-spacing: -0.2px; }
+        .hc-desc { font-size: 12px; font-weight: 600; opacity: 0.94; line-height: 1.45; }
         .home-credit { margin-top: 3px; line-height: 1.25; }
 
         /* ── 홈 버튼(🏠) — 대화 화면 좌상단 (기본 .lang-btn은 right 고정이라 left로 덮어씀) ── */
         .back-btn { left: 12px; right: auto; font-size: 17px; font-weight: 700; }
 
         /* ── 지난 대화(히스토리) 오버레이 ── */
-        .hist-list { display: flex; flex-direction: column; gap: 8px; max-height: calc(46vh / var(--ui-zoom)); overflow-y: auto; margin: 6px 0 4px; text-align: left; }
+        .hist-list { display: flex; flex-direction: column; gap: 8px; max-height: calc(34vh / var(--ui-zoom)); overflow-y: auto; margin: 6px 0 4px; text-align: left; }
         .hist-item { border: 1.5px solid var(--accent-soft); border-radius: 12px; padding: 11px 13px; background: var(--panel);
             cursor: pointer; transition: transform 0.12s, border-color 0.2s; }
         .hist-item:hover { transform: translateY(-1px); border-color: var(--accent-ink); }
@@ -1005,7 +1104,7 @@
         .hist-item .hi-preview { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.45;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .hist-empty { font-size: 13px; color: var(--muted); padding: 24px 0; }
-        .hist-detail { text-align: left; max-height: calc(52vh / var(--ui-zoom)); overflow-y: auto; white-space: pre-wrap;
+        .hist-detail { text-align: left; max-height: calc(38vh / var(--ui-zoom)); overflow-y: auto; white-space: pre-wrap;
             font-size: 13px; line-height: 1.6; color: var(--ink); background: var(--sand-soft); border-radius: 12px; padding: 14px; }
 
         /* ── 대화창 슬라이드 다운(스르륵) — 대화 시작 시 ── */
@@ -1144,12 +1243,13 @@
     </style>
 </head>
 <body data-screen="home"><!-- 화면 상태: home | chat | feedback (방안 A: 홈+대화 분리) -->
-<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><!-- 아이콘: Lucide (ISC) — 선 굵기·모서리는 앱 팔레트에 맞춰 CSS에서 지정 --><symbol id="ic-topic" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" /></symbol><symbol id="ic-free" viewBox="0 0 24 24"><path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /> <path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1" /></symbol><symbol id="ic-mic" viewBox="0 0 24 24"><path d="M12 19v3" /> <path d="M19 10v2a7 7 0 0 1-14 0v-2" /> <rect x="9" y="2" width="6" height="13" rx="3" /></symbol><symbol id="ic-hint" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" /> <path d="M9 18h6" /> <path d="M10 22h4" /></symbol><symbol id="ic-video" viewBox="0 0 24 24"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" /> <rect x="2" y="6" width="14" height="12" rx="2" /></symbol><symbol id="ic-chat" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></symbol><symbol id="ic-sound" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /> <path d="M16 9a5 5 0 0 1 0 6" /> <path d="M19.364 18.364a9 9 0 0 0 0-12.728" /></symbol><symbol id="ic-mute" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /> <line x1="22" x2="16" y1="9" y2="15" /> <line x1="16" x2="22" y1="9" y2="15" /></symbol><symbol id="ic-lang" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /> <path d="M2 12h20" /></symbol><symbol id="ic-name" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /> <path d="m15 5 4 4" /></symbol><symbol id="ic-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /> <path d="M3 3v5h5" /> <path d="M12 7v5l4 2" /></symbol><symbol id="ic-voice" viewBox="0 0 24 24"><path d="M2 10v3" /> <path d="M6 6v11" /> <path d="M10 3v18" /> <path d="M14 8v7" /> <path d="M18 5v13" /> <path d="M22 10v3" /></symbol><symbol id="ic-ear" viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" /></symbol><symbol id="ic-phone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /> <path d="M12 18h.01" /></symbol><symbol id="ic-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /> <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></symbol><symbol id="ic-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol><symbol id="ic-dice" viewBox="0 0 24 24"><rect width="12" height="12" x="2" y="10" rx="2" ry="2" /> <path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" /> <path d="M6 18h.01" /> <path d="M10 14h.01" /> <path d="M15 6h.01" /> <path d="M18 9h.01" /></symbol><symbol id="ic-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <circle cx="12" cy="12" r="6" /> <circle cx="12" cy="12" r="2" /></symbol><symbol id="ic-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /> <circle cx="12" cy="7" r="4" /></symbol><symbol id="ic-tone" viewBox="0 0 24 24"><path d="m12 14 4-4" /> <path d="M3.34 19a10 10 0 1 1 17.32 0" /></symbol><symbol id="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol><symbol id="ic-plan" viewBox="0 0 24 24"><path d="M13 5h8" /> <path d="M13 12h8" /> <path d="M13 19h8" /> <path d="m3 17 2 2 4-4" /> <path d="m3 7 2 2 4-4" /></symbol><symbol id="ic-trophy" viewBox="0 0 24 24"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2" /> <path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2" /> <path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3" /> <path d="M4 22h16" /> <path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z" /> <path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3" /></symbol><symbol id="ic-wave" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" /> <path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" /> <path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" /> <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></symbol></svg>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><!-- 아이콘: Lucide (ISC) — 선 굵기·모서리는 앱 팔레트에 맞춰 CSS에서 지정 --><symbol id="ic-topic" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" /></symbol><symbol id="ic-free" viewBox="0 0 24 24"><path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /> <path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1" /></symbol><symbol id="ic-mic" viewBox="0 0 24 24"><path d="M12 19v3" /> <path d="M19 10v2a7 7 0 0 1-14 0v-2" /> <rect x="9" y="2" width="6" height="13" rx="3" /></symbol><symbol id="ic-hint" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" /> <path d="M9 18h6" /> <path d="M10 22h4" /></symbol><symbol id="ic-video" viewBox="0 0 24 24"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" /> <rect x="2" y="6" width="14" height="12" rx="2" /></symbol><symbol id="ic-chat" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></symbol><symbol id="ic-sound" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /> <path d="M16 9a5 5 0 0 1 0 6" /> <path d="M19.364 18.364a9 9 0 0 0 0-12.728" /></symbol><symbol id="ic-mute" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /> <line x1="22" x2="16" y1="9" y2="15" /> <line x1="16" x2="22" y1="9" y2="15" /></symbol><symbol id="ic-lang" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /> <path d="M2 12h20" /></symbol><symbol id="ic-name" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /> <path d="m15 5 4 4" /></symbol><symbol id="ic-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /> <path d="M3 3v5h5" /> <path d="M12 7v5l4 2" /></symbol><symbol id="ic-voice" viewBox="0 0 24 24"><path d="M2 10v3" /> <path d="M6 6v11" /> <path d="M10 3v18" /> <path d="M14 8v7" /> <path d="M18 5v13" /> <path d="M22 10v3" /></symbol><symbol id="ic-ear" viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" /></symbol><symbol id="ic-phone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /> <path d="M12 18h.01" /></symbol><symbol id="ic-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /> <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></symbol><symbol id="ic-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol><symbol id="ic-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z"/><circle cx="12" cy="13" r="3"/></symbol>
+<symbol id="ic-dice" viewBox="0 0 24 24"><rect width="12" height="12" x="2" y="10" rx="2" ry="2" /> <path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" /> <path d="M6 18h.01" /> <path d="M10 14h.01" /> <path d="M15 6h.01" /> <path d="M18 9h.01" /></symbol><symbol id="ic-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <circle cx="12" cy="12" r="6" /> <circle cx="12" cy="12" r="2" /></symbol><symbol id="ic-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /> <circle cx="12" cy="7" r="4" /></symbol><symbol id="ic-tone" viewBox="0 0 24 24"><path d="m12 14 4-4" /> <path d="M3.34 19a10 10 0 1 1 17.32 0" /></symbol><symbol id="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol><symbol id="ic-plan" viewBox="0 0 24 24"><path d="M13 5h8" /> <path d="M13 12h8" /> <path d="M13 19h8" /> <path d="m3 17 2 2 4-4" /> <path d="m3 7 2 2 4-4" /></symbol><symbol id="ic-trophy" viewBox="0 0 24 24"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2" /> <path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2" /> <path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3" /> <path d="M4 22h16" /> <path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z" /> <path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3" /></symbol><symbol id="ic-wave" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" /> <path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" /> <path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" /> <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></symbol></svg>
 <!-- ═══ 앱 시작 영상 (한옥 장지문이 열리고 호아랑이 나온다) ═══
      같은 세션에서 한 번만 재생하고, 끝나면 스스로 사라진다. -->
 <div class="splash" id="splash">
-    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=67">
-        <source src="/static/intro.mp4?v=67" type="video/mp4">
+    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=86">
+        <source src="/static/intro.mp4?v=86" type="video/mp4">
     </video>
     <button type="button" class="splash-skip" id="splashSkip">건너뛰기 ›</button>
 </div>
@@ -1252,6 +1352,13 @@
         <button type="button" class="ov-x" id="rpSetupX">✕</button>
         <h2 id="rpTitleEl">🎭</h2>
         <p class="rp-note" id="rpIntroEl" style="text-align:center;"></p>
+        <!-- 📷 교재 사진으로 채우기 — 교실에서 배운 그 페이지를 찍으면 설정이 자동으로 들어온다.
+             사진은 서버에 저장하지 않고 설정만 뽑고 버린다(교재는 저작물). -->
+        <button type="button" class="photo-btn" id="rpPhotoBtn">
+            <svg class="ic"><use href="#ic-camera"></use></svg><span id="rpPhotoLbl"></span>
+        </button>
+        <input type="file" id="rpPhotoInput" accept="image/*" capture="environment" hidden>
+        <p class="photo-msg" id="rpPhotoMsg" hidden></p>
         <!-- 대화 장소가 맨 위 — 장소(또는 목적)만 적으면 나머지가 자동 추천됨 -->
         <div class="rp-field"><label id="rpPlaceLbl"></label><input class="rp-input" id="rpPlace" maxlength="60" autocomplete="off"><div class="sg-hint" id="sgHintPlace" hidden></div></div>
         <div class="rp-field"><label id="rpGoalLbl"></label>
@@ -1315,14 +1422,18 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png?v=67" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=86" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
+        <div class="res-page" id="resPage1">
         <div class="result-cards">
             <div class="r-card score"><div class="r-label" id="rcScoreLbl"></div><div class="r-inner" id="rcScoreVal">0</div></div>
             <div class="r-card turns"><div class="r-label" id="rcTurnsLbl"></div><div class="r-inner" id="rcTurnsVal">0</div></div>
             <div class="r-card time"><div class="r-label" id="rcTimeLbl"></div><div class="r-inner" id="rcTimeVal">0:00</div></div>
         </div>
+        <div class="rp-abc" id="rpAbcRow" hidden><span id="rpAbcBadge"></span><span id="rpAbcText"></span></div>
         <div class="result-stages" id="rpResultStages"></div>
+        </div><!-- /카드1 -->
+        <div class="res-page hidden" id="resPage2">
         <!-- 상호작용 대화 능력(IDC) 점검 — 모형의 '점검·성찰' 국면.
              〈표 42〉의 중급 평가 기준으로 요소별 상·중·하를 보인다.
              비언어적 행위는 교실에서 배우는 요소라 회색으로만 두고 총점에서 뺀다. -->
@@ -1331,9 +1442,14 @@
             <span class="idc-h-sub" id="idcSubEl"></span>
         </div>
         <div class="idc-list" id="rpIdcList"></div>
-        <p class="idc-note" id="idcNoteEl" style="display:none;"></p>
+        </div><!-- /카드2 -->
         <p class="rp-note" id="rpSavedNoteEl" style="text-align:center;"></p>
-        <div class="consent-actions"><button class="action-btn" id="rpCloseBtn"></button></div>
+        <div class="res-dots"><span class="res-dot on"></span><span class="res-dot"></span></div>
+        <div class="consent-actions">
+            <button class="action-btn ghost hidden" id="resPrevBtn"></button>
+            <button class="action-btn" id="resNextBtn"></button>
+            <button class="action-btn hidden" id="rpCloseBtn"></button>
+        </div>
     </div>
 </div>
 <!-- 발화 연습: ① 듣고 따라 말하기 → ② 상대 발화에 대답하기 (말차례 교환) -->
@@ -1343,13 +1459,19 @@
         <h2 id="prTitleEl" style="margin-bottom:2px;">🎤</h2>
         <p class="pr-stage-name" id="prStageName"></p>
         <p class="pr-step" id="prStepLbl"></p>
+        <span class="pr-idc-badge" id="prIdcBadge" hidden></span>
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png?v=67" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=86" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
+        <!-- 3항 연속체 — 학습자 발화 뒤에 올 상대의 반응 -->
+        <div class="pr-cue-row hidden" id="prFollowRow">
+            <div class="profile"><img src="/static/hamster.png?v=86" alt=""></div>
+            <div class="pr-cue-bubble" id="prFollowText"></div>
+        </div>
         <button type="button" class="pr-listen-btn" id="prListenBtn">🔊</button>
         <div class="pr-feedback" id="prFeedback"></div>
         <button type="button" class="pr-mic" id="prMicBtn"></button>
@@ -1367,28 +1489,35 @@
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=67" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=86" alt="호아랑">
         <div class="freefb-icon">💬</div>
-        <h2 id="freeFbTitleEl" style="margin:6px 0;">💬</h2>
-        <p class="consent-text" id="freeFbBodyEl" style="text-align:center;"></p>
-        <!-- TODO(상호작용 모형): 상호작용 능력 평가 항목(말차례·맞장구·화제 전개 등)을
-             여기에 카드로 렌더. 현재는 임의 기준을 지어내지 않기 위해 비워 둔다. -->
+        <h2 id="freeFbTitleEl" style="margin:6px 0;"></h2>
+
+        <!-- 사후 피드백 — 자유 수다도 IDC 프로파일을 받는다 (표 42 기준) -->
+        <div class="idc-head" id="freeIdcHead" style="display:none;">
+            <span class="idc-h-title" id="freeIdcTitle"></span>
+            <span class="idc-h-sub" id="freeIdcSub"></span>
+        </div>
+        <div class="idc-list" id="freeIdcList"></div>
         <div class="consent-actions"><button class="action-btn" id="freeFbCloseBtn"></button></div>
     </div>
 </div>
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=67" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=86" alt="호아랑"></div>
 </div>
 <div class="turn-edge" aria-hidden="true"></div>
 <!-- 다른 창(앱)에서 쓰는 중이라 이 창은 물러났음을 알린다 -->
 <div class="other-window hidden" id="otherWindowNote"><span id="otherWindowMsg"></span></div>
 <!-- 배경 영상 — 화면 전체를 채우고 그 위에 글자·카드가 놓인다 -->
+<button type="button" class="qz-btn" id="qzBtn">
+    <img id="qzBtnImg" src="/static/qz_hello.png?v=86" alt=""><span class="qz-dot"></span>
+</button>
 <div class="home-bg" aria-hidden="true">
-    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=67" alt="">
+    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=86" alt="">
     <video class="hb-main" id="homeLoop" playsinline muted loop autoplay preload="auto"
-           poster="/static/home_loop.jpg?v=67" src="/static/home_loop.mp4?v=67"></video>
+           poster="/static/home_loop.jpg?v=86" src="/static/home_loop.mp4?v=86"></video>
     <div class="home-bg-veil"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
@@ -1396,7 +1525,7 @@
     <!-- 상단: 제목(왼쪽) · 버튼(오른쪽) -->
     <div class="home-header">
         <h1 class="home-title">
-            <img class="home-logo" src="/static/icon-192.png?v=67" alt="">
+            <img class="home-logo" id="homeLogoBtn" src="/static/icon-192.png?v=86" alt="" role="button" tabindex="0">
             <span id="homeTitleEl">호아랑</span>
         </h1>
         <div class="home-top">
@@ -1419,20 +1548,17 @@
         <span class="hc-emoji"><svg class="ic ic-xl"><use href="#ic-free"></use></svg></span>
         <span class="hc-txt"><span class="hc-title" id="hcFreeTitleEl"></span><span class="hc-desc" id="hcFreeDescEl"></span></span>
     </button>
+    <!-- 오늘의 퀘스트 — 자리를 차지하지 않도록 작은 버튼만 두고,
+         누르면 호아랑이 오른쪽에서 빼꼼 나와 알려 주고 다시 들어간다 -->
     <!-- 앱 다운로드 버튼: 홈 맨 아래. 누르면 설치 안내창(플랫폼별) 표시 -->
     <button type="button" class="home-dl-btn" id="homeDownloadBtn" hidden></button>
     <div class="credit home-credit">공동체에 대한 공헌 · LeeNamho · Email: namho1210@naver.com</div>
-    <div class="credit home-credit" style="opacity:0.62; font-size:10px; line-height:1.5;">
-        글꼴 지마켓 산스(G마켓) · 배경음 「Tong tong(통통)」·「How are you」 가야금 서예지 ·
-        효과음 「전통악기 징」 (재)전주정보문화산업진흥원 — 공유마당(KOGL 제1유형)<br>
-        전통 문양(소슬빗살) 참고: 국립문화유산연구원 「한국의 전통문양」 · 아이콘 Lucide(ISC)
-    </div>
 </div>
 <!-- 앱으로 쓰라고 먼저 권하는 화면 — 웹으로 쓰면 마이크·알림이 불편하다 -->
 <!-- 설치 관문 — 웹으로는 쓸 수 없다. 언어를 고르고, 그 언어로 설치 안내를 받는다. -->
 <div class="inapp-gate hidden" id="installGate">
     <div class="inapp-card">
-        <img class="ig-icon" src="/static/icon-192.png?v=67" alt="">
+        <img class="ig-icon" src="/static/icon-192.png?v=86" alt="">
         <!-- ① 언어(나라) 선택 -->
         <div id="igStep1">
             <h2>🌏 언어 선택 · Select Your Language</h2>
@@ -1468,11 +1594,28 @@
     </div>
 </div>
 
+<!-- 만드는 데 쓴 것들 — 홈 왼쪽 위 호아랑 아이콘을 누르면 열린다 -->
+<div class="lang-overlay hidden" id="srcOverlay">
+    <div class="lang-box" style="max-width:420px;">
+        <button type="button" class="ov-x" id="srcX">✕</button>
+        <h2 id="srcTitleEl"></h2>
+        <div class="src-list">
+            <div class="src-row"><span class="src-k">글꼴</span><span class="src-v">지마켓 산스 (G마켓)</span></div>
+            <div class="src-row"><span class="src-k">배경음</span><span class="src-v">「Tong tong(통통)」·「How are you」 — 가야금 서예지<br>공유마당 (KOGL 제1유형)</span></div>
+            <div class="src-row"><span class="src-k">효과음</span><span class="src-v">「전통악기 징」 — (재)전주정보문화산업진흥원<br>공유마당 (KOGL 제1유형)</span></div>
+            <div class="src-row"><span class="src-k">문양</span><span class="src-v">소슬빗살 — 국립문화유산연구원 「한국의 전통문양」</span></div>
+            <div class="src-row"><span class="src-k">아이콘</span><span class="src-v">Lucide (ISC License)</span></div>
+            <div class="src-row"><span class="src-k">음성·대화</span><span class="src-v">Google Gemini Live API</span></div>
+            <div class="src-row"><span class="src-k">만든이</span><span class="src-v">LeeNamho · namho1210@naver.com<br>중앙대학교 국어국문학과 한국어교육학전공</span></div>
+        </div>
+        <div class="consent-actions"><button class="action-btn" id="srcCloseBtn"></button></div>
+    </div>
+</div>
 <!-- 알림 받기 권유 — 첫 대화를 마친 뒤 한 번만 부드럽게 묻는다 -->
 <div class="lang-overlay hidden" id="notifOverlay">
     <div class="lang-box" style="max-width:380px;">
         <button type="button" class="ov-x" id="notifX">✕</button>
-        <div class="notif-art"><img src="/static/ham_smile.png?v=67" alt=""></div>
+        <div class="notif-art"><img src="/static/ham_smile.png?v=86" alt=""></div>
         <h2 id="notifTitleEl" style="margin-bottom:8px;"></h2>
         <p class="consent-text" id="notifBodyEl" style="margin-bottom:14px;"></p>
         <div class="consent-actions">
@@ -1497,7 +1640,7 @@
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=67" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=86" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -1531,7 +1674,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png?v=67" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=86" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -1576,7 +1719,7 @@
             </div>
         </div>
 
-        <button id="exportBtn" class="export-btn" disabled>📄 대화 내보내기 (.txt)</button>
+        <button id="exportBtn" class="export-btn" disabled hidden>📄 대화 내보내기 (.txt)</button>
         <!-- 대화 시작/종료 버튼 — 패널 맨 아래 배치 -->
         <div class="main-controls">
             <button id="actionBtn" class="action-btn">대화 시작하기</button>
@@ -1584,7 +1727,7 @@
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png?v=67" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=86" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span><svg class="ic"><use href="#ic-video"></use></svg></span><span id="hamViewBtnLbl"></span></button>
@@ -1674,7 +1817,7 @@
 <!-- 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 (발화 연습 시작 등) -->
 <div class="ham-peek" id="hamPeek" aria-hidden="true">
     <div class="hp-bubble" id="hamPeekText"></div>
-    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=67" alt="">
+    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=86" alt="">
 </div>
 
 <!-- 대화의 문턱 연출 — 한옥 장지문 -->
@@ -1687,11 +1830,11 @@
 <!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <!-- 발화 연습 배경 — '통통(가야금)', 사용자 볼륨의 20%로 아주 은은하게 -->
-<audio id="prBgm" src="/static/practice_bgm.mp3?v=67" loop preload="none"></audio>
+<audio id="prBgm" src="/static/practice_bgm.mp3?v=86" loop preload="none"></audio>
 <!-- 단계 달성 — 전통악기 징 -->
-<audio id="gongSfx" src="/static/gong.mp3?v=67" preload="auto"></audio>
+<audio id="gongSfx" src="/static/gong.mp3?v=86" preload="auto"></audio>
 <!-- 주제 대화·자유 수다 진행 중 배경 — 「How are you 가야금」 -->
-<audio id="chatBgm" src="/static/chat_bgm.mp3?v=67" loop preload="none"></audio>
+<audio id="chatBgm" src="/static/chat_bgm.mp3?v=86" loop preload="none"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -1703,7 +1846,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v67 (2026-08-07)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v86 (2026-08-14)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -1924,8 +2067,8 @@
        빠른 요청 버튼(천천히/다시 한 번/쉽게/빨리빨리)과 실제 대화 내용은
        한국어 학습 콘텐츠이므로 번역하지 않는다. */
     const I18N = {
-        ko: { title:"🐯 호아랑과 한국어 수다", subtitle:"마이크를 켜고 호아랑과 자연스럽게 대화해 보세요", speaking:"말하는 중...", ready:"연결 준비 완료", waiting:"대기 중", styleTitle:"🎚️ 대화 스타일 조절", distLabel:"친밀도 (Distance)", powerLabel:"사용자 지위 (Power)", distLow:"낯선 사이", distHigh:"절친", powerLow:"하급자", powerHigh:"상급자", distLv:["낯선 사이","아는 사이","적당한 사이","친한 사이","절친 (BFF)"], powerLv:["하급자","약간 아래","대등한 관계","약간 위","상급자 (VIP)"], placeholder:"접속 코드 (필요한 경우에만 입력)", btnStart:"대화 시작하기", btnStop:"대화 종료하기", btnPause:"⏸️ 일시정지", btnResume:"▶️ 재개", btnExport:"📄 대화 내보내기 (.txt)", empty:"대화를 시작하면<br>카카오톡처럼 대화가 표시됩니다", footer:"🎤 버튼을 누른 채로 한국어로 말하고, 손을 떼면 호아랑이 대답해요", stConnecting:"서버 연결 중...", stListening:"듣고 있어요... (마이크 활성)", stSpeaking:"호아랑이 말하고 있어요", stSpeakNow:"말씀하세요!", stClosed:"연결 종료됨", stPaused:"일시정지됨 — ▶️ 누르면 재개", errAccess:"접속 코드가 올바르지 않습니다.", errFull:"지금은 사용자가 많아요. 잠시 후 다시 시도해 주세요.", errGeneric:"연결에 실패했어요.", consentTitle:"🎙️ 녹음 안내", consentBody:"학습 기록 제공과 서비스 개선을 위해 대화 음성과 대화 내용이 자동으로 녹음되어 서버에 저장돼요. 동의하면 대화가 시작됩니다.", consentAgree:"동의하고 시작하기", consentCancel:"취소", upUploading:"🎙️ 대화 녹음 저장 중...", upDone:"✅ 대화 녹음이 저장되었어요", upFail:"⚠️ 녹음 저장에 실패했어요", kakaoNotice:"카카오톡 브라우저에서는 파일 저장 등 일부 기능이 제한돼요.", kakaoOpen:"기본 브라우저로 열기", kakaoExportMsg:"카카오톡 브라우저에서는 파일 저장이 지원되지 않아요. 대화 기록은 세션 종료 시 서버에 자동 저장되었어요. 파일로 받으려면 기본 브라우저(Chrome/Safari)로 열어주세요.", earTitle:"🎧 이어폰을 사용해 주세요", earBody:"스피커로 들으면 호아랑 목소리가 마이크로 들어가서 대화가 자꾸 끊길 수 있어요. 이어폰을 쓰면 훨씬 잘 들리고 대화도 매끄러워요!", earOk:"알겠어요!", qSlow:"천천히", qAgain:"다시 한 번", qEasy:"쉽게", qFast:"빨리빨리", nameTitle:"👋 이름이 뭐예요?", namePh:"이름 (별명도 좋아요)", nameOk:"확인", modeFree:"🗣️ 자유 수다", modeRp:"🎭 주제 대화", rpTitle:"🎭 주제 대화 설정", rpIntro:"모국어로 적어도 괜찮아요 — 호아랑이 알아들어요", rpTopicLbl:"주제 (필수)", rpTopicPh:"예) 옷 가게에서 물건 사기", rpGoalLbl:"대화의 달성 목적", rpGoalPh:"원하는 대화 목적을 자유롭게 넣어 보세요!", rpPlaceLbl:"대화 장소", rpPlacePh:"예) 동네 옷 가게", rpMyRoleLbl:"내 역할", rpMyRolePh:"예) 손님", rpAiRoleLbl:"호아랑 역할", rpAiRolePh:"예) 점원", rpStyleLbl:"말투", segAuto:"자동 (페이더)", rpFaderNote:"친밀도·지위 페이더로 말투(화계)가 자동으로 정해져요", rpMake:"대화 계획 만들기", rpMaking:"계획을 만드는 중... ⏳", rpCancel:"취소", rpBriefTitle:"🗺️ 대화 단계", rpBriefGuide:"단계를 누르면 그 단계의 표현을 미리 연습할 수 있어요 🎤 대화 중 단계가 충족되면 진행 바가 자동으로 차올라요. 충분히 연습했다 싶으면 대화를 시작하세요!", rpBegin:"이 설정으로 대화 시작", rpEdit:"설정 고치기", progressLabel:"", rpOverLabel:"확장 중! 🔥", rpResultTitle:"🏆 오늘의 대화 결과", rpPts:"점", rpScoreSub:"과업 진행률이 그대로 점수가 되었어요", rpSavedNote:"대화 기록이 자동 저장되었어요", rpClose:"닫기", rpNeedTopic:"대화 장소나 달성 목적 중 하나는 적어 주세요!", rpPlanFail:"계획 만들기에 실패했어요. 잠시 후 다시 시도해 주세요.", rpScoring:"🧮 점수 계산 중...", pttHold:"🎤 눌러서 말하기", pttTalking:"🔴 말하는 중 — 떼면 전송", stThinking:"🐯 호아랑이 듣고 있어요...", stPushHint:"", sgLoading:"💡 추천 만드는 중...", sgDice:"다른 목적 추천 (교재형→일상형→엉뚱형)", sgPolite:"존댓말", sgBanmal:"반말", prTitle:"🎤 발화 연습", prStepRepeat:"① 듣고 따라 말하기", prStepReply:"② 대답해 보기", prRepeatHint:"문장을 듣고 똑같이 따라 말해 보세요", prReplyHint:"호아랑의 말을 듣고 아래 문장으로 대답해 보세요", prListen:"🔊 다시 듣기", prMicIdle:"", prMicRec:"🔴 듣는 중... 다 말했으면 다시 누르세요", prGreat:"완벽해요! 👏", prGood:"좋아요! 👍", prRetry:"조금 달랐어요 — 한 번 더!", prNoSpeech:"목소리가 안 들렸어요 — 다시 눌러 보세요", prHeard:"내가 한 말", prSkip:"건너뛰기 →", prAllDone:"🎉 이 단계 연습 완료!", prClose:"닫기", prNoSR:"이 브라우저는 음성 인식을 지원하지 않아요. 듣고 큰 소리로 따라 말한 뒤 아래 버튼으로 넘어가세요.", prSaidIt:"✅ 말해 봤어요 → 다음", prPracticed:"✅ 연습함", appDownload:"📱 앱 다운로드", appInstallHint:"브라우저 메뉴에서 '홈 화면에 추가'를 누르면 앱으로 설치할 수 있어요. iPhone은 공유 버튼(⬆️) → '홈 화면에 추가'!", stYouFirst:"🎤 먼저 말을 걸어 보세요!", scfTitle:"🪜 이렇게 말해 보세요", scfNone:"이 단계의 추천 표현이 없어요", rcScore:"점수", rcTurns:"내 발화", rcTime:"대화 시간", prStt:"🧠 알아듣는 중...", introTitle:"🐯 호아랑과 한국어 수다!", introBody:"호아랑은 여러분이 원하는 상황에서 '진짜 한국어 말하기' 실력을 키워 주는 음성 대화 앱이에요.\n\n🎭 주제 대화: 장소와 목적만 정하면 대화 계획이 만들어져요. 단계별 표현을 미리 연습하고, 실전처럼 상황극으로 말해 보세요. 진행률이 그대로 점수가 돼요.\n🗣️ 자유 수다: 호아랑과 편하게 아무 이야기나!\n🎚️ 친밀도·지위를 조절하면 말투가 달라져요.\n🪜 대화 중 막히면 사다리 버튼이 도와줘요.", introOk:"좋아요, 시작할게요!", homeSub:"무엇을 하고 싶어요?", hcRpTitle:"주제 대화", hcRpDesc:"상황을 정하고 목표를 향해 대화 연습 · 점수와 학교 랭킹", hcFreeTitle:"자유 수다", hcFreeDesc:"호아랑과 편하게 아무 이야기나", csbTitle:"⚙️ 대화 스타일", backConfirm:"대화를 끝낼까요? 지금까지의 대화는 저장돼요.", freeFbTitle:"💬 오늘도 수고했어요!", freeFbBody:"호아랑과 자유롭게 대화했어요. 상호작용 능력 피드백은 곧 추가될 예정이에요.", freeFbClose:"🏠 홈으로", rpHome:"🏠 홈으로", egPrefix:"예) ", sgTapFill:"눌러 채우기", appDlTitle:"📱 앱으로 설치하기", appDlBody:"홈 화면에 추가하면 앱처럼 전체 화면으로 쓸 수 있어요.\n\n📱 아이폰(Safari): 아래 공유 버튼 ⬆️ → '홈 화면에 추가'\n🤖 안드로이드(Chrome): 메뉴 ⋮ → '앱 설치'(또는 '홈 화면에 추가')\n💻 PC(Chrome·Edge): 주소창 오른쪽 설치 아이콘 ⊕ 클릭", appDlInstall:"지금 설치하기", appDlClose:"닫기" },
-        en: { title:"🐯 Korean Chat with Hoarang", subtitle:"Turn on your mic and chat naturally with Hoarang", speaking:"Speaking...", ready:"Ready to connect", waiting:"Waiting", styleTitle:"🎚️ Conversation Style", distLabel:"Closeness (Distance)", powerLabel:"Your Status (Power)", distLow:"Strangers", distHigh:"Best friends", powerLow:"Junior", powerHigh:"Senior", distLv:["Strangers","Acquaintances","Casual","Close","Best friends (BFF)"], powerLv:["Junior","Slightly below","Equal","Slightly above","Senior (VIP)"], placeholder:"Access code (only if required)", btnStart:"Start Conversation", btnStop:"End Conversation", btnPause:"⏸️ Pause", btnResume:"▶️ Resume", btnExport:"📄 Export Transcript (.txt)", empty:"Start a conversation and<br>messages will appear here like a chat app", footer:"🎤 Hold the button and speak Korean; release and Hoarang replies", stConnecting:"Connecting to server...", stListening:"Listening... (mic on)", stSpeaking:"Hoarang is talking", stSpeakNow:"Go ahead, speak!", stClosed:"Disconnected", stPaused:"Paused — press ▶️ to resume", errAccess:"Incorrect access code.", errFull:"Too many users right now. Please try again later.", errGeneric:"Connection failed.", consentTitle:"🎙️ Recording notice", consentBody:"To provide your learning records and improve the service, the conversation audio and transcript are automatically recorded and saved to our server. Agree to start the conversation.", consentAgree:"Agree & Start", consentCancel:"Cancel", upUploading:"🎙️ Saving recording...", upDone:"✅ Recording saved", upFail:"⚠️ Failed to save recording", kakaoNotice:"Some features (like file saving) are limited in the KakaoTalk browser.", kakaoOpen:"Open in browser", kakaoExportMsg:"File download is not supported in the KakaoTalk browser. Your transcript was saved to the server automatically. To download it as a file, open this page in Chrome/Safari.", earTitle:"🎧 Please use earphones", earBody:"With the speaker on, Hoarang's voice can leak into your mic and keep cutting the conversation off. Earphones make everything much smoother!", earOk:"Got it!", qSlow:"Slower", qAgain:"One more time", qEasy:"Simpler", qFast:"Full speed", nameTitle:"👋 What's your name?", namePh:"Your name (nickname is fine)", nameOk:"OK", modeFree:"🗣️ Free Chat", modeRp:"🎭 Topic Practice", rpTitle:"🎭 Topic Practice Setup", rpIntro:"You can write in your own language — Hoarang will understand", rpTopicLbl:"Topic (required)", rpTopicPh:"e.g. Buying clothes at a store", rpGoalLbl:"Goal of the conversation", rpGoalPh:"Type any conversation goal you want!", rpPlaceLbl:"Place", rpPlacePh:"e.g. A local clothing store", rpMyRoleLbl:"My role", rpMyRolePh:"e.g. Customer", rpAiRoleLbl:"Hoarang's role", rpAiRolePh:"e.g. Clerk", rpStyleLbl:"Speech level", segAuto:"Auto (faders)", rpFaderNote:"Speech level is set automatically by the closeness & status faders", rpMake:"Create Conversation Plan", rpMaking:"Creating plan... ⏳", rpCancel:"Cancel", rpBriefTitle:"🗺️ Dialogue Stages", rpBriefGuide:"Tap a stage to practice its expressions first 🎤 During the talk the bar fills as stages are fulfilled. Start whenever you feel ready!", rpBegin:"Start with These Settings", rpEdit:"Edit Settings", progressLabel:"", rpOverLabel:"Extending! 🔥", rpResultTitle:"🏆 Today's Result", rpPts:" pts", rpScoreSub:"Your task progress became your score", rpSavedNote:"Transcript saved automatically", rpClose:"Close", rpNeedTopic:"Please fill in at least the place or the goal!", rpPlanFail:"Failed to create the plan. Please try again.", rpScoring:"🧮 Calculating score...", pttHold:"🎤 Hold to talk", pttTalking:"🔴 Talking — release to send", stThinking:"🐯 Hoarang is listening...", stPushHint:"", sgLoading:"💡 Making suggestions...", sgDice:"Another goal (textbook→everyday→wacky)", sgPolite:"존댓말 (polite)", sgBanmal:"반말 (casual)", prTitle:"🎤 Speaking Practice", prStepRepeat:"① Listen & repeat", prStepReply:"② Reply to Hoarang", prRepeatHint:"Listen and say the sentence just like you heard it", prReplyHint:"Listen to Hoarang and reply with the sentence below", prListen:"🔊 Listen again", prMicIdle:"", prMicRec:"🔴 Listening... tap again when done", prGreat:"Perfect! 👏", prGood:"Nice! 👍", prRetry:"Not quite — one more try!", prNoSpeech:"Couldn't hear you — tap and try again", prHeard:"You said", prSkip:"Skip →", prAllDone:"🎉 Stage practice complete!", prClose:"Close", prNoSR:"This browser doesn't support speech recognition. Listen, repeat aloud, then tap the button below.", prSaidIt:"✅ I said it → next", prPracticed:"✅ Practiced", appDownload:"📱 Get the App", appInstallHint:"Open your browser menu and tap 'Add to Home Screen' to install. On iPhone: Share (⬆️) → 'Add to Home Screen'.", stYouFirst:"🎤 Say something first!", scfTitle:"🪜 Try saying this", scfNone:"No suggested expressions for this stage", rcScore:"Score", rcTurns:"My turns", rcTime:"Time", prStt:"🧠 Recognizing...", introTitle:"🐯 Welcome to Hoarang!", introBody:"Hoarang is a voice-chat app that builds your real Korean speaking skills in the situations YOU choose.\n\n🎭 Topic Practice: pick a place & goal and get a conversation plan. Practice key expressions first, then role-play for real. Your progress becomes your score.\n🗣️ Free Chat: talk about anything with Hoarang!\n🎚️ Adjust closeness & status to change the speech style.\n🪜 Stuck mid-talk? The ladder button helps.", introOk:"Let's go!", homeSub:"What would you like to do?", hcRpTitle:"Topic Practice", hcRpDesc:"Set a scene, practice toward a goal · score & school ranking", hcFreeTitle:"Free Chat", hcFreeDesc:"Chat about anything with Hoarang", csbTitle:"⚙️ Conversation Style", backConfirm:"End the conversation? Your progress is saved.", freeFbTitle:"💬 Great job today!", freeFbBody:"You chatted freely with Hoarang. Interaction-skill feedback is coming soon.", freeFbClose:"🏠 Home", rpHome:"🏠 Home", egPrefix:"e.g. " },
+        ko: { title:"🐯 호아랑과 한국어 수다", subtitle:"마이크를 켜고 호아랑과 자연스럽게 대화해 보세요", speaking:"말하는 중...", ready:"연결 준비 완료", waiting:"대기 중", styleTitle:"🎚️ 대화 스타일 조절", distLabel:"친밀도 (Distance)", powerLabel:"사용자 지위 (Power)", distLow:"낯선 사이", distHigh:"절친", powerLow:"하급자", powerHigh:"상급자", distLv:["낯선 사이","아는 사이","적당한 사이","친한 사이","절친 (BFF)"], powerLv:["하급자","약간 아래","대등한 관계","약간 위","상급자 (VIP)"], placeholder:"접속 코드 (필요한 경우에만 입력)", btnStart:"대화 시작하기", btnStop:"대화 종료하기", btnPause:"⏸️ 일시정지", btnResume:"▶️ 재개", btnExport:"📄 대화 내보내기 (.txt)", empty:"대화를 시작하면<br>카카오톡처럼 대화가 표시됩니다", footer:"🎤 버튼을 누른 채로 한국어로 말하고, 손을 떼면 호아랑이 대답해요", stConnecting:"서버 연결 중...", stListening:"듣고 있어요... (마이크 활성)", stSpeaking:"호아랑이 말하고 있어요", stSpeakNow:"말씀하세요!", stClosed:"연결 종료됨", stPaused:"일시정지됨 — ▶️ 누르면 재개", errAccess:"접속 코드가 올바르지 않습니다.", errFull:"지금은 사용자가 많아요. 잠시 후 다시 시도해 주세요.", errGeneric:"연결에 실패했어요.", consentTitle:"🎙️ 녹음 안내", consentBody:"학습 기록 제공과 서비스 개선을 위해 대화 음성과 대화 내용이 자동으로 녹음되어 서버에 저장돼요. 동의하면 대화가 시작됩니다.", consentAgree:"동의하고 시작하기", consentCancel:"취소", upUploading:"🎙️ 대화 녹음 저장 중...", upDone:"✅ 대화 녹음이 저장되었어요", upFail:"⚠️ 녹음 저장에 실패했어요", kakaoNotice:"카카오톡 브라우저에서는 파일 저장 등 일부 기능이 제한돼요.", kakaoOpen:"기본 브라우저로 열기", kakaoExportMsg:"카카오톡 브라우저에서는 파일 저장이 지원되지 않아요. 대화 기록은 세션 종료 시 서버에 자동 저장되었어요. 파일로 받으려면 기본 브라우저(Chrome/Safari)로 열어주세요.", earTitle:"🎧 이어폰을 사용해 주세요", earBody:"스피커로 들으면 호아랑 목소리가 마이크로 들어가서 대화가 자꾸 끊길 수 있어요. 이어폰을 쓰면 훨씬 잘 들리고 대화도 매끄러워요!", earOk:"알겠어요!", qSlow:"천천히", qAgain:"다시 한 번", qEasy:"쉽게", qFast:"빨리빨리", nameTitle:"👋 이름이 뭐예요?", namePh:"이름 (별명도 좋아요)", nameOk:"확인", modeFree:"🗣️ 자유 수다", modeRp:"🎭 주제 대화", rpTitle:"🎭 주제 대화 설정", rpIntro:"모국어로 적어도 괜찮아요 — 호아랑이 알아들어요", rpTopicLbl:"주제 (필수)", rpTopicPh:"예) 옷 가게에서 물건 사기", rpGoalLbl:"대화의 달성 목적", rpGoalPh:"원하는 대화 목적을 자유롭게 넣어 보세요!", rpPlaceLbl:"대화 장소", rpPlacePh:"예) 동네 옷 가게", rpMyRoleLbl:"내 역할", rpMyRolePh:"예) 손님", rpAiRoleLbl:"호아랑 역할", rpAiRolePh:"예) 점원", rpStyleLbl:"말투", segAuto:"자동 (페이더)", rpFaderNote:"친밀도·지위 페이더로 말투(말투)가 자동으로 정해져요", rpMake:"대화 계획 만들기", rpMaking:"계획을 만드는 중... ⏳", rpCancel:"취소", rpBriefTitle:"🗺️ 대화 단계", rpBriefGuide:"단계를 누르면 그 단계의 표현을 미리 연습할 수 있어요 🎤 대화 중 단계가 충족되면 진행 바가 자동으로 차올라요. 충분히 연습했다 싶으면 대화를 시작하세요!", rpBegin:"이 설정으로 대화 시작", rpEdit:"설정 고치기", progressLabel:"", rpOverLabel:"확장 중! 🔥", rpResultTitle:"🏆 오늘의 대화 결과", rpPts:"점", rpScoreSub:"과업 진행률이 그대로 점수가 되었어요", rpSavedNote:"대화 기록이 자동 저장되었어요", rpClose:"닫기", rpNeedTopic:"대화 장소나 달성 목적 중 하나는 적어 주세요!", rpPlanFail:"계획 만들기에 실패했어요. 잠시 후 다시 시도해 주세요.", rpScoring:"🧮 점수 계산 중...", pttHold:"🎤 눌러서 말하기", pttTalking:"🔴 말하는 중 — 떼면 전송", stThinking:"🐯 호아랑이 듣고 있어요...", stPushHint:"", sgLoading:"💡 추천 만드는 중...", sgDice:"다른 목적 추천 (교재형→일상형→엉뚱형)", sgPolite:"존댓말", sgBanmal:"반말", prTitle:"🎤 발화 연습", prStepRepeat:"① 듣고 따라 말하기", prStepReply:"② 대답해 보기", prRepeatHint:"문장을 듣고 똑같이 따라 말해 보세요", prReplyHint:"호아랑의 말을 듣고 아래 문장으로 대답해 보세요", prListen:"🔊 다시 듣기", prMicIdle:"", prMicRec:"🔴 듣는 중... 다 말했으면 다시 누르세요", prGreat:"완벽해요! 👏", prGood:"좋아요! 👍", prRetry:"조금 달랐어요 — 한 번 더!", prNoSpeech:"목소리가 안 들렸어요 — 다시 눌러 보세요", prHeard:"내가 한 말", prSkip:"건너뛰기 →", prAllDone:"🎉 이 단계 연습 완료!", prClose:"닫기", prNoSR:"이 브라우저는 음성 인식을 지원하지 않아요. 듣고 큰 소리로 따라 말한 뒤 아래 버튼으로 넘어가세요.", prSaidIt:"✅ 말해 봤어요 → 다음", prPracticed:"✅ 연습함", appDownload:"📱 앱 다운로드", appInstallHint:"브라우저 메뉴에서 '홈 화면에 추가'를 누르면 앱으로 설치할 수 있어요. iPhone은 공유 버튼(⬆️) → '홈 화면에 추가'!", stYouFirst:"🎤 먼저 말을 걸어 보세요!", scfTitle:"🪜 이렇게 말해 보세요", scfNone:"이 단계의 추천 표현이 없어요", rcScore:"점수", rcTurns:"내 발화", rcTime:"대화 시간", prStt:"🧠 알아듣는 중...", introTitle:"🐯 호아랑과 한국어 수다!", introBody:"호아랑은 여러분이 원하는 상황에서 '진짜 한국어 말하기' 실력을 키워 주는 음성 대화 앱이에요.\n\n🎭 주제 대화: 장소와 목적만 정하면 대화 계획이 만들어져요. 단계별 표현을 미리 연습하고, 실전처럼 상황극으로 말해 보세요. 진행률이 그대로 점수가 돼요.\n🗣️ 자유 수다: 호아랑과 편하게 아무 이야기나!\n🎚️ 친밀도·지위를 조절하면 말투가 달라져요.\n🪜 대화 중 막히면 사다리 버튼이 도와줘요.", introOk:"좋아요, 시작할게요!", homeSub:"무엇을 하고 싶어요?", hcRpTitle:"주제 대화", hcRpDesc:"상황을 정하고 목표를 향해 대화 연습 · 점수와 학교 랭킹", hcFreeTitle:"자유 수다", hcFreeDesc:"호아랑과 편하게 아무 이야기나", csbTitle:"⚙️ 대화 스타일", backConfirm:"대화를 끝낼까요? 지금까지의 대화는 저장돼요.", freeFbTitle:"오늘도 수고했어요!", freeFbBody:"호아랑과 자유롭게 대화했어요. 상호작용 능력 피드백은 곧 추가될 예정이에요.", freeFbClose:"🏠 홈으로", rpHome:"🏠 홈으로", egPrefix:"예) ", sgTapFill:"눌러 채우기", appDlTitle:"📱 앱으로 설치하기", appDlBody:"홈 화면에 추가하면 앱처럼 전체 화면으로 쓸 수 있어요.\n\n📱 아이폰(Safari): 아래 공유 버튼 ⬆️ → '홈 화면에 추가'\n🤖 안드로이드(Chrome): 메뉴 ⋮ → '앱 설치'(또는 '홈 화면에 추가')\n💻 PC(Chrome·Edge): 주소창 오른쪽 설치 아이콘 ⊕ 클릭", appDlInstall:"지금 설치하기", appDlClose:"닫기" },
+        en: { title:"🐯 Korean Chat with Hoarang", subtitle:"Turn on your mic and chat naturally with Hoarang", speaking:"Speaking...", ready:"Ready to connect", waiting:"Waiting", styleTitle:"🎚️ Conversation Style", distLabel:"Closeness (Distance)", powerLabel:"Your Status (Power)", distLow:"Strangers", distHigh:"Best friends", powerLow:"Junior", powerHigh:"Senior", distLv:["Strangers","Acquaintances","Casual","Close","Best friends (BFF)"], powerLv:["Junior","Slightly below","Equal","Slightly above","Senior (VIP)"], placeholder:"Access code (only if required)", btnStart:"Start Conversation", btnStop:"End Conversation", btnPause:"⏸️ Pause", btnResume:"▶️ Resume", btnExport:"📄 Export Transcript (.txt)", empty:"Start a conversation and<br>messages will appear here like a chat app", footer:"🎤 Hold the button and speak Korean; release and Hoarang replies", stConnecting:"Connecting to server...", stListening:"Listening... (mic on)", stSpeaking:"Hoarang is talking", stSpeakNow:"Go ahead, speak!", stClosed:"Disconnected", stPaused:"Paused — press ▶️ to resume", errAccess:"Incorrect access code.", errFull:"Too many users right now. Please try again later.", errGeneric:"Connection failed.", consentTitle:"🎙️ Recording notice", consentBody:"To provide your learning records and improve the service, the conversation audio and transcript are automatically recorded and saved to our server. Agree to start the conversation.", consentAgree:"Agree & Start", consentCancel:"Cancel", upUploading:"🎙️ Saving recording...", upDone:"✅ Recording saved", upFail:"⚠️ Failed to save recording", kakaoNotice:"Some features (like file saving) are limited in the KakaoTalk browser.", kakaoOpen:"Open in browser", kakaoExportMsg:"File download is not supported in the KakaoTalk browser. Your transcript was saved to the server automatically. To download it as a file, open this page in Chrome/Safari.", earTitle:"🎧 Please use earphones", earBody:"With the speaker on, Hoarang's voice can leak into your mic and keep cutting the conversation off. Earphones make everything much smoother!", earOk:"Got it!", qSlow:"Slower", qAgain:"One more time", qEasy:"Simpler", qFast:"Full speed", nameTitle:"👋 What's your name?", namePh:"Your name (nickname is fine)", nameOk:"OK", modeFree:"🗣️ Free Chat", modeRp:"🎭 Topic Practice", rpTitle:"🎭 Topic Practice Setup", rpIntro:"You can write in your own language — Hoarang will understand", rpTopicLbl:"Topic (required)", rpTopicPh:"e.g. Buying clothes at a store", rpGoalLbl:"Goal of the conversation", rpGoalPh:"Type any conversation goal you want!", rpPlaceLbl:"Place", rpPlacePh:"e.g. A local clothing store", rpMyRoleLbl:"My role", rpMyRolePh:"e.g. Customer", rpAiRoleLbl:"Hoarang's role", rpAiRolePh:"e.g. Clerk", rpStyleLbl:"Speech level", segAuto:"Auto (faders)", rpFaderNote:"Speech level is set automatically by the closeness & status faders", rpMake:"Create Conversation Plan", rpMaking:"Creating plan... ⏳", rpCancel:"Cancel", rpBriefTitle:"🗺️ Dialogue Stages", rpBriefGuide:"Tap a stage to practice its expressions first 🎤 During the talk the bar fills as stages are fulfilled. Start whenever you feel ready!", rpBegin:"Start with These Settings", rpEdit:"Edit Settings", progressLabel:"", rpOverLabel:"Extending! 🔥", rpResultTitle:"🏆 Today's Result", rpPts:" pts", rpScoreSub:"Your task progress became your score", rpSavedNote:"Transcript saved automatically", rpClose:"Close", rpNeedTopic:"Please fill in at least the place or the goal!", rpPlanFail:"Failed to create the plan. Please try again.", rpScoring:"🧮 Calculating score...", pttHold:"🎤 Hold to talk", pttTalking:"🔴 Talking — release to send", stThinking:"🐯 Hoarang is listening...", stPushHint:"", sgLoading:"💡 Making suggestions...", sgDice:"Another goal (textbook→everyday→wacky)", sgPolite:"존댓말 (polite)", sgBanmal:"반말 (casual)", prTitle:"🎤 Speaking Practice", prStepRepeat:"① Listen & repeat", prStepReply:"② Reply to Hoarang", prRepeatHint:"Listen and say the sentence just like you heard it", prReplyHint:"Listen to Hoarang and reply with the sentence below", prListen:"🔊 Listen again", prMicIdle:"", prMicRec:"🔴 Listening... tap again when done", prGreat:"Perfect! 👏", prGood:"Nice! 👍", prRetry:"Not quite — one more try!", prNoSpeech:"Couldn't hear you — tap and try again", prHeard:"You said", prSkip:"Skip →", prAllDone:"🎉 Stage practice complete!", prClose:"Close", prNoSR:"This browser doesn't support speech recognition. Listen, repeat aloud, then tap the button below.", prSaidIt:"✅ I said it → next", prPracticed:"✅ Practiced", appDownload:"📱 Get the App", appInstallHint:"Open your browser menu and tap 'Add to Home Screen' to install. On iPhone: Share (⬆️) → 'Add to Home Screen'.", stYouFirst:"🎤 Say something first!", scfTitle:"🪜 Try saying this", scfNone:"No suggested expressions for this stage", rcScore:"Score", rcTurns:"My turns", rcTime:"Time", prStt:"🧠 Recognizing...", introTitle:"🐯 Welcome to Hoarang!", introBody:"Hoarang is a voice-chat app that builds your real Korean speaking skills in the situations YOU choose.\n\n🎭 Topic Practice: pick a place & goal and get a conversation plan. Practice key expressions first, then role-play for real. Your progress becomes your score.\n🗣️ Free Chat: talk about anything with Hoarang!\n🎚️ Adjust closeness & status to change the speech style.\n🪜 Stuck mid-talk? The ladder button helps.", introOk:"Let's go!", homeSub:"What would you like to do?", hcRpTitle:"Topic Practice", hcRpDesc:"Set a scene, practice toward a goal · score & school ranking", hcFreeTitle:"Free Chat", hcFreeDesc:"Chat about anything with Hoarang", csbTitle:"⚙️ Conversation Style", backConfirm:"End the conversation? Your progress is saved.", freeFbTitle:"Great job today!", freeFbBody:"You chatted freely with Hoarang. Interaction-skill feedback is coming soon.", freeFbClose:"🏠 Home", rpHome:"🏠 Home", egPrefix:"e.g. " },
         zh: { title:"🐯 和Hoarang用韩语畅聊", subtitle:"打开麦克风，和Hoarang自然地用韩语聊天吧", speaking:"正在说话…", ready:"准备就绪", waiting:"等待中", styleTitle:"🎚️ 对话风格设置", distLabel:"亲密度 (Distance)", powerLabel:"用户地位 (Power)", distLow:"陌生人", distHigh:"挚友", powerLow:"下级", powerHigh:"上级", distLv:["陌生人","认识的人","普通关系","亲近的人","挚友 (BFF)"], powerLv:["下级","稍低","平等关系","稍高","上级 (VIP)"], placeholder:"访问码（仅在需要时输入）", btnStart:"开始对话", btnStop:"结束对话", btnPause:"⏸️ 暂停", btnResume:"▶️ 继续", btnExport:"📄 导出对话记录 (.txt)", empty:"开始对话后<br>消息会像聊天软件一样显示在这里", footer:"请用韩语自由交谈 · Hoarang说话时也可以随时插话", stConnecting:"正在连接服务器…", stListening:"正在聆听…（麦克风开启）", stSpeaking:"Hoarang正在说话", stSpeakNow:"请说吧！", stClosed:"连接已断开", stPaused:"已暂停 — 按▶️继续", errAccess:"访问码不正确。", errFull:"当前用户过多，请稍后再试。", errGeneric:"连接失败。", consentTitle:"🎙️ 录音提示", consentBody:"为保存学习记录并改进服务，对话语音和内容将被自动录制并保存到服务器。同意后即可开始对话。", consentAgree:"同意并开始", consentCancel:"取消", upUploading:"🎙️ 正在保存录音…", upDone:"✅ 录音已保存", upFail:"⚠️ 录音保存失败", kakaoNotice:"在KakaoTalk内置浏览器中，文件保存等部分功能受限。", kakaoOpen:"用默认浏览器打开", kakaoExportMsg:"KakaoTalk内置浏览器不支持文件下载。对话记录已自动保存到服务器。如需下载文件，请用Chrome/Safari打开本页。", earTitle:"🎧 建议使用耳机", earBody:"使用扬声器时，Hoarang的声音会进入麦克风，导致对话频繁中断。戴上耳机体验会好很多！", earOk:"知道了！", qSlow:"慢一点", qAgain:"再说一遍", qEasy:"简单点", qFast:"正常速度", nameTitle:"👋 你叫什么名字？", namePh:"姓名（昵称也可以）", nameOk:"确定", modeFree:"🗣️ 自由聊天", modeRp:"🎭 主题对话", rpTitle:"🎭 主题对话设置", rpIntro:"可以用母语填写 — Hoarang能听懂", rpTopicLbl:"主题（必填）", rpTopicPh:"例）在服装店买东西", rpGoalLbl:"对话目标", rpGoalPh:"自由输入你想要的对话目标吧！", rpPlaceLbl:"对话地点", rpPlacePh:"例）家附近的服装店", rpMyRoleLbl:"我的角色", rpMyRolePh:"例）顾客", rpAiRoleLbl:"Hoarang的角色", rpAiRolePh:"例）店员", rpStyleLbl:"敬语等级", segAuto:"自动（推子）", rpFaderNote:"语气（敬语等级）由亲密度和地位推子自动决定", rpMake:"生成对话计划", rpMaking:"正在生成计划... ⏳", rpCancel:"取消", rpBriefTitle:"🗺️ 对话步骤", rpBriefGuide:"点击步骤可先练习该步骤的表达 🎤 对话中完成步骤时进度条会自动上升。觉得练够了就开始对话吧！", rpBegin:"用此设置开始对话", rpEdit:"修改设置", progressLabel:"", rpOverLabel:"扩展中！🔥", rpResultTitle:"🏆 今日对话结果", rpPts:"分", rpScoreSub:"任务进度直接换算成了分数", rpSavedNote:"对话记录已自动保存", rpClose:"关闭", rpNeedTopic:"请至少填写对话地点或目标！", rpPlanFail:"计划生成失败，请稍后重试。", rpScoring:"🧮 正在计算分数...", sgLoading:"💡 正在生成推荐...", sgDice:"换一个目标（教材型→日常型→搞怪型）", sgPolite:"존댓말（敬语）", sgBanmal:"반말（非敬语）", prTitle:"🎤 口语练习", prStepRepeat:"① 听后跟读", prStepReply:"② 听后应答", prRepeatHint:"听句子并照样说出来", prReplyHint:"听Hoarang说的话，用下面的句子回答", prListen:"🔊 再听一遍", prMicIdle:"", prMicRec:"🔴 正在听……说完再点一次", prGreat:"完美！👏", prGood:"很好！👍", prRetry:"有点不一样——再试一次！", prNoSpeech:"没听到声音——请再试一次", prHeard:"我说的话", prSkip:"跳过 →", prAllDone:"🎉 本步骤练习完成！", prClose:"关闭", prNoSR:"此浏览器不支持语音识别。请听后大声跟读，然后点下方按钮继续。", prSaidIt:"✅ 我说过了 → 下一个", prPracticed:"✅ 已练习", pttHold:"🎤 按住说话", pttTalking:"🔴 正在说——松开发送", stThinking:"🐯 Hoarang正在听...", stPushHint:"", appDownload:"📱 下载App", appInstallHint:"在浏览器菜单中点『添加到主屏幕』即可安装。iPhone：分享(⬆️)→『添加到主屏幕』。", stYouFirst:"🎤 先开口打个招呼吧！", scfTitle:"🪜 可以这样说", scfNone:"本步骤没有推荐表达", rcScore:"分数", rcTurns:"我的发话", rcTime:"对话时间", prStt:"🧠 识别中...", introTitle:"🐯 欢迎来到Hoarang！", introBody:"Hoarang是一款语音对话应用，在你想要的情境中培养真正的韩语口语能力。\n\n🎭 主题对话：设定地点和目标即可生成对话计划。先练习各步骤表达，再进行情景实战，进度即分数。\n🗣️ 自由聊天：和Hoarang随便聊！\n🎚️ 调节亲密度·地位即可改变语气。\n🪜 卡住时点梯子按钮获取帮助。", introOk:"好，开始吧！", egPrefix:"例）" },
         ja: { title:"🐯 ホアランと韓国語おしゃべり", subtitle:"マイクをオンにして、ホアランと自然に会話してみましょう", speaking:"話しています…", ready:"接続準備完了", waiting:"待機中", styleTitle:"🎚️ 会話スタイル設定", distLabel:"親密度 (Distance)", powerLabel:"ユーザーの地位 (Power)", distLow:"初対面", distHigh:"親友", powerLow:"目下", powerHigh:"目上", distLv:["初対面","知り合い","ほどほど","親しい仲","親友 (BFF)"], powerLv:["目下","やや下","対等な関係","やや上","目上 (VIP)"], placeholder:"アクセスコード（必要な場合のみ）", btnStart:"会話を始める", btnStop:"会話を終える", btnPause:"⏸️ 一時停止", btnResume:"▶️ 再開", btnExport:"📄 会話記録を保存 (.txt)", empty:"会話を始めると<br>チャットのように表示されます", footer:"韓国語で自由に話してみましょう · ホアランの話に割り込んでもOK", stConnecting:"サーバーに接続中…", stListening:"聞いています…（マイクON）", stSpeaking:"ホアランが話しています", stSpeakNow:"どうぞ話してください！", stClosed:"接続終了", stPaused:"一時停止中 — ▶️で再開", errAccess:"アクセスコードが正しくありません。", errFull:"現在利用者が多いため、しばらくしてからお試しください。", errGeneric:"接続に失敗しました。", consentTitle:"🎙️ 録音のお知らせ", consentBody:"学習記録の提供とサービス改善のため、会話の音声と内容が自動的に録音されサーバーに保存されます。同意すると会話が始まります。", consentAgree:"同意して開始", consentCancel:"キャンセル", upUploading:"🎙️ 録音を保存中…", upDone:"✅ 録音を保存しました", upFail:"⚠️ 録音の保存に失敗しました", kakaoNotice:"カカオトーク内ブラウザではファイル保存など一部機能が制限されます。", kakaoOpen:"既定のブラウザで開く", kakaoExportMsg:"カカオトーク内ブラウザではファイル保存ができません。会話記録はセッション終了時にサーバーへ自動保存されました。ファイルとして保存するにはChrome/Safariで開いてください。", earTitle:"🎧 イヤホンのご使用をおすすめします", earBody:"スピーカーだとホアランの声がマイクに入り、会話が途切れやすくなります。イヤホンを使うとずっと快適です！", earOk:"わかった！", qSlow:"ゆっくり", qAgain:"もう一回", qEasy:"やさしく", qFast:"普通の速さ", nameTitle:"👋 お名前は？", namePh:"名前（ニックネームでもOK）", nameOk:"OK", modeFree:"🗣️ フリートーク", modeRp:"🎭 テーマ会話", rpTitle:"🎭 テーマ会話の設定", rpIntro:"母語で書いてもOK — ホアランが理解します", rpGoalLbl:"会話の達成目標", rpGoalPh:"話したい会話の目標を自由に入れてみましょう！", rpPlaceLbl:"会話の場所", rpPlacePh:"例）近所の服屋", rpMyRoleLbl:"私の役割", rpMyRolePh:"例）客", rpAiRoleLbl:"ホアランの役割", rpAiRolePh:"例）店員", rpStyleLbl:"話し方（スピーチレベル）", segAuto:"自動（フェーダー）", rpFaderNote:"親密度・地位フェーダーで話し方が自動的に決まります", rpMake:"会話プランを作る", rpMaking:"プラン作成中... ⏳", rpCancel:"キャンセル", rpBriefTitle:"🗺️ 会話ステップ", rpBriefGuide:"ステップをタップすると表現を先に練習できます 🎤 会話中にステップを達成するとバーが自動で上がります。準備ができたら始めましょう！", rpBegin:"この設定で会話を始める", rpEdit:"設定を直す", progressLabel:"", rpOverLabel:"拡張中！🔥", rpResultTitle:"🏆 今日の会話結果", rpPts:"点", rpScoreSub:"タスク進行率がそのまま点数になりました", rpSavedNote:"会話記録は自動保存されました", rpClose:"閉じる", rpNeedTopic:"場所か目標のどちらかは書いてください！", rpPlanFail:"プラン作成に失敗しました。しばらくしてからもう一度お試しください。", rpScoring:"🧮 採点中...", pttHold:"🎤 押して話す", pttTalking:"🔴 話し中 — 離すと送信", stThinking:"🐯 ホアランが聞いています...", stPushHint:"", sgLoading:"💡 おすすめ作成中...", sgDice:"別の目標（教科書型→日常型→意外型）", sgPolite:"존댓말（敬語）", sgBanmal:"반말（タメ口）", prTitle:"🎤 発話練習", prStepRepeat:"① 聞いてリピート", prStepReply:"② 返事してみる", prRepeatHint:"文を聞いて同じように言ってみましょう", prReplyHint:"ホアランの言葉を聞いて下の文で答えましょう", prListen:"🔊 もう一度聞く", prMicIdle:"", prMicRec:"🔴 聞いています... 話し終わったらもう一度押してください", prGreat:"完璧！👏", prGood:"いいね！👍", prRetry:"少し違いました — もう一回！", prNoSpeech:"声が聞こえませんでした — もう一度押してください", prHeard:"私が言ったこと", prSkip:"スキップ →", prAllDone:"🎉 このステップの練習完了！", prClose:"閉じる", prNoSR:"このブラウザは音声認識に対応していません。聞いて声に出してから下のボタンで進んでください。", prSaidIt:"✅ 言ってみた → 次へ", prPracticed:"✅ 練習済み", appDownload:"📱 アプリをダウンロード", appInstallHint:"ブラウザのメニューから「ホーム画面に追加」でインストールできます。iPhoneは共有(⬆️)→「ホーム画面に追加」！", stYouFirst:"🎤 先に話しかけてみましょう！", scfTitle:"🪜 こう言ってみましょう", scfNone:"このステップのおすすめ表現はありません", rcScore:"スコア", rcTurns:"私の発話", rcTime:"会話時間", prStt:"🧠 認識中...", introTitle:"🐯 ホアランへようこそ！", introBody:"ホアランは、あなたが望むシチュエーションで『本物の韓国語会話力』を育てる音声チャットアプリです。\n\n🎭 テーマ会話：場所と目標を決めると会話プランが作られます。表現を先に練習してから、本番のようにロールプレイ。進行率がスコアになります。\n🗣️ フリートーク：ホアランと気軽におしゃべり！\n🎚️ 親密度・地位を調節すると話し方が変わります。\n🪜 会話中に詰まったら、はしごボタンが助けてくれます。", introOk:"よし、はじめよう！", egPrefix:"例）" },
         vi: { title:"🐯 Trò chuyện tiếng Hàn cùng Hoarang", subtitle:"Bật micro và trò chuyện tự nhiên với Hoarang", speaking:"Đang nói...", ready:"Sẵn sàng kết nối", waiting:"Đang chờ", styleTitle:"🎚️ Phong cách hội thoại", distLabel:"Độ thân mật (Distance)", powerLabel:"Vị thế người dùng (Power)", distLow:"Người lạ", distHigh:"Bạn thân", powerLow:"Cấp dưới", powerHigh:"Cấp trên", distLv:["Người lạ","Người quen","Bình thường","Thân thiết","Bạn thân (BFF)"], powerLv:["Cấp dưới","Hơi thấp hơn","Ngang hàng","Hơi cao hơn","Cấp trên (VIP)"], placeholder:"Mã truy cập (chỉ khi cần)", btnStart:"Bắt đầu trò chuyện", btnStop:"Kết thúc trò chuyện", btnPause:"⏸️ Tạm dừng", btnResume:"▶️ Tiếp tục", btnExport:"📄 Xuất bản ghi hội thoại (.txt)", empty:"Bắt đầu trò chuyện và<br>tin nhắn sẽ hiển thị như ứng dụng chat", footer:"Hãy thoải mái nói tiếng Hàn · Bạn có thể ngắt lời khi Hoarang đang nói", stConnecting:"Đang kết nối máy chủ...", stListening:"Đang lắng nghe... (micro bật)", stSpeaking:"Hoarang đang nói", stSpeakNow:"Mời bạn nói!", stClosed:"Đã ngắt kết nối", stPaused:"Đã tạm dừng — nhấn ▶️ để tiếp tục", errAccess:"Mã truy cập không đúng.", errFull:"Hiện có quá nhiều người dùng. Vui lòng thử lại sau.", errGeneric:"Kết nối thất bại.", consentTitle:"🎙️ Thông báo ghi âm", consentBody:"Để lưu hồ sơ học tập và cải thiện dịch vụ, âm thanh và nội dung hội thoại sẽ được tự động ghi lại và lưu trên máy chủ. Đồng ý để bắt đầu.", consentAgree:"Đồng ý và bắt đầu", consentCancel:"Hủy", upUploading:"🎙️ Đang lưu bản ghi...", upDone:"✅ Đã lưu bản ghi", upFail:"⚠️ Lưu bản ghi thất bại", kakaoNotice:"Một số tính năng (lưu tệp) bị hạn chế trong trình duyệt KakaoTalk.", kakaoOpen:"Mở bằng trình duyệt", kakaoExportMsg:"Trình duyệt KakaoTalk không hỗ trợ tải tệp. Bản ghi hội thoại đã được tự động lưu trên máy chủ. Để tải tệp, hãy mở trang này bằng Chrome/Safari.", earTitle:"🎧 Nên dùng tai nghe", earBody:"Nếu dùng loa ngoài, giọng của Hoarang có thể lọt vào micro và làm cuộc trò chuyện bị ngắt liên tục. Dùng tai nghe sẽ mượt hơn nhiều!", earOk:"Đã hiểu!", qSlow:"Chậm lại", qAgain:"Nhắc lại", qEasy:"Dễ hơn", qFast:"Tốc độ thường", nameTitle:"👋 Bạn tên gì?", namePh:"Tên của bạn (biệt danh cũng được)", nameOk:"OK", modeFree:"🗣️ Trò chuyện tự do", modeRp:"🎭 Hội thoại theo chủ đề", rpTitle:"🎭 Cài đặt hội thoại chủ đề", rpIntro:"Viết bằng tiếng mẹ đẻ cũng được — Hoarang hiểu mà", rpGoalLbl:"Mục tiêu của cuộc hội thoại", rpGoalPh:"Nhập tự do mục tiêu hội thoại bạn muốn!", rpPlaceLbl:"Địa điểm hội thoại", rpPlacePh:"VD) Cửa hàng quần áo gần nhà", rpMyRoleLbl:"Vai của tôi", rpMyRolePh:"VD) Khách hàng", rpAiRoleLbl:"Vai của Hoarang", rpAiRolePh:"VD) Nhân viên", rpStyleLbl:"Kính ngữ (cách nói)", segAuto:"Tự động (thanh chỉnh)", rpFaderNote:"Cách nói được đặt tự động theo thanh thân mật & vị thế", rpMake:"Tạo kế hoạch hội thoại", rpMaking:"Đang tạo kế hoạch... ⏳", rpCancel:"Hủy", rpBriefTitle:"🗺️ Các bước hội thoại", rpBriefGuide:"Chạm vào một bước để luyện trước các mẫu câu 🎤 Trong hội thoại, thanh tiến độ tự tăng khi hoàn thành bước. Sẵn sàng thì bắt đầu nhé!", rpBegin:"Bắt đầu với cài đặt này", rpEdit:"Sửa cài đặt", progressLabel:"", rpOverLabel:"Đang mở rộng! 🔥", rpResultTitle:"🏆 Kết quả hôm nay", rpPts:" điểm", rpScoreSub:"Tiến độ nhiệm vụ chính là điểm số của bạn", rpSavedNote:"Bản ghi hội thoại đã được lưu tự động", rpClose:"Đóng", rpNeedTopic:"Hãy điền ít nhất địa điểm hoặc mục tiêu!", rpPlanFail:"Tạo kế hoạch thất bại. Vui lòng thử lại sau.", rpScoring:"🧮 Đang tính điểm...", pttHold:"🎤 Giữ để nói", pttTalking:"🔴 Đang nói — thả ra để gửi", stThinking:"🐯 Hoarang đang nghe...", stPushHint:"", sgLoading:"💡 Đang tạo gợi ý...", sgDice:"Mục tiêu khác (giáo trình→đời thường→bất ngờ)", sgPolite:"존댓말 (kính ngữ)", sgBanmal:"반말 (thân mật)", prTitle:"🎤 Luyện nói", prStepRepeat:"① Nghe và lặp lại", prStepReply:"② Trả lời Hoarang", prRepeatHint:"Nghe câu và nói lại giống hệt", prReplyHint:"Nghe Hoarang nói và trả lời bằng câu bên dưới", prListen:"🔊 Nghe lại", prMicIdle:"", prMicRec:"🔴 Đang nghe... nói xong chạm lần nữa", prGreat:"Hoàn hảo! 👏", prGood:"Tốt lắm! 👍", prRetry:"Hơi khác một chút — thử lại nhé!", prNoSpeech:"Không nghe thấy — hãy thử lại", prHeard:"Tôi đã nói", prSkip:"Bỏ qua →", prAllDone:"🎉 Hoàn thành luyện tập bước này!", prClose:"Đóng", prNoSR:"Trình duyệt này không hỗ trợ nhận dạng giọng nói. Hãy nghe, nói to theo rồi bấm nút bên dưới.", prSaidIt:"✅ Tôi đã nói → tiếp", prPracticed:"✅ Đã luyện", appDownload:"📱 Tải ứng dụng", appInstallHint:"Mở menu trình duyệt và chọn 'Thêm vào màn hình chính' để cài đặt. Trên iPhone: Chia sẻ (⬆️) → 'Thêm vào MH chính'.", stYouFirst:"🎤 Hãy bắt chuyện trước nhé!", scfTitle:"🪜 Thử nói thế này", scfNone:"Bước này không có mẫu câu gợi ý", rcScore:"Điểm", rcTurns:"Lượt nói của tôi", rcTime:"Thời gian", prStt:"🧠 Đang nhận dạng...", introTitle:"🐯 Chào mừng đến với Hoarang!", introBody:"Hoarang là ứng dụng trò chuyện bằng giọng nói giúp bạn rèn kỹ năng nói tiếng Hàn 'thực chiến' trong tình huống bạn muốn.\n\n🎭 Hội thoại chủ đề: chọn địa điểm & mục tiêu để tạo kế hoạch hội thoại. Luyện mẫu câu trước, rồi nhập vai như thật. Tiến độ chính là điểm số.\n🗣️ Trò chuyện tự do: nói bất cứ điều gì với Hoarang!\n🎚️ Điều chỉnh độ thân mật · vị thế để đổi cách nói.\n🪜 Bí lời giữa chừng? Nút thang sẽ giúp bạn.", introOk:"OK, bắt đầu!", egPrefix:"VD) " },
@@ -1940,18 +2083,18 @@
     /* ── 홈/네비/히스토리 문구를 전 언어에 병합 (거대한 언어 줄을 건드리지 않고 한 곳에서 관리).
        이렇게 하지 않으면 ko/en 외 언어에서 '주제 대화·자유 수다'가 한국어로 남는 버그가 생긴다. ── */
     const I18N_NAV = {
-        ko: { homeSub:"무엇을 하고 싶어요?", hcRpTitle:"주제 대화", hcRpDesc:"상황을 정하고 목표를 향해 대화 연습", hcFreeTitle:"자유 수다", hcFreeDesc:"호아랑과 편하게 아무 이야기나", csbTitle:"⚙️ 대화 스타일", backConfirm:"대화를 끝낼까요? 지금까지의 대화는 저장돼요.", freeFbTitle:"💬 오늘도 수고했어요!", freeFbBody:"호아랑과 자유롭게 대화했어요. 상호작용 능력 피드백은 곧 추가될 예정이에요.", freeFbClose:"🏠 홈으로", rpHome:"🏠 홈으로", homeName:"이름 바꾸기", homeHistory:"지난 대화", histTitle:"🗂️ 지난 대화", histClose:"닫기", histEmpty:"아직 저장된 대화가 없어요. 대화를 마치면 여기에 기록돼요." },
-        en: { homeSub:"What would you like to do?", hcRpTitle:"Topic Practice", hcRpDesc:"Set a scene and practice toward a goal", hcFreeTitle:"Free Chat", hcFreeDesc:"Chat about anything with Hoarang", csbTitle:"⚙️ Conversation Style", backConfirm:"End the conversation? Your progress is saved.", freeFbTitle:"💬 Great job today!", freeFbBody:"You chatted freely with Hoarang. Interaction-skill feedback is coming soon.", freeFbClose:"🏠 Home", rpHome:"🏠 Home", homeName:"Change name", homeHistory:"History", histTitle:"🗂️ Past conversations", histClose:"Close", histEmpty:"No saved conversations yet. They'll appear here after you finish a chat." },
-        zh: { homeSub:"你想做什么？", hcRpTitle:"主题对话", hcRpDesc:"设定情境，朝目标练习对话", hcFreeTitle:"自由聊天", hcFreeDesc:"和Hoarang随便聊聊", csbTitle:"⚙️ 对话风格", backConfirm:"结束对话吗？目前的对话会被保存。", freeFbTitle:"💬 今天也辛苦啦！", freeFbBody:"你和Hoarang自由地聊了天。互动能力反馈即将推出。", freeFbClose:"🏠 回首页", rpHome:"🏠 回首页", homeName:"改名字", homeHistory:"历史对话", histTitle:"🗂️ 历史对话", histClose:"关闭", histEmpty:"还没有保存的对话。聊完后会显示在这里。" },
-        ja: { homeSub:"何をしますか？", hcRpTitle:"テーマ会話", hcRpDesc:"場面を決めて目標に向かって会話練習", hcFreeTitle:"フリートーク", hcFreeDesc:"ホアランと気軽におしゃべり", csbTitle:"⚙️ 会話スタイル", backConfirm:"会話を終わりますか？ここまでの会話は保存されます。", freeFbTitle:"💬 今日もおつかれさま！", freeFbBody:"ホアランと自由に会話しました。やり取り能力のフィードバックは近日追加予定です。", freeFbClose:"🏠 ホームへ", rpHome:"🏠 ホームへ", homeName:"名前を変更", homeHistory:"会話履歴", histTitle:"🗂️ 会話履歴", histClose:"閉じる", histEmpty:"まだ保存された会話はありません。会話を終えるとここに記録されます。" },
-        vi: { homeSub:"Bạn muốn làm gì?", hcRpTitle:"Hội thoại chủ đề", hcRpDesc:"Chọn tình huống, luyện hội thoại theo mục tiêu", hcFreeTitle:"Trò chuyện tự do", hcFreeDesc:"Tán gẫu thoải mái với Hoarang", csbTitle:"⚙️ Phong cách hội thoại", backConfirm:"Kết thúc hội thoại? Cuộc trò chuyện đến giờ sẽ được lưu.", freeFbTitle:"💬 Hôm nay bạn làm tốt lắm!", freeFbBody:"Bạn đã trò chuyện tự do với Hoarang. Phản hồi về kỹ năng tương tác sẽ sớm có.", freeFbClose:"🏠 Về trang chủ", rpHome:"🏠 Về trang chủ", homeName:"Đổi tên", homeHistory:"Lịch sử", histTitle:"🗂️ Hội thoại đã qua", histClose:"Đóng", histEmpty:"Chưa có hội thoại nào được lưu. Sẽ hiển thị ở đây sau khi bạn trò chuyện xong." },
-        th: { homeSub:"อยากทำอะไรดี?", hcRpTitle:"บทสนทนาตามหัวข้อ", hcRpDesc:"ตั้งสถานการณ์ ฝึกสนทนาสู่เป้าหมาย", hcFreeTitle:"คุยเล่นอิสระ", hcFreeDesc:"คุยกับ Hoarang แบบสบายๆ", csbTitle:"⚙️ สไตล์การสนทนา", backConfirm:"จบการสนทนาไหม? บทสนทนาที่ผ่านมาจะถูกบันทึก", freeFbTitle:"💬 วันนี้เก่งมาก!", freeFbBody:"คุณได้คุยกับ Hoarang อย่างอิสระ ฟีดแบ็กด้านการโต้ตอบกำลังจะมา", freeFbClose:"🏠 กลับหน้าหลัก", rpHome:"🏠 กลับหน้าหลัก", homeName:"เปลี่ยนชื่อ", homeHistory:"ประวัติ", histTitle:"🗂️ บทสนทนาที่ผ่านมา", histClose:"ปิด", histEmpty:"ยังไม่มีบทสนทนาที่บันทึกไว้ จะแสดงที่นี่หลังจบการสนทนา" },
-        id: { homeSub:"Mau melakukan apa?", hcRpTitle:"Percakapan Bertema", hcRpDesc:"Tentukan situasi, latih percakapan menuju tujuan", hcFreeTitle:"Obrolan Bebas", hcFreeDesc:"Ngobrol santai dengan Hoarang", csbTitle:"⚙️ Gaya Percakapan", backConfirm:"Akhiri percakapan? Obrolan sejauh ini akan disimpan.", freeFbTitle:"💬 Kerja bagus hari ini!", freeFbBody:"Kamu mengobrol bebas dengan Hoarang. Umpan balik kemampuan interaksi segera hadir.", freeFbClose:"🏠 Ke Beranda", rpHome:"🏠 Ke Beranda", homeName:"Ganti nama", homeHistory:"Riwayat", histTitle:"🗂️ Percakapan lalu", histClose:"Tutup", histEmpty:"Belum ada percakapan tersimpan. Akan muncul di sini setelah kamu selesai." },
-        mn: { homeSub:"Юу хиймээр байна?", hcRpTitle:"Сэдэвт яриа", hcRpDesc:"Нөхцөл байдлыг сонгож зорилгодоо дадлага", hcFreeTitle:"Чөлөөт яриа", hcFreeDesc:"Hoarang-тай чөлөөтэй хөөрөлдөх", csbTitle:"⚙️ Ярианы хэв маяг", backConfirm:"Яриаг дуусгах уу? Одоог хүртэлх яриа хадгалагдана.", freeFbTitle:"💬 Өнөөдөр сайн байлаа!", freeFbBody:"Та Hoarang-тай чөлөөтэй ярилцлаа. Харилцааны чадварын санал удахгүй нэмэгдэнэ.", freeFbClose:"🏠 Нүүр рүү", rpHome:"🏠 Нүүр рүү", homeName:"Нэр солих", homeHistory:"Түүх", histTitle:"🗂️ Өмнөх яриа", histClose:"Хаах", histEmpty:"Хадгалсан яриа алга. Яриа дуусгасны дараа энд харагдана." },
-        uz: { homeSub:"Nima qilmoqchisiz?", hcRpTitle:"Mavzuli suhbat", hcRpDesc:"Vaziyatni tanlang, maqsad sari suhbat mashqi", hcFreeTitle:"Erkin suhbat", hcFreeDesc:"Hoarang bilan bemalol suhbat", csbTitle:"⚙️ Suhbat uslubi", backConfirm:"Suhbatni tugatasizmi? Shu paytgacha suhbat saqlanadi.", freeFbTitle:"💬 Bugun zo'r ish qildingiz!", freeFbBody:"Hoarang bilan erkin suhbatlashdingiz. Muloqot ko'nikmasi bo'yicha fikr tez orada qo'shiladi.", freeFbClose:"🏠 Bosh sahifa", rpHome:"🏠 Bosh sahifa", homeName:"Ismni o'zgartirish", homeHistory:"Tarix", histTitle:"🗂️ Oldingi suhbatlar", histClose:"Yopish", histEmpty:"Hali saqlangan suhbat yo'q. Suhbatni tugatgach shu yerda ko'rinadi." },
-        ru: { homeSub:"Что хотите сделать?", hcRpTitle:"Тематический диалог", hcRpDesc:"Задайте ситуацию и тренируйтесь к цели", hcFreeTitle:"Свободная беседа", hcFreeDesc:"Свободно болтайте с Hoarang", csbTitle:"⚙️ Стиль общения", backConfirm:"Завершить разговор? Разговор будет сохранён.", freeFbTitle:"💬 Отличная работа сегодня!", freeFbBody:"Вы свободно пообщались с Hoarang. Отзыв о навыках взаимодействия скоро появится.", freeFbClose:"🏠 На главную", rpHome:"🏠 На главную", homeName:"Изменить имя", homeHistory:"История", histTitle:"🗂️ Прошлые разговоры", histClose:"Закрыть", histEmpty:"Пока нет сохранённых разговоров. Они появятся здесь после беседы." },
-        es: { homeSub:"¿Qué te gustaría hacer?", hcRpTitle:"Conversación temática", hcRpDesc:"Define una situación y practica hacia una meta", hcFreeTitle:"Charla libre", hcFreeDesc:"Charla tranquilamente con Hoarang", csbTitle:"⚙️ Estilo de conversación", backConfirm:"¿Terminar la conversación? Lo hablado se guardará.", freeFbTitle:"💬 ¡Buen trabajo hoy!", freeFbBody:"Charlaste libremente con Hoarang. Pronto habrá comentarios sobre la interacción.", freeFbClose:"🏠 Inicio", rpHome:"🏠 Inicio", homeName:"Cambiar nombre", homeHistory:"Historial", histTitle:"🗂️ Conversaciones anteriores", histClose:"Cerrar", histEmpty:"Aún no hay conversaciones guardadas. Aparecerán aquí al terminar." },
-        fr: { homeSub:"Que voulez-vous faire ?", hcRpTitle:"Conversation thématique", hcRpDesc:"Choisissez une situation et visez un objectif", hcFreeTitle:"Discussion libre", hcFreeDesc:"Bavardez tranquillement avec Hoarang", csbTitle:"⚙️ Style de conversation", backConfirm:"Terminer la conversation ? La conversation sera enregistrée.", freeFbTitle:"💬 Bravo pour aujourd'hui !", freeFbBody:"Vous avez discuté librement avec Hoarang. Le retour sur l'interaction arrive bientôt.", freeFbClose:"🏠 Accueil", rpHome:"🏠 Accueil", homeName:"Changer de nom", homeHistory:"Historique", histTitle:"🗂️ Conversations passées", histClose:"Fermer", histEmpty:"Aucune conversation enregistrée. Elles apparaîtront ici après une discussion." },
+        ko: { homeSub:"무엇을 하고 싶어요?", hcRpTitle:"주제 대화", hcRpDesc:"상황을 정하고 목표를 향해 대화 연습", hcFreeTitle:"자유 수다", hcFreeDesc:"호아랑과 편하게 아무 이야기나", csbTitle:"⚙️ 대화 스타일", backConfirm:"대화를 끝낼까요? 지금까지의 대화는 저장돼요.", freeFbTitle:"오늘도 수고했어요!", freeFbBody:"호아랑과 자유롭게 대화했어요. 상호작용 능력 피드백은 곧 추가될 예정이에요.", freeFbClose:"🏠 홈으로", rpHome:"🏠 홈으로", homeName:"이름 바꾸기", homeHistory:"지난 대화", histTitle:"🗂️ 지난 대화", histClose:"닫기", histEmpty:"아직 저장된 대화가 없어요. 대화를 마치면 여기에 기록돼요." },
+        en: { homeSub:"What would you like to do?", hcRpTitle:"Topic Practice", hcRpDesc:"Set a scene and practice toward a goal", hcFreeTitle:"Free Chat", hcFreeDesc:"Chat about anything with Hoarang", csbTitle:"⚙️ Conversation Style", backConfirm:"End the conversation? Your progress is saved.", freeFbTitle:"Great job today!", freeFbBody:"You chatted freely with Hoarang. Interaction-skill feedback is coming soon.", freeFbClose:"🏠 Home", rpHome:"🏠 Home", homeName:"Change name", homeHistory:"History", histTitle:"🗂️ Past conversations", histClose:"Close", histEmpty:"No saved conversations yet. They'll appear here after you finish a chat." },
+        zh: { homeSub:"你想做什么？", hcRpTitle:"主题对话", hcRpDesc:"设定情境，朝目标练习对话", hcFreeTitle:"自由聊天", hcFreeDesc:"和Hoarang随便聊聊", csbTitle:"⚙️ 对话风格", backConfirm:"结束对话吗？目前的对话会被保存。", freeFbTitle:"今天也辛苦啦！", freeFbBody:"你和Hoarang自由地聊了天。互动能力反馈即将推出。", freeFbClose:"🏠 回首页", rpHome:"🏠 回首页", homeName:"改名字", homeHistory:"历史对话", histTitle:"🗂️ 历史对话", histClose:"关闭", histEmpty:"还没有保存的对话。聊完后会显示在这里。" },
+        ja: { homeSub:"何をしますか？", hcRpTitle:"テーマ会話", hcRpDesc:"場面を決めて目標に向かって会話練習", hcFreeTitle:"フリートーク", hcFreeDesc:"ホアランと気軽におしゃべり", csbTitle:"⚙️ 会話スタイル", backConfirm:"会話を終わりますか？ここまでの会話は保存されます。", freeFbTitle:"今日もおつかれさま！", freeFbBody:"ホアランと自由に会話しました。やり取り能力のフィードバックは近日追加予定です。", freeFbClose:"🏠 ホームへ", rpHome:"🏠 ホームへ", homeName:"名前を変更", homeHistory:"会話履歴", histTitle:"🗂️ 会話履歴", histClose:"閉じる", histEmpty:"まだ保存された会話はありません。会話を終えるとここに記録されます。" },
+        vi: { homeSub:"Bạn muốn làm gì?", hcRpTitle:"Hội thoại chủ đề", hcRpDesc:"Chọn tình huống, luyện hội thoại theo mục tiêu", hcFreeTitle:"Trò chuyện tự do", hcFreeDesc:"Tán gẫu thoải mái với Hoarang", csbTitle:"⚙️ Phong cách hội thoại", backConfirm:"Kết thúc hội thoại? Cuộc trò chuyện đến giờ sẽ được lưu.", freeFbTitle:"Hôm nay bạn làm tốt lắm!", freeFbBody:"Bạn đã trò chuyện tự do với Hoarang. Phản hồi về kỹ năng tương tác sẽ sớm có.", freeFbClose:"🏠 Về trang chủ", rpHome:"🏠 Về trang chủ", homeName:"Đổi tên", homeHistory:"Lịch sử", histTitle:"🗂️ Hội thoại đã qua", histClose:"Đóng", histEmpty:"Chưa có hội thoại nào được lưu. Sẽ hiển thị ở đây sau khi bạn trò chuyện xong." },
+        th: { homeSub:"อยากทำอะไรดี?", hcRpTitle:"บทสนทนาตามหัวข้อ", hcRpDesc:"ตั้งสถานการณ์ ฝึกสนทนาสู่เป้าหมาย", hcFreeTitle:"คุยเล่นอิสระ", hcFreeDesc:"คุยกับ Hoarang แบบสบายๆ", csbTitle:"⚙️ สไตล์การสนทนา", backConfirm:"จบการสนทนาไหม? บทสนทนาที่ผ่านมาจะถูกบันทึก", freeFbTitle:"วันนี้เก่งมาก!", freeFbBody:"คุณได้คุยกับ Hoarang อย่างอิสระ ฟีดแบ็กด้านการโต้ตอบกำลังจะมา", freeFbClose:"🏠 กลับหน้าหลัก", rpHome:"🏠 กลับหน้าหลัก", homeName:"เปลี่ยนชื่อ", homeHistory:"ประวัติ", histTitle:"🗂️ บทสนทนาที่ผ่านมา", histClose:"ปิด", histEmpty:"ยังไม่มีบทสนทนาที่บันทึกไว้ จะแสดงที่นี่หลังจบการสนทนา" },
+        id: { homeSub:"Mau melakukan apa?", hcRpTitle:"Percakapan Bertema", hcRpDesc:"Tentukan situasi, latih percakapan menuju tujuan", hcFreeTitle:"Obrolan Bebas", hcFreeDesc:"Ngobrol santai dengan Hoarang", csbTitle:"⚙️ Gaya Percakapan", backConfirm:"Akhiri percakapan? Obrolan sejauh ini akan disimpan.", freeFbTitle:"Kerja bagus hari ini!", freeFbBody:"Kamu mengobrol bebas dengan Hoarang. Umpan balik kemampuan interaksi segera hadir.", freeFbClose:"🏠 Ke Beranda", rpHome:"🏠 Ke Beranda", homeName:"Ganti nama", homeHistory:"Riwayat", histTitle:"🗂️ Percakapan lalu", histClose:"Tutup", histEmpty:"Belum ada percakapan tersimpan. Akan muncul di sini setelah kamu selesai." },
+        mn: { homeSub:"Юу хиймээр байна?", hcRpTitle:"Сэдэвт яриа", hcRpDesc:"Нөхцөл байдлыг сонгож зорилгодоо дадлага", hcFreeTitle:"Чөлөөт яриа", hcFreeDesc:"Hoarang-тай чөлөөтэй хөөрөлдөх", csbTitle:"⚙️ Ярианы хэв маяг", backConfirm:"Яриаг дуусгах уу? Одоог хүртэлх яриа хадгалагдана.", freeFbTitle:"Өнөөдөр сайн байлаа!", freeFbBody:"Та Hoarang-тай чөлөөтэй ярилцлаа. Харилцааны чадварын санал удахгүй нэмэгдэнэ.", freeFbClose:"🏠 Нүүр рүү", rpHome:"🏠 Нүүр рүү", homeName:"Нэр солих", homeHistory:"Түүх", histTitle:"🗂️ Өмнөх яриа", histClose:"Хаах", histEmpty:"Хадгалсан яриа алга. Яриа дуусгасны дараа энд харагдана." },
+        uz: { homeSub:"Nima qilmoqchisiz?", hcRpTitle:"Mavzuli suhbat", hcRpDesc:"Vaziyatni tanlang, maqsad sari suhbat mashqi", hcFreeTitle:"Erkin suhbat", hcFreeDesc:"Hoarang bilan bemalol suhbat", csbTitle:"⚙️ Suhbat uslubi", backConfirm:"Suhbatni tugatasizmi? Shu paytgacha suhbat saqlanadi.", freeFbTitle:"Bugun zo'r ish qildingiz!", freeFbBody:"Hoarang bilan erkin suhbatlashdingiz. Muloqot ko'nikmasi bo'yicha fikr tez orada qo'shiladi.", freeFbClose:"🏠 Bosh sahifa", rpHome:"🏠 Bosh sahifa", homeName:"Ismni o'zgartirish", homeHistory:"Tarix", histTitle:"🗂️ Oldingi suhbatlar", histClose:"Yopish", histEmpty:"Hali saqlangan suhbat yo'q. Suhbatni tugatgach shu yerda ko'rinadi." },
+        ru: { homeSub:"Что хотите сделать?", hcRpTitle:"Тематический диалог", hcRpDesc:"Задайте ситуацию и тренируйтесь к цели", hcFreeTitle:"Свободная беседа", hcFreeDesc:"Свободно болтайте с Hoarang", csbTitle:"⚙️ Стиль общения", backConfirm:"Завершить разговор? Разговор будет сохранён.", freeFbTitle:"Отличная работа сегодня!", freeFbBody:"Вы свободно пообщались с Hoarang. Отзыв о навыках взаимодействия скоро появится.", freeFbClose:"🏠 На главную", rpHome:"🏠 На главную", homeName:"Изменить имя", homeHistory:"История", histTitle:"🗂️ Прошлые разговоры", histClose:"Закрыть", histEmpty:"Пока нет сохранённых разговоров. Они появятся здесь после беседы." },
+        es: { homeSub:"¿Qué te gustaría hacer?", hcRpTitle:"Conversación temática", hcRpDesc:"Define una situación y practica hacia una meta", hcFreeTitle:"Charla libre", hcFreeDesc:"Charla tranquilamente con Hoarang", csbTitle:"⚙️ Estilo de conversación", backConfirm:"¿Terminar la conversación? Lo hablado se guardará.", freeFbTitle:"¡Buen trabajo hoy!", freeFbBody:"Charlaste libremente con Hoarang. Pronto habrá comentarios sobre la interacción.", freeFbClose:"🏠 Inicio", rpHome:"🏠 Inicio", homeName:"Cambiar nombre", homeHistory:"Historial", histTitle:"🗂️ Conversaciones anteriores", histClose:"Cerrar", histEmpty:"Aún no hay conversaciones guardadas. Aparecerán aquí al terminar." },
+        fr: { homeSub:"Que voulez-vous faire ?", hcRpTitle:"Conversation thématique", hcRpDesc:"Choisissez une situation et visez un objectif", hcFreeTitle:"Discussion libre", hcFreeDesc:"Bavardez tranquillement avec Hoarang", csbTitle:"⚙️ Style de conversation", backConfirm:"Terminer la conversation ? La conversation sera enregistrée.", freeFbTitle:"Bravo pour aujourd'hui !", freeFbBody:"Vous avez discuté librement avec Hoarang. Le retour sur l'interaction arrive bientôt.", freeFbClose:"🏠 Accueil", rpHome:"🏠 Accueil", homeName:"Changer de nom", homeHistory:"Historique", histTitle:"🗂️ Conversations passées", histClose:"Fermer", histEmpty:"Aucune conversation enregistrée. Elles apparaîtront ici après une discussion." },
     };
     for (const _lng in I18N_NAV) { if (I18N[_lng]) Object.assign(I18N[_lng], I18N_NAV[_lng]); }
     /* 영상통화 뷰 버튼 라벨 (이모지는 HTML 스팬에 있으니 텍스트만) */
@@ -2384,6 +2527,244 @@
         fr: { otherWin:"Hoarang est ouvert dans une autre fenêtre. Celle-ci est en pause." },
     };
     for (const _l in I18N_OW) { if (I18N[_l]) Object.assign(I18N[_l], I18N_OW[_l]); }
+    /* 오늘의 퀘스트 문구(v72) — IDC 9요소 중 로그로 셀 수 있는 것 */
+    const I18N_QZ = {
+        ko: { qzTitle:"🎯 오늘의 퀘스트", qzDone:"🎯 오늘의 퀘스트",
+              qFirst:"먼저 말 걸기", qTurns:"열 번 주고받기", qSlow:"천천히 말해 달라고 하기",
+              qWord:"모르는 낱말 뜻 물어보기", qAsk:"세 번 질문하기", qClarify:"다시 말해 달라고 하기",
+              qBackch:"맞장구 세 번 치기", qLong:"한 번에 길게 말하기", qPolite:"끝까지 존댓말 쓰기",
+              qFinish:"단계를 하나도 빼지 않기", q150:"150점 만들기", q200:"200점 도전", qTurns20:"스무 번 주고받기" },
+        en: { qzTitle:"🎯 Today's quests", qzDone:"🎯 Today's quests",
+              qFirst:"Speak first", qTurns:"Take 10 turns", qSlow:"Ask them to slow down",
+              qWord:"Ask what a word means", qAsk:"Ask 3 questions", qClarify:"Ask them to repeat",
+              qBackch:"React 3 times", qLong:"Say more in one turn", qPolite:"Stay polite throughout",
+              qFinish:"Complete every stage", q150:"Reach 150 points", q200:"Reach 200 points", qTurns20:"Take 20 turns" },
+        zh: { qzTitle:"🎯 今日任务", qzDone:"🎯 今日任务",
+              qFirst:"先开口说话", qTurns:"来回对话10次", qSlow:"请对方说慢一点",
+              qWord:"问生词的意思", qAsk:"提3个问题", qClarify:"请对方再说一遍",
+              qBackch:"附和3次", qLong:"一次说长一点", qPolite:"全程使用敬语",
+              qFinish:"完成所有步骤", q150:"达到150分", q200:"挑战200分", qTurns20:"来回对话20次" },
+        ja: { qzTitle:"🎯 今日のクエスト", qzDone:"🎯 今日のクエスト",
+              qFirst:"自分から話しかける", qTurns:"10回やりとりする", qSlow:"ゆっくり話してもらう",
+              qWord:"知らない語の意味を聞く", qAsk:"3回質問する", qClarify:"もう一度言ってもらう",
+              qBackch:"あいづちを3回打つ", qLong:"一度に長く話す", qPolite:"最後まで敬語で話す",
+              qFinish:"段階を一つも飛ばさない", q150:"150点にする", q200:"200点に挑戦", qTurns20:"20回やりとりする" },
+        vi: { qzTitle:"🎯 Nhiệm vụ hôm nay", qzDone:"🎯 Nhiệm vụ hôm nay",
+              qFirst:"Bắt chuyện trước", qTurns:"Trao đổi 10 lượt", qSlow:"Nhờ nói chậm lại",
+              qWord:"Hỏi nghĩa từ chưa biết", qAsk:"Đặt 3 câu hỏi", qClarify:"Nhờ nói lại",
+              qBackch:"Đáp lời 3 lần", qLong:"Nói dài hơn một lượt", qPolite:"Dùng kính ngữ đến cuối",
+              qFinish:"Hoàn thành mọi bước", q150:"Đạt 150 điểm", q200:"Thử 200 điểm", qTurns20:"Trao đổi 20 lượt" },
+        th: { qzTitle:"🎯 ภารกิจวันนี้", qzDone:"🎯 ภารกิจวันนี้",
+              qFirst:"เริ่มพูดก่อน", qTurns:"โต้ตอบ 10 ครั้ง", qSlow:"ขอให้พูดช้าลง",
+              qWord:"ถามความหมายคำที่ไม่รู้", qAsk:"ถาม 3 คำถาม", qClarify:"ขอให้พูดอีกครั้ง",
+              qBackch:"ตอบรับ 3 ครั้ง", qLong:"พูดยาวขึ้นในหนึ่งครั้ง", qPolite:"ใช้คำสุภาพจนจบ",
+              qFinish:"ทำครบทุกขั้นตอน", q150:"ทำให้ได้ 150 คะแนน", q200:"ท้าทาย 200 คะแนน", qTurns20:"โต้ตอบ 20 ครั้ง" },
+        id: { qzTitle:"🎯 Misi hari ini", qzDone:"🎯 Misi hari ini",
+              qFirst:"Menyapa lebih dulu", qTurns:"Bertukar 10 giliran", qSlow:"Minta bicara lebih pelan",
+              qWord:"Tanya arti kata baru", qAsk:"Ajukan 3 pertanyaan", qClarify:"Minta diulang",
+              qBackch:"Menanggapi 3 kali", qLong:"Bicara lebih panjang", qPolite:"Sopan sampai akhir",
+              qFinish:"Selesaikan semua tahap", q150:"Capai 150 poin", q200:"Coba 200 poin", qTurns20:"Bertukar 20 giliran" },
+        mn: { qzTitle:"🎯 Өнөөдрийн даалгавар", qzDone:"🎯 Өнөөдрийн даалгавар",
+              qFirst:"Эхэлж яриа өрнүүлэх", qTurns:"10 удаа солилцох", qSlow:"Аажуухан ярихыг хүсэх",
+              qWord:"Мэдэхгүй үгийн утгыг асуух", qAsk:"3 асуулт асуух", qClarify:"Дахин хэлэхийг хүсэх",
+              qBackch:"3 удаа хариу үзүүлэх", qLong:"Нэг удаад уртаар ярих", qPolite:"Эцэс хүртэл хүндэтгэлээр",
+              qFinish:"Бүх шатыг гүйцээх", q150:"150 оноо авах", q200:"200 оноо сорих", qTurns20:"20 удаа солилцох" },
+        uz: { qzTitle:"🎯 Bugungi topshiriq", qzDone:"🎯 Bugungi topshiriq",
+              qFirst:"Birinchi bo'lib gapirish", qTurns:"10 marta almashish", qSlow:"Sekinroq gapirishni so'rash",
+              qWord:"Notanish so'z ma'nosini so'rash", qAsk:"3 ta savol berish", qClarify:"Qaytarishni so'rash",
+              qBackch:"3 marta javob qaytarish", qLong:"Bir martada uzunroq gapirish", qPolite:"Oxirigacha hurmat bilan",
+              qFinish:"Barcha bosqichni bajarish", q150:"150 ballga yetish", q200:"200 ballni sinash", qTurns20:"20 marta almashish" },
+        ru: { qzTitle:"🎯 Задания на сегодня", qzDone:"🎯 Задания на сегодня",
+              qFirst:"Заговорить первым", qTurns:"Обменяться 10 репликами", qSlow:"Попросить говорить медленнее",
+              qWord:"Спросить значение слова", qAsk:"Задать 3 вопроса", qClarify:"Попросить повторить",
+              qBackch:"3 раза откликнуться", qLong:"Сказать больше за раз", qPolite:"Быть вежливым до конца",
+              qFinish:"Пройти все этапы", q150:"Набрать 150 очков", q200:"Дойти до 200 очков", qTurns20:"Обменяться 20 репликами" },
+        es: { qzTitle:"🎯 Misiones de hoy", qzDone:"🎯 Misiones de hoy",
+              qFirst:"Hablar primero", qTurns:"Intercambiar 10 turnos", qSlow:"Pedir que hable más despacio",
+              qWord:"Preguntar qué significa una palabra", qAsk:"Hacer 3 preguntas", qClarify:"Pedir que lo repita",
+              qBackch:"Reaccionar 3 veces", qLong:"Decir más en un turno", qPolite:"Ser formal hasta el final",
+              qFinish:"Completar todas las etapas", q150:"Llegar a 150 puntos", q200:"Retar los 200 puntos", qTurns20:"Intercambiar 20 turnos" },
+        fr: { qzTitle:"🎯 Quêtes du jour", qzDone:"🎯 Quêtes du jour",
+              qFirst:"Parler en premier", qTurns:"Échanger 10 tours", qSlow:"Demander de parler plus lentement",
+              qWord:"Demander le sens d'un mot", qAsk:"Poser 3 questions", qClarify:"Demander de répéter",
+              qBackch:"Réagir 3 fois", qLong:"En dire plus en un tour", qPolite:"Rester poli jusqu'au bout",
+              qFinish:"Passer toutes les étapes", q150:"Atteindre 150 points", q200:"Viser 200 points", qTurns20:"Échanger 20 tours" },
+    };
+    for (const _l in I18N_QZ) { if (I18N[_l]) Object.assign(I18N[_l], I18N_QZ[_l]); }
+    /* 서버(LLM)가 판정하는 퀘스트 문구(v73) */
+    const I18N_QZ2 = {
+        ko: { qNewTopic:"새 이야기 꺼내기", qSelfFix:"스스로 고쳐 말하기", qRefuse:"한 번 거절해 보기",
+              qAlt:"다른 방법 제안하기", qCircum:"모르는 말 돌려 말하기", qCond:"조건 걸고 협상하기",
+              qHold:"물러서지 않고 다시 부탁하기", qReturn:"딴 얘기 했다가 돌아오기" },
+        en: { qNewTopic:"Bring up a new topic", qSelfFix:"Correct yourself", qRefuse:"Say no once",
+              qAlt:"Suggest another way", qCircum:"Describe a word you forgot", qCond:"Negotiate with a condition",
+              qHold:"Ask again without giving up", qReturn:"Digress, then come back" },
+        zh: { qNewTopic:"提出新话题", qSelfFix:"自我纠正", qRefuse:"拒绝一次",
+              qAlt:"提出别的办法", qCircum:"用别的话解释生词", qCond:"附加条件来商量",
+              qHold:"不放弃再请求一次", qReturn:"岔开话题后再回来" },
+        ja: { qNewTopic:"新しい話題を出す", qSelfFix:"自分で言い直す", qRefuse:"一度断ってみる",
+              qAlt:"別の方法を提案する", qCircum:"分からない語を言い換える", qCond:"条件をつけて交渉する",
+              qHold:"引き下がらずもう一度頼む", qReturn:"話がそれても元に戻る" },
+        vi: { qNewTopic:"Mở một chủ đề mới", qSelfFix:"Tự sửa lời mình", qRefuse:"Thử từ chối một lần",
+              qAlt:"Đề xuất cách khác", qCircum:"Diễn đạt vòng từ chưa biết", qCond:"Thương lượng có điều kiện",
+              qHold:"Không bỏ cuộc, hỏi lại", qReturn:"Lạc đề rồi quay lại" },
+        th: { qNewTopic:"เปิดหัวข้อใหม่", qSelfFix:"แก้คำพูดตัวเอง", qRefuse:"ลองปฏิเสธสักครั้ง",
+              qAlt:"เสนอวิธีอื่น", qCircum:"อธิบายอ้อมเมื่อนึกคำไม่ออก", qCond:"ต่อรองโดยมีเงื่อนไข",
+              qHold:"ไม่ยอมแพ้ ขออีกครั้ง", qReturn:"ออกนอกเรื่องแล้วกลับมา" },
+        id: { qNewTopic:"Munculkan topik baru", qSelfFix:"Perbaiki ucapan sendiri", qRefuse:"Coba menolak sekali",
+              qAlt:"Usulkan cara lain", qCircum:"Jelaskan kata yang lupa", qCond:"Tawar dengan syarat",
+              qHold:"Minta lagi tanpa menyerah", qReturn:"Melenceng lalu kembali" },
+        mn: { qNewTopic:"Шинэ сэдэв гаргах", qSelfFix:"Өөрийгөө засаж хэлэх", qRefuse:"Нэг удаа татгалзах",
+              qAlt:"Өөр арга санал болгох", qCircum:"Мэдэхгүй үгээ тайлбарлах", qCond:"Нөхцөл тавьж тохирох",
+              qHold:"Бууж өгөлгүй дахин хүсэх", qReturn:"Хазайгаад буцаж ирэх" },
+        uz: { qNewTopic:"Yangi mavzu ochish", qSelfFix:"O'zingizni tuzatish", qRefuse:"Bir marta rad etish",
+              qAlt:"Boshqa yo'l taklif qilish", qCircum:"Unutgan so'zni tushuntirish", qCond:"Shart bilan kelishish",
+              qHold:"Taslim bo'lmay yana so'rash", qReturn:"Chetga chiqib qaytish" },
+        ru: { qNewTopic:"Поднять новую тему", qSelfFix:"Исправить себя", qRefuse:"Один раз отказать",
+              qAlt:"Предложить другой способ", qCircum:"Описать забытое слово", qCond:"Договориться с условием",
+              qHold:"Не сдаться и попросить ещё раз", qReturn:"Отвлечься и вернуться к теме" },
+        es: { qNewTopic:"Sacar un tema nuevo", qSelfFix:"Corregirte a ti mismo", qRefuse:"Decir que no una vez",
+              qAlt:"Proponer otra forma", qCircum:"Describir una palabra olvidada", qCond:"Negociar con una condición",
+              qHold:"Insistir sin rendirte", qReturn:"Desviarte y volver al tema" },
+        fr: { qNewTopic:"Lancer un nouveau sujet", qSelfFix:"Se corriger soi-même", qRefuse:"Refuser une fois",
+              qAlt:"Proposer une autre solution", qCircum:"Décrire un mot oublié", qCond:"Négocier avec une condition",
+              qHold:"Redemander sans abandonner", qReturn:"Digresser puis revenir" },
+    };
+    for (const _l in I18N_QZ2) { if (I18N[_l]) Object.assign(I18N[_l], I18N_QZ2[_l]); }
+    /* IDC 도장판(v76) — 논문 〈표 32〉 구성 요소 이름(짧게) */
+    const I18N_ST = {
+        ko: { idcBoard:"🏅 상호작용 도장판", st_stage:"기능 단계", st_topic:"화제 관리", st_move:"대화이동",
+              st_turn:"차례 관리", st_repair:"단절 수정", st_strategy:"의사소통 전략", st_listen:"듣기 반응", st_context:"맥락·존대" },
+        en: { idcBoard:"🏅 Interaction stamps", st_stage:"Stages", st_topic:"Topics", st_move:"Moves",
+              st_turn:"Turns", st_repair:"Repair", st_strategy:"Strategies", st_listen:"Listening", st_context:"Register" },
+        zh: { idcBoard:"🏅 互动集章", st_stage:"阶段", st_topic:"话题", st_move:"对话行为",
+              st_turn:"话轮", st_repair:"修复", st_strategy:"策略", st_listen:"倾听回应", st_context:"语域" },
+        ja: { idcBoard:"🏅 やりとりスタンプ", st_stage:"段階", st_topic:"話題", st_move:"対話行動",
+              st_turn:"ターン", st_repair:"修復", st_strategy:"方略", st_listen:"聞き方", st_context:"場面・敬語" },
+        vi: { idcBoard:"🏅 Tem tương tác", st_stage:"Các bước", st_topic:"Chủ đề", st_move:"Hành động lời nói",
+              st_turn:"Lượt lời", st_repair:"Sửa lỗi", st_strategy:"Chiến lược", st_listen:"Lắng nghe", st_context:"Ngữ cảnh" },
+        th: { idcBoard:"🏅 แสตมป์การสนทนา", st_stage:"ขั้นตอน", st_topic:"หัวข้อ", st_move:"การกระทำ",
+              st_turn:"ผลัดพูด", st_repair:"การซ่อม", st_strategy:"กลยุทธ์", st_listen:"การฟัง", st_context:"บริบท" },
+        id: { idcBoard:"🏅 Stempel interaksi", st_stage:"Tahapan", st_topic:"Topik", st_move:"Tindakan",
+              st_turn:"Giliran", st_repair:"Perbaikan", st_strategy:"Strategi", st_listen:"Menyimak", st_context:"Konteks" },
+        mn: { idcBoard:"🏅 Харилцааны тамга", st_stage:"Үе шат", st_topic:"Сэдэв", st_move:"Үйлдэл",
+              st_turn:"Ээлж", st_repair:"Засвар", st_strategy:"Стратеги", st_listen:"Сонсох", st_context:"Нөхцөл" },
+        uz: { idcBoard:"🏅 Muloqot muhri", st_stage:"Bosqichlar", st_topic:"Mavzu", st_move:"Harakatlar",
+              st_turn:"Navbat", st_repair:"Tuzatish", st_strategy:"Strategiya", st_listen:"Tinglash", st_context:"Kontekst" },
+        ru: { idcBoard:"🏅 Штампы общения", st_stage:"Этапы", st_topic:"Темы", st_move:"Ходы",
+              st_turn:"Реплики", st_repair:"Починка", st_strategy:"Стратегии", st_listen:"Слушание", st_context:"Регистр" },
+        es: { idcBoard:"🏅 Sellos de interacción", st_stage:"Etapas", st_topic:"Temas", st_move:"Actos",
+              st_turn:"Turnos", st_repair:"Reparación", st_strategy:"Estrategias", st_listen:"Escucha", st_context:"Registro" },
+        fr: { idcBoard:"🏅 Tampons d'interaction", st_stage:"Étapes", st_topic:"Sujets", st_move:"Actes",
+              st_turn:"Tours", st_repair:"Réparation", st_strategy:"Stratégies", st_listen:"Écoute", st_context:"Registre" },
+    };
+    for (const _l in I18N_ST) { if (I18N[_l]) Object.assign(I18N[_l], I18N_ST[_l]); }
+    /* 만드는 데 쓴 것들(v79) */
+    const I18N_SRC = {
+        ko: { srcTitle:"🧾 만드는 데 쓴 것들" },
+        en: { srcTitle:"🧾 Credits & sources" },
+        zh: { srcTitle:"🧾 使用的素材与来源" },
+        ja: { srcTitle:"🧾 使用した素材" },
+        vi: { srcTitle:"🧾 Nguồn và ghi công" },
+        th: { srcTitle:"🧾 แหล่งที่มาและเครดิต" },
+        id: { srcTitle:"🧾 Kredit & sumber" },
+        mn: { srcTitle:"🧾 Ашигласан эх сурвалж" },
+        uz: { srcTitle:"🧾 Manbalar va mualliflar" },
+        ru: { srcTitle:"🧾 Источники и авторы" },
+        es: { srcTitle:"🧾 Créditos y fuentes" },
+        fr: { srcTitle:"🧾 Crédits et sources" },
+    };
+    for (const _l in I18N_SRC) { if (I18N[_l]) Object.assign(I18N[_l], I18N_SRC[_l]); }
+    /* 📷 교재 사진으로 채우기(v81) */
+    const I18N_PHOTO = {
+        ko: { rpPhoto:"교재 사진으로 채우기", rpPhotoWait:"사진을 읽는 중…",
+              rpPhotoOk:"교재에서 상황을 가져왔어요. 맞는지 보고 고쳐 주세요.",
+              rpPhotoErr:"사진에서 상황을 못 찾았어요. 대화문이 잘 보이게 다시 찍어 주세요." },
+        en: { rpPhoto:"Fill from a textbook photo", rpPhotoWait:"Reading the photo…",
+              rpPhotoOk:"Filled in from your textbook. Please check and fix anything.",
+              rpPhotoErr:"Couldn't read a situation. Try again with the dialogue clearly visible." },
+        zh: { rpPhoto:"用课本照片填写", rpPhotoWait:"正在读取照片…",
+              rpPhotoOk:"已从课本中读取情境，请确认并修改。",
+              rpPhotoErr:"无法识别情境。请让对话内容清晰可见后重拍。" },
+        ja: { rpPhoto:"教科書の写真から入力", rpPhotoWait:"写真を読んでいます…",
+              rpPhotoOk:"教科書から場面を取り込みました。確認して直してください。",
+              rpPhotoErr:"場面を読み取れませんでした。会話文がはっきり写るように撮り直してください。" },
+        vi: { rpPhoto:"Điền từ ảnh giáo trình", rpPhotoWait:"Đang đọc ảnh…",
+              rpPhotoOk:"Đã lấy tình huống từ giáo trình. Hãy kiểm tra và sửa lại.",
+              rpPhotoErr:"Không đọc được tình huống. Hãy chụp lại sao cho thấy rõ hội thoại." },
+        th: { rpPhoto:"กรอกจากรูปหนังสือเรียน", rpPhotoWait:"กำลังอ่านรูป…",
+              rpPhotoOk:"ดึงสถานการณ์จากหนังสือเรียนแล้ว กรุณาตรวจและแก้ไข",
+              rpPhotoErr:"อ่านสถานการณ์ไม่ได้ ถ่ายใหม่ให้เห็นบทสนทนาชัดเจน" },
+        id: { rpPhoto:"Isi dari foto buku ajar", rpPhotoWait:"Membaca foto…",
+              rpPhotoOk:"Situasi diambil dari buku ajar. Silakan periksa dan perbaiki.",
+              rpPhotoErr:"Tidak bisa membaca situasi. Foto ulang agar dialog terlihat jelas." },
+        mn: { rpPhoto:"Сурах бичгийн зургаас бөглөх", rpPhotoWait:"Зургийг уншиж байна…",
+              rpPhotoOk:"Сурах бичгээс нөхцөл байдлыг авлаа. Шалгаад засна уу.",
+              rpPhotoErr:"Нөхцөл байдлыг уншиж чадсангүй. Яриаг тод харагдуулж дахин авна уу." },
+        uz: { rpPhoto:"Darslik rasmidan to'ldirish", rpPhotoWait:"Rasm o'qilmoqda…",
+              rpPhotoOk:"Darslikdan vaziyat olindi. Tekshirib, tuzating.",
+              rpPhotoErr:"Vaziyatni o'qib bo'lmadi. Suhbat aniq ko'rinadigan qilib qayta suratga oling." },
+        ru: { rpPhoto:"Заполнить по фото учебника", rpPhotoWait:"Читаем фото…",
+              rpPhotoOk:"Ситуация взята из учебника. Проверьте и поправьте.",
+              rpPhotoErr:"Не удалось прочитать ситуацию. Сфотографируйте так, чтобы диалог был хорошо виден." },
+        es: { rpPhoto:"Rellenar con una foto del libro", rpPhotoWait:"Leyendo la foto…",
+              rpPhotoOk:"Situación tomada del libro. Revísala y corrígela.",
+              rpPhotoErr:"No se pudo leer la situación. Vuelve a hacer la foto con el diálogo bien visible." },
+        fr: { rpPhoto:"Remplir depuis une photo du manuel", rpPhotoWait:"Lecture de la photo…",
+              rpPhotoOk:"Situation récupérée du manuel. Vérifiez et corrigez.",
+              rpPhotoErr:"Situation illisible. Reprenez la photo avec le dialogue bien visible." },
+    };
+    for (const _l in I18N_PHOTO) { if (I18N[_l]) Object.assign(I18N[_l], I18N_PHOTO[_l]); }
+    /* 도장판 요약(v82) */
+    const I18N_LEFT = {
+        ko: { qzLeft:"남은 것:" }, en: { qzLeft:"left:" }, zh: { qzLeft:"还差：" },
+        ja: { qzLeft:"のこり:" }, vi: { qzLeft:"còn:" }, th: { qzLeft:"เหลือ:" },
+        id: { qzLeft:"sisa:" }, mn: { qzLeft:"үлдсэн:" }, uz: { qzLeft:"qoldi:" },
+        ru: { qzLeft:"осталось:" }, es: { qzLeft:"faltan:" }, fr: { qzLeft:"reste :" },
+    };
+    for (const _l in I18N_LEFT) { if (I18N[_l]) Object.assign(I18N[_l], I18N_LEFT[_l]); }
+    /* 발화 연습 — 학습자가 먼저 말을 여는 자리(v83) */
+    const I18N_LEAD = {
+        ko: { prStepLead:"② 먼저 말 걸어 보기", prLeadHint:"호아랑에게 먼저 이렇게 말을 걸어 보세요" },
+        en: { prStepLead:"② Start the conversation", prLeadHint:"You speak first — try saying this to Hoarang" },
+        zh: { prStepLead:"② 主动开口", prLeadHint:"由你先开口，试着这样对호아랑说" },
+        ja: { prStepLead:"② 自分から話しかける", prLeadHint:"あなたから、こう話しかけてみましょう" },
+        vi: { prStepLead:"② Bắt chuyện trước", prLeadHint:"Bạn nói trước — hãy thử nói câu này với Hoarang" },
+        th: { prStepLead:"② เริ่มพูดก่อน", prLeadHint:"คุณพูดก่อน ลองพูดประโยคนี้กับ Hoarang" },
+        id: { prStepLead:"② Menyapa lebih dulu", prLeadHint:"Kamu bicara lebih dulu — coba ucapkan ini pada Hoarang" },
+        mn: { prStepLead:"② Эхэлж яриа өрнүүлэх", prLeadHint:"Та эхэлж ярина — Hoarang-д ингэж хэлж үзээрэй" },
+        uz: { prStepLead:"② Birinchi bo'lib gapirish", prLeadHint:"Siz birinchi gapirasiz — Hoarang'ga shunday ayting" },
+        ru: { prStepLead:"② Заговорить первым", prLeadHint:"Вы начинаете — попробуйте сказать это Hoarang" },
+        es: { prStepLead:"② Empezar tú la conversación", prLeadHint:"Hablas tú primero: prueba a decirle esto a Hoarang" },
+        fr: { prStepLead:"② Engager la conversation", prLeadHint:"C'est vous qui commencez — essayez de dire ceci à Hoarang" },
+    };
+    for (const _l in I18N_LEAD) { if (I18N[_l]) Object.assign(I18N[_l], I18N_LEAD[_l]); }
+    /* 대화 유형 판정(v84) — 이남호·이찬규(2025) */
+    const I18N_ABC = {
+        ko: { abcA:"단순형 — 목적까지 곧장 갔어요", abcB:"반복형 — 같은 단계를 맴돌았어요", abcC:"확장형 — 목적을 넘어 대화를 넓혔어요!" },
+        en: { abcA:"Simple — straight to the goal", abcB:"Repetitive — circled the same step", abcC:"Expanded — went beyond the goal!" },
+        zh: { abcA:"单纯型 — 直奔目标", abcB:"反复型 — 在同一步骤打转", abcC:"扩展型 — 超越目标继续展开！" },
+        ja: { abcA:"単純型 — 目的まで一直線", abcB:"反復型 — 同じ段階を回った", abcC:"拡張型 — 目的を超えて広げた！" },
+        vi: { abcA:"Đơn giản — đi thẳng tới mục tiêu", abcB:"Lặp lại — quanh quẩn một bước", abcC:"Mở rộng — vượt qua mục tiêu!" },
+        th: { abcA:"แบบเรียบง่าย — ตรงสู่เป้าหมาย", abcB:"แบบวนซ้ำ — วนอยู่ขั้นเดิม", abcC:"แบบขยาย — ไปไกลกว่าเป้าหมาย!" },
+        id: { abcA:"Sederhana — langsung ke tujuan", abcB:"Berulang — berputar di tahap sama", abcC:"Meluas — melampaui tujuan!" },
+        mn: { abcA:"Энгийн — зорилго руу шууд", abcB:"Давтагдсан — нэг шатанд эргэлдсэн", abcC:"Өргөжсөн — зорилгоос давсан!" },
+        uz: { abcA:"Oddiy — maqsadga to'g'ri", abcB:"Takroriy — bir bosqichda aylandi", abcC:"Kengaygan — maqsaddan o'tdi!" },
+        ru: { abcA:"Простой — прямо к цели", abcB:"Повторный — кружил на одном шаге", abcC:"Расширенный — вышел за цель!" },
+        es: { abcA:"Simple — directo al objetivo", abcB:"Repetitivo — giró en el mismo paso", abcC:"Expandido — fue más allá del objetivo" },
+        fr: { abcA:"Simple — droit au but", abcB:"Répétitif — a tourné sur la même étape", abcC:"Étendu — au-delà de l'objectif !" },
+    };
+    for (const _l in I18N_ABC) { if (I18N[_l]) Object.assign(I18N[_l], I18N_ABC[_l]); }
+    /* 결과 쪽 넘김(v85) */
+    const I18N_RES = {
+        ko: { resNext:"다음 →", resPrev:"← 이전" }, en: { resNext:"Next →", resPrev:"← Back" },
+        zh: { resNext:"下一页 →", resPrev:"← 上一页" }, ja: { resNext:"次へ →", resPrev:"← 前へ" },
+        vi: { resNext:"Tiếp →", resPrev:"← Quay lại" }, th: { resNext:"ถัดไป →", resPrev:"← ย้อนกลับ" },
+        id: { resNext:"Lanjut →", resPrev:"← Kembali" }, mn: { resNext:"Дараах →", resPrev:"← Буцах" },
+        uz: { resNext:"Keyingi →", resPrev:"← Orqaga" }, ru: { resNext:"Далее →", resPrev:"← Назад" },
+        es: { resNext:"Siguiente →", resPrev:"← Atrás" }, fr: { resNext:"Suivant →", resPrev:"← Retour" },
+    };
+    for (const _l in I18N_RES) { if (I18N[_l]) Object.assign(I18N[_l], I18N_RES[_l]); }
     /* 상호작용 대화 능력(IDC) 점검 문구 — 결과 화면의 요소별 프로파일.
        요소 이름은 논문 〈표 33〉의 9요소. 키 규칙: idc_<서버가 보내는 key>.
        비언어적 행위(idc_nonverbal)는 교실에서 배우므로 등급 없이 이름만 보인다. */
@@ -2516,6 +2897,234 @@
         const dict = I18N[uiLang] || I18N.ko;
         return (key in dict) ? dict[key] : I18N.ko[key];
     }
+
+    /* ══════════════ 오늘의 퀘스트 ══════════════
+       논문 3.3 상호작용 대화 능력(IDC) 9요소 가운데, 대화 로그만으로 셀 수 있는 것부터
+       퀘스트로 만든다. 비언어적 행위(✕ 판정)는 교실이 담당하므로 넣지 않는다 —
+       교실이 맡은 요소를 AI 연습의 성과로 잡으면 구인이 오염된다(논문 〈표 33〉).
+
+       설계 원칙
+        · 하루 3개(쉬움·⭐·⭐⭐)만. 불안 평균 3.0인 집단에 어려운 것만 주면 역효과.
+        · 대화 중에는 감춘다 — 퀘스트를 띄워 두면 학습자 주도성(RQ2)을 해친다.
+          시작 전에 보여 주고, 끝난 뒤 총평에서 달성 여부를 알린다.
+        · 날짜로 고정 추첨 — 새로고침해도 그날의 퀘스트는 바뀌지 않는다. */
+    const QUEST_DEFS = [
+        // id            요소             난이도  모드      셀 때 쓰는 값
+        { id:"qFirst",   el:"화제 관리", ek:"topic",        lv:0, mode:"both", chk:(q)=>q.firstIsUser },
+        { id:"qTurns",   el:"차례 관리", ek:"turn",        lv:0, mode:"both", chk:(q)=>q.userTurns >= 10 },
+        { id:"qSlow",    el:"의사소통 단절 수정", ek:"repair", lv:0, mode:"both", chk:(q)=>q.slow >= 1 },
+        { id:"qWord",    el:"의사소통 단절 수정", ek:"repair", lv:0, mode:"both", chk:(q)=>q.wordAsk >= 1 },
+        { id:"qAsk",     el:"상호작용적 듣기", ek:"listen",   lv:0, mode:"both", chk:(q)=>q.questions >= 3 },
+        { id:"qClarify", el:"의사소통 단절 수정", ek:"repair", lv:1, mode:"both", chk:(q)=>q.clarify >= 1 },
+        { id:"qBackch",  el:"상호작용적 듣기", ek:"listen",   lv:1, mode:"both", chk:(q)=>q.backch >= 3 },
+        { id:"qLong",    el:"차례 관리", ek:"turn",        lv:1, mode:"both", chk:(q)=>q.userTurns >= 3 && (q.words / q.userTurns) >= 8 },
+        { id:"qPolite",  el:"맥락·정체성 인식", ek:"context",  lv:1, mode:"both", chk:(q)=>q.userTurns >= 5 && q.casual === 0 },
+        { id:"qFinish",  el:"기능 단계", ek:"stage",        lv:1, mode:"rp",   chk:(q)=>q.allStages },
+        { id:"q150",     el:"기능 단계", ek:"stage",        lv:2, mode:"rp",   chk:(q)=>q.maxPct >= 150 },
+        { id:"q200",     el:"기능 단계", ek:"stage",        lv:2, mode:"rp",   chk:(q)=>q.maxPct >= 200 },
+        { id:"qTurns20", el:"차례 관리", ek:"turn",        lv:2, mode:"both", chk:(q)=>q.userTurns >= 20 },
+        // ── 아래는 서버(LLM)가 대화 흐름을 읽고 판정한다. 낱말만 세서는 알 수 없는 것들. ──
+        { id:"qNewTopic",el:"화제 관리", ek:"topic",        lv:1, mode:"rp", llm:1, chk:(q)=>q.llm.has("qNewTopic") },
+        { id:"qSelfFix", el:"의사소통 단절 수정", ek:"repair", lv:1, mode:"rp", llm:1, chk:(q)=>q.llm.has("qSelfFix") },
+        { id:"qRefuse",  el:"대화이동 관리", ek:"move",     lv:1, mode:"rp", llm:1, chk:(q)=>q.llm.has("qRefuse") },
+        { id:"qAlt",     el:"대화이동 관리", ek:"move",     lv:1, mode:"rp", llm:1, chk:(q)=>q.llm.has("qAlt") },
+        { id:"qCircum",  el:"의사소통 전략", ek:"strategy",     lv:2, mode:"rp", llm:1, chk:(q)=>q.llm.has("qCircum") },
+        { id:"qCond",    el:"대화이동 관리", ek:"move",     lv:2, mode:"rp", llm:1, chk:(q)=>q.llm.has("qCond") },
+        { id:"qHold",    el:"대화이동 관리", ek:"move",     lv:2, mode:"rp", llm:1, chk:(q)=>q.llm.has("qHold") },
+        { id:"qReturn",  el:"화제 관리", ek:"topic",        lv:2, mode:"rp", llm:1, chk:(q)=>q.llm.has("qReturn") },
+    ];
+
+    // 이번 대화에서 쌓이는 값
+    let questStats = null;
+    function questReset() {
+        questStats = { userTurns:0, words:0, clarify:0, slow:0, wordAsk:0,
+                       backch:0, questions:0, casual:0, firstIsUser:false,
+                       maxPct:0, allStages:false, seenAny:false,
+                       llm: new Set() };   // 서버가 판정해 보내 주는 퀘스트
+    }
+    questReset();
+
+    // 학습자 발화 한 줄을 세어 넣는다
+    const _RE_CLARIFY = /(다시\s*말|다시\s*한|못\s*들었|뭐라고|잘\s*안\s*들|반복)/;
+    const _RE_SLOW    = /(천천히|느리게|조금\s*더\s*천천)/;
+    const _RE_WORDASK = /(뭐예요|뭐에요|무슨\s*뜻|어떤\s*뜻|무슨\s*말|뜻이\s*뭐)/;
+    const _RE_BACKCH  = /(그럼요|진짜요|정말요|맞아요|그렇군요|그래요|아하|와[!\s]|그러네요|좋아요)/;
+    const _RE_POLITE  = /(요[.!?…\s]*$|니다[.!?…\s]*$|까요[?\s]*$|세요[.!?…\s]*$|십시오[.!?…\s]*$)/;
+    function questCount(text) {
+        if (!questStats || !text) return;
+        const t0 = String(text).trim();
+        if (!t0) return;
+        if (!questStats.seenAny) { questStats.seenAny = true; }
+        questStats.userTurns += 1;
+        questStats.words += t0.split(/\s+/).filter(Boolean).length;
+        if (_RE_CLARIFY.test(t0)) questStats.clarify += 1;
+        if (_RE_SLOW.test(t0)) questStats.slow += 1;
+        if (_RE_WORDASK.test(t0)) questStats.wordAsk += 1;
+        if (_RE_BACKCH.test(t0)) questStats.backch += 1;
+        if (/[?？]/.test(t0) || /(까요|나요|세요\?|어요\?)/.test(t0)) questStats.questions += 1;
+        // 존댓말 일관성 — 한 줄이라도 반말이면 어긋난 것으로 센다
+        if (!_RE_POLITE.test(t0)) questStats.casual += 1;
+    }
+    // 빠른 요청 버튼(천천히·다시 한 번)도 같은 전략의 실행으로 인정한다
+    function questQuickBtn(key) {
+        if (!questStats) return;
+        if (key === "qSlow") questStats.slow += 1;
+        if (key === "qAgain") questStats.clarify += 1;
+        if (key === "qEasy") questStats.clarify += 1;
+    }
+
+    /* 오늘의 퀘스트 3개 — 날짜로 고정 추첨(쉬움 1 · ⭐ 1 · ⭐⭐ 1) */
+    /* 오늘 깬 퀘스트를 하루 단위로 모은다.
+       결과 화면에서는 더 보여 주지 않고, 홈의 퀘스트 버튼에서 ✓로 확인한다.
+       (같은 날 여러 번 대화해도 한 번 깬 것은 계속 인정) */
+    function qzDoneKey() { return "qzDone_" + new Date().toDateString(); }
+    function qzDoneToday() {
+        try { return new Set(JSON.parse(localStorage.getItem(qzDoneKey()) || "[]")); } catch (e) { return new Set(); }
+    }
+    function qzDoneAdd(ids) {
+        const set = qzDoneToday();
+        ids.forEach(i => set.add(i));
+        try { localStorage.setItem(qzDoneKey(), JSON.stringify(Array.from(set))); } catch (e) {}
+        return set;
+    }
+    function questToday(mode) {
+        // 홈과 결과가 다른 목록을 보이지 않도록 mode 를 고정한다.
+        // 예전엔 홈은 "rp", 자유 수다 결과는 "free" 로 뽑아 서로 달랐다.
+        mode = "rp";
+        const d = new Date();
+        const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+        const pick = (lv, salt) => {
+            const pool = QUEST_DEFS.filter(q => q.lv === lv && (q.mode === "both" || q.mode === mode));
+            if (!pool.length) return null;
+            return pool[(seed + salt) % pool.length];
+        };
+        return [pick(0, 0), pick(1, 7), pick(2, 13)].filter(Boolean);
+    }
+    function questResult(mode) {
+        return questToday(mode).map(q => ({ id: q.id, el: q.el, lv: q.lv, done: !!q.chk(questStats) }));
+    }
+    /* 퀘스트 카드 그리기 — 시작 전(안내) / 끝난 뒤(결과) 두 모습 */
+    /* 호아랑이 오른쪽에서 빼꼼 나와 오늘의 퀘스트를 알려 주고 들어간다.
+       홈에 큰 카드를 두면 자리를 너무 차지해서, 안내는 잠깐 나왔다 사라지게 한다. */
+    function questPeek(ms) {
+        const done = qzDoneToday();
+        let items = "";
+        questToday("rp").forEach(q => {
+            items += (done.has(q.id) ? "✓ " : "☐ ") + t(q.id) + (q.lv ? " " + "★".repeat(q.lv) : "") + "\n";
+        });
+        try { hamPeekHtml(t("qzTitle"), items.trim(), ms || 7000); } catch (e) {}
+        const b = document.getElementById("qzBtn");
+        if (b) b.classList.add("seen");
+        try { localStorage.setItem("qzSeen", new Date().toDateString()); } catch (e) {}
+    }
+    /* 버튼의 호아랑 표정이 돌아가며 바뀐다 — 늘 같은 얼굴이면 눈에 안 들어온다 */
+    const QZ_FACES = ["qz_hello", "qz_yay", "qz_giggle", "qz_oops", "qz_huh"];
+    let qzFaceIdx = 0;
+    function qzNextFace() {
+        const im = document.getElementById("qzBtnImg");
+        if (!im) return;
+        qzFaceIdx = (qzFaceIdx + 1) % QZ_FACES.length;
+        im.src = "/static/" + QZ_FACES[qzFaceIdx] + ".png?v=86";
+    }
+    function questBtnSync() {
+        const b = document.getElementById("qzBtn");
+        if (!b) return;
+        let seen = "";
+        try { seen = localStorage.getItem("qzSeen") || ""; } catch (e) {}
+        b.classList.toggle("seen", seen === new Date().toDateString());
+    }
+    /* ═══ IDC 도장판 ═══
+       논문 〈표 32〉의 구성 요소를 도장 칸으로 만든다. 그 요소의 퀘스트를 깨면 도장이 찍힌다.
+       비언어적 행위(✕ 판정)는 교실이 담당하므로 칸에 넣지 않는다.
+       스트릭·랭킹 대신 이것을 쓰는 이유: '아직 안 해본 요소'가 보이면 계속할 이유가 생기고,
+       게임 요소가 아니어서 "게임 때문에 했다"는 교란이 논문에 끼어들지 않는다. */
+    const IDC_BOARD = ["stage", "topic", "move", "turn", "repair", "strategy", "listen", "context"];
+    const STAMP_KEY = "idcStamps";
+    function stampsLoad() {
+        try { return JSON.parse(localStorage.getItem(STAMP_KEY) || "{}") || {}; } catch (e) { return {}; }
+    }
+    function stampsAdd(keys) {
+        const m = stampsLoad();
+        keys.forEach(k => { if (k) m[k] = (m[k] || 0) + 1; });
+        try { localStorage.setItem(STAMP_KEY, JSON.stringify(m)); } catch (e) {}
+        return m;
+    }
+    function boardRender(box, justEarned) {
+        if (!box) return;
+        const m = stampsLoad();
+        box.innerHTML = "";
+        const h = document.createElement("div");
+        h.className = "qz-head";
+        h.textContent = t("idcBoard");
+        box.appendChild(h);
+        const grid = document.createElement("div");
+        grid.className = "st-grid";
+        IDC_BOARD.forEach(k => {
+            const c = document.createElement("div");
+            const cnt = m[k] || 0;
+            c.className = "st-cell" + (cnt ? " on" : "") + ((justEarned || []).indexOf(k) >= 0 ? " pop" : "");
+            c.innerHTML = '<span class="st-mark">' + (cnt ? "●" : "○") + "</span><span class=\"st-nm\"></span>"
+                + (cnt > 1 ? '<span class="st-cnt">' + cnt + "</span>" : "");
+            c.querySelector(".st-nm").textContent = t("st_" + k);
+            grid.appendChild(c);
+        });
+        box.appendChild(grid);
+    }
+
+    /* 대화가 끝나면 달성분을 저장하고 IDC 도장을 찍는다. 화면에는 띄우지 않는다 —
+       결과 화면은 대화 자체를 돌아보는 자리이고, 퀘스트는 홈에서 확인한다. */
+    function questFinish(mode) {
+        let earned = [];
+        try {
+            const list = questResult(mode);
+            earned = list.filter(x => x.done);
+            if (earned.length) {
+                qzDoneAdd(earned.map(x => x.id));
+                stampsAdd(earned.map(x => x.ek));
+            }
+        } catch (e) {}
+        return earned;
+    }
+    function questRender(box, mode, showResult) {
+        if (!box) return;
+        const list = showResult ? questResult(mode) : questToday(mode).map(q => ({ id:q.id, el:q.el, ek:q.ek, lv:q.lv, done:false }));
+        box.innerHTML = "";
+        const h = document.createElement("div");
+        h.className = "qz-head";
+        h.textContent = t(showResult ? "qzDone" : "qzTitle");
+        box.appendChild(h);
+        const rows = [];
+        list.forEach(q => {
+            const row = document.createElement("div");
+            row.className = "qz-row";
+            row.innerHTML = '<span class="qz-mark">' + (showResult ? "·" : "☐") + "</span>"
+                + '<span class="qz-txt"></span><span class="qz-lv">' + "★".repeat(q.lv) + "</span>";
+            row.querySelector(".qz-txt").textContent = t(q.id);
+            box.appendChild(row);
+            rows.push({ row: row, q: q });
+        });
+        if (!showResult) return;
+
+        // ① 결과는 한 줄씩 차례로 켜진다 — 한꺼번에 보여 주면 뭘 해냈는지 눈에 안 들어온다
+        const earned = list.filter(x => x.done).map(x => x.ek);
+        if (earned.length) stampsAdd(earned);
+        rows.forEach((r, i) => {
+            if (!r.q.done) return;
+            fxAfter(420 + i * 480, () => {
+                r.row.classList.add("ok", "pop");
+                r.row.querySelector(".qz-mark").textContent = "✓";
+                try { playDing(); } catch (e) {}
+            });
+        });
+        // 셋 다 깼으면 마지막에 징 한 번
+        if (earned.length === list.length && list.length) {
+            fxAfter(420 + list.length * 480 + 240, () => { try { playGong(); } catch (e) {} });
+        }
+        // ③ 도장판은 줄이 다 켜진 뒤에 그린다
+        const bd = box.parentElement && box.parentElement.querySelector(".st-box");
+        if (bd) fxAfter(420 + list.length * 480 + 120, () => boardRender(bd, earned));
+    }
+
     function applyLang() {
         document.documentElement.lang = uiLang || "ko";
         document.getElementById("appTitle").textContent = t("title");
@@ -2569,6 +3178,12 @@
         document.getElementById("hamViewBtn").title = t("hvOpen");   // 툴팁도 모국어로
         document.getElementById("pttKeyHintEl").textContent = t("pttKeyHint");
         document.getElementById("otherWindowMsg").textContent = t("otherWin");
+        document.getElementById("srcTitleEl").textContent = t("srcTitle");
+        document.getElementById("resNextBtn").textContent = t("resNext");
+        document.getElementById("resPrevBtn").textContent = t("resPrev");
+        document.getElementById("rpPhotoLbl").textContent = t("rpPhoto");
+        document.getElementById("srcCloseBtn").textContent = t("appDlClose");
+        const _qb = document.getElementById("qzBtn"); if (_qb) _qb.title = t("qzTitle");
         document.getElementById("hamViewCloseLbl").textContent = t("hvClose");
         document.getElementById("csbTitleEl").textContent = t("csbTitle");
         document.getElementById("freeFbCloseBtn").textContent = t("freeFbClose");
@@ -2659,7 +3274,7 @@
             const w = document.createElement("div");
             w.className = "ob-hero";
             w.innerHTML = '<img class="ob-ham" alt=""><span class="ob-hello"></span>';
-            w.querySelector("img").src = "/static/ham_smile.png?v=67";
+            w.querySelector("img").src = "/static/ham_smile.png?v=86";
             w.querySelector(".ob-hello").textContent = t("obHello");
             return w;
         },
@@ -2743,7 +3358,7 @@
             const v = w.querySelectorAll(".ob-view");
             v[0].querySelector(".vl").textContent = stripLeadEmoji(t("hvClose"));
             v[1].querySelector(".vl").textContent = stripLeadEmoji(t("hvOpen"));
-            v[1].querySelector("img").src = "/static/ham_idle.png?v=67";
+            v[1].querySelector("img").src = "/static/ham_idle.png?v=86";
             return w;
         },
         function talk() {                       // ⑥ 말하기 버튼 · 도움말 · 이어폰
@@ -2968,14 +3583,14 @@
     document.getElementById("consentCancelBtn").addEventListener("click", cancelConsent);
 
     /* ══════════ 주제 대화(상황극) 모드 ══════════
-       ① 학습자가 주제·목적·장소·역할을 설정(모국어 가능) + 화계 선택
+       ① 학습자가 주제·목적·장소·역할을 설정(모국어 가능) + 말투 선택
        ② 서버가 기능단계와 단계별 표현을 생성 → 브리핑 화면
        ③ 대화 중 단계 충족 → 진행 바 자동 상승 (100% 초과 = 확장 대화)
        ④ 종료 버튼 → 진행률이 점수로 치환 + 대화 자동 저장 */
     /* ── 페이더 위치 제어 ──
        시작 시 페이더는 접혀 있고, 모드를 고르면 나타난다.
        · 자유 수다 → 왼쪽 패널에서 슬라이드 다운(아래 '대화 시작하기'로 바로 시작)
-       · 주제 대화 → 설정 다이얼로그의 '화계(말투)' 칸으로 이동해 설정
+       · 주제 대화 → 설정 다이얼로그의 '말투' 칸으로 이동해 설정
        페이더 노드(distSlider/powerSlider)는 하나뿐이라 어디에 있든 값이 공유된다. */
     const faderSection = document.getElementById("faderSection");
     const rpFaderSlot = document.getElementById("rpFaderSlot");
@@ -2993,6 +3608,7 @@
         document.body.dataset.screen = s;
     }
     function goHome() {
+        try { questBtnSync(); } catch (e) {}
         // 전환 시 떠 있던 오버레이 정리 (홈은 깨끗한 상태로)
         try { scHalt(); } catch (e) {}   // 대화문 재생 중이면 멈춘다
         // ★ 변수로 잡지 않고 id 로 직접 찾는다.
@@ -3169,7 +3785,14 @@
 
     /* 지금 화면에 어떤 창이 떠 있는지 보고 배경음 장면을 다시 계산한다.
        (대화 계획을 짜거나 발화 연습을 할 때 메인 BGM이 계속 들려 방해되던 문제 해결) */
+    /* 창이 하나라도 열려 있으면 body 에 표시 → 퀘스트 버튼을 감춘다 */
+    function syncOverlayFlag() {
+        const open = !!document.querySelector(
+            ".lang-overlay:not(.hidden), .inapp-gate:not(.hidden), .pr-overlay:not(.hidden)");
+        document.body.classList.toggle("ov-open", open);
+    }
     function recomputeAudioScene() {
+        try { syncOverlayFlag(); } catch (e) {}
         const open = (id) => {
             const el = document.getElementById(id);
             return !!el && !el.classList.contains("hidden");
@@ -3257,7 +3880,33 @@
         try { gongSfx.currentTime = 0; gongSfx.play().catch(() => {}); } catch (e) {}
     }
 
-    function unlockBgm() { bgmReady = true; recomputeAudioScene(); document.removeEventListener("pointerdown", unlockBgm); }
+    /* ── 배경음을 미디어 음량으로 ──
+       휴대폰에서 배경음은 '통화 음량', 호아랑 목소리는 '미디어 음량'을 쓰고 있었다.
+       호아랑 목소리는 Web Audio(AudioContext)로 나가는데 배경음은 <audio> 그대로라,
+       마이크가 열린 동안 안드로이드가 <audio> 를 통화 스트림으로 돌려 버리기 때문이다.
+       배경음도 같은 AudioContext 를 거쳐 나가게 하면 둘이 같은 음량을 쓴다.
+       (요소당 한 번만 연결할 수 있으므로 처음 한 번만 만든다) */
+    let bgmCtx = null;
+    function ensureBgmGraph() {
+        if (bgmCtx) return;
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        try { bgmCtx = new AC(); } catch (e) { bgmCtx = null; return; }
+        [bgm, prBgm, chatBgm, gongSfx].forEach(el => {
+            if (!el || el.dataset.wired) return;
+            try {
+                bgmCtx.createMediaElementSource(el).connect(bgmCtx.destination);
+                el.dataset.wired = "1";       // 두 번 연결하면 예외가 난다
+            } catch (e) { /* 이미 연결됐거나 지원 안 함 — 원래대로 재생된다 */ }
+        });
+    }
+    function unlockBgm() {
+        bgmReady = true;
+        ensureBgmGraph();
+        try { if (bgmCtx && bgmCtx.state === "suspended") bgmCtx.resume(); } catch (e) {}
+        recomputeAudioScene();
+        document.removeEventListener("pointerdown", unlockBgm);
+    }
     document.addEventListener("pointerdown", unlockBgm);   // 브라우저 자동재생 정책 우회(첫 제스처)
     const bgmBtn = document.getElementById("bgmBtn");
     function renderBgmBtn() {           // 아이콘만 갈아 끼운다 (글자로 덮으면 아이콘이 사라진다)
@@ -3291,7 +3940,22 @@
         const preview = transcriptLog.slice(0, 4)
             .map(m => (m.role === "user" ? "🙋 " : "🐯 ") + (m.text || "").trim()).join("   ").slice(0, 140);
         const list = loadHistory();
-        list.unshift({ ts: new Date().toISOString(), mode: rpSessionActive ? "rp" : "free", title, preview, text });
+        // 퀘스트 달성과 집계값을 함께 남긴다 —
+        // "이 학습자가 어떤 IDC 요소를 실제로 실행했는가"가 쌓여야 연구 자료가 된다.
+        let quests = [], stats = null;
+        try {
+            quests = questResult(rpSessionActive ? "rp" : "free");
+            stats = {
+                turns: questStats.userTurns, words: questStats.words,
+                clarify: questStats.clarify, slow: questStats.slow, wordAsk: questStats.wordAsk,
+                backch: questStats.backch, questions: questStats.questions,
+                casual: questStats.casual, firstIsUser: questStats.firstIsUser,
+                maxPct: questStats.maxPct, llm: Array.from(questStats.llm),
+                abc: (rpFinal && rpFinal.abc) || "", chains: (rpFinal && rpFinal.chains) || null,
+            };
+        } catch (e) {}
+        list.unshift({ ts: new Date().toISOString(), mode: rpSessionActive ? "rp" : "free",
+                       title, preview, text, quests, stats });
         if (list.length > 30) list.length = 30;
         try { localStorage.setItem(HIST_KEY, JSON.stringify(list)); } catch (e) {}
     }
@@ -3310,7 +3974,8 @@
             e.className = "hist-empty"; e.textContent = t("histEmpty");
             histList.appendChild(e); return;
         }
-        list.forEach((it, i) => {
+        // 창이 길어져 내보내기·닫기 버튼이 밀리지 않도록 최근 3개만 보인다
+        list.slice(0, 3).forEach((it, i) => {
             const div = document.createElement("div");
             div.className = "hist-item";
             const emoji = it.mode === "rp" ? "🎬" : "☕";
@@ -3420,22 +4085,149 @@
         }
     });
 
-    /* ── 자유 수다 종료 → 피드백 화면(스텁) → 홈 ── */
+    /* ── 자유 수다 종료 → 서버 최종 분석(IDC 프로파일) → 피드백 화면 → 홈 ──
+       상황극과 같은 길: end_session 을 보내고 final_score 를 기다렸다가 화면을 바꾼다.
+       서버가 늦으면 9초 뒤 빈 프로파일로라도 넘어간다. */
+    let freeEnding = false, freeEndTimer = null;
     function endFreeSession() {
+        if (freeEnding) return;
+        freeEnding = true;
+        rpFinal = null;
+        try {
+            if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "end_session" }));
+        } catch (e) {}
+        freeEndTimer = setTimeout(concludeFree, 9000);
+    }
+    function concludeFree() {
+        if (!freeEnding) return;
+        freeEnding = false;
+        clearTimeout(freeEndTimer);
         stopSession();
-        // 대화 화면에서 문이 닫히고 → 다 닫히면 그 뒤에서 피드백 화면으로 바뀐다
         closeDoorThen(t("doorEnd"), showFreeFeedback);
     }
+    (function bindResPager() {
+        const nx = document.getElementById("resNextBtn"), pv = document.getElementById("resPrevBtn");
+        if (nx) nx.addEventListener("click", () => resGo(2));
+        if (pv) pv.addEventListener("click", () => resGo(1));
+    })();
     function showFreeFeedback() {
+        try { questFinish("free"); } catch (e) {}   // 기록만 — 퀘스트·도장은 홈에서 본다
+        // 사후 피드백 — 대화 중 즉각 교정과 별개로, 끝난 뒤 요소별 프로파일을 보인다
+        try {
+            const it = (rpFinal && rpFinal.idc) || [];
+            document.getElementById("freeIdcTitle").textContent = t("idcTitle");
+            document.getElementById("freeIdcSub").textContent = (rpFinal ? rpFinal.idcTotal || 0 : 0) + t("rpPts");
+            renderIdcProfile(it, rpFinal ? rpFinal.idcTotal || 0 : 0, "freeIdcList", "freeIdcHead");
+        } catch (e) {}
         document.getElementById("freeFbTitleEl").textContent = t("freeFbTitle");
-        document.getElementById("freeFbBodyEl").textContent = t("freeFbBody");
+
         goFeedback();
         freeFbOverlay.classList.remove("hidden");
         fxAfter(2600, maybeAskNotif);   // 대화를 한 번 마친 뒤에 알림을 권한다
     }
     document.getElementById("freeFbCloseBtn").addEventListener("click", goHome);
+    /* 홈 왼쪽 위 호아랑 아이콘 → 만드는 데 쓴 것들 */
+    (function bindSrc() {
+        const ov = document.getElementById("srcOverlay");
+        const logo = document.getElementById("homeLogoBtn");
+        if (!ov || !logo) return;
+        const open = () => ov.classList.remove("hidden");
+        const close = () => ov.classList.add("hidden");
+        logo.addEventListener("click", open);
+        logo.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+        document.getElementById("srcX").addEventListener("click", close);
+        document.getElementById("srcCloseBtn").addEventListener("click", close);
+        ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    })();
+    (function bindQuestBtn() {
+        const b = document.getElementById("qzBtn");
+        if (!b) return;
+        // 다시 누르면 닫힌다
+        b.addEventListener("click", () => {
+            const el = document.getElementById("hamPeek");
+            if (el && el.classList.contains("show") && el.classList.contains("qz")) { hamPeekHide(); return; }
+            qzNextFace(); questPeek();
+        });
+        questBtnSync();
+        // 홈에 머무는 동안 6초마다 표정을 바꾼다
+        setInterval(() => { if (document.body.dataset.screen === "home") qzNextFace(); }, 6000);
+        let seen = "";
+        try { seen = localStorage.getItem("qzSeen") || ""; } catch (e) {}
+        if (seen !== new Date().toDateString()) fxAfter(1800, () => {
+            if (document.body.dataset.screen === "home") questPeek(7000);
+        });
+    })();
 
-    function openRpSetup() { wakeServer(); rpSetupOverlay.classList.remove("hidden"); }
+    function openRpSetup() { wakeServer(); rpSetupOverlay.classList.remove("hidden"); rpPhotoReset(); }
+
+    /* ══════════ 📷 교재 사진으로 상황 채우기 ══════════
+       교실에서 배운 그 페이지를 찍으면 장소·목적·역할·말투가 설정 칸에 들어온다.
+       앱에서 아무 상황이나 만들면 그날 배운 내용과 따로 놀지만, 교재를 찍어 넣으면
+       교실 수업이 그대로 확장 연습으로 이어진다(P9 — 대체가 아닌 외연 확장).
+
+       ★ 사진은 서버에 저장하지 않는다. 설정만 뽑고 그 자리에서 버린다(교재는 저작물).
+       ★ 뽑은 값은 반드시 학습자가 보고 고칠 수 있어야 한다 — 잘못 읽히면 엉뚱한 연습이 된다.
+          그래서 칸에 채워만 넣고, 대화 만들기는 여전히 학습자가 눌러야 시작된다. */
+    function rpPhotoReset() {
+        const m = document.getElementById("rpPhotoMsg");
+        if (m) { m.hidden = true; m.textContent = ""; m.classList.remove("err"); }
+        const b = document.getElementById("rpPhotoBtn");
+        if (b) { b.disabled = false; document.getElementById("rpPhotoLbl").textContent = t("rpPhoto"); }
+        document.querySelectorAll("#rpSetupOverlay .rp-field").forEach(f => f.classList.remove("filled"));
+    }
+    (function bindRpPhoto() {
+        const btn = document.getElementById("rpPhotoBtn");
+        const inp = document.getElementById("rpPhotoInput");
+        const msg = document.getElementById("rpPhotoMsg");
+        if (!btn || !inp) return;
+        btn.addEventListener("click", () => inp.click());
+        inp.addEventListener("change", async () => {
+            const f = inp.files && inp.files[0];
+            inp.value = "";                      // 같은 사진을 다시 골라도 동작하게
+            if (!f) return;
+            btn.disabled = true;
+            document.getElementById("rpPhotoLbl").textContent = t("rpPhotoWait");
+            msg.hidden = true; msg.classList.remove("err");
+            try {
+                const fd = new FormData();
+                fd.append("photo", f);
+                fd.append("lang", uiLang || "ko");
+                const res = await fetch("/roleplay-from-photo", { method: "POST", body: fd });
+                if (!res.ok) throw new Error("http " + res.status);
+                const d = await res.json();
+                if (!d.ok) throw new Error("unreadable");
+                // 칸을 채운다 — 값이 있는 것만, 이미 적어 둔 것은 덮지 않는다
+                // 사진을 다시 찍는 것은 "이걸로 바꿔 달라"는 뜻이므로 기존 값을 덮어쓴다.
+                // (예전엔 칸이 비어 있을 때만 채워, 지우지 않으면 반영이 안 됐다)
+                const put = (id, v) => {
+                    const el = document.getElementById(id);
+                    if (!el || !v) return;
+                    el.value = v;
+                    el.dispatchEvent(new Event("input", { bubbles: true }));
+                    const fld = el.closest(".rp-field");
+                    if (fld) fld.classList.add("filled");
+                };
+                put("rpPlace", d.place); put("rpGoal", d.goal);
+                put("rpMyRole", d.myRole); put("rpAiRole", d.aiRole);
+                if (d.style === "polite" || d.style === "banmal") {
+                    // 말투는 페이더(친밀도)로 표현한다 — 존댓말이면 낯선 사이 쪽으로
+                    try {
+                        distSlider.value = d.style === "banmal" ? 85 : 20;
+                        distSlider.dispatchEvent(new Event("input", { bubbles: true }));
+                    } catch (e) {}
+                }
+                msg.textContent = t("rpPhotoOk");
+                msg.hidden = false;
+            } catch (e) {
+                msg.textContent = t("rpPhotoErr");
+                msg.classList.add("err");
+                msg.hidden = false;
+            } finally {
+                btn.disabled = false;
+                document.getElementById("rpPhotoLbl").textContent = t("rpPhoto");
+            }
+        });
+    })();
     function cancelRpSetup() {
         rpSetupOverlay.classList.add("hidden");
         if (!rpId) goHome();   // 계획 없이 취소하면 홈으로
@@ -3489,6 +4281,7 @@
     /* 표현 항목은 신형 {text, cue} 객체 — 혹시 남아 있을 구형 문자열도 수용 */
     function exprText(e) { return typeof e === "string" ? e : (e && e.text) || ""; }
     function exprCue(e) { return (e && typeof e === "object" && e.cue) || ""; }
+    function exprFollow(e) { return (e && typeof e === "object" && e.follow) || ""; }
 
     function renderStageList(animate) {
         const list = document.getElementById("rpStageList");
@@ -3720,7 +4513,7 @@
     });
 
     /* ══════════ 자동 추천 ══════════
-       대화 장소나 달성 목적 중 하나만 적으면 나머지(목적 3단계·장소·역할·화계)가 '예)'로 채워진다.
+       대화 장소나 달성 목적 중 하나만 적으면 나머지(목적 3단계·장소·역할·말투)가 '예)'로 채워진다.
        목적은 ①교재형(이상적) ②일상형(흔한 변수) ③엉뚱형(뜻밖) 3단계.
        🎲는 항상 활성 — 누르면 다음 단계 목적으로 순환하고, 한 바퀴 돌면 전체를 새로 추천받는다.
        빈칸으로 제출하면 화면에 보이던 추천값이 그대로 쓰인다. */
@@ -4017,12 +4810,30 @@
         const e = curExpr();
         if (!e) { finishStagePractice(); return; }
         prStageName.textContent = (prStageIdx + 1) + ". " + st.name + (st.native ? " · " + st.native : "");
+        /* 말차례 연쇄는 질문–응답 하나로 고정되지 않는다(대화이동 관리 능력).
+             · cue 있음    → 상대가 먼저 말하고 학습자가 받는다 (2항)
+             · cue 없음    → 학습자가 먼저 말을 연다 (선행 발화)
+             · follow 있음 → 학습자 발화 뒤 상대의 반응까지 (3항 연속체) */
         const isReply = prPhase === "reply";
-        prStepLbl.textContent = isReply ? t("prStepReply") : t("prStepRepeat");
-        prHintEl.textContent = isReply ? t("prReplyHint") : t("prRepeatHint");
-        prCueRow.classList.toggle("hidden", !isReply);
-        if (isReply) prCueText.textContent = exprCue(e);
+        const cue = exprCue(e), follow = exprFollow(e);
+        const leadsOff = isReply && !cue;                 // 학습자가 먼저 여는 자리
+        prStepLbl.textContent = isReply ? t(leadsOff ? "prStepLead" : "prStepReply") : t("prStepRepeat");
+        // 이 표현이 기르는 상호작용 요소 — 작은 배지로만 (수업하듯 설명하지 않는다)
+        try {
+            const tag = e && e.idc;
+            const bg = document.getElementById("prIdcBadge");
+            if (bg) { bg.hidden = !tag; if (tag) bg.textContent = t("st_" + tag); }
+        } catch (e2) {}
+        prHintEl.textContent = isReply ? t(leadsOff ? "prLeadHint" : "prReplyHint") : t("prRepeatHint");
+        prCueRow.classList.toggle("hidden", !isReply || !cue);
+        if (isReply && cue) prCueText.textContent = cue;
         prTargetEl.textContent = exprText(e);
+        // 3항 연속체 — 학습자 발화 뒤에 올 상대의 반응을 미리 보여 준다
+        const fw = document.getElementById("prFollowRow");
+        if (fw) {
+            fw.classList.toggle("hidden", !(isReply && follow));
+            if (isReply && follow) document.getElementById("prFollowText").textContent = follow;
+        }
         prFeedback.innerHTML = "";
         prMicBtn.disabled = false;
         prMicBtn.classList.remove("rec");
@@ -4302,6 +5113,13 @@
         clearDoorTimers();
         doorAfter(hold, () => el.classList.add("fade"));
         doorAfter(hold + 520, () => el.classList.remove("opening", "closing", "fade", "on"));
+        // 누르면 기다리지 않고 바로 걷는다. 같은 손가락의 click 은 삼켜 뒤 버튼이 눌리지 않게 한다.
+        el.onpointerdown = () => {
+            clearDoorTimers();
+            el.classList.add("fade");
+            try { swallowNextClick(); } catch (e) {}
+            setTimeout(() => el.classList.remove("opening", "closing", "fade", "on"), 260);
+        };
         // 최후의 안전장치 — 어떤 이유로든 위 예약이 실패해도 문은 반드시 걷힌다
         clearTimeout(playDoor._safety);
         playDoor._safety = setTimeout(() => {
@@ -4323,8 +5141,26 @@
 
     /* 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 */
     let hamPeekTimer = null;
+    /* 제목은 굵게, 항목은 얇게 — 같은 크기로 두되 굵기만 다르게 한다 */
+    function hamPeekHtml(title, items, ms) {
+        const el = document.getElementById("hamPeek");
+        if (el) el.classList.add("qz");        // 퀘스트 안내는 버튼 옆에서
+        const tx = document.getElementById("hamPeekText");
+        if (!el) return;
+        if (tx) {
+            tx.textContent = title;
+            const sp = document.createElement("span");
+            sp.className = "qz-items";
+            sp.textContent = items;
+            tx.appendChild(sp);
+        }
+        el.classList.add("show");
+        clearTimeout(hamPeekTimer);
+        hamPeekTimer = fxAfter(ms || 5000, () => el.classList.remove("show"));
+    }
     function hamPeek(text, ms) {
         const el = document.getElementById("hamPeek");
+        if (el) el.classList.remove("qz");     // 일반 빼꼼은 원래 자리(아래쪽)
         const tx = document.getElementById("hamPeekText");
         if (!el) return;
         if (tx) tx.textContent = text || "";
@@ -4550,15 +5386,16 @@
     /* 상호작용 대화 능력(IDC) 프로파일 렌더 — 요소별 상·중·하와 한 줄 근거.
        요소 이름은 학습자의 모국어로 보인다(사전 키: idc_<key>).
        비언어적 행위는 교실에서 배우는 요소라 '—'로만 두고 총점에서 뺀다. */
-    function renderIdcProfile(items, total) {
-        const list = document.getElementById("rpIdcList");
-        const head = document.getElementById("idcHead");
-        const note = document.getElementById("idcNoteEl");
+    function renderIdcProfile(items, total, listId, headId) {
+        const list = document.getElementById(listId || "rpIdcList");
+        const head = document.getElementById(headId || "idcHead");
         list.innerHTML = "";
-        if (!items.length) { head.style.display = "none"; note.style.display = "none"; return; }
+        if (!items.length) { head.style.display = "none"; return; }
         head.style.display = "flex";
-        document.getElementById("idcTitleEl").textContent = t("idcTitle");
-        document.getElementById("idcSubEl").textContent = total + t("rpPts");
+        const hTitle = head.querySelector(".idc-h-title");
+        const hSub = head.querySelector(".idc-h-sub");
+        if (hTitle) hTitle.textContent = t("idcTitle");
+        if (hSub) hSub.textContent = total + t("rpPts");
         const gradeLbl = { hi: t("idcHi"), mid: t("idcMid"), lo: t("idcLo"), na: "—" };
         items.forEach(it => {
             const row = document.createElement("div");
@@ -4584,11 +5421,25 @@
             row.appendChild(g); row.appendChild(body);
             list.appendChild(row);
         });
-        note.style.display = "block";
-        note.textContent = t("idcNote");
     }
 
+    /* 결과는 두 장으로 나눈다 — 한 화면에 다 쏟으면 정보량이 너무 많다.
+       ① 점수·발화 수·시간 + 기능 단계 + 대화 유형   ② 상호작용 대화 능력 */
+    let resPage = 1;
+    function resGo(p) {
+        resPage = p;
+        document.getElementById("resPage1").classList.toggle("hidden", p !== 1);
+        document.getElementById("resPage2").classList.toggle("hidden", p !== 2);
+        document.querySelectorAll(".res-dot").forEach((d, i) => d.classList.toggle("on", i === p - 1));
+        document.getElementById("resPrevBtn").classList.toggle("hidden", p === 1);
+        document.getElementById("resNextBtn").classList.toggle("hidden", p !== 1);
+        document.getElementById("rpCloseBtn").classList.toggle("hidden", p !== 2);
+        const box = document.querySelector("#rpResultOverlay .lang-box");
+        if (box) box.scrollTop = 0;
+    }
     function showRpResult() {
+        resGo(1);
+        try { questFinish("rp"); } catch (e) {}     // 기록만 — 퀘스트·도장은 홈에서 본다
         // 듀오링고식 통계 카드: 점수 · 내 발화 수 · 대화 시간
         document.getElementById("rcScoreLbl").textContent = t("rcScore");
         document.getElementById("rcTurnsLbl").textContent = t("rcTurns");
@@ -4597,6 +5448,17 @@
         document.getElementById("rcTurnsVal").textContent = transcriptLog.filter(x => x.role === "user").length;
         const ended = new Date();
         const secs = sessionStartedAt ? Math.max(0, Math.round((ended - sessionStartedAt) / 1000)) : 0;
+        // 대화 유형 A/B/C — 이남호·이찬규(2025) 기능단계 유형론
+        try {
+            const row = document.getElementById("rpAbcRow");
+            const abc = rpFinal && rpFinal.abc;
+            row.hidden = !abc;
+            if (abc) {
+                document.getElementById("rpAbcBadge").textContent = abc;
+                document.getElementById("rpAbcBadge").className = "abc-badge abc-" + abc;
+                document.getElementById("rpAbcText").textContent = t("abc" + abc);
+            }
+        } catch (e) {}
         document.getElementById("rcTimeVal").textContent = Math.floor(secs / 60) + ":" + String(secs % 60).padStart(2, "0");
         const box = document.getElementById("rpResultStages");
         box.innerHTML = "";
@@ -5040,7 +5902,7 @@
         return (QUICK_PHRASES[key] || [])[lv] || "";
     }
     const quickBtns = document.querySelectorAll(".quick-btn");
-    quickBtns.forEach(btn => btn.addEventListener("click", () => sendQuickPhrase(getQuickPhrase(btn.dataset.qkey))));
+    quickBtns.forEach(btn => btn.addEventListener("click", () => { try { questQuickBtn(btn.dataset.qkey); } catch (e) {} sendQuickPhrase(getQuickPhrase(btn.dataset.qkey)); }));
 
     /* ── 눌러서 말하기 (push-to-talk) ──
        누른 순간: activity_start(발화 시작) → 누르는 동안 오디오 전송
@@ -5197,6 +6059,7 @@
         row.appendChild(group);
         chatLog.appendChild(row);
         chatLog.scrollTop = chatLog.scrollHeight;
+        try { if (!questStats.seenAny) questStats.firstIsUser = true; questCount(text); } catch (e) {}
         transcriptLog.push({
             role: "user", text: text,
             time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
@@ -5205,6 +6068,7 @@
     }
 
     function startSession() {
+        try { questReset(); } catch (e) {}   // 새 대화 → 퀘스트를 처음부터 다시 센다
         const WS_STATE = ["연결중", "열림", "닫는중", "닫힘"];
         console.log("[대화] 시작 요청 —", {
             대화중: isConnected, 소켓: ws ? WS_STATE[ws.readyState] : "없음",
@@ -5237,7 +6101,13 @@
         const rpParams = (mode === "rp" && rpId)
             ? "&rp=" + encodeURIComponent(rpId) + "&style=" + encodeURIComponent(rpStyle)
             : "";
-        ws = new WebSocket(proto + location.host + "/ws/live?d=" + d + "&p=" + p + "&lang=" + encodeURIComponent(uiLang || "ko") + "&name=" + encodeURIComponent(userName) + "&voice=" + encodeURIComponent(voicePref) + rpParams);
+        // 기기에 쌓아 온 IDC 실현 누적 — 비계 페이딩이 세션을 넘어 이어진다
+        let idcQ = "";
+        try {
+            const m = JSON.parse(localStorage.getItem("idcCounts") || "{}");
+            idcQ = Object.keys(m).map(k => k + ":" + m[k]).join(",");
+        } catch (e) {}
+        ws = new WebSocket(proto + location.host + "/ws/live?idc=" + encodeURIComponent(idcQ) + "&d=" + d + "&p=" + p + "&lang=" + encodeURIComponent(uiLang || "ko") + "&name=" + encodeURIComponent(userName) + "&voice=" + encodeURIComponent(voicePref) + rpParams);
         ws.binaryType = "arraybuffer"; // 오디오는 바이너리 프레임 (base64 오버헤드 제거)
         let sessionOpened = false;     // 한 번이라도 붙었는지 (연결 실패 판별용)
         connectStartedAt = Date.now();
@@ -5372,6 +6242,11 @@
                 const prevPct = rpPercent;
                 rpPercent = msg.percent || 0;
                 rpStagesState = msg.stages || rpStagesState;
+                try {
+                    questStats.maxPct = Math.max(questStats.maxPct, rpPercent);
+                    questStats.allStages = rpStagesState.length > 0 && rpStagesState.every(x => x.done);
+                    (msg.quests || []).forEach(q => questStats.llm.add(q));   // 서버 판정 퀘스트
+                } catch (e) {}
                 renderProgress();
                 const nowDone = rpStagesState.filter(s => s.done).length;
                 if (rpPercent > 100 && rpPercent > prevPct) {
@@ -5389,11 +6264,18 @@
             } else if (msg.type === "final_score") {
                 // 종료 버튼에 대한 서버의 최종 분석 결과 — 퍼센트를 점수로 치환
                 rpFinal = { percent: msg.percent || 0, score: msg.score || 0, stages: msg.stages || rpStagesState,
-                            idc: msg.idc || [], idcTotal: msg.idcTotal || 0 };
+                            idc: msg.idc || [], idcTotal: msg.idcTotal || 0,
+                            abc: msg.abc || "", chains: msg.chains || null };
+                // 서버가 준 누적 횟수를 기기에 보관 — 다음 세션의 비계가 여기서 출발한다
+                try {
+                    if (msg.idcCounts) localStorage.setItem("idcCounts", JSON.stringify(msg.idcCounts));
+                } catch (e) {}
+                try { (msg.quests || []).forEach(q => questStats.llm.add(q)); } catch (e) {}
                 rpPercent = rpFinal.percent;
                 rpStagesState = rpFinal.stages;
                 renderProgress();
                 if (rpEnding) concludeRoleplay();
+                else if (freeEnding) concludeFree();
             } else if (msg.type === "error") {
                 // 서버가 보내는 에러 코드를 사용자 언어로 표시.
                 // 사전에 err_<code> 키가 있으면 그것을 쓰고, 없으면 서버 문구를 그대로 보여 준다.
@@ -5425,13 +6307,13 @@
             lastCloseInfo = "close " + (ev && ev.code) + (ev && ev.reason ? " " + ev.reason : "");
             console.warn("[대화] 소켓 닫힘 —", lastCloseInfo);
             if (bail()) return;
-            if (rpEnding) concludeRoleplay(); else stopSession();
+            if (rpEnding) concludeRoleplay(); else if (freeEnding) concludeFree(); else stopSession();
         };
         ws.onerror = () => {
             lastCloseInfo = lastCloseInfo || "socket error";
             console.warn("[대화] 소켓 오류");
             if (bail()) return;
-            if (rpEnding) concludeRoleplay(); else stopSession();
+            if (rpEnding) concludeRoleplay(); else if (freeEnding) concludeFree(); else stopSession();
         };
     }
 
@@ -5548,7 +6430,7 @@
         if (rpSessionActive && rpPlan) {
             lines.push(" 모드: 주제 대화(상황극)");
             lines.push(" 주제: " + rpPlan.topic_ko + " / 목적: " + rpPlan.goal_ko + " / 장소: " + rpPlan.place_ko);
-            lines.push(" 역할: " + rpPlan.user_role + "(학습자) ↔ " + rpPlan.ai_role + "(호아랑) / 화계: " + rpStyle);
+            lines.push(" 역할: " + rpPlan.user_role + "(학습자) ↔ " + rpPlan.ai_role + "(호아랑) / 말투: " + rpStyle);
             const fin = rpFinal || { percent: rpPercent, score: rpPercent, stages: rpStagesState };
             lines.push(" 과업 진행률: " + fin.percent + "% → 점수: " + fin.score + "점");
             lines.push(" 기능단계: " + (fin.stages || []).map(s => (s.done ? "✓" : "✗") + s.name).join(", "));
@@ -5583,6 +6465,7 @@
 
     function flushBubble(bubble, role, interrupted) {
         if (bubble && bubble.text.trim()) {
+            try { if (role === "user") { if (!questStats.seenAny) questStats.firstIsUser = true; questCount(bubble.text); } } catch (e) {}
             transcriptLog.push({
                 role: role,
                 text: bubble.text,
@@ -5611,8 +6494,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png?v=67", smile: "/static/ham_smile.png?v=67",
-        surprised: "/static/ham_surprised.png?v=67", shy: "/static/ham_shy.png?v=67",
+        idle: "/static/ham_idle.png?v=86", smile: "/static/ham_smile.png?v=86",
+        surprised: "/static/ham_surprised.png?v=86", shy: "/static/ham_shy.png?v=86",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -5686,7 +6569,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png?v=67";
+                img.src = "/static/hamster.png?v=86";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");
@@ -5970,6 +6853,18 @@
             userTurns: transcriptLog.filter(x => x.role === "user").length,
             aiTurns: transcriptLog.filter(x => x.role === "ai").length,
             interrupts: transcriptLog.filter(x => x.interrupted).length,
+            // 오늘의 퀘스트 — 어떤 IDC 요소를 실제로 실행했는지 (5장 효과 검증 자료)
+            quests: (function () { try { return questResult(rpSessionActive ? "rp" : "free"); } catch (e) { return []; } })(),
+            idcStats: (function () {
+                try {
+                    return { turns: questStats.userTurns, words: questStats.words,
+                             clarify: questStats.clarify, slow: questStats.slow, wordAsk: questStats.wordAsk,
+                             backch: questStats.backch, questions: questStats.questions,
+                             casual: questStats.casual, firstIsUser: questStats.firstIsUser,
+                             maxPct: questStats.maxPct, llm: Array.from(questStats.llm),
+                             abc: (rpFinal && rpFinal.abc) || "", chains: (rpFinal && rpFinal.chains) || null };
+                } catch (e) { return null; }
+            })(),
             userAgent: navigator.userAgent,
             roleplay: (rpSessionActive && rpPlan) ? {
                 topic: rpPlan.topic_ko, goal: rpPlan.goal_ko, place: rpPlan.place_ko,
@@ -6071,16 +6966,45 @@
         const vol = n ? Math.min(1, (Math.sqrt(sum / n) / 32768) * 4) : 0;
         hamsterWrap.style.setProperty("--talk-scale", (1 + vol * 0.06).toFixed(3));
         floatHamWrap.style.setProperty("--talk-scale", (1 + vol * 0.06).toFixed(3));
-        const buf = playbackCtx.createBuffer(1, int16.length, 24000);
-        const ch = buf.getChannelData(0);
-        for (let i = 0; i < int16.length; i++) ch[i] = int16[i] / 32768.0;
+        /* ── 갈라짐 방지 ──
+           ① 기기가 24kHz를 안 쓰면 브라우저가 조각마다 따로 리샘플링해 이음매에서 '지직'거린다.
+              → 우리가 먼저 기기 속도에 맞춰 늘려 둔다(조각 경계가 매끄러워짐).
+           ② 여유가 10ms뿐이라 조각이 조금만 늦어도 구멍이 생겼다 → 60ms로 넓힌다.
+           ③ 그래도 구멍이 나면 그 조각만 3ms 페이드인 — 뚝 끊기는 소리를 없앤다. */
+        const RATE = playbackCtx.sampleRate;
+        let data;
+        if (RATE === 24000) {
+            data = new Float32Array(int16.length);
+            for (let i = 0; i < int16.length; i++) data[i] = int16[i] / 32768.0;
+        } else {
+            const ratio = RATE / 24000;
+            const outLen = Math.max(1, Math.round(int16.length * ratio));
+            data = new Float32Array(outLen);
+            for (let i = 0; i < outLen; i++) {
+                const pos = i / ratio;
+                const i0 = Math.floor(pos), i1 = Math.min(int16.length - 1, i0 + 1), f = pos - i0;
+                data[i] = ((int16[i0] * (1 - f) + int16[i1] * f)) / 32768.0;
+            }
+        }
+        const buf = playbackCtx.createBuffer(1, data.length, RATE);
+        buf.getChannelData(0).set(data);
         const src = playbackCtx.createBufferSource();
         src.buffer = buf;
         src.playbackRate.value = playbackRate;
-        src.connect(playbackCtx.destination);
-        if (mixDest) src.connect(mixDest); // 대화 녹음용 믹스에도 연결
         const now = playbackCtx.currentTime;
-        const startAt = Math.max(now + 0.01, nextPlayTime);
+        const CUSHION = 0.06;
+        const gap = nextPlayTime < now + 0.005;          // 조각이 늦어 구멍이 생긴 경우
+        const startAt = gap ? now + CUSHION : nextPlayTime;
+        let out = src;
+        if (gap) {                                        // 끊긴 자리는 아주 짧게 밀어 올린다
+            const g = playbackCtx.createGain();
+            g.gain.setValueAtTime(0, startAt);
+            g.gain.linearRampToValueAtTime(1, startAt + 0.003);
+            src.connect(g);
+            out = g;
+        }
+        out.connect(playbackCtx.destination);
+        if (mixDest) out.connect(mixDest); // 대화 녹음용 믹스에도 연결
         src.start(startAt);
         nextPlayTime = startAt + (buf.duration / playbackRate);
         activeSources.push(src);

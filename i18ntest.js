@@ -54,8 +54,15 @@ for(const l of LANGS){
 if(!raw) console.log("  ✅ 없음");
 
 console.log("\n── ④ 코드가 부르는 키가 사전에 있는가 ──");
-const used=new Set([...script.matchAll(/\bt\(\s*"([a-zA-Z0-9_]+)"/g)].map(m=>m[1]));
-const undef=[...used].filter(k=>!(k in I18N.ko));
+// t("st_" + k) 처럼 뒤에 값을 이어붙이는 호출은 고정 키가 아니다. 접두사만 보고
+// "사전에 없다"고 판정하면 안 된다 — 그 접두사로 시작하는 키가 있는지를 본다.
+const used=new Set([...script.matchAll(/\bt\(\s*"([a-zA-Z0-9_]+)"\s*([)+,])/g)]
+                   .filter(m=>m[2]!=="+").map(m=>m[1]));
+const prefixes=new Set([...script.matchAll(/\bt\(\s*"([a-zA-Z0-9_]+)"\s*\+/g)].map(m=>m[1]));
+const koKeys2=Object.keys(I18N.ko);
+const badPrefix=[...prefixes].filter(p=>!koKeys2.some(k=>k.startsWith(p)&&k!==p));
+if(prefixes.size) console.log("  이어붙이기 접두사: "+[...prefixes].join(", "));
+const undef=[...used].filter(k=>!(k in I18N.ko)).concat(badPrefix);
 console.log(`  t("...") 호출 ${used.size}종`);
 if(undef.length){ fail++; console.log("  ❌ 사전에 없는 키: "+undef.join(", ")); }
 else console.log("  ✅ 전부 정의됨");

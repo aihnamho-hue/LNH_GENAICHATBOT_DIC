@@ -22,8 +22,8 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v85"
-APP_DATE = "2026-08-13"
+APP_VERSION = "v86"
+APP_DATE = "2026-08-14"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -431,22 +431,30 @@ IDC_ELEMENTS = [
         "sub": "차례의 요구·유지·양보 (끼어들기는 교실 담당)",
         "elicit": "네 발화는 짧게 끊고 말차례를 넘겨라. 학습자가 말을 이어 가려는 기색이면 채우지 말고 기다려라. "
                   "학습자가 짧게만 답하고 넘기면 \"그래서요?\", \"더 얘기해 주세요\"로 차례를 되돌려 주되 대신 말하지 마라. "
-                  "네가 두 문장을 넘기면 실패다.",
+                  "네가 두 문장을 넘기면 실패다.\n"
+                  "★차례 넘기기 — 학습자가 할 말을 다 하고도 문장을 안 맺고 흐리면(\"음… 그래서…\") "
+                  "네가 이어받지 말고 한 박자 기다려 스스로 맺게 하라. 맺고 나면 그때 받아라.",
         "model": "채움말로 차례를 유지하는 법을 짧게 보여 줘라(\"음… 그러니까요…\"). 그 뒤에는 학습자 차례로 넘겨라.",
         "criteria": "말차례의 기회를 주고받으며 대화를 균형 있게 운영할 수 있다. "
-                    "대화를 독점하거나 수동적인 태도를 보이지 않고 대화를 유지할 수 있다.",
+                    "대화를 독점하거나 수동적인 태도를 보이지 않고 대화를 유지할 수 있다. "
+                    "자기 말을 끝까지 맺고 상대에게 차례를 넘길 수 있다.",
     },
     {
         "key": "repair", "layer": "micro", "media": "ai",
         "name": "의사소통 단절 수정",
-        "sub": "자기 수정·명료화 요구 (명료화 응답·공동 완성은 교실 보완)",
+        "sub": "자기 수정·명료화 요구·명료화 응답·발화 공동 완성",
         "elicit": "학습자의 발화가 모호하거나 어긋나면 넘겨짚어 대답하지 말고 역할 안에서 되물어라 "
                   "— 학습자가 스스로 고칠 자리가 여기서 생긴다. 예) \"두 개요? 아니면 두 인분이요?\". "
                   "★단, 일부러 어렵게 말하거나 알아듣고도 못 알아들은 척하지는 마라. 그건 학습이 아니라 방해다.",
         "model": "네가 먼저 명료화 요구를 시범 보여 주고(\"죄송한데 한 번만 더 말씀해 주시겠어요?\"), "
-                 "학습자가 못 알아들은 눈치일 때 같은 표현을 쓸 수 있게 하라.",
+                 "학습자가 못 알아들은 눈치일 때 같은 표현을 쓸 수 있게 하라.\n"
+                 "★발화 공동 완성 — 학습자의 말이 조각으로 끊기면(\"바나… 먹어…\") 틀렸다고 하지 말고 "
+                 "네가 뜻을 이어 완성해 준 뒤 학습자가 그 문장을 스스로 말하게 하라. "
+                 "예) \"아, 바나나가 먹고 싶다고요? '바나나가 먹고 싶어요' 해 볼래요?\" "
+                 "따라 말하면 그것으로 통과다 — 대신 말해 준 것이 아니라 함께 만든 것이다.",
         "criteria": "의사소통이 단절되었을 때 자기 교정이나 명료화 요구로 대화를 복원할 수 있다. "
-                    "상대방이 자신의 발화를 이해하지 못한 경우 다른 표현을 사용해 이야기할 수 있다.",
+                    "상대방이 자신의 발화를 이해하지 못한 경우 다른 표현을 사용해 이야기할 수 있다. "
+                    "상대가 되물으면 알아듣게 다시 말할 수 있고, 상대가 이어 준 문장을 받아 스스로 완성할 수 있다.",
     },
     {
         "key": "strategy", "layer": "micro", "media": "ai",
@@ -454,10 +462,18 @@ IDC_ELEMENTS = [
         "sub": "우회 표현·모국어 전환·따라 말하기·지연/회피",
         "elicit": "학습자가 단어를 못 찾아 머뭇거려도 곧바로 답을 주지 마라. 한 박자 기다려서 "
                   "학습자가 우회 표현이나 지연 표현(\"그… 뭐지…\")을 스스로 쓰게 하라. "
-                  "학습자가 우회해서 말해 내면 먼저 알아들었다고 받아 준 뒤에 정확한 표현을 알려 줘라.",
-        "model": "우회 표현을 한 번 시범 보여라(\"이름이 기억이 안 나는데, 매운 국물 있는 거요\").",
+                  "학습자가 우회해서 말해 내면 먼저 알아들었다고 받아 준 뒤에 정확한 표현을 알려 줘라.\n"
+                  "★모국어 전환 — 우회로도 안 풀려 두 번 넘게 막히면, 답을 주지 말고 모국어로 말해 보라고 권하라. "
+                  "예) \"{native}로 말해 봐도 돼요. 제가 한국어로 알려 드릴게요.\" "
+                  "모국어로 말하면 그 뜻을 한국어 한 문장으로 바꿔 주고 따라 말하게 하라. "
+                  "모국어를 쓰는 것은 회피가 아니라 대화를 잇는 전략이다 — 나무라지 마라.\n"
+                  "★따라 말하기 — 네가 방금 쓴 표현을 학습자가 가져다 쓰면 짧게 짚어 줘라. "
+                  "예) \"오, 방금 제가 쓴 말 그대로 쓰셨네요. 좋아요.\"",
+        "model": "우회 표현을 한 번 시범 보여라(\"이름이 기억이 안 나는데, 매운 국물 있는 거요\"). "
+                 "학습자가 쓸 만한 표현은 네 발화 안에 미리 흘려 두어, 학습자가 그것을 가져다 쓸 수 있게 하라.",
         "criteria": "모르는 표현을 우회 표현이나 대체 표현으로 보상하며 대화를 지속할 수 있다. "
-                    "즉각적인 응답이 어려울 때 도움 요청이나 지연 표현으로 대화의 중단을 피할 수 있다.",
+                    "즉각적인 응답이 어려울 때 도움 요청이나 지연 표현으로 대화의 중단을 피할 수 있다. "
+                    "막혔을 때 모국어나 상대의 표현을 빌려서라도 대화를 이어 갈 수 있다.",
     },
     {
         "key": "listen", "layer": "micro", "media": "ai",
@@ -521,7 +537,7 @@ IDC_LEVEL_SOLO = 1     # 자율: 개입하지 않는다
 IDC_FADE_AT = {IDC_LEVEL_MODEL: 1, IDC_LEVEL_PROMPT: 3}  # 실현 횟수 임계치
 
 
-def idc_focus_block(levels: dict, counts: dict, limit: int = 3) -> str:
+def idc_focus_block(levels: dict, counts: dict, limit: int = 3, native: str = "") -> str:
     """지금 이 학습자에게 필요한 요소만 골라 유발 지시를 만든다.
     아직 안 나온 요소(모델링) → 한 번 나온 요소(촉진) 순으로 최대 limit개.
     이미 여러 번 실현된 요소는 지시에서 빼서 비계를 걷어 낸다."""
@@ -535,14 +551,17 @@ def idc_focus_block(levels: dict, counts: dict, limit: int = 3) -> str:
     lines = []
     for e in ranked:
         lv = levels.get(e["key"], IDC_LEVEL_MODEL)
+        # {native}는 학습자가 고른 모국어 이름으로 바꾼다 — 코드 전환을 권할 때 쓰인다
+        nat = native or "학습자의 모국어"
+        model_t, elicit_t = e["model"].replace("{native}", nat), e["elicit"].replace("{native}", nat)
         if lv >= IDC_LEVEL_MODEL:
-            lines.append(f"- [{e['name']} · 시범] {e['model']} {e['elicit']}")
+            lines.append(f"- [{e['name']} · 시범] {model_t} {elicit_t}")
         else:
-            lines.append(f"- [{e['name']} · 자리 만들기] {e['elicit']}")
+            lines.append(f"- [{e['name']} · 자리 만들기] {elicit_t}")
     return "\n[지금 이 학습자에게 필요한 것 — 이 셋만 신경 써라]\n" + "\n".join(lines) + "\n"
 
 
-def build_mko_block(levels: dict | None = None, counts: dict | None = None) -> str:
+def build_mko_block(levels: dict | None = None, counts: dict | None = None, native: str = "") -> str:
     """호아랑을 '더 유능한 타인'으로 규정하는 블록.
     levels/counts가 없으면(대화 시작 시점) 모든 요소가 모델링 수준에서 출발한다."""
     levels = levels or {}
@@ -568,7 +587,7 @@ def build_mko_block(levels: dict | None = None, counts: dict | None = None) -> s
 ⑥ 학습자가 스스로 해내면 그 순간을 짧게 짚어 줘라. 다만 수업하듯 설명하지는 마라.
    예) "오 지금 그거 좋았어요!" 한 마디면 충분하다.
 ⑦ 위 원칙과 배역 연기가 부딪히면 배역 안에서 푸는 길을 찾아라. 극을 깨고 선생님으로 나오지 마라.
-{idc_focus_block(levels, counts)}
+{idc_focus_block(levels, counts, native=native)}
 [하지 말 것]
 - 요소 이름("맞장구", "명료화 요구", "기능 단계")을 학습자에게 말하지 마라. 대화 밖으로 나가는 순간 극이 깨진다.
 - 유발한다고 일부러 어렵게 말하거나, 알아들은 척·못 알아들은 척 연기하지 마라.
@@ -1182,7 +1201,8 @@ def build_roleplay_prompt(d: int, p: int, ui_lang: str, user_name: str,
 - 학습자가 침묵하거나 머뭇거리면 재촉하지 말고 잠시 기다렸다가, 역할 안에서 대답하기 쉬운 되물음 하나로 도와줘.
 - '천천히/다시/쉽게/빨리' 요청 대응 규칙은 상황극 중에도 그대로 유효하다.
 """
-    return base + rp_block + build_mko_block(idc_levels, idc_counts)
+    return base + rp_block + build_mko_block(idc_levels, idc_counts,
+                                              native=LANG_NAMES.get(ui_lang, ""))
 
 
 # ============================================================
@@ -2198,7 +2218,8 @@ async def _handle_session(websocket: WebSocket):
         # 자유 수다에도 MKO 블록을 붙인다 — IDC는 상황극 전용 능력이 아니다.
         # 오히려 과업이 없는 자유 대화에서 화제·차례 관리가 순수하게 드러난다.
         system_prompt = build_system_prompt(d, p, ui_lang, user_name) \
-            + build_mko_block(idc_state["levels"], idc_state["counts"])
+            + build_mko_block(idc_state["levels"], idc_state["counts"],
+                              native=LANG_NAMES.get(ui_lang, ""))
         print(f"[서버] 클라이언트 연결 성공 — 친밀도(D)={d}, 지위(P)={p}, 언어={ui_lang or 'ko'}, 이름={user_name or '(없음)'}")
 
     # ── 상황극 진행 상태 (자유 수다에서는 사용 안 함) ──
@@ -2259,7 +2280,8 @@ async def _handle_session(websocket: WebSocket):
         sess = live["session"]
         if sess is None:          # 자유 수다에도 비계 갱신을 보낸다
             return
-        block = idc_focus_block(idc_state["levels"], idc_state["counts"])
+        block = idc_focus_block(idc_state["levels"], idc_state["counts"],
+                                native=LANG_NAMES.get(ui_lang, ""))
         sig = "|".join(f"{k}{idc_state['levels'][k]}" for k in IDC_SCORED_KEYS)
         if sig == idc_state["last_focus"]:
             return
@@ -2328,6 +2350,7 @@ async def _handle_session(websocket: WebSocket):
 (3) quest — 아래 목록 가운데 **학습자가** 실제로 한 것의 id를 모두. 없으면 빈 배열.
 {quest_txt}
 (4) abc — 지금까지의 대화가 어느 유형인지 (이남호·이찬규 2025의 기능단계 유형론).
+    ★기능단계가 없는 자유 대화라면 빈 문자열("")로 두라. 이 유형론은 과업 대화에만 적용된다.
     "A" 단순형: 목적을 향해 곧장 가는 직선적 전개.
     "B" 반복형: 같은 기능 단계(질문-응답 등)가 맴돌며 반복됨.
     "C" 확장형: 목적 달성 후에도 재개·부가 화제로 대화가 확장됨.
@@ -2347,7 +2370,9 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
                         rp_progress["done"].add(idx)
                 _idc_absorb(data.get("idc"))
                 # (4) 대화 유형 — 마지막 판정을 유지 (대화가 진행되며 A→C로 옮겨 갈 수 있다)
-                if data.get("abc") in ("A", "B", "C"):
+                # A/B/C는 기능단계의 유형론이다. 단계가 없는 자유 대화에 매기면
+                # 재려는 것과 다른 것을 재게 된다 — 과업(상황극)에서만 판정한다.
+                if rp_plan and data.get("abc") in ("A", "B", "C"):
                     rp_progress["abc"] = data["abc"]
                 # (5) 대화이동 연쇄 — 최대값 유지 (판정 흔들림에 뒤로 가지 않게)
                 ch = data.get("chains")
@@ -2684,4 +2709,24 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                             await websocket.send_text(json.dumps({"type": "turn_complete"}))
                             if rp_plan is not None:
                                 # 단계 충족 분석은 백그라운드로 — 오디오 릴레이를 막지 않음
-                          
+                                asyncio.create_task(run_analysis())
+
+            send_task = asyncio.create_task(client_to_gemini())
+            recv_task = asyncio.create_task(gemini_to_client())
+            done, pending = await asyncio.wait(
+                [send_task, recv_task], return_when=asyncio.FIRST_EXCEPTION
+            )
+            for task in pending:
+                task.cancel()
+            greeter_task.cancel()
+
+    except WebSocketDisconnect:
+        print("[서버] 클라이언트 연결 종료")
+    except Exception as e:
+        print(f"[시스템 오류] {e}")
+    finally:
+        try:
+            await websocket.close()
+        except:
+            pass
+        print("[서버] 세션 종료")

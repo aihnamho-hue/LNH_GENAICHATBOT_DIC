@@ -31,7 +31,8 @@ ok("자동 종료 20초", /}, 20000\); \/\/ 안전 자동 종료/.test(html));
 
 console.log("── ④⑤ 결과 네 장 ──");
 ok("총평을 서버가 만든다", /async def run_review/.test(py) && /"review": review/.test(py));
-ok("프로파일과 총평을 나란히 돌린다", /asyncio\.gather\(run_idc_profile\(\), run_review\(\)\)/.test(py));
+ok("결과를 먼저 보내고 총평은 뒤따라", /idc = await run_idc_profile\(\)/.test(py)
+   && /_send_review_later/.test(py) && /"type": "review", "text": text/.test(py));
 ok("판정 실패해도 요소 칸을 비우지 않는다", /누적 횟수로 대체/.test(py));
 ok("총평은 목록 아닌 줄글", /목록·번호·표를 쓰지 마라/.test(py));
 ok("총평도 어려운 말 금지", /run_review[\s\S]{0,2600}?다음 말은 절대 쓰지 마라/.test(py));

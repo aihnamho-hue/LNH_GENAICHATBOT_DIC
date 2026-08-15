@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v93"
+APP_VERSION = "v94"
 APP_DATE = "2026-08-15"
 
 app = FastAPI()
@@ -2776,10 +2776,12 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                 break
             await asyncio.sleep(0.2)
         await run_analysis(final=True)          # 자유 대화도 idc·퀘스트·유형을 최종 판정
-        # ★ 프로파일과 총평을 나란히 돌린다.
-        #   차례로 돌리면 25초+25초라 클라이언트가 기다리다 지쳐 빈 화면을 띄운다.
-        idc, review = await asyncio.gather(run_idc_profile(), run_review())
+        # ★ 총평을 기다리지 않는다.
+        #   학습자를 "점수 계산 중..."에 붙잡아 두면 "왜 안 넘어가지?" 하게 된다.
+        #   요소 프로파일까지만 받아 결과를 먼저 띄우고, 총평은 다 되는 대로 따로 보낸다.
+        idc = await run_idc_profile()
         idc_state["final"] = idc
+        review = ""
         payload = _progress_payload() if rp_plan else {"stages": [], "percent": 0}
         await websocket.send_text(json.dumps({
             "type": "final_score",
@@ -2790,11 +2792,23 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
             "idcTotal": idc["total"],
             "abc": rp_progress["abc"],                      # 대화 유형 A/B/C
             "chains": rp_progress["chains"],                # 대화이동 연쇄 횟수
-            "review": review,                              # 총평(줄글) — 결과 넷째 장
+            "review": review,                              # 총평은 뒤이어 따로 온다(type:"review")
             "idcCounts": dict(idc_state["counts"]),         # 기기 저장용 — 다음 세션 페이딩에 쓴다
             "quests": sorted(rp_progress["quests"]),
         }))
         print(f"[상황극] 최종 점수 전송: 진행률 {rp_progress['percent']}점 / IDC {idc['total']}점")
+
+        # 총평은 뒤따라 보낸다 — 학습자는 그동안 결과를 읽고 있으면 된다
+        async def _send_review_later():
+            text = await run_review()
+            if not text:
+                return
+            try:
+                await websocket.send_text(json.dumps({"type": "review", "text": text}))
+                print(f"[총평] 전송 {len(text)}자")
+            except Exception as e:
+                print(f"[총평] 전송 실패(이미 닫힘): {e}")
+        asyncio.create_task(_send_review_later())
 
     # ── 목소리: 호아랑은 갓 쓴 아기 호랑이라 기본은 남자아이 목소리.
     #    주제 대화에서 배역(점원·선생님·아주머니 등)을 맡으면 그에 맞는 목소리로 자동 전환.

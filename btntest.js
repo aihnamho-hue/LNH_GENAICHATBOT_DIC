@@ -51,7 +51,8 @@ setTimeout(() => {
 
     console.log("── 늦게 온 결과도 채워 넣는가 ──");
     ok("도착이 늦어도 다시 그린다", /기다리다 지쳐 먼저 화면을 띄운 뒤에 결과가 왔다면/.test(html));
-    ok("서버를 25초까지 기다린다", /concludeRoleplay, 25000/.test(html) && /concludeFree, 25000/.test(html));
+    ok("결과는 13초 안에 띄운다(총평은 뒤따라 온다)",
+   /concludeRoleplay, 13000/.test(html) && /concludeFree, 13000/.test(html));
 
     console.log(fail ? `\n💥 실패 ${fail}건` : "\n🎉 모두 통과");
     process.exit(fail ? 1 : 0);

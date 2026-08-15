@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v96"
+APP_VERSION = "v97"
 APP_DATE = "2026-08-16"
 
 app = FastAPI()
@@ -2715,6 +2715,10 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
             transcript = "\n".join(
                 f"{'학습자' if m['role'] == 'user' else '상대'}: {m['text'].strip()}"
                 for m in convo[-12:] if m["text"].strip()) or "(아직 대화 없음)"
+            # ★ 무엇에 대한 대답인지가 먼저다. 단계에서 연습한 표현을 먼저 놓으면
+            #   상대가 방금 무슨 말을 했든 그 표현이 나온다(v96까지 그랬다).
+            last_ai = next((m["text"].strip() for m in reversed(convo)
+                            if m["role"] == "ai" and m["text"].strip()), "")
             if rp_plan:
                 unmet = [i for i in range(len(rp_plan["stages"])) if i not in rp_progress["done"]]
                 idx = unmet[0] if unmet else len(rp_plan["stages"]) - 1
@@ -2728,9 +2732,10 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
                 head = (f"한국어 학습자가 음성 상황극 중이다. 잠시 막혀서 도움을 요청했다.\n"
                         f"- 학습자 역할: {rp_plan['user_role']} / 상대(챗봇) 역할: {rp_plan['ai_role']}\n"
                         f"- 과업 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']}\n"
-                        f"- 지금 수행할 기능단계: {st['name']} — {st['desc']}\n"
-                        f"- 연습했던 표현: {practiced or '(없음)'}")
-                extra = "- 가능하면 연습했던 표현과 같거나 유사하게 하라."
+                        f"- 밟아 가는 기능단계(참고): {st['name']} — {st['desc']}\n"
+                        f"- 그 단계에서 연습한 표현(참고): {practiced or '(없음)'}")
+                extra = ("- ★ 연습한 표현은 참고일 뿐이다. 상대가 방금 한 말과 맞지 않으면 쓰지 마라.\n"
+                         "- 맞는다면 그 표현을 살리되, 상대의 말에 맞게 고쳐서 내라.")
             else:
                 # 자유 대화 — 과업도 단계도 없다. 지금 학습자에게 가장 필요한 요소를 축으로 삼는다.
                 need = sorted(
@@ -2749,12 +2754,18 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
 [최근 대화]
 {transcript}
 
+[★ 상대가 방금 한 말 — 여기에 대답해야 한다]
+{last_ai or "(아직 상대가 말하지 않았다. 학습자가 먼저 말을 여는 자리다.)"}
+
 학습자가 '지금 자기 차례에' 말하면 자연스러운 한국어 발화를 정확히 2개 제안하라.
-- 상대의 마지막 말에 대한 대답으로 자연스러워야 한다.
+- ★ 무엇보다 위 「상대가 방금 한 말」에 대한 대답으로 자연스러워야 한다.
+  상대가 물었으면 답이 되고, 제안했으면 받거나 거절이 되어야 한다.
+- 두 개는 서로 달라야 한다. 같은 말을 두 번 쓰지 마라.
 {extra}
 - 국제 통용 표준 교육과정 중급(4급 이하) 어휘·문법, 짧은 구어체로.
 JSON만 출력: {{"hints":["",""]}}"""
-            data = await _gen_json(prompt, timeout_s=12.0, temperature=0.7)
+            # 클라이언트 폴백(13초)보다 먼저 끝나야 한다. 늦으면 화면이 연습 표현으로 되돌아간다.
+            data = await _gen_json(prompt, timeout_s=9.0, temperature=0.7)
             hints = []
             if isinstance(data, dict):
                 hints = [_clean_str(h, 80) for h in (data.get("hints") or []) if _clean_str(h, 80)][:2]

@@ -11,7 +11,11 @@ ok("setup 이 페이더 좌표를 받는다", /d_val = _clamp_int\(body\.get\("d
 ok("클라이언트가 D·P 를 보낸다", /d: Number\(distSlider\.value\)/.test(html));
 ok("말투 지시가 프롬프트에 실린다", /\[★ 말투 — 이것을 어기면/.test(py) && /\{style_line\}/.test(py));
 ok("존댓말·반말·auto 세 갈래", /style == "polite"/.test(py) && /style == "banmal"/.test(py));
-ok("말투 섞이면 다시 만든다", /_style_mixed\(plan\.get\("script"\)\)/.test(py));
+ok("화자별 말투를 코드가 정한다", /want_user = "banmal" if \(close and p_val >= 45\)/.test(py));
+ok("정한 말투를 어긴 줄을 찾는다", /def _style_offenders/.test(py));
+ok("어긴 줄만 골라 고쳐 쓴다", /async def _fix_style/.test(py)
+   && /await _fix_style\(plan, want_user, want_ai\)/.test(py));
+ok("고친 뒤 발화 연습도 다시 잇는다", /_fix_style[\s\S]{0,2200}?_link_expr_to_script/.test(py));
 ok("발화 연습을 대화문에 잇는다", /def _link_expr_to_script/.test(py)
    && /_link_expr_to_script\(stages, script\)/.test(py));
 
@@ -27,6 +31,8 @@ ok("자동 종료 20초", /}, 20000\); \/\/ 안전 자동 종료/.test(html));
 
 console.log("── ④⑤ 결과 네 장 ──");
 ok("총평을 서버가 만든다", /async def run_review/.test(py) && /"review": review/.test(py));
+ok("프로파일과 총평을 나란히 돌린다", /asyncio\.gather\(run_idc_profile\(\), run_review\(\)\)/.test(py));
+ok("판정 실패해도 요소 칸을 비우지 않는다", /누적 횟수로 대체/.test(py));
 ok("총평은 목록 아닌 줄글", /목록·번호·표를 쓰지 마라/.test(py));
 ok("총평도 어려운 말 금지", /run_review[\s\S]{0,2600}?다음 말은 절대 쓰지 마라/.test(py));
 

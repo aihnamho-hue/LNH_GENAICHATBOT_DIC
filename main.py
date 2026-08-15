@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v91"
+APP_VERSION = "v92"
 APP_DATE = "2026-08-15"
 
 app = FastAPI()
@@ -883,19 +883,19 @@ def _speech_level(text: str) -> str:
     return ""
 
 
-def _style_mixed(script: list) -> bool:
-    """한 화자가 존댓말과 반말을 함께 쓰면 True.
-    한 줄만 어긋나도 학습자에게는 그것이 곧 배울 본이 되므로 관대하게 넘기지 않는다.
-    다만 판정된 줄이 3줄 미만이면 표본이 모자라 판단을 미룬다."""
-    tally = {"user": {"polite": 0, "banmal": 0}, "ai": {"polite": 0, "banmal": 0}}
-    for l in script or []:
+def _style_offenders(script: list, want_user: str, want_ai: str) -> list:
+    """정해 둔 말투를 어긴 줄의 번호를 돌려준다.
+    '섞였는가'만 보면 한쪽으로 통일된 채 설정과 어긋난 경우를 놓친다.
+    화자마다 쓸 말투를 미리 정해 두고 줄마다 대조한다."""
+    bad = []
+    for i, l in enumerate(script or []):
         lv = _speech_level(l.get("text", ""))
-        if lv:
-            tally[l.get("speaker", "ai")][lv] += 1
-    for t in tally.values():
-        if t["polite"] + t["banmal"] >= 3 and min(t["polite"], t["banmal"]) >= 1:
-            return True
-    return False
+        if not lv:
+            continue
+        want = want_user if l.get("speaker") == "user" else want_ai
+        if lv != want:
+            bad.append(i)
+    return bad
 
 
 def _link_expr_to_script(stages: list, script: list) -> None:
@@ -923,6 +923,48 @@ def _link_expr_to_script(stages: list, script: list) -> None:
             e["cue"] = prev["text"] if (prev and prev["speaker"] == "ai") else ""
             if e.get("follow"):
                 e["follow"] = nxt["text"] if (nxt and nxt["speaker"] == "ai") else ""
+
+
+async def _fix_style(plan: dict, want_user: str, want_ai: str) -> None:
+    """말투를 어긴 줄만 골라 그 줄만 고쳐 쓴다.
+    통째로 다시 만들면 20초가 더 들고, 다시 만든 것도 어긋날 수 있다.
+    어긴 줄이 몇 줄뿐이면 그 줄만 손질하는 편이 빠르고 확실하다."""
+    script = plan.get("script") or []
+    bad = _style_offenders(script, want_user, want_ai)
+    if not bad or len(bad) > 8:
+        return
+    ko = {"polite": "존댓말(해요체, '-요/-습니다'로 끝남)", "banmal": "반말(해체, '-아/-어/-야'로 끝남)"}
+    lines = "\n".join(
+        f"{i}\t{script[i]['text']}\t→ {ko[want_user if script[i]['speaker'] == 'user' else want_ai]}"
+        for i in bad)
+    prompt = f"""아래는 한국어 교재의 모델 대화문 가운데 **말투가 어긋난 줄**이다.
+뜻은 그대로 두고 **말투만** 바꿔 다시 써라. 낱말을 새로 지어내지 마라.
+
+번호\t원래 문장\t고칠 말투
+{lines}
+
+- 한 줄에 한 문장. 중급(4급 이하) 어휘·문법.
+- 구어체를 유지하라. 담화표지("아", "음", "그럼")는 그대로 두어도 된다.
+
+JSON만 출력: {{"fixed":[{{"i":번호,"text":"고친 문장"}}]}}"""
+    try:
+        data = await _gen_json(prompt, timeout_s=15.0)
+    except Exception as e:
+        print(f"[상황극] 말투 손질 실패: {e}")
+        return
+    if not isinstance(data, dict):
+        return
+    for it in (data.get("fixed") or []):
+        if not isinstance(it, dict):
+            continue
+        i = _clamp_int(it.get("i"), 0, len(script) - 1, -1)
+        t = _clean_str(it.get("text"), 90)
+        if i >= 0 and t:
+            script[i]["text"] = t
+    left = _style_offenders(script, want_user, want_ai)
+    print(f"[상황극] 말투 손질: {len(bad)}줄 중 {len(bad) - len(left)}줄 고침")
+    # 대화문이 고쳐졌으니 발화 연습의 cue·follow도 다시 붙인다
+    _link_expr_to_script(plan.get("stages") or [], script)
 
 
 def _validate_plan(data) -> dict | None:
@@ -1176,6 +1218,17 @@ async def roleplay_setup(request: Request):
     # 학습자가 고른 말투와 페이더(친밀도 D·지위 P)를 대화문·표현에 그대로 반영한다.
     # 한 사람이 한 대화 안에서 반말과 존댓말을 섞으면 학습자가 배울 본이 되지 못한다.
     if style == "polite":
+        want_user = want_ai = "polite"
+    elif style == "banmal":
+        want_user = want_ai = "banmal"
+    else:
+        # auto — 페이더로 정한다. 반말은 '가까운 사이'에서만 나오고,
+        # 지위(P)가 위아래를 갈라 비대칭(한쪽만 반말)을 만든다.
+        close = d_val >= 60
+        want_user = "banmal" if (close and p_val >= 45) else "polite"
+        want_ai = "banmal" if (close and p_val <= 55) else "polite"
+    _LV_KO = {"polite": "존댓말(해요체)", "banmal": "반말(해체)"}
+    if style == "polite":
         style_line = (f"두 사람 모두 **존댓말(해요체/합쇼체)** 로 말한다. "
                       f"{ai_role or '상대'}도 반말을 쓰지 않는다.")
     elif style == "banmal":
@@ -1191,6 +1244,9 @@ async def roleplay_setup(request: Request):
             f"   이 관계에 맞는 말투를 **각 화자마다 하나로 정해** 대화문과 표현 전체에 똑같이 써라.\n"
             f"   윗사람이 아랫사람에게 반말을 쓰기로 했으면 끝까지 반말이고, "
             f"아랫사람은 끝까지 존댓말이다. 중간에 바뀌면 안 된다.")
+    # 모델이 헷갈리지 않게 화자별 말투를 못 박아 준다 — 이것이 검증 기준이 된다
+    style_line += (f"\n   ▶ **{my_role or '학습자'}는 {_LV_KO[want_user]}만 쓴다.**"
+                   f"\n   ▶ **{ai_role or '상대'}는 {_LV_KO[want_ai]}만 쓴다.**")
 
     native = LANG_NAMES.get(ui_lang, "")
     native_line = f"학습자의 모국어는 {native}다. 각 단계의 native 필드에 name의 {native} 번역을 넣어라." if native \
@@ -1265,15 +1321,17 @@ JSON만 출력하라. 스키마:
     # 대화문까지 함께 만드느라 길어졌다 — 넉넉히 기다린다
     data = await _gen_json(prompt, timeout_s=55.0)
     plan = _validate_plan(data)
-    # 말투가 섞인 대화문은 본보기가 못 된다 — 한 번만 다시 만들어 본다.
-    # (두 번째 것도 섞였으면 그냥 쓴다. 연습 자체를 막을 일은 아니다.)
-    if plan is not None and _style_mixed(plan.get("script")):
-        print("[상황극] 대화문 말투가 섞임 — 다시 생성")
-        plan = None
     if plan is None and not (data is None and _quota_exhausted()):
         # 쿼터 소진이 아닐 때만 1회 재시도 (429에서 재시도는 쿼터 낭비)
         data = await _gen_json(prompt, timeout_s=55.0)
         plan = _validate_plan(data)
+    # 말투가 어긋난 대화문은 본보기가 못 된다. 통째로 다시 만들지 않고
+    # 어긋난 줄만 골라 손질한다 — 빠르고, 나머지 줄이 흔들리지 않는다.
+    if plan is not None:
+        bad = _style_offenders(plan.get("script"), want_user, want_ai)
+        if bad:
+            print(f"[상황극] 말투 어긋남 {len(bad)}줄 — 손질 시도")
+            await _fix_style(plan, want_user, want_ai)
     if plan is None:
         raise HTTPException(status_code=502, detail=("plan_generation_failed | " + _fail_reason(data))[:250])
 
@@ -2622,11 +2680,13 @@ why는 학습자가 읽을 한 문장(30자 이내). 실제 발화를 근거로 
       "기능 단계가 나타나지 않았습니다"     → "인사하고 끝인사까지 해 보세요"
   '~하지 못했습니다'보다 '~해 보세요'처럼 다음에 할 일로 적어라. 반드시 한국어로.
 JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
+        data = None
         try:
-            data = await _gen_json(prompt, timeout_s=25.0)
+            data = await _gen_json(prompt, timeout_s=18.0)
         except Exception as e:
-            print(f"[IDC] 프로파일 생성 실패: {e}")
-            return blank
+            # 여기서 되돌아가면 화면의 '상호작용 대화 능력' 칸이 통째로 빈다.
+            # 판정을 못 받아도 아래에서 실시간 누적 횟수로 채워 내려보낸다.
+            print(f"[IDC] 프로파일 생성 실패 — 누적 횟수로 대체: {e}")
         graded = {}
         if isinstance(data, dict):
             for it in (data.get("items") or []):
@@ -2657,7 +2717,7 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
               " ".join(f"{i['key']}:{i['grade']}" for i in items if i["scored"]))
         return {"items": items, "total": total}
 
-    async def run_review(idc_items: list) -> str:
+    async def run_review() -> str:
         """총평 — 등급표 말고 사람이 쓴 것 같은 줄글로.
         요소별 상·중·하는 '무엇이 부족한가'는 알려 주지만 '어떻게 말했는가'는 못 담는다.
         실제 발화를 짚어 칭찬하고 고칠 곳을 알려 주는 선생님의 말이 따로 있어야 한다."""
@@ -2666,8 +2726,11 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
         transcript = "\n".join(
             f"{'학습자' if m['role'] == 'user' else '상대'}: {m['text'].strip()}"
             for m in convo[-80:] if m["text"].strip())
+        # 요소별 등급을 기다리지 않는다 — 기다리면 총평이 늦어 화면에 못 붙는다.
+        # 대신 대화 중 실시간으로 쌓인 실현 횟수를 참고로 준다.
         graded = "\n".join(
-            f"- {it.get('name', '')}: {it.get('grade', '')}" for it in (idc_items or [])[:9])
+            f"- {e['name']}: {idc_state['counts'].get(e['key'], 0)}회"
+            for e in IDC_TRAINABLE)
         task_line = (f"과업 — 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']} / "
                      f"학습자 역할: {rp_plan['user_role']}") if rp_plan else "자유 주제 대화"
         prompt = f"""너는 따뜻하고 꼼꼼한 한국어 선생님이다. 방금 대화 연습을 마친 중급 학습자에게
@@ -2678,7 +2741,7 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
 [대화 기록]
 {transcript}
 
-[요소별 판정 참고]
+[대화 중 관찰된 요소별 실현 횟수 — 참고만 하라]
 {graded}
 
 [쓰는 법]
@@ -2698,7 +2761,7 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                 client.aio.models.generate_content(
                     model=_analysis_model["name"], contents=prompt,
                     config=types.GenerateContentConfig(temperature=0.7)),
-                timeout=25.0)
+                timeout=18.0)
             return re.sub(r"\n{3,}", "\n\n", (getattr(resp, "text", "") or "").strip())[:900]
         except Exception as e:
             print(f"[총평] 생성 실패: {e}")
@@ -2712,9 +2775,10 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                 break
             await asyncio.sleep(0.2)
         await run_analysis(final=True)          # 자유 대화도 idc·퀘스트·유형을 최종 판정
-        idc = await run_idc_profile()           # 사후 피드백 — 두 모드 공통
+        # ★ 프로파일과 총평을 나란히 돌린다.
+        #   차례로 돌리면 25초+25초라 클라이언트가 기다리다 지쳐 빈 화면을 띄운다.
+        idc, review = await asyncio.gather(run_idc_profile(), run_review())
         idc_state["final"] = idc
-        review = await run_review(idc.get("items"))   # 선생님의 총평(줄글)
         payload = _progress_payload() if rp_plan else {"stages": [], "percent": 0}
         await websocket.send_text(json.dumps({
             "type": "final_score",

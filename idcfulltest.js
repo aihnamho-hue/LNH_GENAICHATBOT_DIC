@@ -34,7 +34,7 @@ ok("채움말 권하기", /'음…', '그러니까…'/.test(py));
 ok("표현마다 idc 태그 요청", /idc — 이 표현이 주로 기르는 상호작용 요소/.test(py));
 ok("연습 화면에 요소 배지", /id="prIdcBadge"/.test(html));
 console.log("── TXT·홈 ──");
-ok("지난 대화 TXT 살아 있다", /#histExportBtn \{ display: inline-block !important; \}/.test(html));
+ok("지난 대화 TXT 살아 있다", /#histExportBtn:not\(\.hidden\) \{ display: inline-block !important; \}/.test(html));
 ok("홈 영상 줌 완화(좌우 안 자름)", /좌우를 자르지 않는다/.test(html) && !/object-position: 50% 18%/.test(html));
 ok("카드·버튼 축소", /width: 46px; height: 46px;/.test(html) && /padding: 10px 18px; gap: 12px;/.test(html));
 console.log(fail? `\n💥 실패 ${fail}건` : "\n🎉 모두 통과");

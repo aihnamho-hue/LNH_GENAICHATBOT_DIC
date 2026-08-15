@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v99"
+APP_VERSION = "v100"
 APP_DATE = "2026-08-16"
 
 app = FastAPI()
@@ -2524,11 +2524,17 @@ async def _handle_session(websocket: WebSocket):
             if not isinstance(k, str) or k not in idc_state["counts"]:
                 continue
             idc_state["counts"][k] += 1
-            # 개입을 받고 두 차례 안에 나온 실현은 '지시받은 것'으로 따로 센다.
+            # 개입을 받은 뒤 나온 실현은 '지시받은 것'으로 따로 센다.
             # 시켜서 한 거절과 스스로 한 거절이 같은 무게로 쌓이면 페이딩이 잘못 내려가고,
             # 제5장에서 이 로그가 무엇을 재는 자료인지 말할 수 없게 된다.
+            #
+            # ★ 창을 네 차례로 둔 이유. 실현이 '언제' 있었는지는 알 수 없다 —
+            #   분석은 몇 차례가 지난 뒤에야 돌고, 판정도 그 시점의 차례 수로만 잰다.
+            #   개입 5차례 → 학습자가 6차례에 해냄 → 분석이 8차례에 돌면 차이가 3이다.
+            #   창이 좁으면 지시받고 한 것이 자발로 잡힌다(과소 집계). 넉넉히 잡되,
+            #   한 번 셈하면 표시를 지우므로 개입 하나에 실현 하나만 귀속된다.
             t0 = idc_state["intv_turn"].get(k)
-            if t0 is not None and turn_now - t0 <= 2:
+            if t0 is not None and turn_now - t0 <= 4:
                 idc_state["prompted"][k] += 1
             idc_state["intv_turn"].pop(k, None)
             n = idc_state["counts"][k]
@@ -2651,17 +2657,46 @@ async def _handle_session(websocket: WebSocket):
             return
         rp_progress["running"] = True
         try:
+            # ── 어디까지 이미 세었는지 표시한다 (v100) ──
+            # 분석은 6초마다 도는데 매번 대화 전체를 다시 본다. 「새로」라는 한정이 없으면
+            # 3번째 차례에 한 번 한 것이 분석마다 다시 잡혀, 세 번 분석이 돌면 3점이 된다.
+            # 임계가 3회이므로 **한 번 해낸 요소가 30초 만에 자율에 닿아 비계가 걷힌다.**
+            # 특히 존댓말(맥락·정체성)이나 차례 관리처럼 매 차례 잡히는 요소가 먼저 망가진다.
+            # 규칙(3회면 자율) 자체는 옳다. 고칠 것은 '한 번을 한 번으로 세는 일'뿐이다.
+            # 기능 단계·대화 유형은 전체 맥락이 필요하므로 기록은 그대로 두고 표시만 넣는다.
+            _seen = rp_progress["last_len"]        # 지난 분석까지 본 조각 수
+            _MARK = "───────── 여기서부터 새로 늘어난 부분 ─────────"
+
+            def _fmt(m):
+                if rp_plan:
+                    who = ('학습자(' + rp_plan['user_role'] + ')') if m['role'] == 'user' \
+                          else ('상대(' + rp_plan['ai_role'] + ')')
+                else:
+                    who = '학습자' if m['role'] == 'user' else '상대'
+                return f"{who}: {m['text'].strip()}"
+
+            def _make_transcript():
+                lines, tail = [], convo[-60:]
+                base = len(convo) - len(tail)
+                marked = False
+                for i, m in enumerate(tail):
+                    if not m["text"].strip():
+                        continue
+                    if not marked and base + i >= _seen:
+                        lines.append(_MARK)
+                        marked = True
+                    lines.append(_fmt(m))
+                if not marked:                     # 새 조각이 앞쪽에 없으면 맨 끝에
+                    lines.append(_MARK)
+                return "\n".join(lines)
+
             if rp_plan:
-                transcript = "\n".join(
-                    f"{'학습자(' + rp_plan['user_role'] + ')' if m['role'] == 'user' else '상대(' + rp_plan['ai_role'] + ')'}: {m['text'].strip()}"
-                    for m in convo[-60:] if m["text"].strip())
+                transcript = _make_transcript()
                 stages_txt = "\n".join(
                     f"{i}. {s['name']}: {s['desc']}" for i, s in enumerate(rp_plan["stages"]))
                 task_line = f"과업 — 주제: {rp_plan['topic_ko']} / 달성 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']}"
             else:
-                transcript = "\n".join(
-                    f"{'학습자' if m['role'] == 'user' else '상대'}: {m['text'].strip()}"
-                    for m in convo[-60:] if m["text"].strip())
+                transcript = _make_transcript()
                 stages_txt = "(자유 대화 — 기능단계 없음. done은 빈 배열로 두라)"
                 task_line = "과업 — 자유 주제 대화"
             idc_txt = "\n".join(
@@ -2687,14 +2722,21 @@ async def _handle_session(websocket: WebSocket):
 {idc_txt}
 
 다섯 가지를 판정하라.
-(1) done — 위 대화에서 이미 실현(충족)된 기능단계의 번호를 모두.
+★ 표시선(───)은 **(2)(3)에만** 해당한다. (1)(4)(5)는 표시선과 무관하게 **대화 전체**를 보라.
+
+(1) done — 대화 **전체**에서 이미 실현(충족)된 기능단계의 번호를 모두.
     판정 기준: 그 단계의 의사소통 기능이 대화에서 실제로 수행되었으면 충족이다. 표현이 서툴러도 기능이 이루어졌으면 인정한다. 아직 시도되지 않았거나 실패한 단계는 제외한다.
 (2) idc — 위 요소 가운데 **학습자가** 실제로 수행한 것의 key를 모두.
+    ★★ 반드시 「새로 늘어난 부분」 표시선 **아래에서** 확인되는 것만 고른다.
+       표시선 위쪽은 이미 세어 둔 것이다. 거기서 한 일을 다시 적으면 같은 수행이
+       여러 번 센 것이 되어, 한 번 해낸 것이 세 번 해낸 것으로 기록된다.
+       표시선 아래에 학습자 발화가 없거나 해당 요소가 없으면 **빈 배열**로 두라.
     ★상대(챗봇)가 한 것은 세지 마라. 학습자의 발화에서 확인되는 것만 고른다.
-    표현이 서툴러도 그 기능을 해냈으면 인정한다. 해당 없으면 빈 배열.
+    표현이 서툴러도 그 기능을 해냈으면 인정한다.
 (3) quest — 아래 목록 가운데 **학습자가** 실제로 한 것의 id를 모두. 없으면 빈 배열.
+    이쪽은 「했나 안 했나」를 누적하므로 대화 전체에서 확인해도 된다.
 {quest_txt}
-(4) abc — 지금까지의 대화가 어느 유형인지 (이남호·이찬규 2025의 기능단계 유형론).
+(4) abc — 대화 **전체**가 어느 유형인지 (이남호·이찬규 2025의 기능단계 유형론).
     ★기능단계가 없는 자유 대화라면 빈 문자열("")로 두라. 이 유형론은 과업 대화에만 적용된다.
     "A" 단순형: 목적을 향해 곧장 가는 직선적 전개.
     "B" 반복형: 같은 기능 단계(질문-응답 등)가 맴돌며 반복됨.
@@ -2704,7 +2746,7 @@ async def _handle_session(websocket: WebSocket):
     ★ (3)에서 학습자가 이미 해냈다고 적은 것은 고르지 마라.
 {intv_txt}
 
-(5) chains — **학습자가** 수행한 대화이동 연쇄의 횟수.
+(5) chains — 대화 **전체**에서 **학습자가** 수행한 대화이동 연쇄의 횟수.
     시작(먼저 화제·요청을 엶) / 역시작(상대의 시작에 질문으로 되받음) /
     수정(자기 발화를 고쳐 다시 말함) / 고수(거절·난색에도 재요청).
 
@@ -2924,6 +2966,9 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
             items.append({"key": k, "name": e["name"], "layer": e["layer"],
                           "grade": grade, "why": why, "scored": True})
         total = round(100 * pts / (2 * len(IDC_SCORED_KEYS))) if IDC_SCORED_KEYS else 0
+        pr = {k: v for k, v in idc_state["prompted"].items() if v}
+        if pr:
+            print(f"[IDC] 그중 지시받고 해낸 것: {pr}")
         print(f"[IDC] 프로파일 — 총점 {total}점 / " +
               " ".join(f"{i['key']}:{i['grade']}" for i in items if i["scored"]))
         return {"items": items, "total": total}

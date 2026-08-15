@@ -131,9 +131,14 @@ setTimeout(async () => {
     console.log("\n── ⑥ 🪜 비계 · 영상통화 기능단계 ──");
     const dock = d.getElementById("scfDock");
     ok(!!dock, "🪜 도크가 존재한다");
-    ok(dock.parentElement && dock.nextElementSibling &&
-       dock.nextElementSibling.classList.contains("quick-bar"),
-       "🪜가 천천히·다시 버튼 바로 위에 있다");
+  // v93 — 넓은 화면에서는 왼쪽 기둥으로 옮겨 가므로 슬롯(#scfHomeSlot)으로 감쌌다.
+  //        좁은 화면에서의 자리는 그대로다: 슬롯이 천천히·다시 버튼 바로 위에 있다.
+  ok(dock.parentElement && dock.parentElement.id === "scfHomeSlot",
+     "🪜가 자리 옮김 슬롯 안에 있다");
+  ok(dock.parentElement.nextElementSibling &&
+     dock.parentElement.nextElementSibling.classList.contains("quick-bar"),
+     "그 슬롯이 천천히·다시 버튼 바로 위에 있다");
+  ok(!!d.getElementById("scfSideSlot"), "넓은 화면용 자리(왼쪽 기둥)도 있다");
     ok(dock.classList.contains("hidden"), "주제 대화 전에는 숨어 있다");
     const hvSt = d.getElementById("hvStages");
     ok(!!hvSt && hvSt.hasAttribute("hidden"), "영상통화 기능단계도 처음엔 숨어 있다");

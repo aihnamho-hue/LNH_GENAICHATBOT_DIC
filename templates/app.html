@@ -6,26 +6,26 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json?v=95">
+    <link rel="manifest" href="/static/manifest.json?v=96">
     <meta name="theme-color" content="#4A7C74">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=95">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=95">
-    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=95" crossorigin>
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=96">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=96">
+    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=96" crossorigin>
     <style>
         /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansMedium.woff2?v=95") format("woff2");
+            src: url("/static/fonts/GmarketSansMedium.woff2?v=96") format("woff2");
             font-weight: 400 600; font-style: normal; font-display: swap;
         }
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansBold.woff2?v=95") format("woff2");
+            src: url("/static/fonts/GmarketSansBold.woff2?v=96") format("woff2");
             font-weight: 700 900; font-style: normal; font-display: swap;
         }
         :root {
@@ -457,6 +457,9 @@
         .self-word { font-size: 13px; color: var(--muted); font-weight: 700; text-align: center;
             min-height: 20px; margin: 0 0 6px; }
         /* ── 결과: 총평(줄글) ── */
+        /* 총평이 흘러 들어오는 동안 끝에 붓끝처럼 깜빡이는 표시 */
+        .rev-body.writing::after { content: "▍"; color: var(--accent-ink); animation: revCaret 0.9s steps(1) infinite; }
+        @keyframes revCaret { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
         .rev-head { font-size: 13px; color: var(--muted); font-weight: 700; text-align: center; margin: 2px 0 10px; }
         .rev-body { text-align: left; white-space: pre-wrap; word-break: break-word;
             font-size: 14px; line-height: 1.75; color: var(--ink);
@@ -1332,8 +1335,8 @@
 <!-- ═══ 앱 시작 영상 (한옥 장지문이 열리고 호아랑이 나온다) ═══
      같은 세션에서 한 번만 재생하고, 끝나면 스스로 사라진다. -->
 <div class="splash" id="splash">
-    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=95">
-        <source src="/static/intro.mp4?v=95" type="video/mp4">
+    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=96">
+        <source src="/static/intro.mp4?v=96" type="video/mp4">
     </video>
     <button type="button" class="splash-skip" id="splashSkip">건너뛰기 ›</button>
 </div>
@@ -1542,7 +1545,7 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png?v=95" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=96" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
         <!-- ① 자기 성찰 — 남이 매기기 전에 스스로 돌아본다.
              자기 평가와 실제 수행의 차이 자체가 연구 자료가 된다(5장). -->
@@ -1602,13 +1605,13 @@
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png?v=95" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=96" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
         <!-- 3항 연속체 — 학습자 발화 뒤에 올 상대의 반응 -->
         <div class="pr-cue-row hidden" id="prFollowRow">
-            <div class="profile"><img src="/static/hamster.png?v=95" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=96" alt=""></div>
             <div class="pr-cue-bubble" id="prFollowText"></div>
         </div>
         <button type="button" class="pr-listen-btn" id="prListenBtn">🔊</button>
@@ -1628,7 +1631,7 @@
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=95" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=96" alt="호아랑">
         <h2 id="freeFbTitleEl" style="margin:6px 0;"></h2>
         <!-- 주제 대화와 같이 세 장으로 나눈다. 한 장에 다 쏟으면 아무것도 안 읽힌다.
              기능 단계가 없으므로 ① 자기 성찰 ② 상호작용 대화 능력 ③ 총평 세 장이다. -->
@@ -1665,19 +1668,19 @@
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=95" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=96" alt="호아랑"></div>
 </div>
 <div class="turn-edge" aria-hidden="true"></div>
 <!-- 다른 창(앱)에서 쓰는 중이라 이 창은 물러났음을 알린다 -->
 <div class="other-window hidden" id="otherWindowNote"><span id="otherWindowMsg"></span></div>
 <!-- 배경 영상 — 화면 전체를 채우고 그 위에 글자·카드가 놓인다 -->
 <button type="button" class="qz-btn" id="qzBtn">
-    <img id="qzBtnImg" src="/static/qz_hello.png?v=95" alt=""><span class="qz-dot"></span>
+    <img id="qzBtnImg" src="/static/qz_hello.png?v=96" alt=""><span class="qz-dot"></span>
 </button>
 <div class="home-bg" aria-hidden="true">
-    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=95" alt="">
+    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=96" alt="">
     <video class="hb-main" id="homeLoop" playsinline muted loop autoplay preload="auto"
-           poster="/static/home_loop.jpg?v=95" src="/static/home_loop.mp4?v=95"></video>
+           poster="/static/home_loop.jpg?v=96" src="/static/home_loop.mp4?v=96"></video>
     <div class="home-bg-veil"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
@@ -1685,7 +1688,7 @@
     <!-- 상단: 제목(왼쪽) · 버튼(오른쪽) -->
     <div class="home-header">
         <h1 class="home-title">
-            <img class="home-logo" id="homeLogoBtn" src="/static/icon-192.png?v=95" alt="" role="button" tabindex="0">
+            <img class="home-logo" id="homeLogoBtn" src="/static/icon-192.png?v=96" alt="" role="button" tabindex="0">
             <span id="homeTitleEl">호아랑</span>
         </h1>
         <div class="home-top">
@@ -1722,7 +1725,7 @@
 </div>
 <div class="inapp-gate hidden" id="installGate">
     <div class="inapp-card">
-        <img class="ig-icon" src="/static/icon-192.png?v=95" alt="">
+        <img class="ig-icon" src="/static/icon-192.png?v=96" alt="">
         <!-- ① 언어(나라) 선택 -->
         <div id="igStep1">
             <h2>🌏 언어 선택 · Select Your Language</h2>
@@ -1786,7 +1789,7 @@
 <div class="lang-overlay hidden" id="notifOverlay">
     <div class="lang-box" style="max-width:380px;">
         <button type="button" class="ov-x" id="notifX">✕</button>
-        <div class="notif-art"><img src="/static/ham_smile.png?v=95" alt=""></div>
+        <div class="notif-art"><img src="/static/ham_smile.png?v=96" alt=""></div>
         <h2 id="notifTitleEl" style="margin-bottom:8px;"></h2>
         <p class="consent-text" id="notifBodyEl" style="margin-bottom:14px;"></p>
         <div class="consent-actions">
@@ -1811,7 +1814,7 @@
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=95" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=96" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -1845,7 +1848,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png?v=95" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=96" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -1913,7 +1916,7 @@
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png?v=95" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=96" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span><svg class="ic"><use href="#ic-video"></use></svg></span><span id="hamViewBtnLbl"></span></button>
@@ -2004,7 +2007,7 @@
 <!-- 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 (발화 연습 시작 등) -->
 <div class="ham-peek" id="hamPeek" aria-hidden="true">
     <div class="hp-bubble" id="hamPeekText"></div>
-    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=95" alt="">
+    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=96" alt="">
 </div>
 
 <!-- 대화의 문턱 연출 — 한옥 장지문 -->
@@ -2017,11 +2020,11 @@
 <!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <!-- 발화 연습 배경 — '통통(가야금)', 사용자 볼륨의 20%로 아주 은은하게 -->
-<audio id="prBgm" src="/static/practice_bgm.mp3?v=95" loop preload="none"></audio>
+<audio id="prBgm" src="/static/practice_bgm.mp3?v=96" loop preload="none"></audio>
 <!-- 단계 달성 — 전통악기 징 -->
-<audio id="gongSfx" src="/static/gong.mp3?v=95" preload="auto"></audio>
+<audio id="gongSfx" src="/static/gong.mp3?v=96" preload="auto"></audio>
 <!-- 주제 대화·자유 대화 진행 중 배경 — 「How are you 가야금」 -->
-<audio id="chatBgm" src="/static/chat_bgm.mp3?v=95" loop preload="none"></audio>
+<audio id="chatBgm" src="/static/chat_bgm.mp3?v=96" loop preload="none"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -2033,7 +2036,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v94 (2026-08-15)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v96 (2026-08-16)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -3311,7 +3314,7 @@
         const im = document.getElementById("qzBtnImg");
         if (!im) return;
         qzFaceIdx = (qzFaceIdx + 1) % QZ_FACES.length;
-        im.src = "/static/" + QZ_FACES[qzFaceIdx] + ".png?v=95";
+        im.src = "/static/" + QZ_FACES[qzFaceIdx] + ".png?v=96";
     }
     function questBtnSync() {
         const b = document.getElementById("qzBtn");
@@ -3578,7 +3581,7 @@
             const w = document.createElement("div");
             w.className = "ob-hero";
             w.innerHTML = '<img class="ob-ham" alt=""><span class="ob-hello"></span>';
-            w.querySelector("img").src = "/static/ham_smile.png?v=95";
+            w.querySelector("img").src = "/static/ham_smile.png?v=96";
             w.querySelector(".ob-hello").textContent = t("obHello");
             return w;
         },
@@ -3662,7 +3665,7 @@
             const v = w.querySelectorAll(".ob-view");
             v[0].querySelector(".vl").textContent = stripLeadEmoji(t("hvClose"));
             v[1].querySelector(".vl").textContent = stripLeadEmoji(t("hvOpen"));
-            v[1].querySelector("img").src = "/static/ham_idle.png?v=95";
+            v[1].querySelector("img").src = "/static/ham_idle.png?v=96";
             return w;
         },
         function talk() {                       // ⑥ 말하기 버튼 · 도움말 · 이어폰
@@ -3917,6 +3920,7 @@
         }
     }
     function goHome() {
+        try { closeReviewWs(); } catch (e) {}
         try { questBtnSync(); } catch (e) {}
         // 전환 시 떠 있던 오버레이 정리 (홈은 깨끗한 상태로)
         try { scHalt(); } catch (e) {}   // 대화문 재생 중이면 멈춘다
@@ -4420,6 +4424,13 @@
     /* ── 자유 대화 종료 → 서버 최종 분석(IDC 프로파일) → 피드백 화면 → 홈 ──
        상황극과 같은 길: end_session 을 보내고 final_score 를 기다렸다가 화면을 바꾼다.
        서버가 늦으면 9초 뒤 빈 프로파일로라도 넘어간다. */
+    /* 총평은 결과가 뜬 뒤에도 계속 흘러 들어온다 → 그동안 소켓을 살려 둔다 */
+    let reviewPending = false, reviewWs = null, reviewCloseTimer = null;
+    function closeReviewWs() {
+        clearTimeout(reviewCloseTimer);
+        if (reviewWs) { try { reviewWs.onmessage = null; reviewWs.close(); } catch (e) {} reviewWs = null; }
+        reviewPending = false;
+    }
     let freeEnding = false, freeEndTimer = null;
     function endFreeSession() {
         if (freeEnding) return;
@@ -4428,6 +4439,7 @@
         try {
             if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "end_session" }));
         } catch (e) {}
+        reviewPending = true;      // 이제부터 총평이 올 때까지 소켓을 살려 둔다
         // 위와 같은 이유로 stopSession() 은 여기서 부르지 않는다(웹소켓이 닫힌다)
         try { stopAllAudio(); } catch (e) {}
         setControlsEnabled(false);
@@ -5824,6 +5836,7 @@
         } catch (e) {}
         // 종료 시 서버는 ①단계 분석 ②상호작용 프로파일 ③총평을 만든다.
         // 9초는 너무 짧아 프로파일과 총평이 도착하기 전에 화면이 떠 버렸다(빈 칸의 원인).
+        reviewPending = true;      // 이제부터 총평이 올 때까지 소켓을 살려 둔다
         // ★ 여기서 stopSession() 을 부르면 웹소켓까지 닫혀 총평이 영영 오지 않는다.
         //   소리만 죽이고 단추만 잠근 뒤, 문을 먼저 닫아 기다림을 연출 뒤로 숨긴다.
         try { stopAllAudio(); } catch (e) {}
@@ -6960,21 +6973,33 @@
                         }
                     } catch (e) {}
                 }
-            } else if (msg.type === "review") {
-                // 총평은 결과 화면이 뜬 뒤에 따로 온다 — 도착하면 그 자리에 채운다
-                if (rpFinal) rpFinal.review = msg.text || "";
+            } else if (msg.type === "review_chunk") {
+                // 총평은 다 쓰인 뒤에 오지 않고 쓰이는 대로 흘러 들어온다.
+                // 첫 글자가 1~2초 안에 뜨므로 기다린다는 느낌이 없다.
+                if (rpFinal) rpFinal.review = (rpFinal.review || "") + (msg.text || "");
                 try {
-                    const txt = (msg.text || "").trim() || t("revNone");
+                    const txt = ((rpFinal && rpFinal.review) || "");
                     ["rpReviewEl", "freeReviewEl"].forEach(id => {
-                        const el = document.getElementById(id); if (el) el.textContent = txt;
+                        const el = document.getElementById(id);
+                        if (el) { el.textContent = txt; el.classList.add("writing"); }
                     });
-                    // 기록에도 얹는다 (별점과 같은 자리)
+                } catch (e) {}
+            } else if (msg.type === "review_done") {
+                if (rpFinal) rpFinal.review = msg.text || (rpFinal.review || "");
+                try {
+                    const txt = ((rpFinal && rpFinal.review) || "").trim() || t("revNone");
+                    ["rpReviewEl", "freeReviewEl"].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) { el.textContent = txt; el.classList.remove("writing"); }
+                    });
+                    // 다 받은 뒤에 기록에 얹는다 (별점과 같은 자리)
                     const list = loadHistory();
                     if (list.length) {
                         list[0].text = buildTranscriptText() || list[0].text;
                         localStorage.setItem(HIST_KEY, JSON.stringify(list));
                     }
                 } catch (e) {}
+                closeReviewWs();          // 다 받았으니 소켓을 정리한다
             } else if (msg.type === "error") {
                 // 서버가 보내는 에러 코드를 사용자 언어로 표시.
                 // 사전에 err_<code> 키가 있으면 그것을 쓰고, 없으면 서버 문구를 그대로 보여 준다.
@@ -7082,7 +7107,21 @@
         if (workletNode) { try { workletNode.port.onmessage = null; workletNode.disconnect(); } catch (e) {} workletNode = null; }
         if (processor) { try { processor.disconnect(); } catch (e) {} processor = null; }
         // 핸들러를 먼저 떼고 닫아야 onclose → stopSession 재진입(이중 업로드)이 없음
-        if (ws) { ws.onclose = null; ws.onerror = null; ws.onmessage = null; try { ws.close(); } catch (e) {} ws = null; }
+        if (ws) {
+            ws.onclose = null; ws.onerror = null;
+            if (reviewPending) {
+                // ★ 총평이 아직 오는 중이면 소켓을 닫지 않는다.
+                //   닫으면 서버가 보낼 곳을 잃어 총평이 영영 오지 않는다(v94의 결함).
+                //   onmessage 는 그대로 두어 조각이 계속 들어오게 한다.
+                reviewWs = ws;
+                clearTimeout(reviewCloseTimer);
+                reviewCloseTimer = setTimeout(closeReviewWs, 30000);   // 그래도 안 오면 정리
+            } else {
+                ws.onmessage = null;
+                try { ws.close(); } catch (e) {}
+            }
+            ws = null;
+        }
         finalizeBubbles();
         exportBtn.disabled = transcriptLog.length === 0;
         saveConversationToHistory();   // 이 기기 '지난 대화'에 대화록 저장 (rpSessionActive/rpPlan 리셋 전)
@@ -7212,8 +7251,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png?v=95", smile: "/static/ham_smile.png?v=95",
-        surprised: "/static/ham_surprised.png?v=95", shy: "/static/ham_shy.png?v=95",
+        idle: "/static/ham_idle.png?v=96", smile: "/static/ham_smile.png?v=96",
+        surprised: "/static/ham_surprised.png?v=96", shy: "/static/ham_shy.png?v=96",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -7287,7 +7326,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png?v=95";
+                img.src = "/static/hamster.png?v=96";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");

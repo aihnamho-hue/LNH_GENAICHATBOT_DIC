@@ -22,8 +22,8 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v95"
-APP_DATE = "2026-08-15"
+APP_VERSION = "v96"
+APP_DATE = "2026-08-16"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -2417,6 +2417,7 @@ async def _handle_session(websocket: WebSocket):
         "counts": {k: prev_counts.get(k, 0) for k in IDC_SCORED_KEYS},
         "levels": {k: _level_from(prev_counts.get(k, 0)) for k in IDC_SCORED_KEYS},
         "self": 0,            # 학습자가 스스로 매긴 별점(1~5, 0=안 매김)
+        "review": "",         # 총평 전문 (스트리밍으로 다 받은 뒤 보관)
         "last_focus": "",     # 직전에 주입한 유발 지시의 대상 (같으면 다시 안 보냄)
         "final": None,        # 종료 시 산출한 9요소 프로파일
         # ── 교육적 개입 상태 (v95) ──
@@ -2838,15 +2839,17 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
               " ".join(f"{i['key']}:{i['grade']}" for i in items if i["scored"]))
         return {"items": items, "total": total}
 
-    async def run_review() -> str:
+    async def run_review(send_piece=None) -> str:
         """총평 — 등급표 말고 사람이 쓴 것 같은 줄글로.
         요소별 상·중·하는 '무엇이 부족한가'는 알려 주지만 '어떻게 말했는가'는 못 담는다.
         실제 발화를 짚어 칭찬하고 고칠 곳을 알려 주는 선생님의 말이 따로 있어야 한다."""
         if not convo:
             return ""
+        # 총평은 흐름만 보면 되므로 40턴이면 넉넉하다.
+        # 80턴을 넣으면 입력이 두 배가 되어 첫 글자가 그만큼 늦게 나온다.
         transcript = "\n".join(
             f"{'학습자' if m['role'] == 'user' else '상대'}: {m['text'].strip()}"
-            for m in convo[-80:] if m["text"].strip())
+            for m in convo[-40:] if m["text"].strip())
         # 요소별 등급을 기다리지 않는다 — 기다리면 총평이 늦어 화면에 못 붙는다.
         # 대신 대화 중 실시간으로 쌓인 실현 횟수를 참고로 준다.
         graded = "\n".join(
@@ -2877,19 +2880,54 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
 - 못한 것을 늘어놓지 마라. 학습자가 다시 해 보고 싶어지게 쓰는 것이 목적이다.
 
 총평 글만 출력하라. 제목도 인사말도 붙이지 마라."""
+        # ★ 다 쓴 뒤에 한꺼번에 주지 않고 쓰는 대로 흘려보낸다.
+        #   학습자는 첫 글자를 1~2초 안에 보게 되고, 기다린다는 느낌 자체가 없어진다.
+        buf = []
         try:
-            resp = await asyncio.wait_for(
-                client.aio.models.generate_content(
+            stream = await asyncio.wait_for(
+                client.aio.models.generate_content_stream(
                     model=_analysis_model["name"], contents=prompt,
                     config=types.GenerateContentConfig(temperature=0.7)),
-                timeout=18.0)
-            return re.sub(r"\n{3,}", "\n\n", (getattr(resp, "text", "") or "").strip())[:900]
+                timeout=12.0)
+            async for chunk in stream:
+                piece = getattr(chunk, "text", "") or ""
+                if not piece:
+                    continue
+                buf.append(piece)
+                if send_piece:
+                    try:
+                        await send_piece(piece)
+                    except Exception:
+                        return ""      # 학습자 쪽이 이미 닫혔다 — 더 만들 이유가 없다
+            return re.sub(r"\n{3,}", "\n\n", "".join(buf).strip())[:900]
         except Exception as e:
             print(f"[총평] 생성 실패: {e}")
-            return ""
+            return "".join(buf).strip()[:900]
 
     async def send_final_score():
         """종료 버튼 → 마지막 분석을 마치고 퍼센트를 점수로, IDC 프로파일을 함께 전송."""
+        # ★ 총평을 맨 먼저 띄운다.
+        #   예전에는 ①대기 ②최종 분석 ③프로파일 을 다 마친 뒤에야 총평을 시작해서
+        #   첫 글자가 나오기까지 10~25초가 걸렸다. 총평은 프로파일 결과를 쓰지 않으므로
+        #   기다릴 이유가 없다 — 여기서 바로 시작해 아래 작업과 나란히 돌린다.
+        async def _piece(text: str):
+            await websocket.send_text(json.dumps({"type": "review_chunk", "text": text}))
+
+        async def _review_job():
+            try:
+                text = await run_review(send_piece=_piece)
+            except Exception as e:
+                print(f"[총평] 실패: {e}")
+                text = ""
+            idc_state["review"] = text
+            try:
+                await websocket.send_text(json.dumps({"type": "review_done", "text": text}))
+                print(f"[총평] 완료 {len(text)}자")
+            except Exception as e:
+                print(f"[총평] 마무리 전송 실패(이미 닫힘): {e}")
+
+        review_task = asyncio.create_task(_review_job())
+
         idc = {"items": [], "total": 0}
         for _ in range(40):  # 진행 중 분석이 있으면 최대 8초 대기
             if not rp_progress["running"]:
@@ -2921,17 +2959,9 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
         }))
         print(f"[상황극] 최종 점수 전송: 진행률 {rp_progress['percent']}점 / IDC {idc['total']}점")
 
-        # 총평은 뒤따라 보낸다 — 학습자는 그동안 결과를 읽고 있으면 된다
-        async def _send_review_later():
-            text = await run_review()
-            if not text:
-                return
-            try:
-                await websocket.send_text(json.dumps({"type": "review", "text": text}))
-                print(f"[총평] 전송 {len(text)}자")
-            except Exception as e:
-                print(f"[총평] 전송 실패(이미 닫힘): {e}")
-        asyncio.create_task(_send_review_later())
+        # 총평은 위에서 이미 돌고 있다 — 여기서는 아무것도 하지 않는다.
+        # (조각이 오는 대로 review_chunk 로 나가고, 끝나면 review_done 이 나간다)
+        _ = review_task
 
     # ── 목소리: 호아랑은 갓 쓴 아기 호랑이라 기본은 남자아이 목소리.
     #    주제 대화에서 배역(점원·선생님·아주머니 등)을 맡으면 그에 맞는 목소리로 자동 전환.

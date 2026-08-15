@@ -15,11 +15,12 @@ ok("미리 받아 두는 길도 같은 기준", /if \(!text \|\| ttsDown\(\)\) r
 ok("서버는 세 번 재시도 + 모델 교체", /for _ in range\(3\)/.test(py) && /_next_tts_model/.test(py));
 
 console.log("── 총평은 결과 뒤에 따로 온다 ──");
-ok("서버가 프로파일까지만 먼저 보낸다", /idc = await run_idc_profile\(\)\s*\n\s*idc_state\["final"\] = idc\s*\n\s*review = ""/.test(py));
-ok("총평은 별도 메시지로", /_send_review_later/.test(py) && /"type": "review", "text": text/.test(py));
-ok("클라이언트가 그 메시지를 받는다", /msg\.type === "review"/.test(html));
+ok("총평을 맨 먼저 시작한다", /review_task = asyncio\.create_task\(_review_job\(\)\)/.test(py));
+ok("총평은 쓰이는 대로 흘려보낸다", /generate_content_stream/.test(py)
+   && /"type": "review_chunk", "text": text/.test(py) && /"type": "review_done", "text": text/.test(py));
+ok("클라이언트가 조각을 받는다", /msg\.type === "review_chunk"/.test(html) && /msg\.type === "review_done"/.test(html));
 ok("받으면 두 화면 모두 채운다", /\["rpReviewEl", "freeReviewEl"\]/.test(html));
-ok("기록에도 얹는다", /msg\.type === "review"[\s\S]{0,700}?buildTranscriptText\(\)/.test(html));
+ok("다 받은 뒤 기록에 얹는다", /msg\.type === "review_done"[\s\S]{0,700}?buildTranscriptText\(\)/.test(html));
 ok("기다리는 동안 '쓰는 중'을 보인다", /t\("revWait"\)/.test(html));
 ok("'쓰는 중' 문구가 18개 언어", (html.match(/revWait:"/g) || []).length === 18);
 ok("결과를 13초 안에 띄운다", /concludeRoleplay, 13000/.test(html) && /concludeFree, 13000/.test(html));

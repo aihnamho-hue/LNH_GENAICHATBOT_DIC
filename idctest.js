@@ -87,9 +87,9 @@ console.log("\n── ③ 결과 화면 렌더 ──");
     console.log(`  등급 없는 행 ${na.length}개 (교실 전담 ${classKeys.length}개여야)`);
     if (na.length !== classKeys.length) fail++;
     const head = w.document.getElementById("idcHead");
-    const note = w.document.getElementById("idcNoteEl");
+  // v80에서 「제외 안내」 줄(#idcNoteEl)을 없앴다 — 비언어 요소를 목록에서 아예 빼므로
     if (head.style.display === "none") { fail++; console.log("  ❌ 제목이 안 보인다"); }
-    if (!note.textContent.trim()) { fail++; console.log("  ❌ 제외 안내가 비어 있다"); }
+  //        따로 안내할 것이 없어졌다. 그 자리를 찾던 단정을 지운다.
     const sub = w.document.getElementById("idcSubEl").textContent;
     if (!/72/.test(sub)) { fail++; console.log("  ❌ 총점이 안 보인다:", sub); }
     // 요소 이름이 서버 원문이 아니라 사전 번역으로 나오는가

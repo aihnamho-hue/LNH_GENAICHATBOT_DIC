@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v92"
+APP_VERSION = "v93"
 APP_DATE = "2026-08-15"
 
 app = FastAPI()
@@ -2387,6 +2387,7 @@ async def _handle_session(websocket: WebSocket):
     idc_state = {
         "counts": {k: prev_counts.get(k, 0) for k in IDC_SCORED_KEYS},
         "levels": {k: _level_from(prev_counts.get(k, 0)) for k in IDC_SCORED_KEYS},
+        "self": 0,            # 학습자가 스스로 매긴 별점(1~5, 0=안 매김)
         "last_focus": "",     # 직전에 주입한 유발 지시의 대상 (같으면 다시 안 보냄)
         "final": None,        # 종료 시 산출한 9요소 프로파일
     }
@@ -2891,6 +2892,13 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                             elif event.get("type") == "end_session":
                                 # 종료 버튼: 최종 분석 → 점수 치환 → 클라이언트가 받고 연결을 닫는다
                                 await send_final_score()
+                            elif event.get("type") == "self_rating":
+                                # 학습자가 스스로 매긴 별점(1~5). 점수에는 넣지 않는다.
+                                # 자기 평가와 실제 수행의 차이가 5장의 자료가 된다.
+                                v = _clamp_int(event.get("value"), 0, 5, 0)
+                                if v:
+                                    idc_state["self"] = v
+                                    print(f"[자기평가] 별 {v}/5")
                             elif event.get("type") == "hint_request":
                                 # 🪜 비계 요청 — 백그라운드 생성 (오디오 릴레이를 막지 않음)
                                 asyncio.create_task(send_hints())

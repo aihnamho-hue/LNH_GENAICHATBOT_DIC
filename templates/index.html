@@ -6,26 +6,26 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json?v=92">
+    <link rel="manifest" href="/static/manifest.json?v=93">
     <meta name="theme-color" content="#4A7C74">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=92">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=92">
-    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=92" crossorigin>
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=93">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=93">
+    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=93" crossorigin>
     <style>
         /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansMedium.woff2?v=92") format("woff2");
+            src: url("/static/fonts/GmarketSansMedium.woff2?v=93") format("woff2");
             font-weight: 400 600; font-style: normal; font-display: swap;
         }
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansBold.woff2?v=92") format("woff2");
+            src: url("/static/fonts/GmarketSansBold.woff2?v=93") format("woff2");
             font-weight: 700 900; font-style: normal; font-display: swap;
         }
         :root {
@@ -980,6 +980,9 @@
         .scf-btn:hover { transform: translateY(-1px); background: linear-gradient(180deg, #FFF9EC, #F9EDD0); }
         .scf-btn:active { transform: scale(0.99); }
         .scf-btn:disabled { opacity: 0.45; cursor: default; }
+        /* 왼쪽 기둥으로 옮겨 갔을 때 — 펴 둔 채로 대화하므로 목록이 길어도 되게 둔다 */
+        .scf-dock.side { margin-top: 10px; }
+        .scf-dock.side .scf-panel { max-height: calc(46vh / var(--ui-zoom)); overflow-y: auto; }
         .scf-panel { margin-top: 7px; background: #F3F0E8; border: 1.5px solid var(--accent-soft); border-radius: 10px; padding: 8px 10px; text-align: left; }
         .scf-panel.hidden { display: none; }
         .scf-title { font-size: 11px; font-weight: 800; color: #3D4B45; margin-bottom: 5px; }
@@ -1329,8 +1332,8 @@
 <!-- ═══ 앱 시작 영상 (한옥 장지문이 열리고 호아랑이 나온다) ═══
      같은 세션에서 한 번만 재생하고, 끝나면 스스로 사라진다. -->
 <div class="splash" id="splash">
-    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=92">
-        <source src="/static/intro.mp4?v=92" type="video/mp4">
+    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=93">
+        <source src="/static/intro.mp4?v=93" type="video/mp4">
     </video>
     <button type="button" class="splash-skip" id="splashSkip">건너뛰기 ›</button>
 </div>
@@ -1539,7 +1542,7 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png?v=92" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=93" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
         <!-- ① 자기 성찰 — 남이 매기기 전에 스스로 돌아본다.
              자기 평가와 실제 수행의 차이 자체가 연구 자료가 된다(5장). -->
@@ -1599,13 +1602,13 @@
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png?v=92" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=93" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
         <!-- 3항 연속체 — 학습자 발화 뒤에 올 상대의 반응 -->
         <div class="pr-cue-row hidden" id="prFollowRow">
-            <div class="profile"><img src="/static/hamster.png?v=92" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=93" alt=""></div>
             <div class="pr-cue-bubble" id="prFollowText"></div>
         </div>
         <button type="button" class="pr-listen-btn" id="prListenBtn">🔊</button>
@@ -1625,49 +1628,56 @@
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=92" alt="호아랑">
-        <div class="freefb-icon">💬</div>
+        <img class="result-ham" src="/static/hamster.png?v=93" alt="호아랑">
         <h2 id="freeFbTitleEl" style="margin:6px 0;"></h2>
-
-        <!-- 자기 성찰이 먼저 — 남이 매기기 전에 스스로 돌아본다 -->
-        <p class="self-ask" id="fSelfAskEl"></p>
-        <div class="self-stars" id="fSelfStars" role="radiogroup">
-            <button type="button" class="self-star" data-v="1">★</button>
-            <button type="button" class="self-star" data-v="2">★</button>
-            <button type="button" class="self-star" data-v="3">★</button>
-            <button type="button" class="self-star" data-v="4">★</button>
-            <button type="button" class="self-star" data-v="5">★</button>
+        <!-- 주제 대화와 같이 세 장으로 나눈다. 한 장에 다 쏟으면 아무것도 안 읽힌다.
+             기능 단계가 없으므로 ① 자기 성찰 ② 상호작용 대화 능력 ③ 총평 세 장이다. -->
+        <div class="res-page" id="freePage0">
+            <p class="self-ask" id="fSelfAskEl"></p>
+            <div class="self-stars" id="fSelfStars" role="radiogroup">
+                <button type="button" class="self-star" data-v="1">★</button>
+                <button type="button" class="self-star" data-v="2">★</button>
+                <button type="button" class="self-star" data-v="3">★</button>
+                <button type="button" class="self-star" data-v="4">★</button>
+                <button type="button" class="self-star" data-v="5">★</button>
+            </div>
+            <p class="self-word" id="fSelfWordEl"></p>
         </div>
-        <p class="self-word" id="fSelfWordEl"></p>
-
-        <!-- 사후 피드백 — 자유 대화도 IDC 프로파일을 받는다 (표 42 기준) -->
-        <div class="idc-head" id="freeIdcHead" style="display:none;">
-            <span class="idc-h-title" id="freeIdcTitle"></span>
-            <span class="idc-h-sub" id="freeIdcSub"></span>
+        <div class="res-page hidden" id="freePage1">
+            <div class="idc-head" id="freeIdcHead" style="display:none;">
+                <span class="idc-h-title" id="freeIdcTitle"></span>
+                <span class="idc-h-sub" id="freeIdcSub"></span>
+            </div>
+            <div class="idc-list" id="freeIdcList"></div>
         </div>
-        <div class="idc-list" id="freeIdcList"></div>
-        <!-- 총평 — 등급표가 못 담는 것을 선생님의 말로 -->
-        <p class="rev-head" id="fRevHeadEl"></p>
-        <div class="rev-body" id="freeReviewEl"></div>
-        <div class="consent-actions"><button class="action-btn" id="freeFbCloseBtn"></button></div>
+        <div class="res-page hidden" id="freePage2">
+            <p class="rev-head" id="fRevHeadEl"></p>
+            <div class="rev-body" id="freeReviewEl"></div>
+        </div>
+        <div class="res-dots" id="freeDots"><span class="res-dot on"></span><span class="res-dot"></span><span class="res-dot"></span></div>
+        <div class="res-actions">
+            <button class="action-btn ghost hidden" id="freePrevBtn"></button>
+            <button class="action-btn" id="freeNextBtn"></button>
+            <button class="action-btn hidden" id="freeFbCloseBtn"></button>
+        </div>
     </div>
 </div>
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=92" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=93" alt="호아랑"></div>
 </div>
 <div class="turn-edge" aria-hidden="true"></div>
 <!-- 다른 창(앱)에서 쓰는 중이라 이 창은 물러났음을 알린다 -->
 <div class="other-window hidden" id="otherWindowNote"><span id="otherWindowMsg"></span></div>
 <!-- 배경 영상 — 화면 전체를 채우고 그 위에 글자·카드가 놓인다 -->
 <button type="button" class="qz-btn" id="qzBtn">
-    <img id="qzBtnImg" src="/static/qz_hello.png?v=92" alt=""><span class="qz-dot"></span>
+    <img id="qzBtnImg" src="/static/qz_hello.png?v=93" alt=""><span class="qz-dot"></span>
 </button>
 <div class="home-bg" aria-hidden="true">
-    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=92" alt="">
+    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=93" alt="">
     <video class="hb-main" id="homeLoop" playsinline muted loop autoplay preload="auto"
-           poster="/static/home_loop.jpg?v=92" src="/static/home_loop.mp4?v=92"></video>
+           poster="/static/home_loop.jpg?v=93" src="/static/home_loop.mp4?v=93"></video>
     <div class="home-bg-veil"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
@@ -1675,7 +1685,7 @@
     <!-- 상단: 제목(왼쪽) · 버튼(오른쪽) -->
     <div class="home-header">
         <h1 class="home-title">
-            <img class="home-logo" id="homeLogoBtn" src="/static/icon-192.png?v=92" alt="" role="button" tabindex="0">
+            <img class="home-logo" id="homeLogoBtn" src="/static/icon-192.png?v=93" alt="" role="button" tabindex="0">
             <span id="homeTitleEl">호아랑</span>
         </h1>
         <div class="home-top">
@@ -1712,7 +1722,7 @@
 </div>
 <div class="inapp-gate hidden" id="installGate">
     <div class="inapp-card">
-        <img class="ig-icon" src="/static/icon-192.png?v=92" alt="">
+        <img class="ig-icon" src="/static/icon-192.png?v=93" alt="">
         <!-- ① 언어(나라) 선택 -->
         <div id="igStep1">
             <h2>🌏 언어 선택 · Select Your Language</h2>
@@ -1776,7 +1786,7 @@
 <div class="lang-overlay hidden" id="notifOverlay">
     <div class="lang-box" style="max-width:380px;">
         <button type="button" class="ov-x" id="notifX">✕</button>
-        <div class="notif-art"><img src="/static/ham_smile.png?v=92" alt=""></div>
+        <div class="notif-art"><img src="/static/ham_smile.png?v=93" alt=""></div>
         <h2 id="notifTitleEl" style="margin-bottom:8px;"></h2>
         <p class="consent-text" id="notifBodyEl" style="margin-bottom:14px;"></p>
         <div class="consent-actions">
@@ -1801,7 +1811,7 @@
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=92" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=93" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -1835,7 +1845,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png?v=92" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=93" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -1885,10 +1895,12 @@
         <div class="main-controls">
             <button id="actionBtn" class="action-btn">대화 시작하기</button>
         </div>
+        <!-- 넓은 화면에서 🪜 도움말이 옮겨 와 앉는 자리 (대화 종료하기 바로 아래) -->
+        <div id="scfSideSlot"></div>
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png?v=92" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=93" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span><svg class="ic"><use href="#ic-video"></use></svg></span><span id="hamViewBtnLbl"></span></button>
@@ -1925,6 +1937,8 @@
         <!-- 🪜 비계(스캐폴딩): 지금 단계에서 쓸 수 있는, 연습했던 표현을 보여줌.
              진행률 막대 구석에 있을 땐 눈에 띄지 않아, 학습자가 막혔을 때 손이 가는
              자리(빠른 요청 버튼 바로 위)로 내렸다. 주제 대화에서만 보인다. -->
+        <!-- 좁은 화면에서 🪜 도움말이 있는 자리 -->
+        <div id="scfHomeSlot">
         <div class="scf-dock hidden" id="scfDock">
             <button type="button" class="scf-btn" id="scfBtn">
                 <span class="scf-ico"><svg class="ic"><use href="#ic-hint"></use></svg></span>
@@ -1935,6 +1949,7 @@
                 <div class="scf-list" id="scfList"></div>
             </div>
         </div>
+        </div><!-- /scfHomeSlot -->
         <div class="quick-bar">
             <button class="quick-btn" data-qkey="qSlow" data-emoji="🐢" disabled>🐢 천천히</button>
             <button class="quick-btn" data-qkey="qAgain" data-emoji="🔁" disabled>🔁 다시 한 번</button>
@@ -1976,7 +1991,7 @@
 <!-- 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 (발화 연습 시작 등) -->
 <div class="ham-peek" id="hamPeek" aria-hidden="true">
     <div class="hp-bubble" id="hamPeekText"></div>
-    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=92" alt="">
+    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=93" alt="">
 </div>
 
 <!-- 대화의 문턱 연출 — 한옥 장지문 -->
@@ -1989,11 +2004,11 @@
 <!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <!-- 발화 연습 배경 — '통통(가야금)', 사용자 볼륨의 20%로 아주 은은하게 -->
-<audio id="prBgm" src="/static/practice_bgm.mp3?v=92" loop preload="none"></audio>
+<audio id="prBgm" src="/static/practice_bgm.mp3?v=93" loop preload="none"></audio>
 <!-- 단계 달성 — 전통악기 징 -->
-<audio id="gongSfx" src="/static/gong.mp3?v=92" preload="auto"></audio>
+<audio id="gongSfx" src="/static/gong.mp3?v=93" preload="auto"></audio>
 <!-- 주제 대화·자유 대화 진행 중 배경 — 「How are you 가야금」 -->
-<audio id="chatBgm" src="/static/chat_bgm.mp3?v=92" loop preload="none"></audio>
+<audio id="chatBgm" src="/static/chat_bgm.mp3?v=93" loop preload="none"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -2005,7 +2020,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v92 (2026-08-15)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v93 (2026-08-15)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -3198,7 +3213,7 @@
         const im = document.getElementById("qzBtnImg");
         if (!im) return;
         qzFaceIdx = (qzFaceIdx + 1) % QZ_FACES.length;
-        im.src = "/static/" + QZ_FACES[qzFaceIdx] + ".png?v=92";
+        im.src = "/static/" + QZ_FACES[qzFaceIdx] + ".png?v=93";
     }
     function questBtnSync() {
         const b = document.getElementById("qzBtn");
@@ -3354,6 +3369,8 @@
         document.getElementById("otherWindowMsg").textContent = t("otherWin");
         document.getElementById("srcTitleEl").textContent = t("srcTitle");
         document.getElementById("resNextBtn").textContent = t("resNext");
+        document.getElementById("freeNextBtn").textContent = t("resNext");
+        document.getElementById("freePrevBtn").textContent = t("resPrev");
         // 언어를 바꿔도 자기 성찰·총평의 말이 따라오게 (열 때 selfReset 이 다시 채운다)
         ["selfAskEl", "fSelfAskEl"].forEach(id => {
             const el = document.getElementById(id); if (el) el.textContent = t("selfAsk");
@@ -3455,7 +3472,7 @@
             const w = document.createElement("div");
             w.className = "ob-hero";
             w.innerHTML = '<img class="ob-ham" alt=""><span class="ob-hello"></span>';
-            w.querySelector("img").src = "/static/ham_smile.png?v=92";
+            w.querySelector("img").src = "/static/ham_smile.png?v=93";
             w.querySelector(".ob-hello").textContent = t("obHello");
             return w;
         },
@@ -3539,7 +3556,7 @@
             const v = w.querySelectorAll(".ob-view");
             v[0].querySelector(".vl").textContent = stripLeadEmoji(t("hvClose"));
             v[1].querySelector(".vl").textContent = stripLeadEmoji(t("hvOpen"));
-            v[1].querySelector("img").src = "/static/ham_idle.png?v=92";
+            v[1].querySelector("img").src = "/static/ham_idle.png?v=93";
             return w;
         },
         function talk() {                       // ⑥ 말하기 버튼 · 도움말 · 이어폰
@@ -4305,21 +4322,52 @@
         try {
             if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "end_session" }));
         } catch (e) {}
-        freeEndTimer = setTimeout(concludeFree, 25000);   // 위와 같은 이유
+        // 위와 같은 이유로 stopSession() 은 여기서 부르지 않는다(웹소켓이 닫힌다)
+        try { stopAllAudio(); } catch (e) {}
+        setControlsEnabled(false);
+        closeDoorNow(t("doorEnd"));
+        freeEndTimer = setTimeout(concludeFree, 25000);
     }
     function concludeFree() {
         if (!freeEnding) return;
         freeEnding = false;
         clearTimeout(freeEndTimer);
         stopSession();
-        closeDoorThen(t("doorEnd"), showFreeFeedback);
+        doorSwap(showFreeFeedback);
     }
     (function bindResPager() {
         const nx = document.getElementById("resNextBtn"), pv = document.getElementById("resPrevBtn");
         if (nx) nx.addEventListener("click", () => resGo(resPage + 1));
         if (pv) pv.addEventListener("click", () => resGo(resPage - 1));
     })();
+    /* 자유 대화 결과도 세 장 — ⓪ 자기 성찰 ① 상호작용 대화 능력 ② 총평 */
+    let freePage = 0;
+    const FREE_LAST = 2;
+    function freeGo(p) {
+        freePage = Math.max(0, Math.min(FREE_LAST, p));
+        for (let i = 0; i <= FREE_LAST; i++) {
+            const el = document.getElementById("freePage" + i);
+            if (el) el.classList.toggle("hidden", i !== freePage);
+        }
+        document.querySelectorAll("#freeDots .res-dot").forEach((d, i) => d.classList.toggle("on", i === freePage));
+        const pv = document.getElementById("freePrevBtn");
+        const nx = document.getElementById("freeNextBtn");
+        const cl = document.getElementById("freeFbCloseBtn");
+        pv.classList.toggle("hidden", freePage === 0);
+        nx.classList.toggle("hidden", freePage === FREE_LAST);
+        cl.classList.toggle("hidden", freePage !== FREE_LAST);
+        nx.classList.toggle("wide", freePage === 0);
+        const box = document.querySelector("#freeFbOverlay .lang-box");
+        if (box) box.scrollTop = 0;
+    }
+    (function bindFreePager() {
+        const nx = document.getElementById("freeNextBtn"), pv = document.getElementById("freePrevBtn");
+        if (nx) nx.addEventListener("click", () => freeGo(freePage + 1));
+        if (pv) pv.addEventListener("click", () => freeGo(freePage - 1));
+    })();
+
     function showFreeFeedback() {
+        freeGo(0);
         try { questFinish("free"); } catch (e) {}   // 기록만 — 퀘스트·도장은 홈에서 본다
         // 사후 피드백 — 대화 중 즉각 교정과 별개로, 끝난 뒤 요소별 프로파일을 보인다
         try {
@@ -5371,6 +5419,26 @@
             fxKeepDoor = false;
         });
     }
+    /* 종료를 누른 순간 문을 먼저 닫아 두고, 결과가 오면 그때 화면을 바꾼다.
+       ★ 예전에는 서버 응답을 다 받은 뒤에야 문이 닫히기 시작해서,
+         누르고 나서 한참 아무 일도 안 일어나는 것처럼 보였다.
+       문이 이미 닫혀 있으면 곧바로 바꾸고, 아직 닫히는 중이면 맞물리는 시점을 기다린다. */
+    let doorClosedAt = 0;
+    function closeDoorNow(text) {
+        doorClosedAt = Date.now();
+        closeDoor(text);
+    }
+    function doorSwap(fn) {
+        const left = Math.max(0, 1350 - (Date.now() - doorClosedAt));
+        const run = () => {
+            fxKeepDoor = true;
+            try { fn(); } catch (e) { console.warn(e); }
+            fxKeepDoor = false;
+        };
+        if (!doorClosedAt) { closeDoorThen(t("doorEnd"), fn); return; }
+        if (left <= 0) run(); else doorAfter(left, run);
+        doorClosedAt = 0;
+    }
 
     /* 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 */
     let hamPeekTimer = null;
@@ -5478,6 +5546,7 @@
     /* ── 🪜 비계(스캐폴딩): 지금 대화 맥락에서 '내 차례에 할 수 있는 대답' 2개를
        서버(웹소켓)로 요청해 보여준다. 연습 표현과 같거나 유사하게 생성되고,
        응답이 없으면 현재 단계의 연습 표현으로 폴백. 탭하면 들려준다. ── */
+    let scfAutoTimer = null;   // 말차례가 바뀌면 열려 있는 도움말을 새로 받는다
     const scfDock = document.getElementById("scfDock");
     const scfBtn = document.getElementById("scfBtn");
     const scfPanel = document.getElementById("scfPanel");
@@ -5584,6 +5653,36 @@
         if (scfPanel.classList.contains("hidden")) requestScaffold();
         else scfPanel.classList.add("hidden");
     });
+    /* ── 넓은 화면(주로 선생님의 PC)에서는 도움말을 왼쪽 기둥으로 옮긴다 ──
+       휴대폰에서는 대화창 아래가 손이 가는 자리지만, PC에서는 왼쪽이 통째로 비어 있고
+       대화창은 아래로 길다. '대화 종료하기' 밑에 붙여 두면 펴 둔 채로 대화할 수 있다.
+       마크업을 복사하지 않고 자리만 옮긴다(영상통화 무대와 같은 방식). */
+    (function dockScaffold() {
+        // ★ 여기서 예외가 나면 이 아래 스크립트가 통째로 죽는다(v62 먹통 사고와 같은 꼴).
+        //   matchMedia 가 없는 환경도 있으므로 전부 감싸고, 없으면 폭으로 대신 잰다.
+        try {
+            if (!scfDock) return;
+            const side = document.getElementById("scfSideSlot");
+            const home = document.getElementById("scfHomeSlot");
+            if (!side || !home) return;
+            const place = (wide) => {
+                const to = wide ? side : home;
+                if (scfDock.parentElement !== to) to.appendChild(scfDock);
+                scfDock.classList.toggle("side", !!wide);
+            };
+            if (typeof window.matchMedia === "function") {
+                const mq = window.matchMedia("(min-width: 821px)");
+                const on = () => place(mq.matches);
+                on();
+                if (mq.addEventListener) mq.addEventListener("change", on);
+                else if (mq.addListener) mq.addListener(on);
+            } else {
+                const on = () => place(window.innerWidth >= 821);
+                on();
+                window.addEventListener("resize", on);
+            }
+        } catch (e) { console.warn("도움말 자리 옮기기 실패:", e); }
+    })();
     // 영상통화 화면의 🪜 — 누르면 옆에서 빼꼼 나왔다가 사라진다
     (function bindHvScaffoldBtn() {
         const b = document.getElementById("hvScfBtn");
@@ -5606,6 +5705,11 @@
         } catch (e) {}
         // 종료 시 서버는 ①단계 분석 ②상호작용 프로파일 ③총평을 만든다.
         // 9초는 너무 짧아 프로파일과 총평이 도착하기 전에 화면이 떠 버렸다(빈 칸의 원인).
+        // ★ 여기서 stopSession() 을 부르면 웹소켓까지 닫혀 총평이 영영 오지 않는다.
+        //   소리만 죽이고 단추만 잠근 뒤, 문을 먼저 닫아 기다림을 연출 뒤로 숨긴다.
+        try { stopAllAudio(); } catch (e) {}
+        setControlsEnabled(false);
+        closeDoorNow(t("doorEnd"));
         finalScoreTimer = setTimeout(concludeRoleplay, 25000);
     }
     function concludeRoleplay() {
@@ -5615,8 +5719,8 @@
         actionBtn.disabled = false;
         if (!rpFinal) rpFinal = { percent: rpPercent, score: rpPercent, stages: rpStagesState, idc: [], idcTotal: 0 };
         stopSession(); // 대화 저장(녹음+기록+메타)은 여기서 자동 수행
-        // 대화 화면에서 문이 닫히고 → 다 닫히면 그 뒤에서 결과 화면으로 바뀐다
-        closeDoorThen(t("doorEnd"), showRpResult);
+        // 문은 종료를 누른 순간 이미 닫히기 시작했다 → 맞물리는 대로 결과로 바꾼다
+        doorSwap(showRpResult);
     }
     /* 상호작용 대화 능력(IDC) 프로파일 렌더 — 요소별 상·중·하와 한 줄 근거.
        요소 이름은 학습자의 모국어로 보인다(사전 키: idc_<key>).
@@ -5685,6 +5789,22 @@
         ["selfWordEl", "fSelfWordEl"].forEach(id => {
             const el = document.getElementById(id); if (el) el.textContent = t("selfWord" + v);
         });
+        // 기록은 대화가 끝나는 순간 저장되고 별점은 그 뒤에 매긴다 →
+        // 방금 저장한 기록(맨 앞)에 별점을 얹어 준다. 서버에도 함께 보낸다.
+        try {
+            const list = loadHistory();
+            if (list.length) {
+                list[0].stats = list[0].stats || {};
+                list[0].stats.selfRating = v;
+                list[0].text = buildTranscriptText() || list[0].text;
+                localStorage.setItem(HIST_KEY, JSON.stringify(list));
+            }
+        } catch (e) {}
+        try {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "self_rating", value: v }));
+            }
+        } catch (e) {}
     }
     document.querySelectorAll(".self-star").forEach(b => {
         b.addEventListener("click", () => selfSet(Number(b.dataset.v)));
@@ -5696,7 +5816,7 @@
             const el = document.getElementById("resPage" + i);
             if (el) el.classList.toggle("hidden", i !== resPage);
         }
-        document.querySelectorAll(".res-dot").forEach((d, i) => d.classList.toggle("on", i === resPage));
+        document.querySelectorAll("#rpResultOverlay .res-dot").forEach((d, i) => d.classList.toggle("on", i === resPage));
         const pv = document.getElementById("resPrevBtn");
         const nx = document.getElementById("resNextBtn");
         const cl = document.getElementById("rpCloseBtn");
@@ -6617,6 +6737,15 @@
                 hamsterWrap.style.setProperty("--talk-scale", "1");
                 floatHamWrap.style.setProperty("--talk-scale", "1");
                 if (!isPaused && !isTalking) setStatus("idle", "stPushHint");
+                // 도움말을 펴 둔 채 대화를 이어 가면, 말차례가 바뀔 때마다 새로 받아 온다.
+                // 예전 단계의 표현이 그대로 남아 있으면 오히려 헷갈린다.
+                if (scfDock && !scfDock.classList.contains("hidden")
+                    && !scfPanel.classList.contains("hidden")) {
+                    clearTimeout(scfAutoTimer);
+                    scfAutoTimer = setTimeout(() => {
+                        if (!scfPanel.classList.contains("hidden")) requestScaffold();
+                    }, 700);   // 말이 끝나고 한 박자 뒤에
+                }
             } else if (msg.type === "interrupted") {
                 stopAllAudio();
                 if (currentAiBubble) {
@@ -6843,6 +6972,19 @@
             lines.push(" 과업 진행률: " + fin.percent + "% → 점수: " + fin.score + "점");
             lines.push(" 기능단계: " + (fin.stages || []).map(s => (s.done ? "✓" : "✗") + s.name).join(", "));
         }
+        // 자기 평가 별점 — 남이 매긴 점수와 나란히 두면 그 차이가 곧 자료가 된다
+        if (selfRating > 0) {
+            lines.push(" 스스로 매긴 별점: " + "★".repeat(selfRating) + "☆".repeat(5 - selfRating)
+                       + " (" + selfRating + "/5)");
+        }
+        if (rpFinal && (rpFinal.idcTotal || 0) > 0) {
+            lines.push(" 상호작용 대화 능력: " + rpFinal.idcTotal + "점");
+        }
+        if (rpFinal && (rpFinal.review || "").trim()) {
+            lines.push("");
+            lines.push("[호아랑 선생님의 총평]");
+            lines.push(rpFinal.review.trim());
+        }
         lines.push("=====================================");
         lines.push("");
         transcriptLog.forEach(item => {
@@ -6902,8 +7044,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png?v=92", smile: "/static/ham_smile.png?v=92",
-        surprised: "/static/ham_surprised.png?v=92", shy: "/static/ham_shy.png?v=92",
+        idle: "/static/ham_idle.png?v=93", smile: "/static/ham_smile.png?v=93",
+        surprised: "/static/ham_surprised.png?v=93", shy: "/static/ham_shy.png?v=93",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -6977,7 +7119,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png?v=92";
+                img.src = "/static/hamster.png?v=93";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");

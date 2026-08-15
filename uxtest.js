@@ -20,7 +20,9 @@ setTimeout(()=>{
   ok("① 기능 단계·유형", !!d.querySelector("#resPage1 #rpResultStages") && !!d.querySelector("#resPage1 #rpAbcRow"));
   ok("② 상호작용 대화 능력", !!d.querySelector("#resPage2 #rpIdcList"));
   ok("③ 총평은 줄글", !!d.querySelector("#resPage3 #rpReviewEl"));
-  ok("쪽 표시 점 4개", d.querySelectorAll(".res-dot").length === 4);
+  ok("쪽 표시 점 4개", d.querySelectorAll("#rpResultOverlay .res-dot").length === 4);
+  ok("자유 대화는 세 장", d.querySelectorAll("#freeDots .res-dot").length === 3
+     && [0,1,2].every(i => !!d.getElementById("freePage" + i)));
   ok("이전·다음이 한 줄 두 칸", /\.res-actions \{[^}]*grid-template-columns: 1fr 1fr/.test(html));
   ok("쪽 문구 지원 언어 전부에", (html.match(/resNext:"/g)||[]).length===LANGS);
   console.log("── 용어 쉬움 ──");

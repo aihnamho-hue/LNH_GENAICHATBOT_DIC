@@ -1,6 +1,8 @@
 // v84 — IDC 강화 전수 검사
 const fs=require("fs");
 const html=fs.readFileSync("i.html","utf8");
+// 지원 언어 수는 늘어난다 — 숫자를 박아 두지 말고 언어 고르기 단추에서 센다
+const LANGS=(html.match(/data-lang="[a-z]+"/g)||[]).length;
 const py=fs.readFileSync("/sessions/gifted-youthful-edison/mnt/음성 대화형 챗봇/main.py","utf8");
 let fail=0; const ok=(n,c)=>{console.log((c?"  ✅ ":"  ❌ ")+n); if(!c)fail++;};
 console.log("── ⓐ 자유 수다에도 IDC ──");
@@ -16,7 +18,7 @@ ok("판정 요청(4) abc", /"A" 단순형/.test(py) && /"C" 확장형/.test(py))
 ok("서버가 abc 저장", /rp_progress\["abc"\] = data\["abc"\]/.test(py));
 ok("최종 페이로드에 abc", /"abc": rp_progress\["abc"\]/.test(py));
 ok("결과 화면에 유형 배지", /id="rpAbcBadge"/.test(html) && /abcC:"확장형/.test(html));
-ok("배지 문구 12개 언어", (html.match(/abcC:"/g)||[]).length===12);
+ok("배지 문구 지원 언어 전부에", (html.match(/abcC:"/g)||[]).length===LANGS);
 console.log("── ⓒ 대화이동 연쇄 ──");
 ok("판정 요청(5) chains", /시작\(먼저 화제·요청을 엶\)/.test(py));
 ok("연쇄 누적 저장", /rp_progress\["chains"\]\[k\] = max/.test(py));

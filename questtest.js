@@ -1,6 +1,8 @@
 // 오늘의 퀘스트 — 집계·추첨·표시 검사
 const fs=require("fs"), {JSDOM}=require("jsdom");
 const html=fs.readFileSync("i.html","utf8");
+// 지원 언어 수는 늘어난다 — 숫자를 박아 두지 말고 언어 고르기 단추에서 센다
+const LANGS=(html.match(/data-lang="[a-z]+"/g)||[]).length;
 let fail=0; const ok=(n,c)=>{console.log((c?"  ✅ ":"  ❌ ")+n); if(!c)fail++;};
 const dom=new JSDOM(html,{runScripts:"dangerously",url:"https://korean-dic.onrender.com/",pretendToBeVisual:true,
  beforeParse(w){w.matchMedia=()=>({matches:false,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){}});
@@ -44,7 +46,7 @@ setTimeout(()=>{
   });
   ok("LLM 퀘스트는 주제 대화 전용", (defs2.match(/llm:1, chk/g)||[]).length===8 && !/llm:1[^\n]*mode:"free"/.test(defs2));
   ok("서버가 보낸 quests 를 흡수한다", /\(msg\.quests \|\| \[\]\)\.forEach/.test(html));
-  ok("문구가 12개 언어에 있다", (html.match(/qRefuse:"/g)||[]).length===12);
+  ok("문구가 지원 언어 전부에 있다", (html.match(/qRefuse:"/g)||[]).length===LANGS);
 
   console.log("\n── 결과를 자료로 남긴다 ──");
   ok("지난 대화 기록에 quests 저장", /title, preview, text, quests, stats/.test(html));
@@ -70,7 +72,7 @@ setTimeout(()=>{
   ok("오늘 깬 것을 하루 단위로 모은다", /function qzDoneToday\(\)/.test(html) && /localStorage\.setItem\(qzDoneKey\(\)/.test(html));
   ok("빼꼼에 체크 표시", /done\.has\(q\.id\)/.test(html));
   ok("비언어 안내가 사라졌다", !/idcNoteEl/.test(html));
-  ok("칸 이름이 12개 언어", (html.match(/st_stage:"/g)||[]).length===12);
+  ok("칸 이름이 지원 언어 전부에", (html.match(/st_stage:"/g)||[]).length===LANGS);
   ok("퀘스트마다 요소 키(ek)가 붙어 있다", (html.match(/ek:"/g)||[]).length>=21);
 
   console.log(fail? `\n💥 실패 ${fail}건` : "\n🎉 모두 통과");

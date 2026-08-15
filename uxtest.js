@@ -1,6 +1,8 @@
 // v85 — 결과 2쪽 분할·용어 쉬움·지난 대화·퀘스트 토글
 const fs=require("fs"), {JSDOM}=require("jsdom");
 const html=fs.readFileSync("i.html","utf8");
+// 지원 언어 수는 늘어난다 — 숫자를 박아 두지 말고 언어 고르기 단추에서 센다
+const LANGS=(html.match(/data-lang="[a-z]+"/g)||[]).length;
 const py=fs.readFileSync("/sessions/gifted-youthful-edison/mnt/음성 대화형 챗봇/main.py","utf8");
 let fail=0; const ok=(n,c)=>{console.log((c?"  ✅ ":"  ❌ ")+n); if(!c)fail++;};
 const dom=new JSDOM(html,{runScripts:"dangerously",url:"https://korean-dic.onrender.com/",pretendToBeVisual:true,
@@ -20,7 +22,7 @@ setTimeout(()=>{
   ok("③ 총평은 줄글", !!d.querySelector("#resPage3 #rpReviewEl"));
   ok("쪽 표시 점 4개", d.querySelectorAll(".res-dot").length === 4);
   ok("이전·다음이 한 줄 두 칸", /\.res-actions \{[^}]*grid-template-columns: 1fr 1fr/.test(html));
-  ok("쪽 문구 12개 언어", (html.match(/resNext:"/g)||[]).length===12);
+  ok("쪽 문구 지원 언어 전부에", (html.match(/resNext:"/g)||[]).length===LANGS);
   console.log("── 용어 쉬움 ──");
   ok("어려운 말 금지 지시", /다음 말은 절대 쓰지 마라/.test(py) && /화행, 레지스터, 담화/.test(py));
   ok("'~해 보세요' 로 쓰라고 지시", /'~하지 못했습니다'보다 '~해 보세요'/.test(py));

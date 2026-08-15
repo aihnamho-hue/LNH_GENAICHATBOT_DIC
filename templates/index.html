@@ -6,26 +6,26 @@
     <title>호아랑과 한국어 수다</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json?v=97">
+    <link rel="manifest" href="/static/manifest.json?v=98">
     <meta name="theme-color" content="#4A7C74">
     <!-- iOS 홈 화면 설치용 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="호아랑">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=97">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=97">
-    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=97" crossorigin>
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=98">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=98">
+    <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=98" crossorigin>
     <style>
         /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansMedium.woff2?v=97") format("woff2");
+            src: url("/static/fonts/GmarketSansMedium.woff2?v=98") format("woff2");
             font-weight: 400 600; font-style: normal; font-display: swap;
         }
         @font-face {
             font-family: "GmarketSans";
-            src: url("/static/fonts/GmarketSansBold.woff2?v=97") format("woff2");
+            src: url("/static/fonts/GmarketSansBold.woff2?v=98") format("woff2");
             font-weight: 700 900; font-style: normal; font-display: swap;
         }
         :root {
@@ -1118,6 +1118,33 @@
             .home-top .home-ico { padding: 0; min-width: 38px; justify-content: center; }
             .home-top .home-ico span:last-child { display: none; }
         }
+        /* ══ 데스크톱 홈 정비 (v98) ══════════════════════════════
+           ★ 이 블록은 821px 이상에서만 읽힌다. 폰은 한 줄도 적용받지 않는다.
+           (🪜 도움말이 왼쪽 기둥으로 옮겨 가는 경계와 같은 값을 쓴다.)
+
+           고친 것 — 홈 칸이 폰보다도 좁아지던 원인.
+           .home-screen 은 폭·높이를 --ui-zoom 으로 **나누고** 있는데, 정작
+           이 요소에는 zoom 이 걸려 있지 않다(zoom 은 영상통화의 .hv-* 에만 있다).
+           v77~79 에서 zoom 을 떼면서 남은 자국이다. 그래서 1400px 화면에서는
+           1.34 로 나눈 만큼 칸이 줄어, 다섯 버튼이 글자까지 펴고 들어앉자
+           제목이 「호 / 아 / 랑」 세 줄로 깨졌다. */
+        @media (min-width: 821px) {
+            /* 나누기를 걷어낸다. 세로에 맞춘 9:16 을 그대로 쓰되 너무 커지지 않게 묶는다 */
+            .home-screen { max-width: min(560px, calc(100dvh * 9 / 16 - 24px));
+                min-height: 100dvh; padding-bottom: 18px; }
+            /* 좁은 칸에는 아이콘만. 이름은 마우스를 올리면 뜬다(title) */
+            .home-top { gap: 9px; }
+            .home-top .home-ico { padding: 0; min-width: 40px; height: 40px; justify-content: center; }
+            .home-top .home-ico span:last-child { display: none; }
+            /* 잘린 화면이 아니라 '폰 모양 패널'로 읽히게 — 모서리와 그림자 */
+            .hb-main { border-radius: 26px; overflow: hidden;
+                box-shadow: 0 30px 90px -28px rgba(40,32,20,0.6); }
+            /* 카드를 조금 넓히고 눌리는 자리를 키운다 */
+            .home-card { width: 92%; }
+            .home-title { font-size: 26px; }
+            .home-logo { width: 42px; height: 42px; }
+        }
+
         /* 호아랑 히어로 — 크게, 원 없이, 통통 튀며 말풍선 */
         /* ── 홈 배경 영상 — 화면 전체를 채운다 ──
            글자·카드가 잘 읽히도록 위아래에 옅은 한지빛 막을 덮는다. */
@@ -1338,8 +1365,8 @@
 <!-- ═══ 앱 시작 영상 (한옥 장지문이 열리고 호아랑이 나온다) ═══
      같은 세션에서 한 번만 재생하고, 끝나면 스스로 사라진다. -->
 <div class="splash" id="splash">
-    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=97">
-        <source src="/static/intro.mp4?v=97" type="video/mp4">
+    <video id="splashVideo" playsinline preload="auto" poster="/static/intro-poster.jpg?v=98">
+        <source src="/static/intro.mp4?v=98" type="video/mp4">
     </video>
     <button type="button" class="splash-skip" id="splashSkip">건너뛰기 ›</button>
 </div>
@@ -1548,7 +1575,7 @@
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="rpResultX">✕</button>
         <!-- 듀오링고식 완료 화면: 호아랑 등장 + 통계 카드 -->
-        <img class="result-ham" src="/static/hamster.png?v=97" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=98" alt="호아랑">
         <h2 id="rpResultTitleEl" style="margin-bottom:10px;">🏆</h2>
         <!-- ① 자기 성찰 — 남이 매기기 전에 스스로 돌아본다.
              자기 평가와 실제 수행의 차이 자체가 연구 자료가 된다(5장). -->
@@ -1608,13 +1635,13 @@
         <p class="rp-note" id="prHintEl" style="text-align:center; margin:0 0 4px;"></p>
         <!-- 말차례 교환 단계에서만 보이는 상대(호아랑) 발화 말풍선 -->
         <div class="pr-cue-row hidden" id="prCueRow">
-            <div class="profile"><img src="/static/hamster.png?v=97" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=98" alt=""></div>
             <div class="pr-cue-bubble" id="prCueText"></div>
         </div>
         <div class="pr-target" id="prTarget"></div>
         <!-- 3항 연속체 — 학습자 발화 뒤에 올 상대의 반응 -->
         <div class="pr-cue-row hidden" id="prFollowRow">
-            <div class="profile"><img src="/static/hamster.png?v=97" alt=""></div>
+            <div class="profile"><img src="/static/hamster.png?v=98" alt=""></div>
             <div class="pr-cue-bubble" id="prFollowText"></div>
         </div>
         <button type="button" class="pr-listen-btn" id="prListenBtn">🔊</button>
@@ -1634,7 +1661,7 @@
 <div class="lang-overlay hidden" id="freeFbOverlay">
     <div class="lang-box consent-box">
         <button type="button" class="ov-x" id="freeFbX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=97" alt="호아랑">
+        <img class="result-ham" src="/static/hamster.png?v=98" alt="호아랑">
         <h2 id="freeFbTitleEl" style="margin:6px 0;"></h2>
         <!-- 주제 대화와 같이 세 장으로 나눈다. 한 장에 다 쏟으면 아무것도 안 읽힌다.
              기능 단계가 없으므로 ① 자기 성찰 ② 상호작용 대화 능력 ③ 총평 세 장이다. -->
@@ -1671,19 +1698,19 @@
 <!-- 대화 중(모바일 한 열 레이아웃) 플로팅 호아랑 — 채팅을 봐도 캐릭터가 항상 보이게.
      메인 무대(#stage)의 상태(speaking/listening/surprised)를 그대로 따라 움직인다. -->
 <div class="float-ham" id="floatHam">
-    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=97" alt="호아랑"></div>
+    <div class="fh-wrap" id="floatHamWrap"><img src="/static/hamster.png?v=98" alt="호아랑"></div>
 </div>
 <div class="turn-edge" aria-hidden="true"></div>
 <!-- 다른 창(앱)에서 쓰는 중이라 이 창은 물러났음을 알린다 -->
 <div class="other-window hidden" id="otherWindowNote"><span id="otherWindowMsg"></span></div>
 <!-- 배경 영상 — 화면 전체를 채우고 그 위에 글자·카드가 놓인다 -->
 <button type="button" class="qz-btn" id="qzBtn">
-    <img id="qzBtnImg" src="/static/qz_hello.png?v=97" alt=""><span class="qz-dot"></span>
+    <img id="qzBtnImg" src="/static/qz_hello.png?v=98" alt=""><span class="qz-dot"></span>
 </button>
 <div class="home-bg" aria-hidden="true">
-    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=97" alt="">
+    <img class="hb-blur" id="homeLoopBlur" src="/static/home_loop.jpg?v=98" alt="">
     <video class="hb-main" id="homeLoop" playsinline muted loop autoplay preload="auto"
-           poster="/static/home_loop.jpg?v=97" src="/static/home_loop.mp4?v=97"></video>
+           poster="/static/home_loop.jpg?v=98" src="/static/home_loop.mp4?v=98"></video>
     <div class="home-bg-veil"></div>
 </div>
 <!-- ═══ 홈 화면 (진입 안내 완료 후 착지) — 큰 카드 2개로 모드 선택 ═══ -->
@@ -1691,7 +1718,7 @@
     <!-- 상단: 제목(왼쪽) · 버튼(오른쪽) -->
     <div class="home-header">
         <h1 class="home-title">
-            <img class="home-logo" id="homeLogoBtn" src="/static/icon-192.png?v=97" alt="" role="button" tabindex="0">
+            <img class="home-logo" id="homeLogoBtn" src="/static/icon-192.png?v=98" alt="" role="button" tabindex="0">
             <span id="homeTitleEl">호아랑</span>
         </h1>
         <div class="home-top">
@@ -1728,7 +1755,7 @@
 </div>
 <div class="inapp-gate hidden" id="installGate">
     <div class="inapp-card">
-        <img class="ig-icon" src="/static/icon-192.png?v=97" alt="">
+        <img class="ig-icon" src="/static/icon-192.png?v=98" alt="">
         <!-- ① 언어(나라) 선택 -->
         <div id="igStep1">
             <h2>🌏 언어 선택 · Select Your Language</h2>
@@ -1793,7 +1820,7 @@
 <div class="lang-overlay hidden" id="notifOverlay">
     <div class="lang-box" style="max-width:380px;">
         <button type="button" class="ov-x" id="notifX">✕</button>
-        <div class="notif-art"><img src="/static/ham_smile.png?v=97" alt=""></div>
+        <div class="notif-art"><img src="/static/ham_smile.png?v=98" alt=""></div>
         <h2 id="notifTitleEl" style="margin-bottom:8px;"></h2>
         <p class="consent-text" id="notifBodyEl" style="margin-bottom:14px;"></p>
         <div class="consent-actions">
@@ -1818,7 +1845,7 @@
 <div class="lang-overlay hidden" id="appDlOverlay">
     <div class="lang-box" style="max-width:420px;">
         <button type="button" class="ov-x" id="appDlX">✕</button>
-        <img class="result-ham" src="/static/hamster.png?v=97" alt="호아랑" style="width:120px; margin:0 auto 4px;">
+        <img class="result-ham" src="/static/hamster.png?v=98" alt="호아랑" style="width:120px; margin:0 auto 4px;">
         <h2 id="appDlTitleEl" style="margin-bottom:8px;">📱</h2>
         <p class="consent-text" id="appDlBodyEl" style="text-align:left; white-space:pre-line; line-height:1.6;"></p>
         <div class="consent-actions">
@@ -1852,7 +1879,7 @@
         <div class="stage" id="stage">
             <div class="stage-glow"></div>
             <div class="hamster-wrap" id="hamsterWrap">
-                <img id="hamster" src="/static/ham_idle.png?v=97" alt="호아랑">
+                <img id="hamster" src="/static/ham_idle.png?v=98" alt="호아랑">
             </div>
             <div class="speech-indicator" id="speechIndicator">말하는 중...</div>
             <div class="pause-overlay">⏸️</div>
@@ -1920,7 +1947,7 @@
     </div>
     <div class="chat-panel">
         <div class="chat-header">
-            <div class="avatar"><img src="/static/hamster.png?v=97" alt=""></div>
+            <div class="avatar"><img src="/static/hamster.png?v=98" alt=""></div>
             <div class="info"><h2>호아랑</h2><span id="headerStatus">대기 중</span></div>
             <!-- 🎥 영상통화 뷰 열기 — 호아랑을 크게 보며 대화 (횡 슬라이드) -->
             <button type="button" class="hv-open-btn" id="hamViewBtn" title="영상통화" disabled><span><svg class="ic"><use href="#ic-video"></use></svg></span><span id="hamViewBtnLbl"></span></button>
@@ -2011,7 +2038,7 @@
 <!-- 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 (발화 연습 시작 등) -->
 <div class="ham-peek" id="hamPeek" aria-hidden="true">
     <div class="hp-bubble" id="hamPeekText"></div>
-    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=97" alt="">
+    <img class="hp-ham" id="hamPeekImg" src="/static/ham_smile.png?v=98" alt="">
 </div>
 
 <!-- 대화의 문턱 연출 — 한옥 장지문 -->
@@ -2024,11 +2051,11 @@
 <!-- 배경음악(BGM) — 대화 연습 중이 아닐 때만 30% 음량으로 재생 -->
 <audio id="bgm" src="/static/bgm.mp3" loop preload="auto"></audio>
 <!-- 발화 연습 배경 — '통통(가야금)', 사용자 볼륨의 20%로 아주 은은하게 -->
-<audio id="prBgm" src="/static/practice_bgm.mp3?v=97" loop preload="none"></audio>
+<audio id="prBgm" src="/static/practice_bgm.mp3?v=98" loop preload="none"></audio>
 <!-- 단계 달성 — 전통악기 징 -->
-<audio id="gongSfx" src="/static/gong.mp3?v=97" preload="auto"></audio>
+<audio id="gongSfx" src="/static/gong.mp3?v=98" preload="auto"></audio>
 <!-- 주제 대화·자유 대화 진행 중 배경 — 「How are you 가야금」 -->
-<audio id="chatBgm" src="/static/chat_bgm.mp3?v=97" loop preload="none"></audio>
+<audio id="chatBgm" src="/static/chat_bgm.mp3?v=98" loop preload="none"></audio>
 <script>
     // 오디오 컨텍스트 분리: 마이크 캡처(16kHz)와 Gemini 응답 재생(24kHz)을
     // 같은 컨텍스트에 두면 청크마다 리샘플링이 리셋되며 클릭/파열음 발생 → 목소리 갈라짐
@@ -2040,7 +2067,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v97 (2026-08-16)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v98 (2026-08-16)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -3343,7 +3370,7 @@
         const im = document.getElementById("qzBtnImg");
         if (!im) return;
         qzFaceIdx = (qzFaceIdx + 1) % QZ_FACES.length;
-        im.src = "/static/" + QZ_FACES[qzFaceIdx] + ".png?v=97";
+        im.src = "/static/" + QZ_FACES[qzFaceIdx] + ".png?v=98";
     }
     function questBtnSync() {
         const b = document.getElementById("qzBtn");
@@ -3501,6 +3528,11 @@
         document.getElementById("hcFreeDescEl").textContent = t("hcFreeDesc");
         document.getElementById("homeNameLbl").textContent = t("homeName");
         document.getElementById("homeHistoryLbl").textContent = t("homeHistory");
+        // 넓은 화면에서는 글자를 숨기고 아이콘만 두므로, 마우스를 올렸을 때 이름이 뜨게 한다
+        const _nb = document.getElementById("homeNameBtn");
+        if (_nb) _nb.title = t("homeName");
+        const _hb = document.getElementById("homeHistoryBtn");
+        if (_hb) _hb.title = t("homeHistory");
         document.getElementById("hamViewBtnLbl").textContent = t("hvOpen");
         document.getElementById("hamViewBtn").title = t("hvOpen");   // 툴팁도 모국어로
         document.getElementById("pttKeyHintEl").textContent = t("pttKeyHint");
@@ -3610,7 +3642,7 @@
             const w = document.createElement("div");
             w.className = "ob-hero";
             w.innerHTML = '<img class="ob-ham" alt=""><span class="ob-hello"></span>';
-            w.querySelector("img").src = "/static/ham_smile.png?v=97";
+            w.querySelector("img").src = "/static/ham_smile.png?v=98";
             w.querySelector(".ob-hello").textContent = t("obHello");
             return w;
         },
@@ -3694,7 +3726,7 @@
             const v = w.querySelectorAll(".ob-view");
             v[0].querySelector(".vl").textContent = stripLeadEmoji(t("hvClose"));
             v[1].querySelector(".vl").textContent = stripLeadEmoji(t("hvOpen"));
-            v[1].querySelector("img").src = "/static/ham_idle.png?v=97";
+            v[1].querySelector("img").src = "/static/ham_idle.png?v=98";
             return w;
         },
         function talk() {                       // ⑥ 말하기 버튼 · 도움말 · 이어폰
@@ -7303,8 +7335,8 @@
     /* ── 호아랑 표정 세트 (누끼) — 상태에 따라 이미지 교체 ── */
     const hamsterImg = document.getElementById("hamster");
     const HAM_EXPR = {
-        idle: "/static/ham_idle.png?v=97", smile: "/static/ham_smile.png?v=97",
-        surprised: "/static/ham_surprised.png?v=97", shy: "/static/ham_shy.png?v=97",
+        idle: "/static/ham_idle.png?v=98", smile: "/static/ham_smile.png?v=98",
+        surprised: "/static/ham_surprised.png?v=98", shy: "/static/ham_shy.png?v=98",
     };
     function setHamExpr(name) {
         const src = HAM_EXPR[name] || HAM_EXPR.idle;
@@ -7378,7 +7410,7 @@
                 const profile = document.createElement("div");
                 profile.className = "profile";
                 const img = document.createElement("img");
-                img.src = "/static/hamster.png?v=97";
+                img.src = "/static/hamster.png?v=98";
                 profile.appendChild(img);
                 row.appendChild(profile);
                 const name = document.createElement("div");

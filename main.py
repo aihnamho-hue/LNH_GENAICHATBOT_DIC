@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v94"
+APP_VERSION = "v95"
 APP_DATE = "2026-08-15"
 
 app = FastAPI()
@@ -529,7 +529,30 @@ QUEST_LLM = [
     {"id": "qReturn",  "el": "topic",    "desc": "다른 화제로 옮겼다가 원래 화제로 스스로 돌아온 적이 있다"},
     {"id": "qNewTopic","el": "topic",    "desc": "과업과 별개로 새로운 화제를 스스로 꺼낸 적이 있다"},
     {"id": "qSelfFix", "el": "repair",   "desc": "말하다가 스스로 틀린 것을 알아채고 고쳐 말한 적이 있다"},
+    # ── v95: 요소별 공백 메우기 ──
+    # 기존 여덟은 대화이동(4)·화제(2)·전략(1)·수정(1)에 몰려 있어, 듣기·차례에는
+    # LLM이 읽어야만 알 수 있는 퀘스트가 하나도 없었다. 아래 여섯으로 여덟 요소를 모두 덮는다.
+    {"id": "qParaphrase", "el": "listen",   "desc": "상대의 말을 자기 말로 바꾸어 '그러니까 ~라는 말이죠?'처럼 확인한 적이 있다"},
+    {"id": "qRephrase",   "el": "repair",   "desc": "상대가 알아듣지 못했을 때 같은 뜻을 다른 표현으로 바꾸어 다시 말한 적이 있다"},
+    {"id": "qNative",     "el": "strategy", "desc": "막혔을 때 모국어로 말해 보고, 상대가 알려 준 한국어로 다시 말한 적이 있다"},
+    {"id": "qEcho",       "el": "strategy", "desc": "상대가 방금 쓴 표현을 가져다 자기 발화에 쓴 적이 있다"},
+    {"id": "qEndTurn",    "el": "turn",     "desc": "말끝을 흐리지 않고 문장을 끝까지 맺어 차례를 넘긴 적이 있다"},
+    {"id": "qExpand",     "el": "topic",    "desc": "상대가 꺼낸 화제에 자기 이야기를 얹어 넓힌 적이 있다"},
 ]
+
+# ── 대화 중 '교육적 개입'으로 띄울 수 있는 퀘스트 ──
+# 논문 4.2.3의 비계 층위를 하나 늘린 것이다. 지금까지 챗봇은 '자리를 만들고 기다리는'
+# 유발까지만 했고, 그것이 먹히지 않으면 다음 손길은 대화가 끝난 뒤의 사후 피드백뿐이었다.
+# 개입은 그 사이를 메운다 — 그 자리에서, ★기능만 알려 주고 표현은 주지 않는다.
+#   예) "지금이에요! 한 번 거절해 보기"
+# 표현이 필요하면 학습자가 🪜 도움말을 눌러 요청한다(비계는 요청 시 · 맥락에 맞게).
+# 챗봇이 형식까지 미는 자리는 두지 않는다 — 타이밍과 형식을 모두 주면 받아쓰기가 된다.
+# qSelfFix는 제외한다. 자기 수정은 시켜서 하면 자기 수정이 아니다.
+INTERVENABLE = {q["id"] for q in QUEST_LLM} - {"qSelfFix"}
+
+# 개입 빈도 — 페이더(0~3)로 학습자가 조절한다. 0이면 개입하지 않는다.
+INTV_MAX = {0: 0, 1: 2, 2: 4, 3: 7}      # 세션당 최대 횟수
+INTV_GAP = {0: 0, 1: 150, 2: 90, 3: 50}  # 개입 사이 최소 간격(초)
 IDC_SCORED_KEYS = [e["key"] for e in IDC_TRAINABLE]
 # 발화 연습(한 차례 주고받기)으로 실제로 기를 수 있는 요소만.
 # 'stage'(기능 단계의 조직)는 대화 전체의 흐름이라 한 문장 연습의 목표가 될 수 없다.
@@ -2346,6 +2369,12 @@ async def _handle_session(websocket: WebSocket):
     user_name = re.sub(r"\s+", " ", websocket.query_params.get("name", "")).strip()[:20]
     # 학습자가 홈에서 고른 목소리 (빈 값·auto면 배역에 맞춰 자동 선택)
     voice_pref = websocket.query_params.get("voice", "").strip().lower()[:20]
+    # 비계 넛지의 세기 — 홈의 페이더로 학습자가 정한다 (0 끔 / 1 적게 / 2 보통 / 3 많이).
+    # 학습자가 상한을 정하고, 그 아래에서는 실현 여부에 따른 자동 페이딩이 그대로 돈다.
+    try:
+        scaf_level = max(0, min(3, int(float(websocket.query_params.get("scaf", 2)))))
+    except (TypeError, ValueError):
+        scaf_level = 2
 
     # 주제 대화(상황극) 모드: /roleplay-setup에서 만든 계획 ID가 오면 상황극 프롬프트로 전환
     rp_plan = None
@@ -2390,6 +2419,12 @@ async def _handle_session(websocket: WebSocket):
         "self": 0,            # 학습자가 스스로 매긴 별점(1~5, 0=안 매김)
         "last_focus": "",     # 직전에 주입한 유발 지시의 대상 (같으면 다시 안 보냄)
         "final": None,        # 종료 시 산출한 9요소 프로파일
+        # ── 교육적 개입 상태 (v95) ──
+        "prompted": {k: 0 for k in IDC_SCORED_KEYS},  # 개입을 받고 실현한 횟수
+        "intv_turn": {},      # 요소 key -> 개입한 시점의 학습자 턴 수 (실현하면 지운다)
+        "intv_ids": set(),    # 이미 개입한 퀘스트 id (세션당 한 번)
+        "intv_at": 0.0,       # 마지막 개입 시각
+        "intv_n": 0,          # 개입 누적 횟수
     }
     # 라이브 세션 핸들 보관 — 분석 태스크가 대화 중에 비계 지시를 주입할 때 쓴다
     live = {"session": None}
@@ -2446,10 +2481,18 @@ async def _handle_session(websocket: WebSocket):
         한 번 해낸 요소는 시범을 거두고, 세 번 해낸 요소는 유발 자체를 멈춘다."""
         if not isinstance(keys, list):
             return
+        turn_now = _user_turns()
         for k in keys:
             if not isinstance(k, str) or k not in idc_state["counts"]:
                 continue
             idc_state["counts"][k] += 1
+            # 개입을 받고 두 차례 안에 나온 실현은 '지시받은 것'으로 따로 센다.
+            # 시켜서 한 거절과 스스로 한 거절이 같은 무게로 쌓이면 페이딩이 잘못 내려가고,
+            # 제5장에서 이 로그가 무엇을 재는 자료인지 말할 수 없게 된다.
+            t0 = idc_state["intv_turn"].get(k)
+            if t0 is not None and turn_now - t0 <= 2:
+                idc_state["prompted"][k] += 1
+            idc_state["intv_turn"].pop(k, None)
             n = idc_state["counts"][k]
             lv = idc_state["levels"][k]
             if lv == IDC_LEVEL_MODEL and n >= IDC_FADE_AT[IDC_LEVEL_MODEL]:
@@ -2482,6 +2525,46 @@ async def _handle_session(websocket: WebSocket):
             # 주입에 실패해도 대화는 그대로 굴러가야 한다 (초기 시스템 프롬프트가 남아 있음)
             print(f"[IDC] 비계 주입 실패(무시): {e}")
 
+    async def send_teach_intervention(qid: str) -> None:
+        """교육적 개입 — 호아랑이 잠깐 극 밖으로 나와 '지금이 그 자리'라고 알린다.
+
+        호아랑은 배역이 아니라 배역을 맡은 배우이므로(build_roleplay_prompt),
+        무대 옆으로 비켜서는 것은 극을 깨지 않는다. 다만 그 비켜섬이 분명해야 하므로
+        배역의 발화가 아니라 화면 층(빼꼼)으로 보낸다.
+
+        ★ 기능만 알리고 표현은 주지 않는다. 한 퀘스트에 한 번뿐이다.
+        형식이 필요하면 학습자가 🪜 도움말을 눌러 요청한다 — 그편이 맥락에 맞고,
+        비계를 가져가는 주체가 학습자가 된다.
+        """
+        if scaf_level <= 0 or qid not in INTERVENABLE:
+            return
+        q = next((x for x in QUEST_LLM if x["id"] == qid), None)
+        if q is None:
+            return
+        el = q["el"]
+        # ① 이미 자율에 도달한 요소는 건드리지 않는다 — 페이딩을 스스로 되돌리는 셈이다
+        if idc_state["levels"].get(el, IDC_LEVEL_MODEL) <= IDC_LEVEL_SOLO:
+            return
+        # ② 퀘스트 하나에 세션당 한 번
+        if qid in idc_state["intv_ids"]:
+            return
+        # ③ 총량과 간격 — 자주 나오면 학습자가 개입을 좇게 되어 주도성을 해친다(v72~74의 판단)
+        now = time.time()
+        if idc_state["intv_n"] >= INTV_MAX.get(scaf_level, 0):
+            return
+        if now - idc_state["intv_at"] < INTV_GAP.get(scaf_level, 0):
+            return
+        idc_state["intv_ids"].add(qid)
+        idc_state["intv_turn"][el] = _user_turns()
+        idc_state["intv_at"] = now
+        idc_state["intv_n"] += 1
+        try:
+            await websocket.send_text(json.dumps({
+                "type": "intervene", "qid": qid, "el": el}))
+            print(f"[개입] {qid}({el}) — 누적 {idc_state['intv_n']}회")
+        except Exception as e:
+            print(f"[개입] 전송 실패(무시): {e}")
+
     async def run_analysis(final: bool = False):
         """대화 로그를 보고 어떤 기능단계가 충족됐는지 판정 → 진행률 갱신·전송.
         릴레이(오디오)와 별개의 백그라운드 태스크로 돌며 이벤트루프를 막지 않는다."""
@@ -2513,6 +2596,9 @@ async def _handle_session(websocket: WebSocket):
             idc_txt = "\n".join(
                 f"- {e['key']}: {e['name']} — {e['sub']}" for e in IDC_TRAINABLE)
             quest_txt = "\n".join(f"- {q['id']}: {q['desc']}" for q in QUEST_LLM)
+            intv_txt = "\n".join(
+                f"- {q['id']}: {q['desc'].replace(' 적이 있다', '')}"
+                for q in QUEST_LLM if q["id"] in INTERVENABLE)
             prompt = f"""다음은 한국어 학습자의 대화 기록이다.
 {task_line}
 
@@ -2538,12 +2624,18 @@ async def _handle_session(websocket: WebSocket):
     "A" 단순형: 목적을 향해 곧장 가는 직선적 전개.
     "B" 반복형: 같은 기능 단계(질문-응답 등)가 맴돌며 반복됨.
     "C" 확장형: 목적 달성 후에도 재개·부가 화제로 대화가 확장됨.
+(6) intervene — 지금 대화의 흐름에서 학습자가 **바로 다음 차례에** 자연스럽게 해 볼 수 있는 것 하나의 id.
+    아래 목록에서만 고른다. 자리가 자연스럽지 않으면 빈 문자열("")로 두라. 억지로 고르지 마라.
+    ★ (3)에서 학습자가 이미 해냈다고 적은 것은 고르지 마라.
+{intv_txt}
+
 (5) chains — **학습자가** 수행한 대화이동 연쇄의 횟수.
     시작(먼저 화제·요청을 엶) / 역시작(상대의 시작에 질문으로 되받음) /
     수정(자기 발화를 고쳐 다시 말함) / 고수(거절·난색에도 재요청).
 
-JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc":"A|B|C","chains":{{"시작":0,"역시작":0,"수정":0,"고수":0}}}}"""
+JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc":"A|B|C","chains":{{"시작":0,"역시작":0,"수정":0,"고수":0}},"intervene":""}}"""
             data = await _gen_json(prompt, timeout_s=15.0)
+            pending_intv = ""
             if isinstance(data, dict):
                 for i in data.get("done") or []:
                     try:
@@ -2571,6 +2663,10 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
                 for q in data.get("quest") or []:
                     if isinstance(q, str) and q in _QUEST_IDS:
                         rp_progress["quests"].add(q)
+                # (6) 지금 개입할 만한 자리 — 실제 발동은 아래에서 조건을 따져 결정한다
+                nq = data.get("intervene")
+                if isinstance(nq, str) and nq in INTERVENABLE and nq not in rp_progress["quests"]:
+                    pending_intv = nq
             turns = _user_turns()
             # 완료 판정: 모든 단계 충족 OR 마지막(마무리) 단계에 도달.
             # 중간 기능단계 하나를 건너뛰었어도 마무리 단계까지 갔으면 과업은 끝난 것으로 본다
@@ -2594,6 +2690,8 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
             print(f"[상황극] 진행률 {rp_progress['percent']}% — 충족 {sorted(rp_progress['done'])}/{rp_progress['total']}")
             if not final:
                 await send_idc_nudge()   # 비계를 학습자의 현재 수준에 맞춰 다시 조인다
+                if pending_intv:
+                    await send_teach_intervention(pending_intv)
         except Exception as e:
             print(f"[상황극] 단계 분석 실패: {e}")
         finally:
@@ -2602,33 +2700,57 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
     hint_state = {"running": False}
 
     async def send_hints():
-        """🪜 비계(스캐폴딩): 지금 대화 맥락에서 학습자의 '다음 턴'에 쓸 발화 2개 제안.
-        연습했던 표현과 같거나 유사하게 유도하고, 실패 시 연습 표현으로 폴백."""
-        if rp_plan is None or hint_state["running"]:
+        """🪜 도움말: 지금 대화 맥락에서 학습자의 '다음 턴'에 쓸 발화 2개 제안.
+
+        v95부터 자유 대화에서도 쓴다. 두 모드의 축이 다르므로 무엇을 근거로 삼는지도 다르다.
+          · 주제 대화 — 아직 못 밟은 기능 단계와 그 단계에서 연습한 표현이 축이다.
+          · 자유 대화 — 과업이 없으므로 최근 흐름과 '지금 학습자에게 필요한 요소'가 축이다.
+        교육적 개입이 기능만 알리는 데 반해, 이것은 형식을 준다. 다만 학습자가 눌러야 나온다.
+        """
+        if hint_state["running"]:
             return
         hint_state["running"] = True
         try:
-            unmet = [i for i in range(len(rp_plan["stages"])) if i not in rp_progress["done"]]
-            idx = unmet[0] if unmet else len(rp_plan["stages"]) - 1
-            st = rp_plan["stages"][idx]
-            practiced = " / ".join(
-                (e.get("text", "") if isinstance(e, dict) else str(e))
-                for e in (st.get("expressions") or []))
             transcript = "\n".join(
                 f"{'학습자' if m['role'] == 'user' else '상대'}: {m['text'].strip()}"
                 for m in convo[-12:] if m["text"].strip()) or "(아직 대화 없음)"
-            prompt = f"""한국어 학습자가 음성 상황극 중이다. 잠시 막혀서 도움을 요청했다.
-- 학습자 역할: {rp_plan['user_role']} / 상대(챗봇) 역할: {rp_plan['ai_role']}
-- 과업 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']}
-- 지금 수행할 기능단계: {st['name']} — {st['desc']}
-- 연습했던 표현: {practiced or '(없음)'}
+            if rp_plan:
+                unmet = [i for i in range(len(rp_plan["stages"])) if i not in rp_progress["done"]]
+                idx = unmet[0] if unmet else len(rp_plan["stages"]) - 1
+                st = rp_plan["stages"][idx]
+                practiced = " / ".join(
+                    (e.get("text", "") if isinstance(e, dict) else str(e))
+                    for e in (st.get("expressions") or []))
+                title = st["name"]
+                fallback = [(e.get("text", "") if isinstance(e, dict) else str(e))
+                            for e in (st.get("expressions") or [])][:2]
+                head = (f"한국어 학습자가 음성 상황극 중이다. 잠시 막혀서 도움을 요청했다.\n"
+                        f"- 학습자 역할: {rp_plan['user_role']} / 상대(챗봇) 역할: {rp_plan['ai_role']}\n"
+                        f"- 과업 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']}\n"
+                        f"- 지금 수행할 기능단계: {st['name']} — {st['desc']}\n"
+                        f"- 연습했던 표현: {practiced or '(없음)'}")
+                extra = "- 가능하면 연습했던 표현과 같거나 유사하게 하라."
+            else:
+                # 자유 대화 — 과업도 단계도 없다. 지금 학습자에게 가장 필요한 요소를 축으로 삼는다.
+                need = sorted(
+                    (e for e in IDC_TRAINABLE
+                     if idc_state["levels"].get(e["key"], IDC_LEVEL_MODEL) > IDC_LEVEL_SOLO),
+                    key=lambda e: idc_state["counts"].get(e["key"], 0))[:2]
+                focus = " / ".join(f"{e['name']}({e['sub']})" for e in need) or "자연스러운 대화 잇기"
+                title = need[0]["name"] if need else ""
+                fallback = []
+                head = ("한국어 학습자가 챗봇과 자유 대화 중이다. 잠시 막혀서 도움을 요청했다.\n"
+                        f"- 지금 이 학습자에게 필요한 상호작용: {focus}")
+                extra = ("- 위 상호작용이 자연스럽게 실현되는 발화면 더 좋다. "
+                         "다만 억지로 끼워 맞추지 말고, 흐름에 맞는 말을 우선하라.")
+            prompt = f"""{head}
 
 [최근 대화]
 {transcript}
 
 학습자가 '지금 자기 차례에' 말하면 자연스러운 한국어 발화를 정확히 2개 제안하라.
 - 상대의 마지막 말에 대한 대답으로 자연스러워야 한다.
-- 가능하면 연습했던 표현과 같거나 유사하게 하라.
+{extra}
 - 국제 통용 표준 교육과정 중급(4급 이하) 어휘·문법, 짧은 구어체로.
 JSON만 출력: {{"hints":["",""]}}"""
             data = await _gen_json(prompt, timeout_s=12.0, temperature=0.7)
@@ -2636,13 +2758,11 @@ JSON만 출력: {{"hints":["",""]}}"""
             if isinstance(data, dict):
                 hints = [_clean_str(h, 80) for h in (data.get("hints") or []) if _clean_str(h, 80)][:2]
             if not hints:
-                # 생성 실패 → 이 단계의 연습 표현으로 폴백
-                hints = [(e.get("text", "") if isinstance(e, dict) else str(e))
-                         for e in (st.get("expressions") or [])][:2]
+                hints = fallback   # 주제 대화는 연습 표현으로, 자유 대화는 빈 목록으로
             await websocket.send_text(json.dumps({
-                "type": "hint", "stage": st["name"], "items": [h for h in hints if h]}))
+                "type": "hint", "stage": title, "items": [h for h in hints if h]}))
         except Exception as e:
-            print(f"[상황극] 비계 생성 실패: {e}")
+            print(f"[도움말] 생성 실패: {e}")
         finally:
             hint_state["running"] = False
 
@@ -2794,6 +2914,9 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
             "chains": rp_progress["chains"],                # 대화이동 연쇄 횟수
             "review": review,                              # 총평은 뒤이어 따로 온다(type:"review")
             "idcCounts": dict(idc_state["counts"]),         # 기기 저장용 — 다음 세션 페이딩에 쓴다
+            "idcPrompted": dict(idc_state["prompted"]),     # 그중 개입을 받고 해낸 것
+            "interventions": idc_state["intv_n"],           # 이번 대화의 교육적 개입 횟수
+            "scaf": scaf_level,                             # 학습자가 정한 비계 세기
             "quests": sorted(rp_progress["quests"]),
         }))
         print(f"[상황극] 최종 점수 전송: 진행률 {rp_progress['percent']}점 / IDC {idc['total']}점")

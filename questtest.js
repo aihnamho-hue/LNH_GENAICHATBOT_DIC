@@ -1,6 +1,7 @@
 // 오늘의 퀘스트 — 집계·추첨·표시 검사
 const fs=require("fs"), {JSDOM}=require("jsdom");
 const html=fs.readFileSync("i.html","utf8");
+const py=fs.readFileSync("main.py","utf8");   // 서버 퀘스트 목록과 대조하기 위해
 // 지원 언어 수는 늘어난다 — 숫자를 박아 두지 말고 언어 고르기 단추에서 센다
 const LANGS=(html.match(/data-lang="[a-z]+"/g)||[]).length;
 let fail=0; const ok=(n,c)=>{console.log((c?"  ✅ ":"  ❌ ")+n); if(!c)fail++;};
@@ -44,7 +45,14 @@ setTimeout(()=>{
   ["qRefuse","qCond","qCircum","qReturn","qAlt","qHold","qSelfFix","qNewTopic"].forEach(id=>{
     ok(`${id} 정의됨`, defs2.includes(id));
   });
-  ok("LLM 퀘스트는 주제 대화 전용", (defs2.match(/llm:1, chk/g)||[]).length===8 && !/llm:1[^\n]*mode:"free"/.test(defs2));
+  // v95 — 개수를 박아 두지 않는다. 서버의 QUEST_LLM 과 화면의 llm:1 정의가 맞는지 대조한다.
+  // (v94까지는 8로 고정돼 있어, 퀘스트를 늘리면 옳은 변경인데도 검사가 깨졌다.)
+  const srvIds=[...(py.match(/\{"id": "(q\w+)",\s*"el"/g)||[])].map(m=>m.match(/"(q\w+)"/)[1]);
+  const uiIds=[...(defs2.match(/id:"(q\w+)",[^\n]*llm:1/g)||[])].map(m=>m.match(/"(q\w+)"/)[1]);
+  ok(`서버 LLM 퀘스트(${srvIds.length})가 화면에 다 있다`, srvIds.every(id=>uiIds.includes(id)));
+  ok("화면에만 있는 유령 LLM 퀘스트가 없다", uiIds.every(id=>srvIds.includes(id)));
+  ok("여덟 요소를 모두 덮는다(기능단계·맥락은 로그 판정)",
+     new Set(srvIds.map(id=>(py.match(new RegExp('"'+id+'",\\s*"el":\\s*"(\\w+)"'))||[])[1])).size>=6);
   ok("서버가 보낸 quests 를 흡수한다", /\(msg\.quests \|\| \[\]\)\.forEach/.test(html));
   ok("문구가 지원 언어 전부에 있다", (html.match(/qRefuse:"/g)||[]).length===LANGS);
 

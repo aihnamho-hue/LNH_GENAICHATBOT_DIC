@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v98"
+APP_VERSION = "v99"
 APP_DATE = "2026-08-16"
 
 app = FastAPI()
@@ -550,9 +550,45 @@ QUEST_LLM = [
 # qSelfFix는 제외한다. 자기 수정은 시켜서 하면 자기 수정이 아니다.
 INTERVENABLE = {q["id"] for q in QUEST_LLM} - {"qSelfFix"}
 
-# 개입 빈도 — 페이더(0~3)로 학습자가 조절한다. 0이면 개입하지 않는다.
-INTV_MAX = {0: 0, 1: 2, 2: 4, 3: 7}      # 세션당 최대 횟수
-INTV_GAP = {0: 0, 1: 150, 2: 90, 3: 50}  # 개입 사이 최소 간격(초)
+# 개입할 자리를 누가 아는가 — 퀘스트는 성격이 둘로 갈린다.
+#   · 맥락이 필요한 것 — 상대가 제안·거절을 해야 성립한다. LLM이 대화를 읽어야만 안다.
+#     (거절·대안 제안·조건 협상·다시 부탁·화제 복귀·바꿔 말하기)
+#   · 아무 때나 되는 것 — 대화가 흐르고 있으면 언제든 할 수 있다. 서버가 혼자 판단해도 된다.
+# 3분 남짓한 대화에서는 LLM이 '거절할 자리'를 만날 여유가 없어, 그 세션의 개입이
+# 통째로 0이 되기 쉽다. 아래 갈래가 그 빈자리를 채운다.
+INTV_ANYTIME = ["qParaphrase", "qEcho", "qEndTurn", "qNewTopic", "qExpand"]
+
+# ── 개입의 간격은 '초'가 아니라 '학습자의 차례'로 잰다 (v99) ──
+#
+# 왜 턴인가.
+#   ① 재려는 것이 턴 단위다. IDC의 차례 관리·대화이동 연쇄가 모두 차례를 단위로 정의된다.
+#   ② 초로 재면 학습자의 속도에 휘둘린다. 한 문장에 20초 걸리는 학습자와 3초에 받아치는
+#      학습자가 같은 대화에서 전혀 다른 횟수를 받는다.
+#   ③ 무엇보다, 초로 재면 개입이 '말을 고르는 도중'에 튀어나올 수 있다. MKO 원칙의
+#      "학습자가 말을 고르느라 침묵하면 채우지 말고 3초쯤 기다려라"와 정면으로 부딪힌다.
+#
+# 값의 근거 — 선행 연구 두 값에서 갈라 취했다.
+#   · 범용 GPT-4 환경의 발화 순서 평균 12.12 (이남호·이찬규, 2025:403)
+#   · 교육용으로 통제된 챗봇에서 23.84 (이남호, 2025)   ※ 같은 '물건 사기' 과제
+#   발화 순서는 두 화자를 합친 차례 수이므로, 학습자의 차례는 각각 약 6회와 12회다.
+#   간격은 앞의 값(6회)에 맞춰 짧은 대화에서도 개입이 닿게 하고,
+#   상한은 뒤의 값(12회)에 맞춰 대화가 길어져도 넘치지 않게 한다.
+#
+# ★ 상한을 눈금으로 쓰지 않는 이유. 두 수치는 모두 '물건 사기' 한 과제에서 나왔고,
+#   구매 대화는 탐색-결정-결제로 빨리 닫히는 짧은 과제다. 기능 단계가 많은 주제라면
+#   턴이 훨씬 는다. 절대 횟수로 정하면 어떤 주제에서든 어긋나므로, 간격이 눈금을 정하고
+#   상한은 폭주만 막는다. 그러면 주제에 따라 저절로 맞춰진다.
+#
+#   학습자 차례  6회(통제 전 구매)  → 조금 1 · 보통 2 · 많이 3
+#              12회(통제된 챗봇)  → 조금 2 · 보통 4 · 많이 6
+#              20회(기능 단계가 많은 주제) → 상한에서 멈춘다
+INTV_TURN_GAP = {0: 0, 1: 5, 2: 3, 3: 2}   # 개입 사이 최소 '학습자 차례' 수
+INTV_MAX      = {0: 0, 1: 2, 2: 4, 3: 6}   # 세션당 상한 — 폭주 방지선
+INTV_SEC_FLOOR = 20                         # 짧은 턴이 몰릴 때를 위한 바닥(초)
+# ★ 학습자가 두 번은 스스로 말해 본 뒤에 개입한다.
+#   개입은 '유발이 먹히지 않았을 때' 메우는 층이다. 유발이 작동할 기회도 주기 전에
+#   끼어들면 순서가 뒤집힌다 — 학습자가 스스로 해낼 수 있었던 것까지 지시받은 것이 된다.
+INTV_WARMUP = 2
 IDC_SCORED_KEYS = [e["key"] for e in IDC_TRAINABLE]
 # 발화 연습(한 차례 주고받기)으로 실제로 기를 수 있는 요소만.
 # 'stage'(기능 단계의 조직)는 대화 전체의 흐름이라 한 문장 연습의 목표가 될 수 없다.
@@ -2424,7 +2460,8 @@ async def _handle_session(websocket: WebSocket):
         "prompted": {k: 0 for k in IDC_SCORED_KEYS},  # 개입을 받고 실현한 횟수
         "intv_turn": {},      # 요소 key -> 개입한 시점의 학습자 턴 수 (실현하면 지운다)
         "intv_ids": set(),    # 이미 개입한 퀘스트 id (세션당 한 번)
-        "intv_at": 0.0,       # 마지막 개입 시각
+        "intv_at": 0.0,       # 마지막 개입 시각(초 바닥용)
+        "intv_turn_at": -99,  # 마지막 개입 시점의 학습자 차례 수
         "intv_n": 0,          # 개입 누적 횟수
     }
     # 라이브 세션 핸들 보관 — 분석 태스크가 대화 중에 비계 지시를 주입할 때 쓴다
@@ -2551,20 +2588,53 @@ async def _handle_session(websocket: WebSocket):
             return
         # ③ 총량과 간격 — 자주 나오면 학습자가 개입을 좇게 되어 주도성을 해친다(v72~74의 판단)
         now = time.time()
+        turns = _user_turns()
+        if turns < INTV_WARMUP:
+            return
         if idc_state["intv_n"] >= INTV_MAX.get(scaf_level, 0):
             return
-        if now - idc_state["intv_at"] < INTV_GAP.get(scaf_level, 0):
+        # 간격은 학습자의 차례로 잰다. 초는 바닥으로만 쓴다 —
+        # "네." "네." "음…"처럼 짧은 차례가 몰리면 턴 수만으로는 몰아서 나온다.
+        if turns - idc_state["intv_turn_at"] < INTV_TURN_GAP.get(scaf_level, 99):
+            return
+        if now - idc_state["intv_at"] < INTV_SEC_FLOOR:
             return
         idc_state["intv_ids"].add(qid)
-        idc_state["intv_turn"][el] = _user_turns()
+        idc_state["intv_turn"][el] = turns
+        idc_state["intv_turn_at"] = turns
         idc_state["intv_at"] = now
         idc_state["intv_n"] += 1
         try:
             await websocket.send_text(json.dumps({
                 "type": "intervene", "qid": qid, "el": el}))
-            print(f"[개입] {qid}({el}) — 누적 {idc_state['intv_n']}회")
+            print(f"[개입] {qid}({el}) — {turns}번째 차례 · 누적 {idc_state['intv_n']}회")
         except Exception as e:
             print(f"[개입] 전송 실패(무시): {e}")
+
+    def pick_anytime_intervention() -> str:
+        """LLM이 자리를 고르지 못했을 때, 서버가 '아무 때나 되는' 갈래에서 고른다.
+
+        페이더가 높을수록 적극적으로 채운다. 낮으면 LLM이 고른 것만 쓴다 —
+        그래야 눈금이 실제로 돈다(상한만 조이면 원래 안 나오는 것에 뚜껑만 씌우는 셈이다).
+        고르는 기준은 '아직 가장 덜 실현된 요소'다.
+        """
+        if scaf_level < 2:
+            return ""
+        cand = []
+        for qid in INTV_ANYTIME:
+            if qid in idc_state["intv_ids"] or qid in rp_progress["quests"]:
+                continue
+            q = next((x for x in QUEST_LLM if x["id"] == qid), None)
+            if q is None:
+                continue
+            el = q["el"]
+            if idc_state["levels"].get(el, IDC_LEVEL_MODEL) <= IDC_LEVEL_SOLO:
+                continue
+            cand.append((idc_state["counts"].get(el, 0), qid))
+        if not cand:
+            return ""
+        cand.sort()
+        return cand[0][1]
 
     async def run_analysis(final: bool = False):
         """대화 로그를 보고 어떤 기능단계가 충족됐는지 판정 → 진행률 갱신·전송.
@@ -2597,6 +2667,10 @@ async def _handle_session(websocket: WebSocket):
             idc_txt = "\n".join(
                 f"- {e['key']}: {e['name']} — {e['sub']}" for e in IDC_TRAINABLE)
             quest_txt = "\n".join(f"- {q['id']}: {q['desc']}" for q in QUEST_LLM)
+            intv_mood = {
+                0: "", 1: "★ 확실할 때만 고르라. 어중간하면 빈 문자열로 두라.",
+                2: "", 3: "★ 되도록 하나를 고르라. 조금이라도 자리가 보이면 골라도 좋다.",
+            }.get(scaf_level, "")
             intv_txt = "\n".join(
                 f"- {q['id']}: {q['desc'].replace(' 적이 있다', '')}"
                 for q in QUEST_LLM if q["id"] in INTERVENABLE)
@@ -2625,7 +2699,7 @@ async def _handle_session(websocket: WebSocket):
     "A" 단순형: 목적을 향해 곧장 가는 직선적 전개.
     "B" 반복형: 같은 기능 단계(질문-응답 등)가 맴돌며 반복됨.
     "C" 확장형: 목적 달성 후에도 재개·부가 화제로 대화가 확장됨.
-(6) intervene — 지금 대화의 흐름에서 학습자가 **바로 다음 차례에** 자연스럽게 해 볼 수 있는 것 하나의 id.
+(6) intervene — {intv_mood} 지금 대화의 흐름에서 학습자가 **바로 다음 차례에** 자연스럽게 해 볼 수 있는 것 하나의 id.
     아래 목록에서만 고른다. 자리가 자연스럽지 않으면 빈 문자열("")로 두라. 억지로 고르지 마라.
     ★ (3)에서 학습자가 이미 해냈다고 적은 것은 고르지 마라.
 {intv_txt}
@@ -2691,6 +2765,10 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
             print(f"[상황극] 진행률 {rp_progress['percent']}% — 충족 {sorted(rp_progress['done'])}/{rp_progress['total']}")
             if not final:
                 await send_idc_nudge()   # 비계를 학습자의 현재 수준에 맞춰 다시 조인다
+                # LLM이 자리를 고르지 못했으면(짧은 대화에서 흔하다) 서버가 채운다.
+                # 페이더가 '보통' 이상일 때만.
+                if not pending_intv:
+                    pending_intv = pick_anytime_intervention()
                 if pending_intv:
                     await send_teach_intervention(pending_intv)
         except Exception as e:

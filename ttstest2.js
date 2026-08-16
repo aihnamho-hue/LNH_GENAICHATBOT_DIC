@@ -30,7 +30,15 @@ ok("홈으로 나가도 정리", /function goHome\(\) \{\s*\n\s*try \{ closeRevi
 
 console.log("── 클라이언트: 화면 ──");
 ok("조각을 이어 붙인다", /msg\.type === "review_chunk"/.test(html)
-   && /rpFinal\.review = \(rpFinal\.review \|\| ""\) \+ \(msg\.text \|\| ""\)/.test(html));
+   && /reviewBuf \+= \(msg\.text \|\| ""\)/.test(html));
+// ★ v103에서 겪은 사고 — 총평이 점수(rpFinal)보다 먼저 도착하는데
+//   `if (rpFinal)` 로 받고 있어서 통째로 버려졌다. 다시는 그러지 않게 못 박는다.
+ok("★ 총평을 점수와 무관하게 담아 둔다", /let reviewBuf = ""/.test(html));
+ok("★ rpFinal 이 없어도 조각을 버리지 않는다",
+   !/if \(rpFinal\) rpFinal\.review = \(rpFinal\.review \|\| ""\) \+/.test(html));
+ok("★ 결과 화면이 담아 둔 총평을 먼저 본다", /reviewBuf \|\| \(rpFinal && rpFinal\.review\)/.test(html)
+   && /reviewBuf \|\| rpFinal\.review/.test(html));
+ok("★ 새 대화가 시작되면 비운다", /reviewBuf = "";\s*\/\/ 지난 대화의/.test(html));
 ok("두 화면 모두 채운다", (html.match(/\["rpReviewEl", "freeReviewEl"\]/g) || []).length >= 2);
 ok("쓰는 중엔 붓끝이 깜빡인다", /\.rev-body\.writing::after/.test(html));
 ok("다 쓰면 커서를 지운다", /el\.classList\.remove\("writing"\)/.test(html));

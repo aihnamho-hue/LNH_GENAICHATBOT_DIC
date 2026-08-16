@@ -22,8 +22,8 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v103"
-APP_DATE = "2026-08-16"
+APP_VERSION = "v104"
+APP_DATE = "2026-08-17"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -577,6 +577,16 @@ QUEST_LLM = [
     {"id": "qInitiate",  "el": "move",     "desc": "호아랑이 묻기 전에 자기 용건(부탁·제안·문의)을 먼저 꺼낸 적이 있다"},
     {"id": "qCounter",   "el": "move",     "desc": "호아랑이 먼저 물어 왔을 때 그대로 답하지 않고 자기 용건을 되받아 꺼낸 적이 있다"},
     {"id": "qShiftTopic","el": "topic",    "desc": "하던 이야기를 접고 다른 이야기로 옮겨 간 적이 있다"},
+    # ── v104: 상대의 말을 조절해 달라고 요청하기 ──
+    # 화면 아래 빠른 단추(🐢 천천히 · 🔁 다시 · 💡 쉽게 · 🐇 빨리)로는 누를 수 있었으나,
+    # **말로 해 보라고 권하는 자리**가 없었다. 단추는 손이 대신해 주는 것이고,
+    # 이 요청을 제 입으로 해 보는 것이 곧 '명료화·설명 요청'(〈표 34〉 ◎)의 실현이다.
+    # 형식은 친밀도·지위에 따라 다섯 갈래로 달라진다(화면의 QUICK_PHRASES).
+    # 개입은 기능만 알리고, 형식이 필요하면 학습자가 🪜나 단추를 쓴다.
+    {"id": "qAskSlow", "el": "repair", "desc": "상대의 말이 빨라서 천천히 말해 달라고 (단추가 아니라) 말로 부탁한 적이 있다"},
+    {"id": "qAskAgain","el": "repair", "desc": "못 알아들어서 다시 한 번 말해 달라고 말로 부탁한 적이 있다"},
+    {"id": "qAskEasy", "el": "repair", "desc": "말이 어려워서 쉽게 말해 달라고 말로 부탁한 적이 있다"},
+    {"id": "qAskFast", "el": "repair", "desc": "상대가 너무 느리게 말해서 좀 더 빨리 말해 달라고 말로 부탁한 적이 있다"},
 ]
 
 # ── 대화 중 '교육적 개입'으로 띄울 수 있는 퀘스트 ──
@@ -2321,6 +2331,14 @@ async def version_check():
             "used": _cloud_tts["used"],
             "resting": max(0, int(_cloud_tts["off_until"] - time.time())),
             "err": _cloud_tts["last_err"][:160],
+        },
+        # 대화 마무리 영상이 서버에 실제로 올라왔는지.
+        # 화면에서 안 보일 때 「코드 문제인가 파일이 없나」를 가르는 자리다.
+        "outro": {
+            "mp4": Path("static/outro.mp4").exists(),
+            "kb": (Path("static/outro.mp4").stat().st_size // 1024
+                   if Path("static/outro.mp4").exists() else 0),
+            "poster": Path("static/outro.jpg").exists(),
         },
         # 총평이 왜 안 나오는지 — 로그를 안 열고도 여기서 본다
         "review": {

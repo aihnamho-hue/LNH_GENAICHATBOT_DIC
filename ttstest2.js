@@ -16,7 +16,9 @@ ok("한꺼번에 말고 흘려보낸다", /generate_content_stream/.test(py) && 
 ok("조각마다 review_chunk", /"type": "review_chunk", "text": text/.test(py));
 ok("끝나면 review_done", /"type": "review_done", "text": text/.test(py));
 ok("학습자가 닫으면 생성을 멈춘다", /return ""\s*#\s*학습자 쪽이 이미 닫혔다/.test(py));
-ok("입력을 40턴으로 줄였다", /총평은 흐름만 보면 되므로 40턴/.test(py) && /convo\[-40:\]/.test(py));
+// v101 — 숫자를 박아 두지 않는다. 총평 입력이 프로파일(80턴)보다 짧기만 하면 된다.
+const _n = (py.match(/총평은 흐름만 보면 되므로 (\d+)턴/)||[])[1];
+ok("총평 입력을 프로파일보다 짧게", !!_n && Number(_n) <= 40 && py.includes("convo[-"+_n+":]"));
 
 console.log("── 클라이언트: 소켓을 살려 두는가 ★ ──");
 ok("총평 기다리는 중이면 소켓을 안 닫는다",

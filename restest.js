@@ -35,7 +35,11 @@ ok("총평을 맨 먼저 시작해 흘려보낸다", /review_task = asyncio\.cre
    && /generate_content_stream/.test(py) && /"type": "review_chunk"/.test(py));
 ok("판정 실패해도 요소 칸을 비우지 않는다", /누적 횟수로 대체/.test(py));
 ok("총평은 목록 아닌 줄글", /목록·번호·표를 쓰지 마라/.test(py));
-ok("총평도 어려운 말 금지", /run_review[\s\S]{0,2600}?다음 말은 절대 쓰지 마라/.test(py));
+// v101 — 문구를 박아 두지 않는다. 금지 목록이 실제로 있는지, 급수 제한이 있는지를 본다.
+const _rv = (py.match(/async def run_review[\s\S]{0,4000}/)||[""])[0];
+ok("총평도 어려운 말 금지", /연구 용어는 절대 금지/.test(_rv) && /레지스터/.test(_rv) && /대화이동/.test(_rv));
+ok("총평 어휘를 급수로 묶는다", /1~4급 어휘·문법/.test(_rv));
+ok("바꿔 쓰기 예시를 준다", /바꿔 써라/.test(_rv));
 
 const dom = new JSDOM(html, { runScripts: "dangerously", pretendToBeVisual: true, url: "https://x.test/",
     beforeParse(w) {

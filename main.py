@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v101"
+APP_VERSION = "v102"
 APP_DATE = "2026-08-16"
 
 app = FastAPI()
@@ -2580,31 +2580,39 @@ async def _handle_session(websocket: WebSocket):
         형식이 필요하면 학습자가 🪜 도움말을 눌러 요청한다 — 그편이 맥락에 맞고,
         비계를 가져가는 주체가 학습자가 된다.
         """
-        if scaf_level <= 0 or qid not in INTERVENABLE:
-            return
+        def _skip(why: str):
+            # 개입이 안 나올 때 원인을 바로 알 수 있어야 한다.
+            # v100에서 「2분 대화에 0회」의 원인(기기에 남은 부풀린 누적)을 찾는 데
+            # 로그가 없어 한참 걸렸다.
+            print(f"[개입] 거름 — {qid}: {why}")
+
+        if scaf_level <= 0:
+            return _skip("페이더가 꺼짐")
+        if qid not in INTERVENABLE:
+            return _skip("개입 대상 아님")
         q = next((x for x in QUEST_LLM if x["id"] == qid), None)
         if q is None:
-            return
+            return _skip("퀘스트를 못 찾음")
         el = q["el"]
         # ① 이미 자율에 도달한 요소는 건드리지 않는다 — 페이딩을 스스로 되돌리는 셈이다
         if idc_state["levels"].get(el, IDC_LEVEL_MODEL) <= IDC_LEVEL_SOLO:
-            return
+            return _skip(f"{el} 이미 자율(누적 {idc_state['counts'].get(el, 0)}회)")
         # ② 퀘스트 하나에 세션당 한 번
         if qid in idc_state["intv_ids"]:
-            return
+            return _skip("이번 대화에서 이미 띄움")
         # ③ 총량과 간격 — 자주 나오면 학습자가 개입을 좇게 되어 주도성을 해친다(v72~74의 판단)
         now = time.time()
         turns = _user_turns()
         if turns < INTV_WARMUP:
-            return
+            return _skip(f"준비 구간({turns}/{INTV_WARMUP}차례)")
         if idc_state["intv_n"] >= INTV_MAX.get(scaf_level, 0):
-            return
+            return _skip(f"상한 도달({idc_state['intv_n']}/{INTV_MAX.get(scaf_level, 0)})")
         # 간격은 학습자의 차례로 잰다. 초는 바닥으로만 쓴다 —
         # "네." "네." "음…"처럼 짧은 차례가 몰리면 턴 수만으로는 몰아서 나온다.
         if turns - idc_state["intv_turn_at"] < INTV_TURN_GAP.get(scaf_level, 99):
-            return
+            return _skip(f"차례 간격({turns - idc_state['intv_turn_at']}/{INTV_TURN_GAP.get(scaf_level)}턴)")
         if now - idc_state["intv_at"] < INTV_SEC_FLOOR:
-            return
+            return _skip("초 바닥")
         idc_state["intv_ids"].add(qid)
         idc_state["intv_turn"][el] = turns
         idc_state["intv_turn_at"] = turns
@@ -2665,7 +2673,6 @@ async def _handle_session(websocket: WebSocket):
             # 규칙(3회면 자율) 자체는 옳다. 고칠 것은 '한 번을 한 번으로 세는 일'뿐이다.
             # 기능 단계·대화 유형은 전체 맥락이 필요하므로 기록은 그대로 두고 표시만 넣는다.
             _seen = rp_progress["last_len"]        # 지난 분석까지 본 조각 수
-            _MARK = "───────── 여기서부터 새로 늘어난 부분 ─────────"
 
             def _fmt(m):
                 if rp_plan:
@@ -2676,27 +2683,22 @@ async def _handle_session(websocket: WebSocket):
                 return f"{who}: {m['text'].strip()}"
 
             def _make_transcript():
-                lines, tail = [], convo[-60:]
-                base = len(convo) - len(tail)
-                marked = False
-                for i, m in enumerate(tail):
-                    if not m["text"].strip():
-                        continue
-                    if not marked and base + i >= _seen:
-                        lines.append(_MARK)
-                        marked = True
-                    lines.append(_fmt(m))
-                if not marked:                     # 새 조각이 앞쪽에 없으면 맨 끝에
-                    lines.append(_MARK)
-                return "\n".join(lines)
+                """전체와 '새로 늘어난 부분'을 **따로** 돌려준다.
 
+                v100에서는 한 덩어리에 표시선만 그었는데, 그러면 모델이 기능 단계 판정까지
+                표시선 아래로 좁혀 버렸다(마무리 인사를 다 하고도 단계가 안 차오름).
+                지시로 막으려 했으나 미덥지 않아, 아예 블록을 갈랐다.
+                """
+                full = [_fmt(m) for m in convo[-60:] if m["text"].strip()]
+                fresh = [_fmt(m) for m in convo[_seen:] if m["text"].strip()]
+                return "\n".join(full), "\n".join(fresh)
+
+            transcript, fresh_txt = _make_transcript()
             if rp_plan:
-                transcript = _make_transcript()
                 stages_txt = "\n".join(
                     f"{i}. {s['name']}: {s['desc']}" for i, s in enumerate(rp_plan["stages"]))
                 task_line = f"과업 — 주제: {rp_plan['topic_ko']} / 달성 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']}"
             else:
-                transcript = _make_transcript()
                 stages_txt = "(자유 대화 — 기능단계 없음. done은 빈 배열로 두라)"
                 task_line = "과업 — 자유 주제 대화"
             idc_txt = "\n".join(
@@ -2715,22 +2717,26 @@ async def _handle_session(websocket: WebSocket):
 [기능단계 목록]
 {stages_txt}
 
-[대화 기록]
+[대화 기록(전체) — (1)(4)(5)는 여기서 본다]
 {transcript}
+
+[새로 늘어난 부분 — (2)(3)은 여기서만 본다]
+{fresh_txt or "(이번에 새로 늘어난 학습자 발화가 없다. (2)(3)은 빈 배열로 두라.)"}
 
 [상호작용 대화 능력 요소]
 {idc_txt}
 
 다섯 가지를 판정하라.
-★ 표시선(───)은 **(2)(3)에만** 해당한다. (1)(4)(5)는 표시선과 무관하게 **대화 전체**를 보라.
+★ 블록이 둘이다. 무엇을 어디서 보는지 헷갈리지 마라.
+   · **(1)(4)(5)** → 「대화 기록(전체)」에서 본다.
+   · **(2)(3)**   → 「새로 늘어난 부분」에서만 본다. 위쪽은 이미 세어 둔 것이다.
 
-(1) done — 대화 **전체**에서 이미 실현(충족)된 기능단계의 번호를 모두.
+(1) done — 「대화 기록(전체)」에서 이미 실현(충족)된 기능단계의 번호를 모두.
     판정 기준: 그 단계의 의사소통 기능이 대화에서 실제로 수행되었으면 충족이다. 표현이 서툴러도 기능이 이루어졌으면 인정한다. 아직 시도되지 않았거나 실패한 단계는 제외한다.
 (2) idc — 위 요소 가운데 **학습자가** 실제로 수행한 것의 key를 모두.
-    ★★ 반드시 「새로 늘어난 부분」 표시선 **아래에서** 확인되는 것만 고른다.
-       표시선 위쪽은 이미 세어 둔 것이다. 거기서 한 일을 다시 적으면 같은 수행이
-       여러 번 센 것이 되어, 한 번 해낸 것이 세 번 해낸 것으로 기록된다.
-       표시선 아래에 학습자 발화가 없거나 해당 요소가 없으면 **빈 배열**로 두라.
+    ★★ 반드시 아래 「새로 늘어난 부분」 블록에서만 고른다. 전체 기록에서 고르면
+       같은 수행을 여러 번 센 것이 되어, 한 번 해낸 것이 세 번 해낸 것으로 기록된다.
+       새로 늘어난 부분에 학습자 발화가 없거나 해당 요소가 없으면 **빈 배열**로 두라.
     ★상대(챗봇)가 한 것은 세지 마라. 학습자의 발화에서 확인되는 것만 고른다.
     표현이 서툴러도 그 기능을 해냈으면 인정한다.
 (3) quest — 아래 목록 가운데 **학습자가** 실제로 한 것의 id를 모두. 없으면 빈 배열.
@@ -2811,6 +2817,9 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
                 # 페이더가 '보통' 이상일 때만.
                 if not pending_intv:
                     pending_intv = pick_anytime_intervention()
+                    if not pending_intv and scaf_level >= 2:
+                        print("[개입] LLM도 서버도 고를 자리가 없음 "
+                              f"(수준 {dict((k, idc_state['levels'][k]) for k in IDC_SCORED_KEYS)})")
                 if pending_intv:
                     await send_teach_intervention(pending_intv)
         except Exception as e:
@@ -3032,7 +3041,13 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
             stream = await asyncio.wait_for(
                 client.aio.models.generate_content_stream(
                     model=_analysis_model["name"], contents=prompt,
-                    config=types.GenerateContentConfig(temperature=0.7)),
+                    # ★★ 2.5 모델은 '동적 사고'가 기본 켜짐이라, 끄지 않으면 첫 글자를
+                    #    내기 전에 수십 초를 생각한다. 다른 호출(_gen_json·라이브 세션)은
+                    #    모두 끄고 있었는데 **총평만 빠져 있었다.**
+                    #    종료 즉시 시작해도 학습자가 결과를 다 넘길 때까지 글이 안 나온 원인이다.
+                    config=types.GenerateContentConfig(
+                        temperature=0.7,
+                        thinking_config=types.ThinkingConfig(thinking_budget=0))),
                 timeout=12.0)
             async for chunk in stream:
                 piece = getattr(chunk, "text", "") or ""

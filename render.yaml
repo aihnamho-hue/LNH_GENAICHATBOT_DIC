@@ -17,7 +17,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: MAX_CONCURRENT_SESSIONS
-        value: "5"
+        value: "32"
       # 로컬 임시 녹음 확인 페이지(/recordings?key=...) 활성화용 (선택)
       - key: ADMIN_KEY
         sync: false

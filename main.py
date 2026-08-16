@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v102"
+APP_VERSION = "v103"
 APP_DATE = "2026-08-16"
 
 app = FastAPI()
@@ -1453,6 +1453,18 @@ def build_roleplay_prompt(d: int, p: int, ui_lang: str, user_name: str,
 # ============================================================
 TTS_MODEL = os.environ.get("TTS_MODEL", "").strip() or "gemini-2.5-flash-preview-tts"
 
+# ── Google Cloud Text-to-Speech (기본 경로) ─────────────────────────────
+# Gemini API 쪽 TTS는 분당 10회·하루 100회로 묶여 있어 한 반이 동시에 쓰면 바로 막힌다.
+# Cloud TTS는 같은 Chirp 3 HD 목소리를 분당 200회·하루 상한 없이 내어 준다.
+# 키가 없거나 호출이 실패하면 아래의 기존 Gemini TTS 경로로 자동으로 되돌아간다.
+GOOGLE_TTS_API_KEY = os.environ.get("GOOGLE_TTS_API_KEY", "").strip()
+CLOUD_TTS_LANG = os.environ.get("CLOUD_TTS_LANG", "").strip() or "ko-KR"
+CLOUD_TTS_SYNTH_URL = "https://texttospeech.googleapis.com/v1/text:synthesize"
+CLOUD_TTS_VOICES_URL = "https://texttospeech.googleapis.com/v1/voices"
+# 상태: voices=쓸 수 있는 Chirp3-HD 목소리 이름 집합(None이면 아직 안 물어봄)
+#       off_until=연달아 실패했을 때 잠시 쉬는 시각, last_err=진단창 표시용
+_cloud_tts = {"voices": None, "off_until": 0.0, "fail": 0, "last_err": "", "used": 0}
+
 # ── 목소리 (Chirp 3 HD 프리빌트 보이스 — Live API·TTS 공용) ──────────────
 # 호아랑은 '갓 쓴 아기 호랑이'라 기본은 밝은 남자아이 목소리(Puck)로 잡는다.
 # 주제 대화에서는 호아랑이 배역을 맡으므로, 그 배역에 맞는 목소리로 자동 전환한다.
@@ -1540,6 +1552,103 @@ _tts_tried = set()
 _tts_cache = {}  # (text, voice, style) -> pcm bytes (같은 문장 반복 재생 시 API 호출 절약)
 
 
+# ── Cloud TTS 호출부 ────────────────────────────────────────────────────
+# Chirp 3 HD는 Gemini TTS와 달리 자연어 스타일 지시를 받지 않는다.
+# 그래서 어린 톤은 '말 빠르기'로만 살짝 흉내 낸다(목소리 자체가 이미 아이 목소리다).
+CLOUD_TTS_CHILD_RATE = float(os.environ.get("CLOUD_TTS_CHILD_RATE", "").strip() or "1.08")
+_http_client = {"c": None}
+
+
+def _hc():
+    """모듈 하나가 계속 쓰는 HTTP 연결. 매번 새로 열면 TLS 악수에만 수백 ms가 샌다."""
+    import httpx
+    if _http_client["c"] is None:
+        _http_client["c"] = httpx.AsyncClient(timeout=20.0)
+    return _http_client["c"]
+
+
+def _pcm_from_wav(raw: bytes) -> bytes:
+    """Cloud TTS의 LINEAR16 응답은 WAV 통에 담겨 온다. 화면 쪽은 알맹이(PCM)만 받으니 껍데기를 벗긴다."""
+    if len(raw) < 12 or raw[:4] != b"RIFF" or raw[8:12] != b"WAVE":
+        return raw                                  # 이미 알맹이면 그대로
+    i = 12
+    while i + 8 <= len(raw):
+        cid, size = raw[i:i + 4], int.from_bytes(raw[i + 4:i + 8], "little")
+        if cid == b"data":
+            return raw[i + 8:i + 8 + size] if size else raw[i + 8:]
+        i += 8 + size + (size & 1)                  # 청크는 짝수 바이트로 정렬된다
+    return raw
+
+
+async def _cloud_tts_voices() -> set:
+    """이 프로젝트에서 실제로 쓸 수 있는 Chirp 3 HD 목소리 이름을 한 번만 물어보고 기억한다."""
+    if _cloud_tts["voices"] is not None:
+        return _cloud_tts["voices"]
+    names = set()
+    try:
+        r = await _hc().get(CLOUD_TTS_VOICES_URL,
+                            params={"languageCode": CLOUD_TTS_LANG, "key": GOOGLE_TTS_API_KEY})
+        if r.status_code == 200:
+            for v in (r.json().get("voices") or []):
+                n = v.get("name", "")
+                if "-Chirp3-HD-" in n:
+                    names.add(n.rsplit("-", 1)[-1])   # ko-KR-Chirp3-HD-Puck → Puck
+            print(f"[TTS] Cloud TTS 사용 가능 — {CLOUD_TTS_LANG} Chirp3-HD 목소리 {len(names)}종")
+        else:
+            _cloud_tts["last_err"] = f"voices {r.status_code}: {r.text[:120]}"
+            print(f"[TTS] Cloud TTS 목소리 조회 실패 {r.status_code} — {r.text[:300]}")
+    except Exception as e:
+        _cloud_tts["last_err"] = f"voices {type(e).__name__}: {e}"[:160]
+        print(f"[TTS] Cloud TTS 목소리 조회 예외: {e}")
+    _cloud_tts["voices"] = names
+    return names
+
+
+async def cloud_tts_pcm(text: str, voice: str, style_on: bool = True) -> bytes | None:
+    """Cloud TTS로 24kHz PCM을 받아 온다. 못 쓰는 상황이면 None → 부른 쪽이 Gemini 경로로 넘어간다."""
+    if not GOOGLE_TTS_API_KEY or time.time() < _cloud_tts["off_until"]:
+        return None
+    avail = await _cloud_tts_voices()
+    if not avail:                                   # 목록조차 못 받았으면 키·권한 문제다
+        _cloud_tts["off_until"] = time.time() + 600  # 10분 쉬었다 다시 확인
+        _cloud_tts["voices"] = None
+        return None
+    name = voice if voice in avail else VOICE_TABLE[HOARANG_VOICE_KEY]
+    if name not in avail:
+        name = sorted(avail)[0]
+    audio_cfg = {"audioEncoding": "LINEAR16", "sampleRateHertz": 24000}
+    if style_on and name in _CHILD_VOICES:
+        audio_cfg["speakingRate"] = CLOUD_TTS_CHILD_RATE
+    body = {
+        "input": {"text": text},
+        "voice": {"languageCode": CLOUD_TTS_LANG, "name": f"{CLOUD_TTS_LANG}-Chirp3-HD-{name}"},
+        "audioConfig": audio_cfg,
+    }
+    try:
+        r = await _hc().post(CLOUD_TTS_SYNTH_URL, params={"key": GOOGLE_TTS_API_KEY}, json=body)
+        if r.status_code != 200:
+            _cloud_tts["fail"] += 1
+            _cloud_tts["last_err"] = f"synthesize {r.status_code}: {r.text[:120]}"
+            print(f"[TTS] Cloud TTS 합성 실패 {r.status_code} — {r.text[:300]}")
+            if _cloud_tts["fail"] >= 3:             # 계속 실패하면 5분 쉰다
+                _cloud_tts["off_until"], _cloud_tts["fail"] = time.time() + 300, 0
+            return None
+        b64 = (r.json() or {}).get("audioContent", "")
+        pcm = _pcm_from_wav(base64.b64decode(b64)) if b64 else b""
+        if not pcm:
+            _cloud_tts["last_err"] = "synthesize: 빈 응답"
+            return None
+        _cloud_tts["fail"], _cloud_tts["used"] = 0, _cloud_tts["used"] + 1
+        return pcm
+    except Exception as e:
+        _cloud_tts["fail"] += 1
+        _cloud_tts["last_err"] = f"synthesize {type(e).__name__}: {e}"[:160]
+        print(f"[TTS] Cloud TTS 합성 예외: {e}")
+        if _cloud_tts["fail"] >= 3:
+            _cloud_tts["off_until"], _cloud_tts["fail"] = time.time() + 300, 0
+        return None
+
+
 async def _next_tts_model(bad: str) -> str | None:
     _tts_tried.add(bad)
     for c in ["gemini-2.5-flash-preview-tts", "gemini-2.5-pro-preview-tts", "gemini-2.5-flash-tts"]:
@@ -1582,6 +1691,15 @@ async def tts_endpoint(request: Request):
     if ck in _tts_cache:
         return Response(content=_tts_cache[ck], media_type="audio/pcm")
 
+    # ① 먼저 Cloud TTS로 부른다 — 목소리는 같고 분당 한도가 스무 배 넉넉하다.
+    pcm = await cloud_tts_pcm(text, voice, style_on)
+    if pcm:
+        if len(_tts_cache) > 300:
+            _tts_cache.clear()
+        _tts_cache[ck] = pcm
+        return Response(content=pcm, media_type="audio/pcm")
+
+    # ② 안 되면 예전 Gemini TTS 경로로 되돌아간다(키가 없을 때·한도 초과일 때).
     last_err = ""
     for _ in range(3):
         model_name = _tts_model["name"]
@@ -1616,6 +1734,8 @@ async def tts_endpoint(request: Request):
                     _tts_model["name"] = nxt
                     continue
             break
+    if _cloud_tts["last_err"]:
+        last_err = f"{last_err} || cloud: {_cloud_tts['last_err']}"
     raise HTTPException(status_code=502, detail=("tts_failed | " + last_err)[:250])
 
 
@@ -1704,7 +1824,9 @@ async def voice_lab():
 <textarea id="t">안녕! 나는 호아랑이야. 오늘 뭐 하고 놀까? 같이 한국어로 이야기하자!</textarea>
 <table>{rows}</table>
 <p class="note">이 페이지는 학생 화면 어디에도 링크되어 있지 않습니다(주소를 알아야 들어옴).<br>
-현재 기본: <b>{VOICE_TABLE[HOARANG_VOICE_KEY]}</b> · 어린 톤 지시: <b>{TTS_CHILD_STYLE}</b></p>
+현재 기본: <b>{VOICE_TABLE[HOARANG_VOICE_KEY]}</b> · 어린 톤 지시: <b>{TTS_CHILD_STYLE}</b><br>
+음성 경로: <b>{"Cloud TTS (분당 200회)" if (GOOGLE_TTS_API_KEY and _cloud_tts["voices"]) else "Gemini TTS (분당 10회)"}</b>
+ · 자세한 상태는 <a href="/version">/version</a>에서 봅니다.</p>
 </div><script>
 let ctx, last;
 async function play(btn, voice, style) {{
@@ -1876,6 +1998,12 @@ async def _push_scheduler():
 async def _on_startup():
     _push_load()
     asyncio.create_task(_push_scheduler())
+    # 켜질 때 Cloud TTS 목소리 목록을 미리 받아 둔다.
+    # 키가 살아 있는지 로그에서 바로 보이고, 첫 발화도 그만큼 빨리 나온다.
+    if GOOGLE_TTS_API_KEY:
+        asyncio.create_task(_cloud_tts_voices())
+    else:
+        print("[TTS] GOOGLE_TTS_API_KEY 없음 — Gemini TTS로 동작(분당 10회 한도)")
 
 
 @app.get("/push/key")
@@ -2044,6 +2172,15 @@ async def version_check():
         "date": APP_DATE,
         "sessions": _active_sessions,
         "max_sessions": MAX_CONCURRENT_SESSIONS,
+        # 음성이 어느 길로 나가는지 — cloud 면 분당 200회, gemini 면 분당 10회다
+        "tts": {
+            "key": bool(GOOGLE_TTS_API_KEY),
+            "path": "cloud" if (GOOGLE_TTS_API_KEY and _cloud_tts["voices"]) else "gemini",
+            "voices": len(_cloud_tts["voices"] or ()),
+            "used": _cloud_tts["used"],
+            "resting": max(0, int(_cloud_tts["off_until"] - time.time())),
+            "err": _cloud_tts["last_err"][:160],
+        },
     }
 
 

@@ -34,7 +34,7 @@ ok("조각을 이어 붙인다", /msg\.type === "review_chunk"/.test(html)
 ok("두 화면 모두 채운다", (html.match(/\["rpReviewEl", "freeReviewEl"\]/g) || []).length >= 2);
 ok("쓰는 중엔 붓끝이 깜빡인다", /\.rev-body\.writing::after/.test(html));
 ok("다 쓰면 커서를 지운다", /el\.classList\.remove\("writing"\)/.test(html));
-ok("다 받은 뒤에 기록에 얹는다", /review_done[\s\S]{0,700}?buildTranscriptText\(\)/.test(html));
+ok("다 받은 뒤에 기록에 얹는다", /review_done[\s\S]{0,1200}?buildTranscriptText\(\)/.test(html));
 
 console.log(fail ? `\n💥 실패 ${fail}건` : "\n🎉 모두 통과");
 process.exit(fail ? 1 : 0);

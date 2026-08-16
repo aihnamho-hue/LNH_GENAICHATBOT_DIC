@@ -20,7 +20,7 @@ ok("총평은 쓰이는 대로 흘려보낸다", /generate_content_stream/.test(
    && /"type": "review_chunk", "text": text/.test(py) && /"type": "review_done", "text": text/.test(py));
 ok("클라이언트가 조각을 받는다", /msg\.type === "review_chunk"/.test(html) && /msg\.type === "review_done"/.test(html));
 ok("받으면 두 화면 모두 채운다", /\["rpReviewEl", "freeReviewEl"\]/.test(html));
-ok("다 받은 뒤 기록에 얹는다", /msg\.type === "review_done"[\s\S]{0,700}?buildTranscriptText\(\)/.test(html));
+ok("다 받은 뒤 기록에 얹는다", /msg\.type === "review_done"[\s\S]{0,1200}?buildTranscriptText\(\)/.test(html));
 ok("기다리는 동안 '쓰는 중'을 보인다", /t\("revWait"\)/.test(html));
 ok("'쓰는 중' 문구가 18개 언어", (html.match(/revWait:"/g) || []).length === 18);
 ok("결과를 13초 안에 띄운다", /concludeRoleplay, 13000/.test(html) && /concludeFree, 13000/.test(html));

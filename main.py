@@ -624,8 +624,12 @@ INTV_ANYTIME = ["qParaphrase", "qEcho", "qEndTurn", "qNewTopic", "qExpand",
 #   학습자 차례  6회(통제 전 구매)  → 조금 1 · 보통 2 · 많이 3
 #              12회(통제된 챗봇)  → 조금 2 · 보통 4 · 많이 6
 #              20회(기능 단계가 많은 주제) → 상한에서 멈춘다
-INTV_TURN_GAP = {0: 0, 1: 5, 2: 3, 3: 2}   # 개입 사이 최소 '학습자 차례' 수
-INTV_MAX      = {0: 0, 1: 2, 2: 4, 3: 6}   # 세션당 상한 — 폭주 방지선
+INTV_TURN_GAP = {0: 0, 1: 4, 2: 3, 3: 2}   # 개입 사이 최소 '학습자 차례' 수
+# 세션당 상한. v103에서 올렸다 — 4분 21초·19차례 대화에서 4회는 너무 적었다.
+# 개입할 거리가 8개에서 24개로 늘었으므로 상한이 병목이 되어서는 안 된다.
+# 다만 상한을 올리는 것만으로는 의미가 없다. 무엇을 고르느냐가 함께 바뀌어야 한다
+# (아래 분석 프롬프트의 (6) — '할 수 있는 것'이 아니라 '지금 이 자리에 맞는 것').
+INTV_MAX      = {0: 0, 1: 3, 2: 6, 3: 10}
 INTV_SEC_FLOOR = 20                         # 짧은 턴이 몰릴 때를 위한 바닥(초)
 # ★ 학습자가 두 번은 스스로 말해 본 뒤에 개입한다.
 #   개입은 '유발이 먹히지 않았을 때' 메우는 층이다. 유발이 작동할 기회도 주기 전에
@@ -1021,9 +1025,79 @@ def _link_expr_to_script(stages: list, script: list) -> None:
                 continue               # 대화문에 없는 표현은 그대로 둔다
             prev = script[best - 1] if best > 0 else None
             nxt = script[best + 1] if best + 1 < len(script) else None
-            e["cue"] = prev["text"] if (prev and prev["speaker"] == "ai") else ""
+            # ★★ 비어 있는 cue를 채우지 않는다 (v103).
+            #    대화문은 늘 상대(ai)로 시작해 번갈아 가므로, 학습자 줄의 앞줄은
+            #    거의 항상 상대의 발화다. 예전에는 여기서 cue를 무조건 채워 넣어
+            #    모델이 '학습자가 먼저 여는 자리'로 비워 둔 것까지 도로 메웠다.
+            #    그 결과 연습이 전부 '가운데(반응)'로 몰렸다 —
+            #    학습자는 시작 대화이동을 한 번도 연습하지 못했다.
+            #    여기서 하는 일은 '맞춰 주기'이지 '만들어 내기'가 아니다.
+            if e.get("cue"):
+                e["cue"] = prev["text"] if (prev and prev["speaker"] == "ai") else ""
             if e.get("follow"):
                 e["follow"] = nxt["text"] if (nxt and nxt["speaker"] == "ai") else ""
+
+
+_DEAD_END = re.compile(
+    r"^(아니|아뇨|아니요|응|어|네|예|음|글쎄|괜찮|몰라|모르|없어|없어요|없습니다|그렇구나|그렇군요)"
+    r"[\s,.!?~…]*(없어요?|없습니다|괜찮아요?|몰라요?|모르겠어요?|그래요?|네|예)?[\s.!?~…]*$")
+
+
+def _is_dead_end(s: str) -> bool:
+    """대화를 닫아 버리는 도움말인지 본다.
+
+    「아니, 없어.」 「음, 없어.」 「네.」 처럼 상대가 더 할 말이 없어지는 발화다.
+    막혀서 도움을 부른 학습자에게 이런 말을 주면 도움이 아니라 마침표가 된다.
+    대화이동 연속체로 보면 부정응답만 하고 연속체를 끝내는 자리다 —
+    이어 가려면 이유·되묻기·새 화제·조건 가운데 하나가 붙어야 한다.
+    """
+    t = (s or "").strip()
+    if not t:
+        return True
+    if len(t) <= 4:                      # "네." "응." "몰라." — 너무 짧아 이을 데가 없다
+        return True
+    if _DEAD_END.match(t):
+        return True
+    # 물음표도 없고, 이어 주는 표지도 없고, 아주 짧으면 닫는 말로 본다
+    if len(t) <= 9 and "?" not in t and not re.search(
+            r"(그런데|근데|그럼|그리고|혹시|왜냐|아서|어서|니까|는데|은데|주세요|줄래|볼까|어때)", t):
+        return True
+    return False
+
+
+def _balance_expr_positions(stages: list) -> None:
+    """연속체 안에서 학습자가 서는 자리를 고르게 편다.
+
+    대화이동 연속체는 '시작–반응–의사확인'이다. 학습자의 연습 발화는 이 셋 어디에도
+    설 수 있어야 하는데, 모델은 놔두면 거의 전부 '반응'으로 만든다(교재 대화문이
+    질문–응답에 치우쳐 있는 것과 같은 편향이다).
+    지시만으로는 잘 안 지켜지므로, 만들어진 결과를 보고 한쪽으로 몰렸으면 편다.
+
+      · cue 없음            → 학습자가 연속체를 연다 (시작)
+      · cue 있고 follow 없음 → 학습자가 받는다 (반응, 2항)
+      · cue 있고 follow 있음 → 학습자 뒤에 상대의 반응이 온다 (3항)
+    """
+    for st in stages:
+        ex = [e for e in (st.get("expressions") or []) if e.get("text")]
+        if len(ex) < 2:
+            continue
+        opens = [e for e in ex if not e.get("cue")]
+        three = [e for e in ex if e.get("cue") and e.get("follow")]
+        # 여는 자리가 하나도 없으면, 가장 짧은 표현을 여는 자리로 돌린다.
+        # (짧은 표현이 대개 인사·부름처럼 먼저 꺼내기 좋은 말이다)
+        if not opens:
+            pick = min(ex, key=lambda e: len(e["text"]))
+            pick["cue"], pick["follow"] = "", ""
+            opens = [pick]
+        # 3항이 하나도 없으면 하나를 3항 후보로 표시해 둔다.
+        # follow 문구를 여기서 지어내지는 않는다 — 자리만 열어 두고,
+        # 실제 문구는 _link_expr_to_script 가 대화문의 다음 상대 발화로 채운다.
+        # 대화문에 이어지는 상대 발화가 없으면 빈 문자열이 되어 자연히 2항으로 남는다.
+        if not three and len(ex) >= 3:
+            for e in ex:
+                if e.get("cue") and e is not opens[0] and not e.get("follow"):
+                    e["follow"] = "…"          # 채워 달라는 표시
+                    break
 
 
 async def _fix_style(plan: dict, want_user: str, want_ai: str) -> None:
@@ -1089,7 +1163,10 @@ def _validate_plan(data) -> dict | None:
     if len(stages) < 3:
         return None
     script = _validate_script(data.get("script"), len(stages))
-    # 발화 연습을 대화문에 붙인다 — 들은 것과 연습하는 것이 같아야 한다
+    # ★ 순서가 중요하다.
+    #   ① 학습자가 설 자리를 먼저 고르게 편다(시작·반응·3항).
+    #   ② 그다음 대화문에 붙인다 — 자리만 잡아 두면 문구는 대화문이 채운다.
+    _balance_expr_positions(stages)
     _link_expr_to_script(stages, script)
     return {
         "topic_ko": _clean_str(data.get("topic_ko"), 60) or "자유 주제",
@@ -1404,13 +1481,24 @@ async def roleplay_setup(request: Request):
        - 3항형(제안–수락/거절–반응): 상대의 반응까지 들어야 뜻이 완성되는 자리.
          예) cue "이건 3만 원이에요" / text "좀 비싼데요, 깎아 주시면 안 될까요?"
              follow "그럼 2만 5천 원에 드릴게요"
-     ★ 한 단계 안의 표현들이 모두 같은 형태가 되지 않게 하라.
-       특히 대화를 여는 단계에서는 **학습자가 먼저 말하는 형태(cue 빈 문자열)를 반드시 하나 이상** 넣어라.
+     ★★ 학습자의 발화는 연속체의 **어느 자리에도** 설 수 있어야 한다.
+       대화이동 연속체는 '시작 → 반응 → 의사확인'이다. 학습자를 늘 가운데(반응)에만
+       세우면, 묻는 말에 답하는 연습만 하게 되어 대화이동 관리와 차례 관리를 기를 수 없다.
+       한 단계의 표현 2~3개를 **서로 다른 자리**로 흩어 놓아라.
+         - 시작 자리   : cue 빈 문자열. 학습자가 연속체를 연다. (예: "저기요, 이거 얼마예요?")
+         - 반응 자리   : cue 있음, follow 빈 문자열. (예: cue "3만 원이에요" / text "좀 비싼데요")
+         - 의사확인 자리: cue 있음, follow 있음. 학습자의 말 뒤에 상대의 반응까지 온다.
+           (예: cue "이 사과 얼마예요?"에 대한 답 → text "네, 그럼 세 개 주세요" / follow "네, 여기요")
+       ★ 한 단계 안의 표현이 모두 같은 형태면 안 된다. 특히 **cue 빈 문자열을 하나 이상** 넣어라.
+       ★ 인사·감사처럼 두 마디로 끝나는 의례적 연속체는 2항으로, 요청·구매·협상처럼
+         용건을 다루는 연속체는 3항으로 짜는 편이 자연스럽다.
 4) script — 위 기능단계를 처음부터 끝까지 밟아 가는 **모델 대화문** 10~14줄.
    학습자가 연습에 들어가기 전에 듣고 관찰할 자료다. 교재의 제시 대화문을 대신하되 실제 구어에 가깝게 쓴다.
    - 각 줄: speaker("user" = {my_role or '학습자'} / "ai" = {ai_role or '상대'}), text(한국어 발화), stage(해당 기능단계 번호 0부터), native.
    - stage 번호는 반드시 0부터 차례로 올라가야 하며, 위 stages의 단계를 하나도 빠뜨리지 마라.
-   - 첫 줄은 {ai_role or '상대'}(speaker="ai")로 시작하고, 두 사람이 번갈아 말하게 하라. 한 사람이 두 줄 이어 말해도 되지만 세 줄 이상은 안 된다.
+   - 첫 줄은 **상황에 맞는 쪽**이 연다. 학습자가 찾아가거나 말을 거는 상황(가게·관공서·문의)이면
+     speaker="user"로 시작하라. 상대가 먼저 맞이하는 상황이면 "ai"로 시작하라.
+     늘 "ai"로 시작하면 학습자는 대화를 여는 연습을 한 번도 못 한다. 두 사람이 번갈아 말하게 하라. 한 사람이 두 줄 이어 말해도 되지만 세 줄 이상은 안 된다.
    - 한 줄은 한 문장 또는 짧은 두 문장. 국제 통용 표준 교육과정 중급(4급 이하) 어휘·문법으로.
    - 문어체 금지. 담화표지("아", "음", "그럼", "네네"), 맞장구, 조각문 같은 입말의 특징을 자연스럽게 담아라.
    - 위 expressions에 쓴 표현들이 이 대화문 안에 자연스럽게 들어가게 하라. 학습자가 들은 것을 그대로 연습하게 된다.
@@ -1507,6 +1595,13 @@ CLOUD_TTS_VOICES_URL = "https://texttospeech.googleapis.com/v1/voices"
 #       off_until=연달아 실패했을 때 잠시 쉬는 시각, last_err=진단창 표시용
 _cloud_tts = {"voices": None, "off_until": 0.0, "fail": 0, "last_err": "", "used": 0}
 
+# ── 총평 진단 ───────────────────────────────────────────────────────────
+# 「이번에는 총평을 만들지 못했어요」가 계속 뜨는데 이유를 알 길이 없었다.
+# 로그를 뒤지지 않고 /version 에서 바로 보이게 남긴다.
+# 12초는 너무 빡빡했다 — 첫 글자만 나오면 나머지는 흘러오므로 넉넉히 준다.
+REVIEW_TIMEOUT_S = float(os.environ.get("REVIEW_TIMEOUT_S", "").strip() or "25")
+_review_dx = {"ok": 0, "fail": 0, "last": "", "chars": 0}
+
 # ── 목소리 (Chirp 3 HD 프리빌트 보이스 — Live API·TTS 공용) ──────────────
 # 호아랑은 '갓 쓴 아기 호랑이'라 기본은 밝은 남자아이 목소리(Puck)로 잡는다.
 # 주제 대화에서는 호아랑이 배역을 맡으므로, 그 배역에 맞는 목소리로 자동 전환한다.
@@ -1597,7 +1692,11 @@ _tts_cache = {}  # (text, voice, style) -> pcm bytes (같은 문장 반복 재�
 # ── Cloud TTS 호출부 ────────────────────────────────────────────────────
 # Chirp 3 HD는 Gemini TTS와 달리 자연어 스타일 지시를 받지 않는다.
 # 그래서 어린 톤은 '말 빠르기'로만 살짝 흉내 낸다(목소리 자체가 이미 아이 목소리다).
-CLOUD_TTS_CHILD_RATE = float(os.environ.get("CLOUD_TTS_CHILD_RATE", "").strip() or "1.08")
+# ★ 1.0 = 건드리지 않음. 예전 Gemini TTS 속도와 같아진다.
+#   v103에서 1.08을 기본으로 두었더니 '먼저 들어보기'의 대화문까지 빨라졌다.
+#   초급 학습자에게 들려주는 대화문은 느린 편이 낫다. 속도로 어린 톤을 흉내 내는 것보다
+#   알아들을 수 있는 것이 먼저다. 필요하면 환경변수로 올린다.
+CLOUD_TTS_CHILD_RATE = float(os.environ.get("CLOUD_TTS_CHILD_RATE", "").strip() or "1.0")
 _http_client = {"c": None}
 
 
@@ -1659,7 +1758,7 @@ async def cloud_tts_pcm(text: str, voice: str, style_on: bool = True) -> bytes |
     if name not in avail:
         name = sorted(avail)[0]
     audio_cfg = {"audioEncoding": "LINEAR16", "sampleRateHertz": 24000}
-    if style_on and name in _CHILD_VOICES:
+    if style_on and name in _CHILD_VOICES and abs(CLOUD_TTS_CHILD_RATE - 1.0) > 0.001:
         audio_cfg["speakingRate"] = CLOUD_TTS_CHILD_RATE
     body = {
         "input": {"text": text},
@@ -2223,6 +2322,63 @@ async def version_check():
             "resting": max(0, int(_cloud_tts["off_until"] - time.time())),
             "err": _cloud_tts["last_err"][:160],
         },
+        # 총평이 왜 안 나오는지 — 로그를 안 열고도 여기서 본다
+        "review": {
+            "ok": _review_dx["ok"],          # 성공 횟수
+            "fail": _review_dx["fail"],      # 실패 횟수
+            "chars": _review_dx["chars"],    # 마지막 성공 글자 수
+            "err": _review_dx["last"][:200], # 마지막 실패 이유 (빈 문자열이면 정상)
+            "model": _analysis_model["name"],
+            "timeout": REVIEW_TIMEOUT_S,
+        },
+    }
+
+
+@app.get("/reviewtest")
+async def review_test():
+    """총평이 왜 안 나오는지 30초 안에 가려내는 자리.
+
+    실제 총평과 **같은 모델·같은 설정**으로 짧은 글을 하나 만들어 본다.
+    - ok=true 로 글이 나오면 → 모델·키·한도는 멀쩡하다. 총평 쪽 로직 문제다.
+    - ok=false 면 → err 에 이유가 찍힌다(429=한도, 404=모델 없음, 401/403=키).
+    학생 화면 어디에도 링크되어 있지 않다(주소를 알아야 들어옴).
+    """
+    demo = ("학습자: 안녕하세요. 저기 그 파란 옷 좀 보여 주세요.\n"
+            "상대: 네, 여기 있습니다. 입어 보시겠어요?\n"
+            "학습자: 네. 음… 조금 큰 것 같아요. 더 작은 거 있어요?\n"
+            "상대: 죄송해요, 그 색은 이 크기밖에 없어요.\n"
+            "학습자: 그럼 다른 색은요? 까만색도 괜찮아요.")
+    prompt = ("너는 따뜻한 한국어 선생님이다. 아래 대화를 한 중급 학습자에게 "
+              "100자 안팎으로 '-해요'체 총평을 써라. 1~4급 어휘만 쓴다.\n\n" + demo)
+    t0 = time.perf_counter()
+    buf, err, first = [], "", None
+    try:
+        stream = await asyncio.wait_for(
+            client.aio.models.generate_content_stream(
+                model=_analysis_model["name"], contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.7,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0))),
+            timeout=REVIEW_TIMEOUT_S)
+        async for chunk in stream:
+            piece = getattr(chunk, "text", "") or ""
+            if piece and first is None:
+                first = round(time.perf_counter() - t0, 2)   # 첫 글자까지 걸린 시간
+            buf.append(piece)
+    except Exception as e:
+        err = f"{type(e).__name__}: {e}"[:300]
+        if isinstance(e, asyncio.TimeoutError):
+            err = f"TimeoutError: {REVIEW_TIMEOUT_S:.0f}초 안에 첫 글자가 안 나왔다"
+    out = "".join(buf).strip()
+    return {
+        "ok": bool(out),
+        "model": _analysis_model["name"],
+        "first_char_s": first,                       # 이 값이 곧 학습자가 기다리는 시간
+        "total_s": round(time.perf_counter() - t0, 2),
+        "chars": len(out),
+        "text": out[:400],
+        "err": err,
+        "review_stats": dict(_review_dx),            # 실제 대화에서의 성공·실패 누적
     }
 
 
@@ -2890,6 +3046,10 @@ async def _handle_session(websocket: WebSocket):
             intv_txt = "\n".join(
                 f"- {q['id']}: {q['desc'].replace(' 적이 있다', '')}"
                 for q in QUEST_LLM if q["id"] in INTERVENABLE)
+            # 개입은 '직전 발화에 이어지는가'로 골라야 한다. 그 근거를 따로 떼어 준다.
+            last_ai_line = next((m["text"].strip() for m in reversed(convo)
+                                 if m["role"] == "ai" and m["text"].strip()),
+                                "(아직 상대가 말하지 않았다 — 학습자가 먼저 여는 자리다)")
             prompt = f"""다음은 한국어 학습자의 대화 기록이다.
 {task_line}
 
@@ -2929,6 +3089,24 @@ async def _handle_session(websocket: WebSocket):
 (6) intervene — {intv_mood} 지금 대화의 흐름에서 학습자가 **바로 다음 차례에** 자연스럽게 해 볼 수 있는 것 하나의 id.
     아래 목록에서만 고른다. 자리가 자연스럽지 않으면 빈 문자열("")로 두라. 억지로 고르지 마라.
     ★ (3)에서 학습자가 이미 해냈다고 적은 것은 고르지 마라.
+
+    ★★ 고르는 방법 — '학습자가 할 수 있는 것'이 아니라 '지금 이 자리에 맞는 것'을 골라라.
+    아래 [상대가 방금 한 말]을 보고, **그 말에 이어 붙는 대화이동**을 골라라.
+    목록을 훑어 아무거나 집으면 학습자는 흐름과 상관없는 지시를 받는다. 그러면 개입이
+    대화를 돕는 것이 아니라 방해가 된다. 다음처럼 자리를 읽어라.
+      · 상대가 무언가를 제안·권유했다        → 거절(qRefuse)·조건 달기(qCond)·대안 내기(qAlt)
+      · 상대가 난색을 보이거나 거절했다      → 고수(qHold)·대안(qAlt)
+      · 상대가 값·조건을 말했다              → 협상(qCond)·되묻기(qContinuer)
+      · 상대가 길게 설명했다                 → 요약 확인(qParaphrase)·공감(qEmpathy)
+      · 상대가 짧게 끊고 물었다              → 화제 넓히기(qExpand)·새 화제(qNewTopic)
+      · 학습자가 짧게만 답하고 있다          → 이어 말하기(qKeepTurn)·먼저 꺼내기(qInitiate)
+      · 학습자가 자꾸 막히거나 말이 끊긴다   → 시간 벌기(qFiller)·돌려 말하기(qCircum)
+      · 한 화제가 충분히 다뤄졌다            → 화제 마무리(qCloseTopic)·화제 옮기기(qShiftTopic)
+    ★ 위는 예시일 뿐이다. 중요한 것은 **직전 발화와 이어지는가**이다.
+
+[상대가 방금 한 말 — intervene 은 여기에 이어질 것을 골라라]
+{last_ai_line}
+
 {intv_txt}
 
 (5) chains — 대화 **전체**에서 **학습자가** 수행한 대화이동 연쇄의 횟수.
@@ -3068,7 +3246,22 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
 학습자가 '지금 자기 차례에' 말하면 자연스러운 한국어 발화를 정확히 2개 제안하라.
 - ★ 무엇보다 위 「상대가 방금 한 말」에 대한 대답으로 자연스러워야 한다.
   상대가 물었으면 답이 되고, 제안했으면 받거나 거절이 되어야 한다.
-- 두 개는 서로 달라야 한다. 같은 말을 두 번 쓰지 마라.
+
+★★★ 가장 중요한 규칙 — 대화를 '이어 가는' 말이어야 한다 ★★★
+이 도움말은 학습자가 **막혔을 때** 부르는 것이다. 대화를 닫아 버리는 말을 주면
+학습자는 도움을 받고도 다시 막힌다. 그것은 돕는 것이 아니라 끝내는 것이다.
+- **금지** — 한 마디로 끝나 상대가 더 할 말이 없어지는 발화.
+    "아니, 없어." / "음, 없어." / "네." / "몰라요." / "괜찮아요." / "그렇구나."
+- **반드시** 뒤에 무언가를 붙여라. 아래 중 하나 이상이 들어가야 한다.
+    ① 이유·설명   ② 되묻기    ③ 새로운 이야깃거리    ④ 조건·부탁
+- 이렇게 바꿔라.
+    "아니, 없어."      → "아, 그럼 이번엔 내가 하나 물어봐도 돼?"
+    "음, 없어."        → "지금은 잘 모르겠어. 너는 요즘 뭐가 제일 재미있어?"
+    "네."              → "네, 좋아요. 그런데 시간은 언제가 괜찮으세요?"
+    "몰라요."          → "그건 잘 모르겠어요. 혹시 다시 설명해 주실 수 있어요?"
+- ★ 두 개는 **서로 다른 방식**으로 대화를 이어야 한다. 같은 말을 두 번 쓰지 마라.
+    예) 하나는 「받아서 이어 가기」, 다른 하나는 「되묻거나 새 이야기 꺼내기」.
+  둘 다 같은 방식이면 학습자는 대화를 여는 길이 하나뿐이라고 배운다.
 {extra}
 - 국제 통용 표준 교육과정 중급(4급 이하) 어휘·문법, 짧은 구어체로.
 JSON만 출력: {{"hints":["",""]}}"""
@@ -3077,6 +3270,9 @@ JSON만 출력: {{"hints":["",""]}}"""
             hints = []
             if isinstance(data, dict):
                 hints = [_clean_str(h, 80) for h in (data.get("hints") or []) if _clean_str(h, 80)][:2]
+            # 지시를 어기고 대화를 닫는 말이 나오면 걸러 낸다.
+            # 「아니, 없어.」 같은 것을 학습자에게 주면 막힌 사람을 더 막히게 한다.
+            hints = [h for h in hints if not _is_dead_end(h)]
             if not hints:
                 hints = fallback   # 주제 대화는 연습 표현으로, 자유 대화는 빈 목록으로
             await websocket.send_text(json.dumps({
@@ -3227,7 +3423,7 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                     config=types.GenerateContentConfig(
                         temperature=0.7,
                         thinking_config=types.ThinkingConfig(thinking_budget=0))),
-                timeout=12.0)
+                timeout=REVIEW_TIMEOUT_S)
             async for chunk in stream:
                 piece = getattr(chunk, "text", "") or ""
                 if not piece:
@@ -3237,11 +3433,25 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                     try:
                         await send_piece(piece)
                     except Exception:
+                        _review_dx["last"] = "학습자 쪽 연결이 먼저 닫힘"
                         return ""      # 학습자 쪽이 이미 닫혔다 — 더 만들 이유가 없다
-            return re.sub(r"\n{3,}", "\n\n", "".join(buf).strip())[:900]
+            out = re.sub(r"\n{3,}", "\n\n", "".join(buf).strip())[:900]
+            if out:
+                _review_dx.update(ok=_review_dx["ok"] + 1, last="", chars=len(out))
+            else:
+                # 예외 없이 빈 응답이 오는 경우가 있다(안전 필터·빈 후보 등).
+                _review_dx.update(fail=_review_dx["fail"] + 1,
+                                  last=f"빈 응답 (모델 {_analysis_model['name']}, 대화 {len(convo)}턴)")
+                print(f"[총평] 빈 응답 — 모델 {_analysis_model['name']}, 대화 {len(convo)}턴")
+            return out
         except Exception as e:
-            print(f"[총평] 생성 실패: {e}")
-            return "".join(buf).strip()[:900]
+            partial = "".join(buf).strip()[:900]
+            why = f"{type(e).__name__}: {e}"[:200]
+            if isinstance(e, asyncio.TimeoutError):
+                why = f"{REVIEW_TIMEOUT_S:.0f}초 안에 첫 글자가 안 나옴 (모델 {_analysis_model['name']})"
+            _review_dx.update(fail=_review_dx["fail"] + 1, last=why)
+            print(f"[총평] 생성 실패: {why}")
+            return partial
 
     async def send_final_score():
         """종료 버튼 → 마지막 분석을 마치고 퍼센트를 점수로, IDC 프로파일을 함께 전송."""

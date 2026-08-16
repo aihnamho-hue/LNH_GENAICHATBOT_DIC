@@ -3373,8 +3373,13 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
         graded = "\n".join(
             f"- {e['name']}: {idc_state['counts'].get(e['key'], 0)}회"
             for e in IDC_TRAINABLE)
-        task_line = (f"과업 — 목적: {rp_plan['goal_ko']} / 장소: {rp_plan['place_ko']} / "
-                     f"학습자 역할: {rp_plan['user_role']}") if rp_plan else "자유 주제 대화"
+        # 계획이 화면에서 되살아난 것이면 필드가 빠져 있을 수 있다.
+        # 여기서 KeyError 가 나면 총평이 통째로 날아가는데, 그때 화면에는
+        # 「만들지 못했어요」만 뜨고 이유가 안 남는다. 없으면 없는 대로 쓴다.
+        task_line = ("과업 — 목적: {} / 장소: {} / 학습자 역할: {}".format(
+            rp_plan.get("goal_ko", "(목적 없음)"),
+            rp_plan.get("place_ko", "(장소 없음)"),
+            rp_plan.get("user_role", "학습자"))) if rp_plan else "자유 주제 대화"
         prompt = f"""너는 따뜻하고 꼼꼼한 한국어 선생님이다. 방금 대화 연습을 마친 중급 학습자에게
 말로 해 주듯 총평을 써라.
 
@@ -3466,8 +3471,21 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
             try:
                 text = await run_review(send_piece=_piece)
             except Exception as e:
-                print(f"[총평] 실패: {e}")
+                # ★ 계수기를 여기까지 올린다.
+                #   run_review 안쪽 try 만 재고 있었더니, 프롬프트를 만드는 사이
+                #   (transcript·graded·task_line)에서 터지는 것을 하나도 못 잡았다.
+                #   /reviewtest 는 멀쩡한데 실제 총평만 안 나오던 이유가 이것이다.
+                import traceback
+                _review_dx.update(fail=_review_dx["fail"] + 1,
+                                  last=f"{type(e).__name__}: {e}"[:200])
+                print(f"[총평] 실패: {type(e).__name__}: {e}")
+                traceback.print_exc()
                 text = ""
+            if not text and not _review_dx["last"]:
+                # 예외 없이 빈 문자열이 온 경우 — 어디서 조용히 빠졌는지 남긴다
+                _review_dx.update(fail=_review_dx["fail"] + 1,
+                                  last=f"빈 총평 (대화 {len(convo)}턴, 과업 {'있음' if rp_plan else '없음'})")
+                print(f"[총평] 빈 결과 — 대화 {len(convo)}턴")
             idc_state["review"] = text
             try:
                 await websocket.send_text(json.dumps({"type": "review_done", "text": text}))

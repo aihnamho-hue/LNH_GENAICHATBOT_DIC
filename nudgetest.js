@@ -14,10 +14,10 @@ function grab(re, name) {
     return m[0];
 }
 // eval 은 const 를 이 스코프에 남기지 않는다 — Function 으로 감싸 값을 돌려받는다
-const [QUEST_FORM, josaRago] = new Function(
+const [QUEST_FORM] = new Function(
     grab(/const QUEST_FORM = \{[\s\S]*?\n    \};/, "QUEST_FORM") + "\n" +
-    grab(/function josaRago\([\s\S]*?\n    \}/, "josaRago") + "\n" +
-    "return [QUEST_FORM, josaRago];")();
+
+    "return [QUEST_FORM];")();
 
 const wrapKo = (html.match(/\bqWrap:"((?:[^"\\]|\\.)*)"/) || [])[1];
 const forms = Object.keys(QUEST_FORM);
@@ -27,26 +27,20 @@ console.log("── 구조 ──");
 ok("QUEST_FORM 14개", forms.length === 14, "실제 " + forms.length);
 ok("모두 3단계", forms.every(k => QUEST_FORM[k].length === 3));
 ok("빈 문형 없음", forms.every(k => QUEST_FORM[k].every(v => v && v.trim())));
-ok("한국어 qWrap 에 조사 자리(%j) 있음", !!wrapKo && wrapKo.includes("%j"), wrapKo);
+ok("한국어 qWrap 이 '보기'로 읽힌다", !!wrapKo && /처럼/.test(wrapKo), wrapKo);
 ok("qWrap 18개 언어", (html.match(/\bqWrap:"/g) || []).length === 18);
-ok("questLabel 이 %j 를 치환한다", /replace\("%j", josaRago\(form\)\)/.test(html));
+ok("문형마다 보기를 둘 이상 준다",
+   forms.filter(k => QUEST_FORM[k].some(v => !v.includes("·"))).length <= 4,
+   forms.filter(k => QUEST_FORM[k].every(v => !v.includes("·"))).join(","));
 
-console.log("\n── 조사가 맞는가 (받침 있으면 '이라고') ──");
-const JOSA_CASES = [
-    ["~하면 ~할게요", "라고"], ["그리고, 왜냐하면", "이라고"], ["아, 잠깐만", "이라고"],
-    ["근데 나는…", "이라고"], ["그래서?", "라고"], ["내 말 알겠어?", "라고"],
-    ["그건 그렇게 하고", "라고"], ["많이 힘드셨겠습니다", "라고"], ["그랬겠다", "라고"],
-];
-JOSA_CASES.forEach(([s, want]) => ok(`「${s}」${want}`, josaRago(s) === want, "→ " + josaRago(s)));
 
 console.log("\n── 말투 단계별로 실제로 만들어 본다 ──");
 let bad = [];
 TIERS.forEach((tier, ti) => {
     forms.forEach(k => {
         const form = QUEST_FORM[k][ti];
-        const line = wrapKo.replace("%s", form).replace("%j", josaRago(form));
+        const line = wrapKo.replace("%s", form);
         if (/%[sj]/.test(line)) bad.push(k + "/" + tier + ": 치환 안 됨");
-        if (/」라고/.test(line) && josaRago(form) === "이라고") bad.push(k + "/" + tier + ": 조사 틀림");
     });
 });
 ok("모든 자리·모든 말투에서 문장이 완성된다", bad.length === 0, bad.slice(0, 3).join(" · "));

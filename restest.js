@@ -25,9 +25,13 @@ ok("태그 기본값은 대화이동", /idc = "move"/.test(py));
 ok("생성 지시에도 기능 단계 금지", /기능 단계'는 여기서 기를 수 없으니 쓰지 마라/.test(py));
 
 console.log("── ② 발화 연습 마이크 ──");
-ok("탭·꾹 누르기 둘 다", /PR_TAP_MS/.test(html) && /prTapMode = true/.test(html));
+/* v112 — '탭도 되고 꾹도 되게'를 **꾹 누르기 하나로** 되돌렸다.
+   두 방식을 다 받는 것이 친절해 보였으나, 대화 화면 발화 버튼은 꾹 누르기 하나였다.
+   같은 모양의 버튼이 화면마다 다르게 움직이니 학습자가 헷갈렸다(실기기 시험).
+   자세한 항목은 prtest.js 로 옮겼다. 여기서는 되돌아가지 않았는지만 본다. */
+ok("탭 토글로 되돌아가지 않았다", !/PR_TAP_MS/.test(html) && !/prTapMode/.test(html));
 ok("너무 짧으면 다르게 안내", /t\("prTooShort"\)/.test(html));
-ok("자동 종료 20초", /}, 20000\); \/\/ 안전 자동 종료/.test(html));
+ok("자동 종료가 대화 화면과 같은 45초", /}, 45000\); \/\/ 안전 자동 종료/.test(html));
 
 console.log("── ④⑤ 결과 네 장 ──");
 ok("총평을 서버가 만든다", /async def run_review/.test(py) && /"review": review/.test(py));

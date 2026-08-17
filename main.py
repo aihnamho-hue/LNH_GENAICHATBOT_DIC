@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v105"
+APP_VERSION = "v106"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -680,12 +680,12 @@ INTV_ANYTIME = ["qEndTurn", "qNewTopic", "qExpand", "qKeepTurn", "qEcho"]
 #   학습자 차례  6회(통제 전 구매)  → 조금 1 · 보통 2 · 많이 3
 #              12회(통제된 챗봇)  → 조금 2 · 보통 4 · 많이 6
 #              20회(기능 단계가 많은 주제) → 상한에서 멈춘다
-INTV_TURN_GAP = {0: 0, 1: 4, 2: 3, 3: 2}   # 개입 사이 최소 '학습자 차례' 수
+INTV_TURN_GAP = {0: 0, 1: 4, 2: 2, 3: 1}   # 개입 사이 최소 '학습자 차례' 수
 # 세션당 상한. v103에서 올렸다 — 4분 21초·19차례 대화에서 4회는 너무 적었다.
 # 개입할 거리가 8개에서 24개로 늘었으므로 상한이 병목이 되어서는 안 된다.
 # 다만 상한을 올리는 것만으로는 의미가 없다. 무엇을 고르느냐가 함께 바뀌어야 한다
 # (아래 분석 프롬프트의 (6) — '할 수 있는 것'이 아니라 '지금 이 자리에 맞는 것').
-INTV_MAX      = {0: 0, 1: 3, 2: 6, 3: 10}
+INTV_MAX      = {0: 0, 1: 3, 2: 7, 3: 14}
 
 # ── 바닥(최소) — 페이더가 실제로 도는 눈금이 되게 한다 ─────────────────
 #
@@ -698,7 +698,8 @@ INTV_MAX      = {0: 0, 1: 3, 2: 6, 3: 10}
 #   "이만큼의 차례가 지나도록 한 번도 안 나왔으면, 그때는 채운다."
 # 자리에 맞는 것이 있으면 그것이 먼저 나가고, 없을 때만 이 바닥이 작동한다.
 # 위 INTV_TURN_GAP(너무 자주 나오지 않게)과 짝을 이루어 아래위를 막는다.
-INTV_FORCE_GAP = {0: 0, 1: 8, 2: 5, 3: 3}   # 이 차례 수를 넘기면 서버가 채운다
+# v105: 「많이」를 더 자주 나오게 — 2차례에 한 번은 나온다
+INTV_FORCE_GAP = {0: 0, 1: 7, 2: 4, 3: 2}   # 이 차례 수를 넘기면 서버가 채운다
 #
 # 19차례 대화에서 기대되는 횟수(대략)
 #   페이더 1 : 최소 2회 ~ 최대 3회
@@ -3091,6 +3092,53 @@ async def _handle_session(websocket: WebSocket):
         except Exception as e:
             print(f"[개입] 전송 실패(무시): {e}")
 
+    def _fit_intervention() -> str:
+        """지금 이 자리에 **맞는** 개입을 고른다.
+
+        LLM이 자리를 못 골랐을 때 서버가 채우는데, 예전에는 '가장 덜 실현된 요소'만
+        보고 골랐다. 그러면 흐름과 상관없는 것이 튀어나온다 —
+        이야기가 없는데 「그래서요?」, 공감할 거리가 없는데 「그랬겠어요」.
+        학습자는 시킨 대로 말했을 뿐인데 대화가 어그러진다.
+
+        그래서 **직전 두 발화의 모양**으로 자리를 좁힌다.
+        말뜻까지는 못 읽지만, 어떤 자리인지는 모양만으로도 상당히 갈린다.
+        """
+        last_ai = next((m["text"].strip() for m in reversed(convo)
+                        if m["role"] == "ai" and m["text"].strip()), "")
+        me = [m["text"].strip() for m in convo if m["role"] == "user" and m["text"].strip()]
+        last_me = me[-1] if me else ""
+
+        def ok(qid: str) -> bool:
+            if qid in idc_state["intv_ids"] or qid in rp_progress["quests"]:
+                return False
+            q = next((x for x in QUEST_LLM if x["id"] == qid), None)
+            if q is None:
+                return False
+            return idc_state["levels"].get(q["el"], IDC_LEVEL_MODEL) > IDC_LEVEL_SOLO
+
+        def first(*ids):
+            return next((i for i in ids if ok(i)), "")
+
+        asked = last_ai.rstrip().endswith(("?", "요?", "까?", "나?"))
+        long_ai = len(last_ai) >= 60
+        short_me = last_me and len(last_me) <= 12
+        # 학습자가 두 차례 이상 계속 짧게만 답하고 있는가
+        keeps_short = len(me) >= 2 and all(len(x) <= 14 for x in me[-2:])
+
+        if asked and (short_me or keeps_short):
+            # 물어봤는데 짧게만 답한다 → 길게 잇기, 그다음 내 이야기 얹기
+            return first("qKeepTurn", "qExpand")
+        if long_ai:
+            # 상대가 길게 말했다 → 알아들었는지 확인하거나 그 말을 가져다 쓰기
+            return first("qParaphrase", "qEcho")
+        if asked:
+            # 물어봤다 → 답하고 되물어 차례를 넘기기
+            return first("qEndTurn", "qExpand")
+        if not asked and last_ai:
+            # 상대가 말을 맺었다(질문이 아니다) → 내가 이어 가거나 새 이야기를 꺼낼 자리
+            return first("qExpand", "qNewTopic", "qEndTurn")
+        return ""
+
     def _intv_overdue() -> bool:
         """바닥에 닿았나 — 이만큼의 차례가 지나도록 한 번도 안 나왔는가."""
         gap = INTV_FORCE_GAP.get(scaf_level, 0)
@@ -3114,6 +3162,12 @@ async def _handle_session(websocket: WebSocket):
         """
         if scaf_level < 2 and not force:
             return ""
+        # ★ 맥락을 먼저 본다 (v105).
+        #   「가장 덜 실현된 요소」만 보고 고르면 대화 흐름과 상관없는 것이 나온다.
+        #   상대가 방금 무엇을 했는지, 학습자가 어떻게 말하고 있는지로 자리를 좁힌다.
+        picked = _fit_intervention()
+        if picked:
+            return picked
         cand = []
         for qid in INTV_ANYTIME:
             if qid in idc_state["intv_ids"] or qid in rp_progress["quests"]:
@@ -3836,9 +3890,16 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                         if sc.turn_complete:
                             print(f"[서버] 턴 {turn_num} 완료")
                             await websocket.send_text(json.dumps({"type": "turn_complete"}))
-                            if rp_plan is not None:
-                                # 단계 충족 분석은 백그라운드로 — 오디오 릴레이를 막지 않음
-                                asyncio.create_task(run_analysis())
+                            # ★★ 자유 대화에서도 분석을 돌린다 (v105) ★★
+                            #   예전에는 `if rp_plan is not None` 으로 막아 두어
+                            #   **자유 대화에서는 분석이 한 번도 안 돌았다.**
+                            #   그런데 교육적 개입(넛지)은 분석 안에서 고른다.
+                            #   즉 자유 대화에서는 도와주기 페이더를 아무리 올려도
+                            #   넛지가 나올 수 없었다. 페이더가 반쪽만 돌고 있었던 것이다.
+                            #   run_analysis 는 rp_plan 이 없어도 안전하다
+                            #   (종료 시 `run_analysis(final=True)` 로 이미 그렇게 쓰고 있었다).
+                            #   단계 충족 분석은 백그라운드로 — 오디오 릴레이를 막지 않는다.
+                            asyncio.create_task(run_analysis())
 
             send_task = asyncio.create_task(client_to_gemini())
             recv_task = asyncio.create_task(gemini_to_client())

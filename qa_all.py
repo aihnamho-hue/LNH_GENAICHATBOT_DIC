@@ -310,6 +310,34 @@ _g1 = _fit("주말에 뭐 했어요?", ["네", "그냥요"])
 _g2 = _fit("주말에 뭐 했어요?", ["네", "그냥요"], done=(_g1,))
 ok("맥락", "이미 띄운 것은 다시 안 고른다", _g2 and _g2 != _g1, f"{_g1} → {_g2}")
 
+
+# ═══════════════════════════════════════════════════════════
+print("\n════════ ⑮ 넛지가 0이 되는 길이 남았는가 (v107 최대 사고) ════════")
+_fade = re.search(r'IDC_FADE_AT = \{IDC_LEVEL_MODEL: (\d+), IDC_LEVEL_PROMPT: (\d+)\}', PY)
+_m, _p = int(_fade.group(1)), int(_fade.group(2))
+ok("페이딩", f"자율 임계가 넉넉한가 ({_p}회)", _p >= 8, _p)
+ok("페이딩", "「많이」에서는 자율 요소도 넛지가 나간다",
+   "and scaf_level < 3" in PY and PY.count("and scaf_level < 3") >= 2)
+ok("페이딩", "후보 고르기도 같은 규칙", "or scaf_level >= 3" in PY)
+ok("페이딩", "기기 누적을 한 번 비운다", 'idcCountsVer") !== "3"' in HT)
+ok("페이딩", "접속 때 자율 개수를 로그로 남긴다", "자율 도달" in PY)
+
+# 여덟 요소가 모두 자율일 때 넛지가 나가는가 — 실제로 돌려 본다
+_src = re.search(r'    def _fit_intervention\(\).*?(?=\n    def _intv_overdue)', PY, re.S).group(0)
+_src = "\n".join(l[4:] if l.startswith("    ") else l for l in _src.split("\n"))
+_QL = [{"id": m.group(1), "el": m.group(2)}
+       for m in re.finditer(r'\{"id":\s*"(\w+)",\s*"el":\s*"(\w+)"', PY)]
+_ALLSOLO = {e: 1 for e in {q["el"] for q in _QL}}      # 1 = 자율
+def _fit_solo(scaf):
+    convo = [{"role": "ai", "text": "주말에 뭐 했어요?"}, {"role": "user", "text": "네"}]
+    _ns = {"convo": convo, "QUEST_LLM": _QL,
+           "idc_state": {"intv_ids": set(), "levels": dict(_ALLSOLO)},
+           "rp_progress": {"quests": set()},
+           "IDC_LEVEL_MODEL": 3, "IDC_LEVEL_SOLO": 1, "scaf_level": scaf}
+    exec(_src, _ns); return _ns["_fit_intervention"]()
+ok("페이딩", "여덟 요소가 다 자율이어도 「많이」면 넛지가 나온다", bool(_fit_solo(3)), _fit_solo(3))
+ok("페이딩", "「보통」에서는 자율 요소를 아낀다", not _fit_solo(2), _fit_solo(2))
+
 # ═══════════════════════════════════════════════════════════
 print("\n════════ ⑫ 버전·배포 폴더 ════════")
 v1 = re.search(r'APP_VERSION = "(v\d+)', PY).group(1)

@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v107"
+APP_VERSION = "v108"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -720,7 +720,18 @@ _QUEST_IDS = {q["id"] for q in QUEST_LLM}
 IDC_LEVEL_MODEL = 3    # 모델링: 네가 시범을 보이고 학습자가 이어받게 한다
 IDC_LEVEL_PROMPT = 2   # 촉진: 자리만 만들고 기다린다
 IDC_LEVEL_SOLO = 1     # 자율: 개입하지 않는다
-IDC_FADE_AT = {IDC_LEVEL_MODEL: 1, IDC_LEVEL_PROMPT: 3}  # 실현 횟수 임계치
+# ★★★ 실현 횟수 임계치 (v107에서 크게 고침) ★★★
+#
+# 예전: {모델링: 1, 촉진: 3} — **세 번 해내면 '자율'**
+#   그런데 이 누적은 기기(localStorage)에 남아 세션을 넘어 쌓인다.
+#   며칠 써 본 학습자는 여덟 요소가 진작 다 3회를 넘긴다.
+#   그러면 `수준 <= 자율` 조건에 걸려 **넛지가 하나도 안 나간다.**
+#   도와주기 페이더를 「많이」로 올려도 소용없다 — 이 조건이 페이더보다 먼저 걸린다.
+#   자유 대화에서 넛지가 안 나오던 세 번째이자 가장 큰 원인이 이것이었다.
+#
+# 「맞장구를 세 번 쳤으니 이제 혼자 할 수 있다」고 볼 근거는 없다.
+# 비계 페이딩은 옳지만 임계가 너무 낮았다. 8회로 올린다.
+IDC_FADE_AT = {IDC_LEVEL_MODEL: 2, IDC_LEVEL_PROMPT: 8}
 
 
 def idc_focus_block(levels: dict, counts: dict, limit: int = 3, native: str = "") -> str:
@@ -2971,6 +2982,11 @@ async def _handle_session(websocket: WebSocket):
                 prev_counts[k] = min(max(int(v), 0), 99)
     except (ValueError, TypeError):
         prev_counts = {}
+    # ★ 접속할 때 '넛지가 나올 수 있는 상태인가'를 한 줄로 남긴다.
+    #   자율에 이른 요소가 많으면 넛지가 안 나온다. 그 사실을 로그에서 바로 보게 한다.
+    #   (이걸 안 남겨 두어 「왜 넛지가 안 나오지」를 며칠 헤맸다)
+    if prev_counts:
+        print(f"[비계] 기기가 보낸 누적: {prev_counts}")
     if rp_id:
         entry = _roleplay_plans.get(rp_id)
         if entry and time.time() - entry["at"] <= _RP_PLAN_TTL:
@@ -3005,6 +3021,15 @@ async def _handle_session(websocket: WebSocket):
         "intv_turn_at": -99,  # 마지막 개입 시점의 학습자 차례 수
         "intv_n": 0,          # 개입 누적 횟수
     }
+    # ★ 넛지가 나올 수 있는 상태인지 접속 시점에 한 줄로 남긴다.
+    #   자율에 이른 요소는 넛지 후보에서 빠지므로(페이더 3 제외), 여덟이 모두 자율이면
+    #   아무리 기다려도 넛지가 안 나온다. 그때 로그에 이 줄이 있으면 5초 만에 안다.
+    _solo = [k for k, v in idc_state["levels"].items() if v <= IDC_LEVEL_SOLO]
+    print(f"[비계] 페이더 {scaf_level} · 자율 도달 {len(_solo)}/{len(IDC_SCORED_KEYS)}"
+          + (f" {_solo}" if _solo else "")
+          + (" — ★ 페이더가 3이 아니면 넛지가 크게 줄어든다"
+             if len(_solo) >= len(IDC_SCORED_KEYS) - 1 and scaf_level < 3 else ""))
+
     # 라이브 세션 핸들 보관 — 분석 태스크가 대화 중에 비계 지시를 주입할 때 쓴다
     live = {"session": None}
 
@@ -3145,9 +3170,15 @@ async def _handle_session(websocket: WebSocket):
         if q is None:
             return _skip("퀘스트를 못 찾음")
         el = q["el"]
-        # ① 이미 자율에 도달한 요소는 건드리지 않는다 — 페이딩을 스스로 되돌리는 셈이다
-        if idc_state["levels"].get(el, IDC_LEVEL_MODEL) <= IDC_LEVEL_SOLO:
-            return _skip(f"{el} 이미 자율(누적 {idc_state['counts'].get(el, 0)}회)")
+        # ① 자율에 이른 요소는 뒤로 미룬다 — 다만 **완전히 막지는 않는다** (v107).
+        #    자율은 '유발(시범·촉진)을 거둔다'는 뜻이지 '이 자리를 알려 주지도 않는다'는
+        #    뜻이 아니다. 예전에는 여기서 잘라 버려, 여덟 요소가 모두 자율에 이르면
+        #    도와주기 페이더를 「많이」로 올려도 넛지가 하나도 안 나갔다.
+        #    학습자가 도움을 더 달라고 눈금을 올렸는데 아무것도 안 나오는 것은,
+        #    페이딩이 아니라 그냥 고장이다.
+        #    → 「많이」(3)에서는 자율 요소도 알려 준다. 낮은 눈금에서만 거른다.
+        if idc_state["levels"].get(el, IDC_LEVEL_MODEL) <= IDC_LEVEL_SOLO and scaf_level < 3:
+            return _skip(f"{el} 이미 자율(누적 {idc_state['counts'].get(el, 0)}회) · 페이더 {scaf_level}")
         # ② 퀘스트 하나에 세션당 한 번
         if qid in idc_state["intv_ids"]:
             return _skip("이번 대화에서 이미 띄움")
@@ -3198,7 +3229,9 @@ async def _handle_session(websocket: WebSocket):
             q = next((x for x in QUEST_LLM if x["id"] == qid), None)
             if q is None:
                 return False
-            return idc_state["levels"].get(q["el"], IDC_LEVEL_MODEL) > IDC_LEVEL_SOLO
+            # 「많이」에서는 자율 요소도 고를 수 있게 한다 (아래 주석 참조)
+            return (idc_state["levels"].get(q["el"], IDC_LEVEL_MODEL) > IDC_LEVEL_SOLO
+                    or scaf_level >= 3)
 
         def first(*ids):
             return next((i for i in ids if ok(i)), "")
@@ -3262,7 +3295,9 @@ async def _handle_session(websocket: WebSocket):
             if q is None:
                 continue
             el = q["el"]
-            if idc_state["levels"].get(el, IDC_LEVEL_MODEL) <= IDC_LEVEL_SOLO:
+            # 「많이」에서는 자율에 이른 요소도 후보로 둔다(위 send_teach_intervention 과 같은 규칙).
+            # 그러지 않으면 여덟 요소가 다 자율일 때 고를 것이 하나도 남지 않는다.
+            if idc_state["levels"].get(el, IDC_LEVEL_MODEL) <= IDC_LEVEL_SOLO and scaf_level < 3:
                 continue
             cand.append((idc_state["counts"].get(el, 0), qid))
         if not cand:

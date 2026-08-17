@@ -2141,7 +2141,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v107 (2026-08-17)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v108 (2026-08-17)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -7179,9 +7179,13 @@
                서버가 **접속하자마자 모든 요소를 자율로** 판단해, 유발도 교육적 개입도
                한 번도 나오지 않는다(2분 대화에 개입 0회로 확인됨).
                숫자 세는 법만 고치고 기기에 남은 옛 숫자를 안 지운 것이 원인이었다. */
-            if (localStorage.getItem("idcCountsVer") !== "2") {
+            /* v107 — 한 번 더 비운다. 이번엔 숫자가 틀려서가 아니라 **임계가 낮아서**다.
+               예전 임계는 '세 번 해내면 자율'이었고, 자율에 이른 요소는 넛지가 아예 안 나갔다.
+               며칠 쓴 기기는 여덟 요소가 모두 자율이라 **넛지가 하나도 안 나오는 상태**가 된다.
+               임계를 8회로 올렸으므로 옛 숫자는 그 기준으로 다시 쌓여야 한다. */
+            if (localStorage.getItem("idcCountsVer") !== "3") {
                 localStorage.removeItem("idcCounts");
-                localStorage.setItem("idcCountsVer", "2");
+                localStorage.setItem("idcCountsVer", "3");
             }
             const m = JSON.parse(localStorage.getItem("idcCounts") || "{}");
             idcQ = Object.keys(m).map(k => k + ":" + m[k]).join(",");

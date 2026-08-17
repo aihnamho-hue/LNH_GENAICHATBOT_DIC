@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v106"
+APP_VERSION = "v107"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -1175,22 +1175,54 @@ def _balance_expr_positions(stages: list) -> None:
                     break
 
 
+# 아랫사람만 쓰는 말 — 윗사람 입에서 나오면 안 된다.
+# 「여자친구 부모님: 네, 명심하겠습니다」 같은 것이 실제로 나왔다.
+# 학습자는 이걸 보고 누가 누구에게 하는 말인지를 잘못 배운다.
+_DEFERENTIAL = ("명심하겠습니다", "명심할게요", "죄송합니다", "죄송해요", "송구합니다",
+                "잘못했습니다", "잘못했어요", "용서해 주십시오", "용서해 주세요",
+                "감사하겠습니다", "부탁드리겠습니다", "여쭤보겠습니다", "실례했습니다",
+                "다시는 이런 일이 없도록 하겠습니다", "앞으로 조심하겠습니다")
+
+
+def _deference_offenders(script: list, want_user: str, want_ai: str) -> list:
+    """윗사람이 아랫사람의 말을 하고 있는 줄을 찾는다.
+
+    누가 윗사람인지는 말투로 가른다 — 한쪽이 존댓말, 다른 쪽이 반말이면
+    반말을 쓰는 쪽이 윗사람이다. 둘 다 존댓말이면 알 수 없으므로 손대지 않는다.
+    """
+    if want_user == want_ai:
+        return []                       # 대등한 사이 — 판단 근거가 없다
+    upper = "user" if want_user == "banmal" else "ai"
+    return [i for i, l in enumerate(script or [])
+            if l.get("speaker") == upper
+            and any(w in (l.get("text") or "") for w in _DEFERENTIAL)]
+
+
 async def _fix_style(plan: dict, want_user: str, want_ai: str) -> None:
-    """말투를 어긴 줄만 골라 그 줄만 고쳐 쓴다.
+    """말투를 어긴 줄과 **화자가 뒤바뀐 줄**을 골라 그 줄만 고쳐 쓴다.
     통째로 다시 만들면 20초가 더 들고, 다시 만든 것도 어긋날 수 있다.
     어긴 줄이 몇 줄뿐이면 그 줄만 손질하는 편이 빠르고 확실하다."""
     script = plan.get("script") or []
-    bad = _style_offenders(script, want_user, want_ai)
+    style_bad = _style_offenders(script, want_user, want_ai)
+    defer_bad = _deference_offenders(script, want_user, want_ai)
+    if defer_bad:
+        print(f"[상황극] 화자 뒤바뀜 {len(defer_bad)}줄 — 윗사람이 아랫사람 말을 함")
+    bad = sorted(set(style_bad) | set(defer_bad))
     if not bad or len(bad) > 8:
         return
     ko = {"polite": "존댓말(해요체, '-요/-습니다'로 끝남)", "banmal": "반말(해체, '-아/-어/-야'로 끝남)"}
     lines = "\n".join(
         f"{i}\t{script[i]['text']}\t→ {ko[want_user if script[i]['speaker'] == 'user' else want_ai]}"
+        + ("\t※ 이 사람은 윗사람이다. 아랫사람이 할 말(명심하겠습니다·죄송합니다 등)을 "
+           "하고 있으니, 윗사람이 할 만한 말로 뜻을 바꿔라." if i in defer_bad else "")
         for i in bad)
-    prompt = f"""아래는 한국어 교재의 모델 대화문 가운데 **말투가 어긋난 줄**이다.
-뜻은 그대로 두고 **말투만** 바꿔 다시 써라. 낱말을 새로 지어내지 마라.
+    prompt = f"""아래는 한국어 교재의 모델 대화문 가운데 **고쳐야 할 줄**이다.
+말투가 어긋났거나, **윗사람이 아랫사람의 말을 하고 있다.**
+표시가 없는 줄은 뜻을 그대로 두고 **말투만** 바꾼다. 낱말을 새로 지어내지 마라.
+※ 표시가 붙은 줄은 **뜻까지 바꿔야 한다** — 윗사람이 할 만한 말로.
+   예) (부모님이) "네, 명심하겠습니다." → "앞으로는 그러지 마세요."
 
-번호\t원래 문장\t고칠 말투
+번호\t원래 문장\t고칠 말투\t비고
 {lines}
 
 - 한 줄에 한 문장. 중급(4급 이하) 어휘·문법.
@@ -1576,6 +1608,25 @@ async def roleplay_setup(request: Request):
      늘 "ai"로 시작하면 학습자는 대화를 여는 연습을 한 번도 못 한다. 두 사람이 번갈아 말하게 하라. 한 사람이 두 줄 이어 말해도 되지만 세 줄 이상은 안 된다.
    - 한 줄은 한 문장 또는 짧은 두 문장. 국제 통용 표준 교육과정 중급(4급 이하) 어휘·문법으로.
    - 문어체 금지. 담화표지("아", "음", "그럼", "네네"), 맞장구, 조각문 같은 입말의 특징을 자연스럽게 담아라.
+
+   - ★★ 누가 무슨 말을 하는지 헷갈리지 마라 ★★
+     **윗사람과 아랫사람의 말은 바뀌지 않는다.** 이걸 틀리면 학습자가 잘못 배운다.
+     · 「명심하겠습니다」「죄송합니다」「감사하겠습니다」 — **아랫사람이** 윗사람에게 하는 말이다.
+       부모님·사장님·선생님이 이런 말을 하면 안 된다.
+     · 「그래요」「알겠어요」「앞으로 조심해요」 — 윗사람이 아랫사람에게 하는 말이다.
+     · 사과하는 쪽, 용서하는 쪽이 누구인지 매 줄 확인하라.
+     한 줄을 쓸 때마다 **"이 사람이 이 말을 할 처지인가"**를 물어라.
+
+   - ★★ 배역의 감정을 담아라 ★★
+     상황에 감정이 걸려 있으면 그대로 드러내라. 늘 예의 바르고 차분하기만 하면
+     학습자는 **진짜 대화를 못 배운다.**
+     · 화날 상황이면 화를 낸다 — "아니, 지금 여기서 뭐 하는 거예요?", "이게 무슨 일이야?"
+     · 놀랄 상황이면 놀란다 — "네? 지금 뭐라고요?"
+     · 곤란하면 곤란해한다 — "그건 좀 곤란한데요…"
+     · 서운하면 서운해한다 — "그렇게 말하니까 좀 섭섭하네요."
+     특히 **갈등·사과·항의 상황에서 상대가 처음부터 부드러우면 안 된다.**
+     처음엔 감정을 드러내고, 학습자가 잘 대응한 뒤에 누그러지는 것이 자연스럽다.
+     ※ 다만 욕설·인신공격은 금지하고, 중급이 알아들을 수 있는 말로 쓴다.
    - 위 expressions에 쓴 표현들이 이 대화문 안에 자연스럽게 들어가게 하라. 학습자가 들은 것을 그대로 연습하게 된다.
    - {native_line.replace('각 단계의 native 필드에 name의', '각 줄의 native 필드에 text의') if native else 'native 필드는 빈 문자열로 둔다.'}
 
@@ -1712,6 +1763,12 @@ _ROLE_MALE = ("아저씨", "아버지", "아빠", "아버님", "형", "오빠", 
               "남자", "남성", "소년", "아들", "남편", "남동생", "남학생", "남선생",
               "할아버지", "외할아버지", "남사장", "총각", "사위", "고모부")
 _ROLE_ELDER = ("할머니", "할아버지", "어르신", "노인", "외할머니", "외할아버지", "연세")
+# 어른임이 분명한 배역 — 아이 목소리가 나오면 안 되는 자리.
+# 「여자친구 부모님」이 '친구'에 걸려 또래 목소리가 되던 것을 막는다.
+_ROLE_ADULT = ("부모", "부모님", "학부모", "아버지", "어머니", "아버님", "어머님",
+               "장인", "장모", "시아버지", "시어머니", "사장", "부장", "과장", "팀장",
+               "선생", "교수", "의사", "간호사", "약사", "경찰", "직원", "점원",
+               "기사", "주인", "사장님", "면접관", "상사", "이모", "삼촌", "고모", "숙모")
 _ROLE_YOUNG = ("친구", "학생", "동급생", "반 친구", "짝꿍", "또래", "후배", "아이", "어린이",
                "동생", "초등학생", "중학생", "고등학생")
 
@@ -1736,15 +1793,32 @@ def pick_voice(ai_role: str = "", override: str = "") -> str:
     if not role:
         return VOICE_TABLE[HOARANG_VOICE_KEY]
 
-    is_elder = any(w in role for w in _ROLE_ELDER)
-    is_female = any(w in role for w in _ROLE_FEMALE)
-    is_male = any(w in role for w in _ROLE_MALE)
-    is_young = any(w in role for w in _ROLE_YOUNG)
-    # 성별이 드러나지 않으면 넘겨짚지 않고 역할명 해시로 고정 배정
-    # (같은 역할이면 언제나 같은 목소리 — 수업 중 목소리가 널뛰지 않게)
-    coin_female = hashlib.sha1(role.encode("utf-8")).digest()[0] % 2 == 1
-    if not (is_female or is_male):
+    # ★★ 한국어는 뒤가 핵심이다 (v106) ★★
+    #   「여자친구의 남자친구」에서 예전 코드는 '여자'를 먼저 잡아 **여성 목소리**를 냈다.
+    #   문자열 어디에 있든 걸리게 해 두었기 때문이다. 그런데 이 말의 핵심은 '남자친구'다.
+    #   「여자친구 부모님」도 마찬가지로 '여자'에 걸려 딸 목소리가 될 뻔했다.
+    #   그래서 **꾸미는 말을 떼고 핵심어부터** 본다.
+    head = re.split(r"의\s*|\s+", role.strip())[-1] or role
+    for scope in (head, role):           # 핵심어에서 못 찾으면 전체에서 한 번 더
+        f = max((scope.rfind(w) for w in _ROLE_FEMALE if w in scope), default=-1)
+        m = max((scope.rfind(w) for w in _ROLE_MALE if w in scope), default=-1)
+        if f >= 0 or m >= 0:
+            is_female, is_male = (f > m), (m > f)   # 뒤에 온 쪽이 이긴다
+            break
+    else:
+        # 성별이 드러나지 않으면 넘겨짚지 않고 **핵심어** 해시로 고정 배정
+        # (같은 역할이면 언제나 같은 목소리 — 수업 중 목소리가 널뛰지 않게.
+        #  전체가 아니라 핵심어로 해야 '여자친구 부모님'이 '여자'에 끌려가지 않는다)
+        coin_female = hashlib.sha1(head.encode("utf-8")).digest()[0] % 2 == 1
         is_female, is_male = coin_female, not coin_female
+
+    # 나이도 핵심어를 먼저 본다. '여자친구 부모님'은 부모님이지 친구가 아니다.
+    is_elder = any(w in head for w in _ROLE_ELDER) or any(w in role for w in _ROLE_ELDER)
+    is_adult = any(w in head for w in _ROLE_ADULT)
+    is_young = (not is_adult) and (any(w in head for w in _ROLE_YOUNG)
+                                   or (not any(w in head for w in _ROLE_ADULT)
+                                       and any(w in role for w in _ROLE_YOUNG)
+                                       and head == role))
 
     if is_elder:
         return VOICE_TABLE["elder_f" if is_female else "elder_m"]
@@ -2971,12 +3045,22 @@ async def _handle_session(websocket: WebSocket):
         return sum(1 for m in convo if m["role"] == "user")
 
     def _progress_payload() -> dict:
+        """진행률·단계·퀘스트를 화면으로.
+
+        ★ 자유 대화에는 계획이 없다(rp_plan is None).
+          예전에는 `rp_plan["stages"]`를 그대로 꺼내 **TypeError** 가 났다.
+          run_analysis 의 try 안이라 세션은 안 죽지만, 그 아래에 있는 **넛지 코드까지
+          함께 건너뛰었다.** 자유 대화에서 넛지가 안 나오던 두 번째 원인이다.
+          (첫 번째는 분석 자체를 `if rp_plan is not None` 으로 막아 둔 것)
+          퀘스트는 자유 대화에서도 세므로 단계만 비우고 나머지는 그대로 보낸다.
+        """
+        stages = rp_plan["stages"] if rp_plan else []
         return {
             "type": "progress",
             "percent": rp_progress["percent"],
             "stages": [
                 {"name": s["name"], "native": s.get("native", ""), "done": i in rp_progress["done"]}
-                for i, s in enumerate(rp_plan["stages"])
+                for i, s in enumerate(stages)
             ],
             "quests": sorted(rp_progress["quests"]),   # 오늘의 퀘스트 중 해낸 것
         }
@@ -3120,7 +3204,9 @@ async def _handle_session(websocket: WebSocket):
             return next((i for i in ids if ok(i)), "")
 
         asked = last_ai.rstrip().endswith(("?", "요?", "까?", "나?"))
-        long_ai = len(last_ai) >= 60
+        # 한국어는 글자 하나에 담기는 뜻이 많다. 60자로 잡으니 두 문장짜리 설명도
+        # '길다'에 안 걸렸다(요약 확인을 권할 자리인데 놓쳤다). 45자로 내린다.
+        long_ai = len(last_ai) >= 45
         short_me = last_me and len(last_me) <= 12
         # 학습자가 두 차례 이상 계속 짧게만 답하고 있는가
         keeps_short = len(me) >= 2 and all(len(x) <= 14 for x in me[-2:])

@@ -1,6 +1,6 @@
 const fs=require("fs"), {JSDOM}=require("jsdom");
 let FAIL=0;   // 재방문 사용자 경로에서 스크립트가 멈추는지 — vuBars·rpScriptOverlay 사고 유형
-const html=fs.readFileSync("i.html","utf8");
+const html=fs.readFileSync("app.html","utf8");
 function run(label, opts){
   const errs=[];
   const dom=new JSDOM(html,{runScripts:"dangerously",url:opts.url,pretendToBeVisual:true,

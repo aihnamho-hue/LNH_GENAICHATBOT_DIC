@@ -30,7 +30,10 @@ console.log("── 내용 점검 ──");
 ok("한국어 예문(vcSample)은 그대로 둔다", Object.keys(NEW).every(c => (I[c].vcSample || "").includes("호아랑")));
 ok("존댓말·반말 용어는 한글을 남긴다", Object.keys(NEW).every(c => (I[c].sgPolite || "").includes("존댓말")));
 ok("줄바꿈이 살아 있다", Object.keys(NEW).every(c => (I[c].igStepsIos || "").split("\n").length === 3));
-ok("empty 의 <br> 이 살아 있다", Object.keys(NEW).every(c => (I[c].empty || "").includes("<br>")));
+/* v111 — empty 문구가 「대화 시작하기를 눌러 보세요」 한 줄로 바뀌었다.
+   두 줄이 아니니 <br> 도 없어야 맞다. 대신 비어 있지 않은지만 본다. */
+ok("empty 문구가 비어 있지 않다", Object.keys(NEW).every(c => (I[c].empty || "").trim().length > 3));
+ok("empty 에 남은 태그가 없다", Object.keys(NEW).every(c => !/<br>/.test(I[c].empty || "")));
 
 console.log("── 언어 고르기 단추 ──");
 const dom = new JSDOM(html);

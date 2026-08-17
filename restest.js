@@ -2,7 +2,7 @@
 const { JSDOM } = require("jsdom");
 const fs = require("fs");
 const html = fs.readFileSync(process.argv[2] || "app.html", "utf8");
-const py = fs.readFileSync(process.argv[3] || "/sessions/gifted-youthful-edison/mnt/음성 대화형 챗봇/main.py", "utf8");
+const py = fs.readFileSync(process.argv[3] || "main.py", "utf8");
 let fail = 0;
 const ok = (m, c) => { console.log("  " + (c ? "✅" : "❌") + " " + m); if (!c) fail++; };
 

@@ -1,6 +1,6 @@
 // 오늘의 퀘스트 — 집계·추첨·표시 검사
 const fs=require("fs"), {JSDOM}=require("jsdom");
-const html=fs.readFileSync("i.html","utf8");
+const html=fs.readFileSync("app.html","utf8");
 const py=fs.readFileSync("main.py","utf8");   // 서버 퀘스트 목록과 대조하기 위해
 // 지원 언어 수는 늘어난다 — 숫자를 박아 두지 말고 언어 고르기 단추에서 센다
 const LANGS=(html.match(/data-lang="[a-z]+"/g)||[]).length;

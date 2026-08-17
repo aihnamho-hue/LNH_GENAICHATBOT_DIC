@@ -560,10 +560,10 @@ QUEST_LLM = [
     # 기존 여덟은 대화이동(4)·화제(2)·전략(1)·수정(1)에 몰려 있어, 듣기·차례에는
     # LLM이 읽어야만 알 수 있는 퀘스트가 하나도 없었다. 아래 여섯으로 여덟 요소를 모두 덮는다.
     {"id": "qParaphrase", "el": "listen",   "desc": "상대의 말을 자기 말로 바꾸어 '그러니까 ~라는 말이죠?'처럼 확인한 적이 있다"},
-    {"id": "qRephrase",   "el": "repair",   "desc": "상대가 알아듣지 못했을 때 같은 뜻을 다른 표현으로 바꾸어 다시 말한 적이 있다"},
+    {"id": "qRephrase",   "el": "repair",   "desc": "상대가 못 알아들었을 때 같은 뜻을 쉬운 말로 다시 설명한 적이 있다(명료화 응답)"},
     {"id": "qNative",     "el": "strategy", "desc": "막혔을 때 모국어로 말해 보고, 상대가 알려 준 한국어로 다시 말한 적이 있다"},
     {"id": "qEcho",       "el": "strategy", "desc": "상대가 방금 쓴 표현을 가져다 자기 발화에 쓴 적이 있다"},
-    {"id": "qEndTurn",    "el": "turn",     "desc": "말끝을 흐리지 않고 문장을 끝까지 맺어 차례를 넘긴 적이 있다"},
+    {"id": "qEndTurn",    "el": "turn",     "desc": "자기 말을 마치면서 '○○ 씨는요?'처럼 되물어 상대에게 차례를 넘긴 적이 있다"},
     {"id": "qExpand",     "el": "topic",    "desc": "상대가 꺼낸 화제에 자기 이야기를 얹어 넓힌 적이 있다"},
     # ── v103: 〈표 33〉의 하위 내용에 맞춰 요소별 공백을 마저 메운다 ──
     # v95에서 여덟 요소를 '덮기는' 했으나, 차례 관리와 상호작용적 듣기는 각각 한 개뿐이었다.
@@ -663,6 +663,24 @@ INTV_TURN_GAP = {0: 0, 1: 4, 2: 3, 3: 2}   # 개입 사이 최소 '학습자 차
 # 다만 상한을 올리는 것만으로는 의미가 없다. 무엇을 고르느냐가 함께 바뀌어야 한다
 # (아래 분석 프롬프트의 (6) — '할 수 있는 것'이 아니라 '지금 이 자리에 맞는 것').
 INTV_MAX      = {0: 0, 1: 3, 2: 6, 3: 10}
+
+# ── 바닥(최소) — 페이더가 실제로 도는 눈금이 되게 한다 ─────────────────
+#
+# 「많이」로 올려 두었는데 4분 21초에 네 번밖에 안 나왔다. 상한만 있고 바닥이 없어서다.
+# 개입은 LLM이 '자리가 보일 때'만 골라 주므로, 안 고르면 그냥 안 나온다.
+# 그렇다고 「세션당 N회」로 못 박으면 자리에 안 맞는데도 채우게 된다 —
+# 그건 학습자에게 잔소리가 되고, 「유의미해야 한다」는 원칙과 정면으로 부딪친다.
+#
+# 그래서 횟수가 아니라 **간격으로 바닥을 깐다.**
+#   "이만큼의 차례가 지나도록 한 번도 안 나왔으면, 그때는 채운다."
+# 자리에 맞는 것이 있으면 그것이 먼저 나가고, 없을 때만 이 바닥이 작동한다.
+# 위 INTV_TURN_GAP(너무 자주 나오지 않게)과 짝을 이루어 아래위를 막는다.
+INTV_FORCE_GAP = {0: 0, 1: 8, 2: 5, 3: 3}   # 이 차례 수를 넘기면 서버가 채운다
+#
+# 19차례 대화에서 기대되는 횟수(대략)
+#   페이더 1 : 최소 2회 ~ 최대 3회
+#   페이더 2 : 최소 3회 ~ 최대 6회
+#   페이더 3 : 최소 5회 ~ 최대 10회
 INTV_SEC_FLOOR = 20                         # 짧은 턴이 몰릴 때를 위한 바닥(초)
 # ★ 학습자가 두 번은 스스로 말해 본 뒤에 개입한다.
 #   개입은 '유발이 먹히지 않았을 때' 메우는 층이다. 유발이 작동할 기회도 주기 전에
@@ -3010,14 +3028,28 @@ async def _handle_session(websocket: WebSocket):
         except Exception as e:
             print(f"[개입] 전송 실패(무시): {e}")
 
-    def pick_anytime_intervention() -> str:
+    def _intv_overdue() -> bool:
+        """바닥에 닿았나 — 이만큼의 차례가 지나도록 한 번도 안 나왔는가."""
+        gap = INTV_FORCE_GAP.get(scaf_level, 0)
+        if not gap:
+            return False
+        turns = _user_turns()
+        if turns < INTV_WARMUP:
+            return False
+        # 아직 한 번도 안 나왔으면 준비 구간이 끝난 뒤부터 센다
+        since = turns - (idc_state["intv_turn_at"] if idc_state["intv_n"] else INTV_WARMUP)
+        return since >= gap
+
+    def pick_anytime_intervention(force: bool = False) -> str:
         """LLM이 자리를 고르지 못했을 때, 서버가 '아무 때나 되는' 갈래에서 고른다.
 
-        페이더가 높을수록 적극적으로 채운다. 낮으면 LLM이 고른 것만 쓴다 —
-        그래야 눈금이 실제로 돈다(상한만 조이면 원래 안 나오는 것에 뚜껑만 씌우는 셈이다).
+        평소에는 페이더가 높을 때만(2 이상) 채운다 — 낮은 눈금에서 서버가 자꾸 끼어들면
+        눈금이 도는 의미가 없어진다.
+        다만 **바닥에 닿았을 때(force)** 는 눈금과 무관하게 채운다.
+        「많이」로 두었는데 4분 넘게 네 번뿐이던 것이 그래서였다 — 상한만 있고 바닥이 없었다.
         고르는 기준은 '아직 가장 덜 실현된 요소'다.
         """
-        if scaf_level < 2:
+        if scaf_level < 2 and not force:
             return ""
         cand = []
         for qid in INTV_ANYTIME:
@@ -3221,9 +3253,13 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
             if not final:
                 await send_idc_nudge()   # 비계를 학습자의 현재 수준에 맞춰 다시 조인다
                 # LLM이 자리를 고르지 못했으면(짧은 대화에서 흔하다) 서버가 채운다.
-                # 페이더가 '보통' 이상일 때만.
+                # 평소에는 페이더가 '보통' 이상일 때만, 바닥에 닿았으면 눈금과 무관하게.
                 if not pending_intv:
-                    pending_intv = pick_anytime_intervention()
+                    overdue = _intv_overdue()
+                    if overdue:
+                        print(f"[개입] 바닥 도달 — {INTV_FORCE_GAP.get(scaf_level)}차례가 지나도록 "
+                              f"없었음(누적 {idc_state['intv_n']}회) → 서버가 채운다")
+                    pending_intv = pick_anytime_intervention(force=overdue)
                     if not pending_intv and scaf_level >= 2:
                         print("[개입] LLM도 서버도 고를 자리가 없음 "
                               f"(수준 {dict((k, idc_state['levels'][k]) for k in IDC_SCORED_KEYS)})")

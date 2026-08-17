@@ -2144,7 +2144,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v109 (2026-08-17)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v110 (2026-08-17)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -4347,9 +4347,27 @@
     const DUCK_RATIO = 0.15;
     let ducking = false;
     const _fades = new WeakMap();
+    /* ★ 선언은 반드시 fadeAudio 위에 — const 는 끌어올려지지 않는다.
+       아래에 두면 fadeAudio 가 먼저 불릴 때 ReferenceError 로 배경음이 통째로 죽는다. */
+    const bgmGain = new Map();      // <audio> → GainNode (아이폰은 el.volume 을 무시한다)
     function fadeAudio(el, target, ms, onDone) {
         if (!el) return;
         clearInterval(_fades.get(el));
+        // ★ 그래프에 연결돼 있으면 GainNode 로 올리고 내린다.
+        //   아이폰은 el.volume 을 무시하므로 이 길이 아니면 음량이 안 바뀐다.
+        const g = bgmGain.get(el);
+        if (g && bgmCtx) {
+            bgmResume();
+            try {
+                const now = bgmCtx.currentTime;
+                const to = Math.max(0, Math.min(1, target));
+                g.gain.cancelScheduledValues(now);
+                g.gain.setValueAtTime(g.gain.value, now);
+                g.gain.linearRampToValueAtTime(to, now + Math.max(0.01, (ms || 500) / 1000));
+                if (onDone) setTimeout(onDone, ms || 500);
+                return;
+            } catch (e) { /* 그래프가 말썽이면 아래 예전 방식으로 */ }
+        }
         const from = el.volume;
         const steps = Math.max(1, Math.round(ms / 25));
         let i = 0;
@@ -4431,11 +4449,30 @@
         [bgm, prBgm, chatBgm, gongSfx].forEach(el => {
             if (!el || el.dataset.wired) return;
             try {
-                bgmCtx.createMediaElementSource(el).connect(bgmCtx.destination);
+                /* ★★ 음량은 GainNode 로 준다 (v110) ★★
+                   아이폰은 audio.volume 을 **읽기 전용으로 두고 무시한다.**
+                   그래서 el.volume 으로 페이드하면 아이폰에서만 안 먹는다.
+                   게다가 createMediaElementSource 로 한 번 연결하면 소리가
+                   **오직 이 그래프로만** 나가므로, 그래프가 잠들면 그대로 무음이다.
+                   홈 화면에 추가해 연 앱(standalone)에서 배경음만 안 들리던 원인이 이것이다.
+                   (챗봇 목소리는 다른 컨텍스트를 써서 멀쩡했다) */
+                const src = bgmCtx.createMediaElementSource(el);
+                const g = bgmCtx.createGain();
+                g.gain.value = (el === gongSfx) ? 0.5 : 0;
+                src.connect(g).connect(bgmCtx.destination);
+                bgmGain.set(el, g);
                 el.dataset.wired = "1";       // 두 번 연결하면 예외가 난다
             } catch (e) { /* 이미 연결됐거나 지원 안 함 — 원래대로 재생된다 */ }
         });
     }
+    /* 그래프는 앱이 뒤로 갔다 오면 다시 잠든다. 볼 때마다 깨운다.
+       한 번만 깨우고 끝내면 아이폰에서 배경음이 중간에 사라진다. */
+    function bgmResume() {
+        try { if (bgmCtx && bgmCtx.state !== "running") bgmCtx.resume(); } catch (e) {}
+    }
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) bgmResume(); });
+    window.addEventListener("focus", bgmResume);
+    window.addEventListener("pointerdown", bgmResume, { passive: true });
     function unlockBgm() {
         bgmReady = true;
         ensureBgmGraph();

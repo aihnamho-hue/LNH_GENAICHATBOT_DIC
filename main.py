@@ -22,7 +22,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v104"
+APP_VERSION = "v105"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -267,7 +267,18 @@ BASE_PERSONA = """
 
 # 한국어 선생님 역할 (핵심 임무 — 다정한 과외 선생님처럼)
 - 사용자는 한국어 학습자야. 대화를 즐겁게 이어가되, 한국어를 바로잡아 주는 게 네 핵심 임무야.
-- [즉시 교정] 사용자의 발화에 어색하거나 틀린 어휘·문법·표현이 있으면 그냥 넘어가지 말고 그 자리에서 바로 교정해줘:
+- [★ 교정하기 전에 먼저 물어라 — "이게 정말 틀렸나?"]
+  고치기 전에 **소리 내어 확인해라. 한국어 모어 화자가 그렇게 말하는가?**
+  말이 되는데 네 취향과 다를 뿐이면 **그냥 넘어가라.** 이건 아주 중요하다.
+  · 「나는 잘 지냈지」 — 맞는 말이다. '-지'는 확인·강조의 종결어미다. 고치지 마라.
+  · 「카이도우가 루피와 싸우는 장면」 — 맞는 말이다. 어순을 네 마음대로 바꾸지 마라.
+  · 「밥을 먹었어요」를 「식사를 하셨어요」로 바꾸는 것 — 고칠 일이 아니다.
+  **고칠 것은 이런 것이다** — 조사가 틀림(에/에서, 을/를), 시제가 안 맞음,
+  높임이 어긋남(윗사람에게 반말), 없는 낱말, 뜻이 안 통하는 문장.
+  ★ 한 대화에서 교정은 **많아야 두세 번**이다. 매 차례 고치면 대화가 아니라 첨삭이 된다.
+  ★ 헷갈리면 고치지 마라. **말하게 두는 것이 고쳐 주는 것보다 낫다.**
+
+- [즉시 교정] 위 기준으로 **분명히 틀린 것**만, 그 자리에서 바로 교정해줘:
   ① 자연스러운 표현을 짧게 알려주고 — 예) "아~ 그럴 땐 '어제 친구 만나서 좋았어'라고 하면 더 자연스러워요!"
   ② 곧바로 다시 말해볼 기회를 줘 — 예) "한번 다시 말해볼래요?"
   ③ 사용자가 다시 말하면 꼭 칭찬해주고, 원래 대화 주제로 자연스럽게 돌아가.
@@ -628,10 +639,22 @@ INTERVENABLE = {q["id"] for q in QUEST_LLM} - {"qSelfFix"}
 #   · 아무 때나 되는 것 — 대화가 흐르고 있으면 언제든 할 수 있다. 서버가 혼자 판단해도 된다.
 # 3분 남짓한 대화에서는 LLM이 '거절할 자리'를 만날 여유가 없어, 그 세션의 개입이
 # 통째로 0이 되기 쉽다. 아래 갈래가 그 빈자리를 채운다.
-# 특정 국면을 기다리지 않고 아무 때나 권할 수 있는 것들 — 서버가 보충 개입할 때 쓴다.
-# v103: 새로 넣은 것 가운데 맥락을 안 타는 넷을 더한다(공감·이어 묻기·이어 말하기·시간 벌기).
-INTV_ANYTIME = ["qParaphrase", "qEcho", "qEndTurn", "qNewTopic", "qExpand",
-                "qEmpathy", "qContinuer", "qKeepTurn", "qFiller"]
+# 특정 국면을 기다리지 않고 아무 때나 권할 수 있는 것들 — 서버가 바닥을 채울 때 쓴다.
+#
+# ★★ 여기에 무엇을 넣느냐가 중요하다 (v104에서 크게 데었다) ★★
+# 이 목록은 **맥락을 보지 않고** 골라 쓰는 자리다. 그러니 '언제 꺼내도 말이 되는 것'만
+# 들어가야 한다. v103에서 공감·되묻기·요약 확인·시간 벌기를 넣었더니,
+# 공감할 거리가 없는 대목에서 「그랬겠어요」가 튀어나오고 이야기가 없는데
+# 「그래서요?」가 나와 **대화가 망가졌다.** 학습자는 시킨 대로 말했을 뿐인데
+# 상대가 못 알아듣는 상황이 된다. 도움이 아니라 방해다.
+#
+# 뺀 것과 이유
+#   qParaphrase — 요약할 만한 긴 말이 앞에 있어야 한다
+#   qEmpathy    — 힘든 이야기가 앞에 있어야 한다
+#   qContinuer  — 이어 갈 이야기가 진행 중이어야 한다
+#   qFiller     — 막혔을 때만 쓰는 말이다. 안 막혔는데 권하면 이상하다
+# 이 넷은 **LLM이 직전 발화를 보고 고를 때만** 나간다. 그 판단은 맥락을 본다.
+INTV_ANYTIME = ["qEndTurn", "qNewTopic", "qExpand", "qKeepTurn", "qEcho"]
 
 # ── 개입의 간격은 '초'가 아니라 '학습자의 차례'로 잰다 (v99) ──
 #
@@ -1752,11 +1775,48 @@ _tts_cache = {}  # (text, voice, style) -> pcm bytes (같은 문장 반복 재�
 # ── Cloud TTS 호출부 ────────────────────────────────────────────────────
 # Chirp 3 HD는 Gemini TTS와 달리 자연어 스타일 지시를 받지 않는다.
 # 그래서 어린 톤은 '말 빠르기'로만 살짝 흉내 낸다(목소리 자체가 이미 아이 목소리다).
-# ★ 1.0 = 건드리지 않음. 예전 Gemini TTS 속도와 같아진다.
-#   v103에서 1.08을 기본으로 두었더니 '먼저 들어보기'의 대화문까지 빨라졌다.
-#   초급 학습자에게 들려주는 대화문은 느린 편이 낫다. 속도로 어린 톤을 흉내 내는 것보다
-#   알아들을 수 있는 것이 먼저다. 필요하면 환경변수로 올린다.
-CLOUD_TTS_CHILD_RATE = float(os.environ.get("CLOUD_TTS_CHILD_RATE", "").strip() or "1.0")
+# ── 말 빠르기 ──────────────────────────────────────────────────────────
+# 배우는 사람에게 들려주는 소리다. 빠르면 못 알아듣고, 못 알아들으면 연습이 안 된다.
+# v104: 1.0도 빠르다는 지적이 있어 0.9로 내린다(10% 느리게).
+CLOUD_TTS_RATE = float(os.environ.get("CLOUD_TTS_RATE", "").strip() or "0.9")
+CLOUD_TTS_CHILD_RATE = float(os.environ.get("CLOUD_TTS_CHILD_RATE", "").strip() or "0.9")
+
+# ── 쉼표 뒤의 숨 ───────────────────────────────────────────────────────
+# 「아, 그래요?」에서 '아,' 뒤에 아주 짧은 틈이 있어야 사람 말처럼 들린다.
+# Chirp 3 HD는 쉼표를 거의 무시하고 붙여 읽어 「아그래요?」로 들린다.
+# SSML은 이 목소리에서 안 받으므로, **말줄임표를 넣어 숨을 만든다.**
+# (Cloud TTS는 '…'을 소리로 읽지 않고 짧은 쉼으로 처리한다)
+CLOUD_TTS_COMMA_PAUSE = (os.environ.get("CLOUD_TTS_COMMA_PAUSE", "").strip() or "on") != "off"
+
+
+def _tts_breathe(text: str) -> str:
+    """쉼표 뒤에 아주 짧은 숨을 넣는다. 문장 안의 쉼표만 손대고 숫자는 건드리지 않는다."""
+    if not CLOUD_TTS_COMMA_PAUSE:
+        return text
+    # 1,000 같은 자릿수 쉼표는 그대로 둔다
+    return re.sub(r"(?<![0-9]),\s+(?![0-9])", ", … ", text)
+
+
+# ── 문법 표기를 소리 내어 읽을 때 ──────────────────────────────────────
+# '-(으)려고 하다'를 그대로 읽으면 「마이너스 열린괄호 으 닫힌괄호 려고 하다」가 된다.
+# 학습자가 들어야 할 것은 **실제로 말할 때 나는 소리**다.
+#   -(으)려고 하다      → 려고 하다
+#   -(으)ㄴ/는다고 하다 → 는다고 하다
+#   -아/어요            → 어요
+_GRAMMAR_MARK = re.compile(r"-?\([^)]*\)|(?<=[가-힣ㄱ-ㅎ])/[가-힣ㄱ-ㅎ]+|^-|(?<=\s)-")
+
+
+def _tts_grammar(text: str) -> str:
+    """문법 표기의 군더더기(앞의 '-', 괄호, 앞쪽 이형태)를 떼고 읽을 꼴만 남긴다."""
+    if "(" not in text and "/" not in text and "-" not in text:
+        return text
+    out = text
+    out = re.sub(r"(?<![0-9])-\(([^)]*)\)", "", out)   # -(으) → 삭제
+    out = re.sub(r"\(([^)]*)\)", "", out)              # 남은 괄호 삭제
+    # 'ㄴ/는다고' 처럼 앞이 홑자모면 앞쪽을 버린다 (뒤엣것이 대표형)
+    out = re.sub(r"[ㄱ-ㅎㅏ-ㅣ가-힣]?/(?=[가-힣])", "", out)
+    out = re.sub(r"(^|\s)-(?=[가-힣])", r"\1", out)    # 맨 앞의 '-' 삭제
+    return re.sub(r"\s{2,}", " ", out).strip() or text
 _http_client = {"c": None}
 
 
@@ -1818,10 +1878,13 @@ async def cloud_tts_pcm(text: str, voice: str, style_on: bool = True) -> bytes |
     if name not in avail:
         name = sorted(avail)[0]
     audio_cfg = {"audioEncoding": "LINEAR16", "sampleRateHertz": 24000}
-    if style_on and name in _CHILD_VOICES and abs(CLOUD_TTS_CHILD_RATE - 1.0) > 0.001:
-        audio_cfg["speakingRate"] = CLOUD_TTS_CHILD_RATE
+    rate = CLOUD_TTS_CHILD_RATE if (style_on and name in _CHILD_VOICES) else CLOUD_TTS_RATE
+    if abs(rate - 1.0) > 0.001:
+        audio_cfg["speakingRate"] = rate
+    # 문법 표기의 군더더기를 떼고, 쉼표 뒤에 짧은 숨을 넣는다
+    say = _tts_breathe(_tts_grammar(text))
     body = {
-        "input": {"text": text},
+        "input": {"text": say},
         "voice": {"languageCode": CLOUD_TTS_LANG, "name": f"{CLOUD_TTS_LANG}-Chirp3-HD-{name}"},
         "audioConfig": audio_cfg,
     }

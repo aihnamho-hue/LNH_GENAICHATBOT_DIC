@@ -704,6 +704,19 @@
         .sc-tap { font-size: 10px; font-weight: 700; color: var(--muted); text-align: center; margin: 0 0 8px; }
 
         /* ── 상호작용 대화 능력(IDC) 점검 — 결과 화면의 요소별 프로파일 ── */
+        /* 결과 카드가 화면보다 길면 안쪽이 스크롤된다. 폰에서는 상호작용 점수가
+           아래로 밀려 '안 나온다'고 느끼게 된다 — 더 있다는 표시를 띄운다. */
+        .lang-box { position: relative; }
+        .lang-box.more::after {
+            content: "⌄"; position: sticky; bottom: -14px; display: block;
+            margin: -6px auto -10px; width: 34px; height: 24px; line-height: 20px;
+            border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink);
+            font-size: 15px; font-weight: 900; pointer-events: none;
+            animation: moreBob 1.5s ease-in-out infinite;
+        }
+        @keyframes moreBob { 0%,100% { transform: translateY(0); opacity: .85; }
+                             50% { transform: translateY(3px); opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) { .lang-box.more::after { animation: none; } }
         .idc-head { display: flex; align-items: baseline; gap: 6px; margin: 4px 0 8px; text-align: left; }
         .idc-head .idc-h-title { font-size: 13px; font-weight: 900; color: var(--accent-ink); }
         .idc-head .idc-h-sub { font-size: 11px; font-weight: 700; color: var(--muted); }
@@ -2128,7 +2141,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v104 (2026-08-17)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v105 (2026-08-17)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -4644,6 +4657,7 @@
         nx.classList.toggle("wide", freePage === 0);
         const box = document.querySelector("#freeFbOverlay .lang-box");
         if (box) box.scrollTop = 0;
+        markResultScroll();
     }
     (function bindFreePager() {
         const nx = document.getElementById("freeNextBtn"), pv = document.getElementById("freePrevBtn");
@@ -6174,6 +6188,21 @@
     /* 상호작용 대화 능력(IDC) 프로파일 렌더 — 요소별 상·중·하와 한 줄 근거.
        요소 이름은 학습자의 모국어로 보인다(사전 키: idc_<key>).
        비언어적 행위는 교실에서 배우는 요소라 '—'로만 두고 총점에서 뺀다. */
+    /* 결과 카드에 '아래로 더 있다'는 표시를 켜고 끈다.
+       폰에서 상호작용 점수가 화면 밖으로 밀려 안 보인다는 이야기가 있었다. */
+    function markScrollable(el) {
+        if (!el) return;
+        const on = () => el.classList.toggle("more", el.scrollHeight - el.clientHeight > 24
+                                                     && el.scrollTop < el.scrollHeight - el.clientHeight - 8);
+        on();
+        if (!el._moreBound) { el._moreBound = 1; el.addEventListener("scroll", on, { passive: true }); }
+        setTimeout(on, 350);          // 그림·글꼴이 다 자리 잡은 뒤 한 번 더
+    }
+    function markResultScroll() {
+        ["#rpResultOverlay .lang-box", "#freeFbOverlay .lang-box"]
+            .forEach(sel => markScrollable(document.querySelector(sel)));
+    }
+
     function renderIdcProfile(items, total, listId, headId) {
         const list = document.getElementById(listId || "rpIdcList");
         const head = document.getElementById(headId || "idcHead");
@@ -6316,6 +6345,7 @@
             box.appendChild(d);
         });
         renderIdcProfile(rpFinal.idc || [], rpFinal.idcTotal || 0);
+        markResultScroll();
         document.getElementById("rpSavedNoteEl").textContent = t("rpSavedNote");
         goFeedback();                       // 결과 = 피드백 화면
         rpResultOverlay.classList.remove("hidden");
@@ -6887,8 +6917,8 @@
         qAskEasy:   ["쉽게 말씀해 주시겠습니까?", "쉽게 말해 주세요",     "쉽게 말해 줘"],
         qAskFast:   ["조금 빨리 말씀해 주시겠습니까?", "조금 빨리 말해 주세요", "좀 빨리 말해 줘"],
         qParaphrase:["그러니까 ~라는 말씀이시죠?", "그러니까 ~라는 말이죠?", "그러니까 ~라는 거지?"],
-        qEmpathy:   ["많이 힘드셨겠습니다",      "그랬겠어요",            "그랬겠다"],
-        qContinuer: ["그래서 어떻게 되셨습니까?", "그래서요?",            "그래서?"],
+        qEmpathy:   ["많이 ~셨겠습니다",         "~겠어요",               "~겠다"],
+        qContinuer: ["그래서 ~습니까?",          "그래서 ~요?",           "그래서 ~?"],
         qFiller:    ["음… 그러니까…",            "음… 그러니까…",         "음… 그러니까…"],
     };
     function speechTier() {          // 5단계 말투 레벨 → 3단계로 접기

@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v121"
+APP_VERSION = "v122"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -1350,7 +1350,40 @@ _ANSWER_HEAD = ("네", "예", "아니요", "아뇨", "아니", "응", "어", "�
                 "맞아요", "맞습니다", "알겠어요", "알겠습니다", "괜찮아요", "괜찮습니다")
 
 
-def _hint_trim(t: str, cap: int = 112) -> str:
+# 도움말에 요소를 실을 때 **무엇을 만들라는 것인지** 못 박는 보기.
+#   desc("~한 적이 있다")는 판정용 문장이라 생성 지시로는 흐리다.
+#   저자가 짚은 셋(쉽게·공감·모국어)이 실제로 반영되지 않던 이유가 이것이다.
+#   {n} 자리에는 학습자의 모국어 이름이 들어간다.
+FOCUS_EG = {
+    "qAskEasy":   "「그게 무슨 뜻이야? 좀 쉬운 말로 해 줄래?」처럼 **쉬운 말로 다시 해 달라고 청하는** 말",
+    "qAskSlow":   "「미안, 조금만 천천히 말해 줄래?」처럼 **천천히 해 달라고 청하는** 말",
+    "qAskAgain":  "「어? 못 들었어. 다시 말해 줄래?」처럼 **다시 해 달라고 청하는** 말",
+    "qEmpathy":   "「진짜? 힘들었겠다.」처럼 **상대의 감정을 알아주는** 말",
+    "qContinuer": "「그래서? 그다음엔 어떻게 됐어?」처럼 **더 말하게 되묻는** 말",
+    "qNative":    "「이거 {n}로는 ~인데, 한국어로는 뭐라고 해?」처럼 "
+                  "**모국어({n})를 끌어와 묻는** 말. 실제 {n} 낱말을 하나 넣어라",
+    "qEcho":      "상대가 방금 쓴 낱말·표현을 **그대로 가져다 쓰는** 말",
+    "qRephrase":  "방금 내가 한 말을 **더 쉬운 말로 바꿔 다시 하는** 말",
+    "qParaphrase":"「그러니까 ~라는 말이지?」처럼 **상대의 말을 내 말로 바꿔 확인하는** 말",
+    "qCheckUnd":  "「내 말 이해했어?」처럼 **알아들었는지 확인하는** 말",
+    "qEndTurn":   "내 말을 맺고 **「너는?」으로 차례를 넘기는** 말",
+    "qKeepTurn":  "「음… 그러니까…」처럼 **차례를 놓지 않고 이어 가는** 말",
+    "qFiller":    "「음…」「그게…」처럼 **생각할 시간을 버는** 말",
+    "qExpand":    "상대가 꺼낸 이야기에 **내 이야기를 얹는** 말",
+    "qNewTopic":  "**새로운 이야깃거리를 꺼내는** 말",
+    "qShiftTopic":"「그건 그렇고,」처럼 **다른 이야기로 옮기는** 말",
+    "qCloseTopic":"「그 얘긴 여기까지 하고,」처럼 **이야기를 접는** 말",
+    "qReturn":    "「아까 하던 얘기로 돌아가면,」처럼 **원래 이야기로 되돌아가는** 말",
+    "qRefuse":    "**완곡하게 거절하는** 말",
+    "qAlt":       "「그럼 ~는 어때?」처럼 **다른 방법을 내놓는** 말",
+    "qCond":      "「~하면 ~할게」처럼 **조건을 걸어 협상하는** 말",
+    "qHold":      "「그래도 한 번만 부탁할게」처럼 **물러서지 않고 다시 청하는** 말",
+    "qCounter":   "**되받아 묻는** 말",
+    "qInitiate":  "**먼저 말을 거는** 말",
+}
+
+
+def _hint_trim(t: str, cap: int = 150) -> str:
     """도움말 제안이 길면 **문장 끝에서** 자른다.
 
     ★ 그냥 잘랐더니 「막 어려운 상황 속에서도」처럼 말이 중간에 끊겼다.
@@ -3448,6 +3481,8 @@ async def _handle_session(websocket: WebSocket):
             #   **첫 번째 제안**이 방금 알린 그 요소가 실현된 발화로 나온다.
             #   도움말은 지금 맥락과 화계를 보고 만들므로 어긋날 자리가 없다.
             idc_state["hint_focus"] = {"qid": qid, "el": el, "turn": turns}
+            # 넛지와 **동시에** 도움말 두 개를 만들어 재워 둔다 — 누르면 곧바로 나온다
+            asyncio.create_task(send_hints(prefetch=True))
             print(f"[개입] {qid}({el}) — {turns}번째 차례 · 누적 {idc_state['intv_n']}회"
                   f" · 자리 {_stage_phase()}")
         except Exception as e:
@@ -3936,9 +3971,18 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
             rp_progress["running"] = False
 
     hint_state = {"running": False}
-    idc_state.setdefault("hint_focus", None)   # 넛지가 알린 것 — 도움말 첫 제안이 이어받는다
+    idc_state.setdefault("hint_focus", None)   # 넛지가 알린 것 — 도움말이 이어받는다
+    # ★★ v122 — 넛지와 도움말은 **한 순간에 함께 만들어진다.**
+    #   저자의 정리: 「요소가 실현될 수 있는 차례가 오면, 그것이 실현된 표현 두 개가
+    #   생성됨과 동시에 넛지가 나온다. 페이더가 높으면 그 순간이 자주 온다.」
+    #   v121까지는 학습자가 「도와줘」를 눌러야 그때부터 만들기 시작했다. 그래서
+    #     ㄱ) 누르고 나서 기다려야 했고(무거웠다),
+    #     ㄴ) 9초 안에 못 만들면 「추천 표현이 없어요」가 떴으며,
+    #     ㄷ) 넛지가 알린 것과 도움말이 따로 놀 때가 있었다.
+    #   이제 넛지를 띄우면서 곧바로 만들어 여기에 재워 둔다. 누르면 **곧바로** 나온다.
+    hint_cache = {"items": [], "qid": "", "stage": "", "turn": -9, "at": 0.0}
 
-    async def send_hints():
+    async def send_hints(prefetch: bool = False):
         """🪜 도움말: 지금 대화 맥락에서 학습자의 '다음 턴'에 쓸 발화 2개 제안.
 
         v95부터 자유 대화에서도 쓴다. 두 모드의 축이 다르므로 무엇을 근거로 삼는지도 다르다.
@@ -4019,17 +4063,22 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
                     _qid = _fit_intervention()          # 넛지가 없어도 맥락에 맞는 것을 고른다
                     _q = next((x for x in QUEST_LLM if x["id"] == _qid), None)
             if _q:
+                _eg = FOCUS_EG.get(_q["id"], "")
+                _egline = ("   " + _eg.replace("{n}", native or "학습자의 모국어") + "\n") if _eg else ""
                 focus_line = (
-                    "[★★ 두 제안 모두 이것을 담아라 ★★]\n"
-                    f"지금 이 학습자에게 필요한 것: 「{_q['desc']}」\n"
-                    "→ **두 제안 모두** 그것이 실제로 실현된 발화여야 한다.\n"
+                    "[★★★ 무엇보다 먼저 — 두 제안 모두 이것을 담아라 ★★★]\n"
+                    f"이번에 연습시킬 것: **{_q['desc']}**\n"
+                    f"{_egline}"
+                    "→ **두 제안 모두** 그것이 실제로 실현된 발화여야 한다. "
+                    "하나만 담고 하나는 딴 말이면 안 된다.\n"
                     "→ 다만 **서로 다른 방식으로.** 같은 말을 두 번 쓰지 마라.\n"
-                    "→ 억지로 끼워 맞추지 마라. 상대가 방금 한 말에 자연스럽게 얹어야 한다.\n"
-                    "   지금 맥락에서 도저히 안 되면, 이 지시는 접고 흐름에 맞는 말을 주어라.\n")
+                    "→ 상대가 방금 한 말에 자연스럽게 얹어라. 다만 **연습시킬 것이 먼저다** — "
+                    "한 발화로 안 되면 앞뒤에 한두 마디를 더 붙여서라도 담아라.\n"
+                    "→ 지금 맥락에서 도저히 말이 안 되는 때에만 이 지시를 접어라.\n")
                 print(f"[도움말] 요소 싣기 — {_q['id']}({_q['el']}) · 페이더 {scaf_level}")
-            prompt = f"""{head}
+            prompt = f"""{focus_line}{head}
 
-{speech_line}{focus_line}
+{speech_line}
 [최근 대화]
 {transcript}
 
@@ -4057,9 +4106,11 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
   둘 다 같은 방식이면 학습자는 대화를 여는 길이 하나뿐이라고 배운다.
 {extra}
 - 국제 통용 표준 교육과정 중급(4급 이하) 어휘·문법, 짧은 구어체로.
-- ★★ 짧게 써라. 한 제안은 **두 문장을 넘기지 말고 45자 안팎**으로.
+- ★★ 한 제안은 **발화 세 개를 넘기지 마라.** 한 개나 두 개면 더 좋다.
   화면 칸이 좁아 길면 **말이 중간에서 잘린다.** 잘린 말은 따라 읽을 수 없다.
+  ※ 위에 연습시킬 것이 있으면 **그것이 이 세 발화 안에** 들어 있어야 한다.
   나쁜 예) "오오, 그거 유명한 게임이잖아! 나중에 나도 좀 가르쳐줘! 나는 '용맹한 친구들'이라는 만화책 보는데, 진짜 재밌어! 막 어려운 상황 속에서도"
+           → 발화가 넷이고 마지막이 끊겼다.
   좋은 예) "오, 그거 유명하잖아! 나도 좀 가르쳐줘."
 JSON만 출력: {{"hints":["",""]}}"""
             # 클라이언트 폴백(13초)보다 먼저 끝나야 한다. 늦으면 화면이 연습 표현으로 되돌아간다.
@@ -4073,8 +4124,16 @@ JSON만 출력: {{"hints":["",""]}}"""
             hints = [h for h in hints if not _is_dead_end(h)]
             if not hints:
                 hints = fallback   # 주제 대화는 연습 표현으로, 자유 대화는 빈 목록으로
-            await websocket.send_text(json.dumps({
-                "type": "hint", "stage": title, "items": [h for h in hints if h]}))
+            items = [h for h in hints if h]
+            # ★ qid 를 함께 보낸다 — 만에 하나 비었을 때 화면이 미리 쓴 문형으로 메운다
+            payload = {"type": "hint", "stage": title, "items": items,
+                       "qid": (_q or {}).get("id", "")}
+            if prefetch:
+                hint_cache.update(items=items, qid=payload["qid"], stage=title,
+                                  turn=_user_turns(), at=time.time())
+                print(f"[도움말] 미리 만들어 둠 — {len(items)}개 · {payload['qid'] or '요소 없음'}")
+                return
+            await websocket.send_text(json.dumps(payload))
         except Exception as e:
             print(f"[도움말] 생성 실패: {e}")
         finally:
@@ -4433,7 +4492,17 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                                     print(f"[자기평가] 별 {v}/5")
                             elif event.get("type") == "hint_request":
                                 # 🪜 비계 요청 — 백그라운드 생성 (오디오 릴레이를 막지 않음)
-                                asyncio.create_task(send_hints())
+                                # 재워 둔 것이 아직 이 자리의 것이면 곧바로 보낸다
+                                _c = hint_cache
+                                if (_c["items"] and _user_turns() - _c["turn"] <= 1
+                                        and time.time() - _c["at"] < 120):
+                                    await websocket.send_text(json.dumps({
+                                        "type": "hint", "stage": _c["stage"],
+                                        "items": _c["items"], "qid": _c["qid"]}))
+                                    print(f"[도움말] 재워 둔 것 바로 보냄 — {_c['qid'] or '요소 없음'}")
+                                    hint_cache["items"] = []      # 한 번만 쓴다
+                                else:
+                                    asyncio.create_task(send_hints())
                             elif event.get("type") == "text" and event.get("text"):
                                 # 빠른 요청 버튼 등 텍스트 턴 주입 (대화 맥락 유지)
                                 user_spoke["flag"] = True

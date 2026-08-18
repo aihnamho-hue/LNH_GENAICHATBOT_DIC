@@ -420,7 +420,7 @@ ok("넛지", "도움말 **두 제안 모두** 그것을 이어받는다",
    "두 제안 모두 이것을 담아라" in PY and "focus_line" in PY)
 ok("넛지", "세 차례가 지나면 흘려보낸다", '_user_turns() - _fc.get("turn", 0) <= 3' in PY)
 ok("넛지", "한 번 쓰면 비운다", 'idc_state["hint_focus"] = None' in PY)
-ok("넛지", "억지로 끼워 맞추지 말라고 못 박는다", "이 지시는 접고 흐름에 맞는 말을" in PY)
+ok("넛지", "맥락에서 안 되면 지시를 접으라고 못 박는다", "이 지시를 접어라" in PY)
 
 # ★ v121 — 도와주기 페이더가 **도움말에도** 걸린다.
 #   0 끔이면 요소를 얹지 않고, 2 이상이면 넛지가 없어도 골라 얹는다.
@@ -439,7 +439,7 @@ ok("도움말", f"긴 제안을 문장 끝에서 자른다 ({len(_got)}자)",
    len(_got) <= 112 and _got.rstrip()[-1] in "?!.…", _got[-24:])
 ok("도움말", "짧은 것은 건드리지 않는다", _trim("오, 그거 유명하잖아! 나도 좀 가르쳐줘.") == "오, 그거 유명하잖아! 나도 좀 가르쳐줘.")
 ok("도움말", "끝을 못 찾으면 말줄임표를 붙인다", _trim("가" * 200).endswith("…"))
-ok("도움말", "짧게 쓰라고 못 박는다", "두 문장을 넘기지 말고 45자 안팎" in PY)
+ok("도움말", "길이를 못 박는다", "발화 세 개를 넘기지 마라" in PY)
 
 print("\n──── 개입에서 뺀 항목 (v121) ────")
 exec(re.search(r"^INTV_EXCLUDE = \{[\s\S]*?^\}", PY, re.M).group(0), globals())
@@ -463,6 +463,42 @@ ok("말풍선", "넛지가 태그를 문자열로 넘기지 않는다", "nz-now"
 ok("말풍선", "꾸밈은 네 번째 인자로 준다",
    'hamPeekHtml(title, items, ms, cls)' in HT and 'hamPeekHtml(NZ_NOW[uiLang] || NZ_NOW.en, label, 5600, "nz")' in HT)
 ok("말풍선", "두 줄 모양이 CSS 에 있다", ".ham-peek.nz .hp-bubble .qz-items" in HT)
+
+print("\n════════ ⑳ 넛지와 도움말이 한 순간에 (v122) ════════")
+# ★ 저자의 정리 — 「요소가 실현될 수 있는 차례가 오면, 그것이 실현된 표현 두 개가
+#   생성됨과 동시에 넛지가 나온다. 페이더가 높으면 그 순간이 자주 온다.」
+#   v121까지는 학습자가 눌러야 그때부터 만들었다. 그래서 기다려야 했고,
+#   9초 안에 못 만들면 「추천 표현이 없어요」가 떴다.
+ok("동시", "넛지를 띄우면서 도움말도 만든다", "asyncio.create_task(send_hints(prefetch=True))" in PY)
+ok("동시", "만든 것을 재워 둔다", 'hint_cache = {"items"' in PY and "hint_cache.update(" in PY)
+ok("동시", "누르면 재워 둔 것을 바로 보낸다", "재워 둔 것 바로 보냄" in PY)
+ok("동시", "재워 둔 것은 한 번만 쓴다", 'hint_cache["items"] = []' in PY)
+ok("동시", "차례가 지났으면 새로 만든다", '_user_turns() - _c["turn"] <= 1' in PY)
+
+ok("도움말", "요소별 구체 보기를 준다", "FOCUS_EG = {" in PY)
+_eg = {}
+exec(re.search(r"^FOCUS_EG = \{[\s\S]*?^\}", PY, re.M).group(0), _eg)
+_need = {"qAskEasy", "qEmpathy", "qNative", "qAskSlow", "qAskAgain", "qContinuer"}
+ok("도움말", "저자가 짚은 것들에 보기가 있다", _need <= set(_eg["FOCUS_EG"]),
+   sorted(_need - set(_eg["FOCUS_EG"])))
+ok("도움말", "모국어 항목은 학습자 언어 이름을 끼운다", "{n}" in _eg["FOCUS_EG"]["qNative"])
+ok("도움말", "권할 수 있는 것에 거의 다 보기가 있다",
+   len(set(_eg["FOCUS_EG"]) - INTV_EXCLUDE) >= 20, len(_eg["FOCUS_EG"]))
+ok("도움말", "한 제안은 발화 셋을 넘기지 않는다", "발화 세 개를 넘기지 마라" in PY)
+ok("도움말", "요소는 그 세 발화 안에 있어야 한다", "그것이 이 세 발화 안에" in PY)
+ok("도움말", "요소 지시가 맨 앞에 온다", 'prompt = f"""{focus_line}{head}' in PY)
+ok("도움말", "빈손이면 화면이 미리 쓴 문형으로 메운다",
+   "scfLastQid" in HT and "questForm(scfLastQid)" in HT)
+ok("도움말", "서버가 qid 를 함께 보낸다", '"qid": (_q or {}).get("id", "")' in PY)
+
+print("\n──── 홈 배경음·페이더 초기값 (v122) ────")
+_bgm = re.search(r"const HOME_BGM = \[(.*?)\];", HT, re.S).group(1)
+ok("소리", "빗소리 곡을 뺐다", "bgm_rain" not in _bgm)
+ok("소리", "그래도 여러 곡이 남아 있다", len(re.findall(r"/static/bgm_\w+\.mp3", _bgm)) >= 3,
+   len(re.findall(r"/static/bgm_\w+\.mp3", _bgm)))
+ok("스타일", "자유 대화 도와주기 초기값 「많이」",
+   'id="scafSlider" min="0" max="3" value="3"' in HT)
+ok("넛지", "호아랑이 드나드는 시간을 늘렸다", "transition: transform 1s cubic-bezier" in HT)
 
 print("\n════════ ⑲ 화계 눈금 · 계획 만들기 (v120) ════════")
 ok("화계", "합쇼체는 「낯선 사이」 칸에서만 (눈금 15)",

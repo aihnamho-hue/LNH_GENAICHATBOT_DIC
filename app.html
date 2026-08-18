@@ -425,7 +425,9 @@
         .ham-peek { position: fixed; right: 0; bottom: 16%; z-index: 1200; pointer-events: none;
             display: flex; align-items: flex-end; gap: 6px;
             transform: translateX(105%); opacity: 0; visibility: hidden;
-            transition: transform 0.5s cubic-bezier(0.2, 1.1, 0.3, 1), opacity 0.35s, visibility 0.35s; }
+            /* ★ v122 — 등장·퇴장을 0.5초씩 늘렸다. 넛지는 읽어야 하는 말인데
+               휙 들어왔다 휙 나가면 눈이 따라가지 못한다. */
+            transition: transform 1s cubic-bezier(0.2, 1.1, 0.3, 1), opacity 0.85s, visibility 0.85s; }
         .ham-peek.show { transform: translateX(0); opacity: 1; visibility: visible; }
         .hp-ham { width: clamp(84px, 24vw, 118px); height: auto; flex-shrink: 0;
             filter: drop-shadow(0 10px 18px rgba(58,48,34,0.35)); transform: translateX(12%); }
@@ -2054,7 +2056,7 @@
                 </div>
                 <div class="fader-row">
                     <span class="end-label" id="scafLowLbl">안 도와주기</span>
-                    <input type="range" id="scafSlider" min="0" max="3" value="2" step="1">
+                    <input type="range" id="scafSlider" min="0" max="3" value="3" step="1">
                     <span class="end-label" id="scafHighLbl">많이</span>
                 </div>
             </div>
@@ -2207,7 +2209,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v121 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v122 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -4411,15 +4413,14 @@
     const GONG_VOL = 0.375;         // 징도 배경음과 같은 비율로 낮춘다 (0.5 × 0.75)
     const bgm = document.getElementById("bgm");
     /* ★ 홈 배경음 — 열 때마다 하나를 무작위로 고른다 (v113).
-       한 곡만 계속 들으면 앱이 지루해진다. 다섯 곡 모두 소리 크기를 -11 LUFS로
+       한 곡만 계속 들으면 앱이 지루해진다. 네 곡 모두 소리 크기를 -11 LUFS로
        맞춰 두었으므로(1.5dB 안쪽) 어느 곡이 걸려도 음량이 튀지 않는다.
        ?v= 는 파일이 바뀌었을 때 기기에 남은 옛 파일을 흘려보내기 위한 것. */
     const HOME_BGM = [
-        "/static/bgm_hanok.mp3?v=121",    // 한옥 (원래 쓰던 곡)
-        "/static/bgm_danhwa.mp3?v=121",   // 단화
-        "/static/bgm_bird.mp3?v=121",     // 휘파람새
-        "/static/bgm_rain.mp3?v=121",     // 덕수궁 빗소리
-        "/static/bgm_spring.mp3?v=121",   // 싱그러운 봄 아침
+        "/static/bgm_hanok.mp3?v=122",    // 한옥 (원래 쓰던 곡)
+        "/static/bgm_danhwa.mp3?v=122",   // 단화
+        "/static/bgm_bird.mp3?v=122",     // 휘파람새
+        "/static/bgm_spring.mp3?v=122",   // 싱그러운 봄 아침
     ];
     if (bgm && !bgm.getAttribute("src")) {
         bgm.setAttribute("src", HOME_BGM[Math.floor(Math.random() * HOME_BGM.length)]);
@@ -6522,11 +6523,19 @@
     }
     function isHamViewOpen() { return document.getElementById("hamView").classList.contains("show"); }
 
+    let scfLastQid = "";   // 서버가 어떤 요소를 실으려 했는지 — 빈손일 때 쓴다
     function renderScaffoldItems(items, stageName) {
         document.getElementById("scfTitleEl").textContent = t("scfTitle"); // 요소명은 붙이지 않는다
         const list = document.getElementById("scfList");
         list.innerHTML = "";
-        const arr = (items || []).filter(Boolean);
+        let arr = (items || []).filter(Boolean);
+        /* ★ v122 — 서버가 빈손일 때 「이 단계의 추천 표현이 없어요」를 띄우지 않는다.
+           어떤 요소를 실으려 했는지(qid)는 함께 왔으므로, 미리 쓴 문형이라도 화계에
+           맞춰 내놓는다. 맥락에 딱 맞지는 않아도 **아무것도 없는 것보다는 낫다.** */
+        if (!arr.length && scfLastQid) {
+            const f = questForm(scfLastQid);
+            if (f) arr = f.split(" · ").map(x => x.trim()).filter(Boolean).slice(0, 2);
+        }
         if (!arr.length) {
             list.textContent = t("scfNone");
         } else {
@@ -7942,6 +7951,7 @@
                 }
             } else if (msg.type === "hint") {
                 scfNudge(false);              // 도움말이 왔다 — 단추는 가라앉는다
+                scfLastQid = msg.qid || "";   // 비었을 때 메울 밑천
                 // 🪜 비계 응답 — 패널이 열려 있을 때만 표시
                 clearTimeout(scfTimer);
                 if (!scfPanel.classList.contains("hidden")) renderScaffoldItems(msg.items || [], msg.stage || "");

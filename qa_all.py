@@ -472,7 +472,8 @@ print("\n════════ ⑳ 넛지와 도움말이 한 순간에 (v122
 ok("동시", "넛지를 띄우면서 도움말도 만든다", "asyncio.create_task(send_hints(prefetch=True))" in PY)
 ok("동시", "만든 것을 재워 둔다", 'hint_cache = {"items"' in PY and "hint_cache.update(" in PY)
 ok("동시", "누르면 재워 둔 것을 바로 보낸다", "재워 둔 것 바로 보냄" in PY)
-ok("동시", "재워 둔 것은 한 번만 쓴다", 'hint_cache["items"] = []' in PY)
+ok("동시", "재워 둔 것은 같은 차례 안에서만 쓴다",
+   '_user_turns() - _c["turn"] <= 1' in PY and 'time.time() - _c["at"] < 180' in PY)
 ok("동시", "차례가 지났으면 새로 만든다", '_user_turns() - _c["turn"] <= 1' in PY)
 
 ok("도움말", "요소별 구체 보기를 준다", "FOCUS_EG = {" in PY)
@@ -490,6 +491,22 @@ ok("도움말", "요소 지시가 맨 앞에 온다", 'prompt = f"""{focus_line}
 ok("도움말", "빈손이면 화면이 미리 쓴 문형으로 메운다",
    "scfLastQid" in HT and "questForm(scfLastQid)" in HT)
 ok("도움말", "서버가 qid 를 함께 보낸다", '"qid": (_q or {}).get("id", "")' in PY)
+
+print("\n──── 도움말은 눌렀을 때 이미 있어야 한다 (v123) ────")
+# ★ 눌렀을 때부터 만들기 시작하면 언제나 늦다. 넛지는 벌써 사라졌는데
+#   표현이 그제야 뜨면 아무 뜻이 없다 — 저자가 짚은 그대로다.
+ok("미리", "학습자의 차례가 올 때마다 미리 만든다",
+   'if not hint_state["running"]:\n                                asyncio.create_task(send_hints(prefetch=True))' in PY)
+ok("미리", "만든 것을 곧바로 밀어 보낸다", '"ready": bool(prefetch)' in PY)
+ok("미리", "미리 만드는 길은 넉넉히 기다린다", "timeout_s=(22.0 if prefetch else 9.0)" in PY)
+ok("미리", "겹쳐 돌지 않는다", PY.count('if not hint_state["running"]') >= 2)
+ok("미리", "화면이 미리 온 것을 들고 있는다", "scfReady = { items:" in HT)
+ok("미리", "누르면 왕복 없이 곧바로 편다",
+   "if (scfReady && (scfReady.items || []).length)" in HT and "return requestScaffoldSlow();" in HT)
+ok("미리", "내 차례가 시작되면 지난 것을 버린다", "scfReady = null;     // 내 차례가 시작됐다" in HT)
+ok("미리", "펴 둔 채였으면 새것으로 갈아 끼운다", "펴 둔 채였으면 바로 갈아 끼운다" in HT)
+ok("미리", "빈 qid 가 밑천을 덮지 않는다", 'if (msg.qid) scfLastQid = msg.qid;' in HT)
+ok("미리", "넛지의 qid 도 밑천이 된다", "빈손일 때 이 문형으로 메운다" in HT)
 
 print("\n──── 홈 배경음·페이더 초기값 (v122) ────")
 _bgm = re.search(r"const HOME_BGM = \[(.*?)\];", HT, re.S).group(1)

@@ -2209,7 +2209,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v122 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v123 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -4417,10 +4417,10 @@
        맞춰 두었으므로(1.5dB 안쪽) 어느 곡이 걸려도 음량이 튀지 않는다.
        ?v= 는 파일이 바뀌었을 때 기기에 남은 옛 파일을 흘려보내기 위한 것. */
     const HOME_BGM = [
-        "/static/bgm_hanok.mp3?v=122",    // 한옥 (원래 쓰던 곡)
-        "/static/bgm_danhwa.mp3?v=122",   // 단화
-        "/static/bgm_bird.mp3?v=122",     // 휘파람새
-        "/static/bgm_spring.mp3?v=122",   // 싱그러운 봄 아침
+        "/static/bgm_hanok.mp3?v=123",    // 한옥 (원래 쓰던 곡)
+        "/static/bgm_danhwa.mp3?v=123",   // 단화
+        "/static/bgm_bird.mp3?v=123",     // 휘파람새
+        "/static/bgm_spring.mp3?v=123",   // 싱그러운 봄 아침
     ];
     if (bgm && !bgm.getAttribute("src")) {
         bgm.setAttribute("src", HOME_BGM[Math.floor(Math.random() * HOME_BGM.length)]);
@@ -6554,13 +6554,28 @@
         if (isHamViewOpen() && hvScfWanted) hvScaffoldPeek(arr.length ? 9000 : 4500);
     }
     function renderScaffoldStatic() { // 폴백: 현재 단계의 연습 표현 (주제 대화에만 있다)
+        /* ★ 자유 대화에는 연습 표현이 없다. 그렇다고 「추천 표현이 없어요」로 끝내면
+           도움을 부른 사람을 빈손으로 돌려보내는 것이다.
+           마지막 넛지의 문형이라도 화계에 맞춰 내놓는다(renderScaffoldItems 가 메운다). */
         if (!rpPlan || !rpStagesState.length) { renderScaffoldItems([], ""); return; }
         const idx = Math.max(0, currentStageIdx());
         const st = rpPlan.stages[idx];
         renderScaffoldItems((st.expressions || []).map(exprText).filter(Boolean).slice(0, 2),
             (idx + 1) + ". " + st.name);
     }
+    let scfReady = null;   // 서버가 미리 보내 준 것 — 누르면 기다림 없이 편다
     function requestScaffold() {
+        /* ★ 이미 들고 있으면 왕복도 로딩도 없다. 이것이 보통의 길이 되어야 한다. */
+        if (scfReady && (scfReady.items || []).length) {
+            clearTimeout(scfTimer);
+            scfNudge(false);
+            scfLastQid = scfReady.qid || "";
+            renderScaffoldItems(scfReady.items, scfReady.stage);
+            return;
+        }
+        return requestScaffoldSlow();
+    }
+    function requestScaffoldSlow() {
         // v95 — 자유 대화에서도 쓴다. 주제 대화는 기능 단계와 연습 표현이 축이고,
         // 자유 대화는 최근 흐름과 '지금 필요한 요소'가 축이다(서버 send_hints).
         // 로딩 표시 후 서버에 맥락 힌트 요청
@@ -7609,6 +7624,7 @@
         }
         if (isTalking) return;
         isTalking = true;
+        scfReady = null;     // 내 차례가 시작됐다 — 들고 있던 추천은 지난 자리의 것
         if (captureCtx && captureCtx.state === "suspended") captureCtx.resume().catch(() => {});
         stopAllAudio();                 // 말하려고 누르면 호아랑 발화를 즉시 멈춤(끼어들기)
         try { ws.send(JSON.stringify({ type: "activity_start" })); } catch (e) {}
@@ -7950,17 +7966,29 @@
                     playDing();   // 단계 달성 — 짧은 딩동 (문 연출은 대화 시작·종료에서만)
                 }
             } else if (msg.type === "hint") {
-                scfNudge(false);              // 도움말이 왔다 — 단추는 가라앉는다
-                scfLastQid = msg.qid || "";   // 비었을 때 메울 밑천
-                // 🪜 비계 응답 — 패널이 열려 있을 때만 표시
-                clearTimeout(scfTimer);
-                if (!scfPanel.classList.contains("hidden")) renderScaffoldItems(msg.items || [], msg.stage || "");
+                if (msg.qid) scfLastQid = msg.qid;   // 비었을 때 메울 밑천 — 빈 값으로 덮지 않는다
+                /* ★★ v123 — 서버가 학습자의 차례마다 **미리** 보내 준다(ready).
+                   눌렀을 때 만들기 시작하면 언제나 늦다 — 넛지는 벌써 사라졌는데
+                   표현이 그제야 뜨면 아무 뜻이 없다.
+                   미리 온 것은 들고만 있다가, 누르는 순간 **기다림 없이** 편다. */
+                if (msg.ready) {
+                    scfReady = { items: msg.items || [], stage: msg.stage || "", qid: scfLastQid };
+                    if (!scfPanel.classList.contains("hidden")) {   // 펴 둔 채였으면 바로 갈아 끼운다
+                        clearTimeout(scfTimer);
+                        renderScaffoldItems(scfReady.items, scfReady.stage);
+                    }
+                } else {
+                    scfNudge(false);          // 눌러서 받은 것 — 단추는 가라앉는다
+                    clearTimeout(scfTimer);
+                    if (!scfPanel.classList.contains("hidden")) renderScaffoldItems(msg.items || [], msg.stage || "");
+                }
             } else if (msg.type === "intervene") {
                 /* 교육적 개입 — 호아랑이 잠깐 극 밖으로 나와 '지금이 그 자리'라고 알린다.
                    배역의 발화가 아니라 화면 층이므로 극은 깨지지 않는다.
                    ★ 기능만 알린다. 표현이 필요하면 학습자가 🪜 도움말을 눌러 요청한다. */
                 try {
                     const label = questLabel(msg.qid);
+                    if (msg.qid) scfLastQid = msg.qid;   // 빈손일 때 이 문형으로 메운다
                     /* ★ v119 — 앞머리 「지금이에요!」를 뺐다.
                        개입 이름이 이미 「~해 보세요!」 꼴이라 두 번 말하는 셈이었고,
                        말풍선이 좁아 정작 읽어야 할 이름이 밀려났다. */

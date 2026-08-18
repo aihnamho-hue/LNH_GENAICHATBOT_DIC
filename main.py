@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v122"
+APP_VERSION = "v123"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -3481,8 +3481,10 @@ async def _handle_session(websocket: WebSocket):
             #   **첫 번째 제안**이 방금 알린 그 요소가 실현된 발화로 나온다.
             #   도움말은 지금 맥락과 화계를 보고 만들므로 어긋날 자리가 없다.
             idc_state["hint_focus"] = {"qid": qid, "el": el, "turn": turns}
-            # 넛지와 **동시에** 도움말 두 개를 만들어 재워 둔다 — 누르면 곧바로 나온다
-            asyncio.create_task(send_hints(prefetch=True))
+            # 넛지와 **동시에** 도움말 두 개를 만들어 보낸다 — 누르면 곧바로 나온다
+            # (차례마다 도는 것과 겹칠 수 있으므로, 돌고 있으면 그쪽에 맡긴다)
+            if not hint_state["running"]:
+                asyncio.create_task(send_hints(prefetch=True))
             print(f"[개입] {qid}({el}) — {turns}번째 차례 · 누적 {idc_state['intv_n']}회"
                   f" · 자리 {_stage_phase()}")
         except Exception as e:
@@ -4113,8 +4115,10 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
            → 발화가 넷이고 마지막이 끊겼다.
   좋은 예) "오, 그거 유명하잖아! 나도 좀 가르쳐줘."
 JSON만 출력: {{"hints":["",""]}}"""
-            # 클라이언트 폴백(13초)보다 먼저 끝나야 한다. 늦으면 화면이 연습 표현으로 되돌아간다.
-            data = await _gen_json(prompt, timeout_s=9.0, temperature=0.7)
+            # ★ 미리 만드는 길은 아무도 기다리지 않으므로 넉넉히 준다.
+            #   누르고 나서 만드는 길만 화면 폴백(13초)보다 먼저 끝나야 한다.
+            data = await _gen_json(prompt, timeout_s=(22.0 if prefetch else 9.0),
+                                   temperature=0.7)
             hints = []
             if isinstance(data, dict):
                 hints = [_hint_trim(_clean_str(h, 200)) for h in (data.get("hints") or [])
@@ -4125,15 +4129,21 @@ JSON만 출력: {{"hints":["",""]}}"""
             if not hints:
                 hints = fallback   # 주제 대화는 연습 표현으로, 자유 대화는 빈 목록으로
             items = [h for h in hints if h]
-            # ★ qid 를 함께 보낸다 — 만에 하나 비었을 때 화면이 미리 쓴 문형으로 메운다
+            # ★★ v123 — 만들어 두기만 하지 않고 **곧바로 밀어 보낸다.**
+            #   v122는 서버에만 재워 두었다. 그래도 누르는 순간 왕복이 남았고,
+            #   무엇보다 **넛지가 없는 차례**에는 아예 만들지 않아 그대로 느렸다.
+            #   이제 학습자의 차례가 올 때마다 미리 만들어 보낸다.
+            #   누를 때는 이미 화면이 들고 있으므로 **기다림이 0이다.**
             payload = {"type": "hint", "stage": title, "items": items,
-                       "qid": (_q or {}).get("id", "")}
-            if prefetch:
-                hint_cache.update(items=items, qid=payload["qid"], stage=title,
-                                  turn=_user_turns(), at=time.time())
-                print(f"[도움말] 미리 만들어 둠 — {len(items)}개 · {payload['qid'] or '요소 없음'}")
+                       "qid": (_q or {}).get("id", ""), "ready": bool(prefetch)}
+            hint_cache.update(items=items, qid=payload["qid"], stage=title,
+                              turn=_user_turns(), at=time.time())
+            try:
+                await websocket.send_text(json.dumps(payload))
+            except Exception:
                 return
-            await websocket.send_text(json.dumps(payload))
+            print(f"[도움말] {'미리 보냄' if prefetch else '요청 응답'} — "
+                  f"{len(items)}개 · {payload['qid'] or '요소 없음'}")
         except Exception as e:
             print(f"[도움말] 생성 실패: {e}")
         finally:
@@ -4495,13 +4505,12 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                                 # 재워 둔 것이 아직 이 자리의 것이면 곧바로 보낸다
                                 _c = hint_cache
                                 if (_c["items"] and _user_turns() - _c["turn"] <= 1
-                                        and time.time() - _c["at"] < 120):
+                                        and time.time() - _c["at"] < 180):
                                     await websocket.send_text(json.dumps({
                                         "type": "hint", "stage": _c["stage"],
                                         "items": _c["items"], "qid": _c["qid"]}))
                                     print(f"[도움말] 재워 둔 것 바로 보냄 — {_c['qid'] or '요소 없음'}")
-                                    hint_cache["items"] = []      # 한 번만 쓴다
-                                else:
+                                elif not hint_state["running"]:
                                     asyncio.create_task(send_hints())
                             elif event.get("type") == "text" and event.get("text"):
                                 # 빠른 요청 버튼 등 텍스트 턴 주입 (대화 맥락 유지)
@@ -4564,6 +4573,12 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                             #   (종료 시 `run_analysis(final=True)` 로 이미 그렇게 쓰고 있었다).
                             #   단계 충족 분석은 백그라운드로 — 오디오 릴레이를 막지 않는다.
                             asyncio.create_task(run_analysis())
+                            # ★★ v123 — 호아랑의 차례가 끝났다 = **이제 학습자의 차례다.**
+                            #   막힐지 안 막힐지는 그때 가서야 알지만, 막힌 뒤에 만들기
+                            #   시작하면 언제나 늦는다. 미리 만들어 둔다.
+                            #   (한 차례에 한 번뿐이고, 이미 돌고 있으면 건너뛴다)
+                            if not hint_state["running"]:
+                                asyncio.create_task(send_hints(prefetch=True))
 
             send_task = asyncio.create_task(client_to_gemini())
             recv_task = asyncio.create_task(gemini_to_client())

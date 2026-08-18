@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v123"
+APP_VERSION = "v124"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -2018,6 +2018,11 @@ _cloud_tts = {"voices": None, "off_until": 0.0, "fail": 0, "last_err": "", "used
 REVIEW_TIMEOUT_S = float(os.environ.get("REVIEW_TIMEOUT_S", "").strip() or "25")
 _review_dx = {"ok": 0, "fail": 0, "last": "", "chars": 0}
 
+# ── 도움말 진단 ─────────────────────────────────────────────────────────
+# v122~v123에서 도움말이 **한 번도** 만들어지지 않았는데 알 길이 없었다.
+# 예외를 삼키는 자리가 있으면 반드시 밖에서 보이게 세어 둔다.
+_hint_dx = {"ok": 0, "fail": 0, "empty": 0, "last": ""}
+
 # ── 목소리 (Chirp 3 HD 프리빌트 보이스 — Live API·TTS 공용) ──────────────
 # 호아랑은 '갓 쓴 아기 호랑이'라 기본은 밝은 남자아이 목소리(Puck)로 잡는다.
 # 주제 대화에서는 호아랑이 배역을 맡으므로, 그 배역에 맞는 목소리로 자동 전환한다.
@@ -2818,6 +2823,15 @@ async def version_check():
             "model": _analysis_model["name"],
             "timeout": REVIEW_TIMEOUT_S,
         },
+        # 🪜 도움말이 왜 안 나오는지 — 여기서 본다
+        #   ok 가 0인데 fail 이 쌓이면 코드가 잘못된 것이다(v122~v123이 그랬다).
+        #   ok 는 도는데 empty 만 늘면 모델이 빈손으로 돌아오는 것이다.
+        "hint": {
+            "ok": _hint_dx["ok"],
+            "fail": _hint_dx["fail"],
+            "empty": _hint_dx["empty"],
+            "last": _hint_dx["last"][:200],
+        },
     }
 
 
@@ -3223,6 +3237,11 @@ async def _handle_session(websocket: WebSocket):
     d = max(0, min(100, d))
     p = max(0, min(100, p))
     ui_lang = websocket.query_params.get("lang", "").strip().lower()[:5]
+    # ★★ v124 — 이 한 줄이 없어서 v122부터 **도움말이 한 번도 만들어지지 않았다.**
+    #   FOCUS_EG 를 끼울 때 native 를 썼는데 이 스코프에는 그 이름이 없었다.
+    #   NameError 가 났고, send_hints 의 except 가 그것을 조용히 삼켰다.
+    #   화면에는 「이 단계의 추천 표현이 없어요」와 미리 쓴 문형만 남았다.
+    native = LANG_NAMES.get(ui_lang, "")
     # 이름은 시스템 프롬프트에 들어가므로 공백 정리 + 길이 제한 (프롬프트 주입 방지)
     user_name = re.sub(r"\s+", " ", websocket.query_params.get("name", "")).strip()[:20]
     # 학습자가 홈에서 고른 목소리 (빈 값·auto면 배역에 맞춰 자동 선택)
@@ -4142,10 +4161,19 @@ JSON만 출력: {{"hints":["",""]}}"""
                 await websocket.send_text(json.dumps(payload))
             except Exception:
                 return
-            print(f"[도움말] {'미리 보냄' if prefetch else '요청 응답'} — "
-                  f"{len(items)}개 · {payload['qid'] or '요소 없음'}")
+            _hint_dx["ok"] += 1
+            _hint_dx["empty"] += (0 if items else 1)
+            _hint_dx["last"] = f"{len(items)}개 · {payload['qid'] or '요소 없음'}"
+            print(f"[도움말] {'미리 보냄' if prefetch else '요청 응답'} — {_hint_dx['last']}")
         except Exception as e:
-            print(f"[도움말] 생성 실패: {e}")
+            # ★ v124 — 「생성 실패: name 'native' is not defined」 한 줄이 로그에 있었지만
+            #   아무도 서버 로그를 보지 않는다. /version 에 세어 둔다.
+            import traceback
+            _tb = traceback.extract_tb(e.__traceback__)
+            _at = f"{_tb[-1].lineno}줄" if _tb else "?"
+            _hint_dx["fail"] += 1
+            _hint_dx["last"] = f"{type(e).__name__}: {e} ({_at})"[:160]
+            print(f"[도움말] 생성 실패 — {_hint_dx['last']}")
         finally:
             hint_state["running"] = False
 

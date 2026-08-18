@@ -492,6 +492,35 @@ ok("도움말", "빈손이면 화면이 미리 쓴 문형으로 메운다",
    "scfLastQid" in HT and "questForm(scfLastQid)" in HT)
 ok("도움말", "서버가 qid 를 함께 보낸다", '"qid": (_q or {}).get("id", "")' in PY)
 
+print("\n════════ ㉑ 없는 이름이 있는가 (v124) ════════")
+# ★★ v122에서 send_hints 안에 `native` 를 썼는데 그 스코프에는 그런 이름이 없었다.
+#   그 자리는 예외를 삼키는 try 안이라, **두 판 내내 도움말이 한 번도 안 만들어졌는데도**
+#   아무도 몰랐다. ast.parse 도 node --check 도 이걸 못 잡는다.
+#   symtable 은 스코프를 실제로 계산한다 — 함수 안에서 쓰였는데 지역도, 감싸는 함수의
+#   지역도, 모듈 전역도, 내장도 아니면 **실행하는 순간 NameError** 다.
+import symtable, builtins
+_top = symtable.symtable(PY, "main.py", "exec")
+_mod = set(_top.get_identifiers())
+_bad = []
+def _walk(tab, path):
+    if tab.get_type() == "function":
+        for sym in tab.get_symbols():
+            n = sym.get_name()
+            if (sym.is_assigned() or sym.is_parameter() or sym.is_imported()
+                    or not sym.is_referenced() or sym.is_free() or sym.is_local()):
+                continue
+            if n in _mod or hasattr(builtins, n):
+                continue
+            _bad.append(f"{' → '.join(path)}({tab.get_lineno()}줄) → {n}")
+    for ch in tab.get_children():
+        _walk(ch, path + [ch.get_name()])
+_walk(_top, ["(모듈)"])
+ok("이름", "실행하면 NameError 가 날 이름이 없다", not _bad, _bad[:5])
+ok("이름", "도움말 실패를 조용히 삼키지 않는다", "_hint_dx[\"fail\"] += 1" in PY)
+ok("이름", "/version 에서 도움말 상태가 보인다", '"hint": {' in PY and '"empty": _hint_dx["empty"]' in PY)
+ok("이름", "핸들러에 native 가 있다", 'native = LANG_NAMES.get(ui_lang, "")\n    # ★★ v124' in PY
+   or 'ui_lang = websocket.query_params.get("lang", "").strip().lower()[:5]\n' in PY and PY.count('native = LANG_NAMES.get(ui_lang, "")') >= 2)
+
 print("\n──── 도움말은 눌렀을 때 이미 있어야 한다 (v123) ────")
 # ★ 눌렀을 때부터 만들기 시작하면 언제나 늦다. 넛지는 벌써 사라졌는데
 #   표현이 그제야 뜨면 아무 뜻이 없다 — 저자가 짚은 그대로다.

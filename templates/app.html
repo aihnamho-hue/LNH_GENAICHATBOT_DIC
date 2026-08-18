@@ -2181,7 +2181,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v116 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v117 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -2991,8 +2991,8 @@
     for (const _l in I18N_QZ2) { if (I18N[_l]) Object.assign(I18N[_l], I18N_QZ2[_l]); }
     /* v95 — 요소별 공백을 메운 퀘스트 여섯, 그리고 대화 중 비계 넛지 문구 */
     const I18N_QZ3 = {
-        ko: { qParaphrase:"상대 말 다시 확인하기", qRephrase:"못 알아들으면 다시 설명해 보세요", qNative:"모국어로 물어보고 한국어로 말해 보세요",
-              qEcho:"방금 들은 말을 따라서 써 보세요", qWrap:"「%s」처럼 말해 보세요", qEndTurn:"말 끝에 상대에게 물어보세요", qExpand:"상대 이야기에 내 이야기를 더해 보세요", qTakeTurn:"끼어들어 말차례 가져오기", qKeepTurn:"이어서 길게 말하기", qEmpathy:"공감 나타내기", qContinuer:"더 말하게 되묻기", qCheckUnd:"내 말 이해했는지 확인하기", qFiller:"시간 벌며 이어 가기", qCloseTopic:"화제 정리하고 넘어가기", qInitiate:"먼저 말을 걸어 보세요", qCounter:"되받아 내 용건 꺼내기", qShiftTopic:"다른 이야기로 바꿔 보세요", qAskSlow:"천천히", qAskAgain:"다시", qAskEasy:"쉽게", qAskFast:"빨리",
+        ko: { qParaphrase:"상대 말 다시 확인하기", qRephrase:"못 알아들으면 다시 설명해 보세요", qNative:"모국어로 묻고 한국어로 다시",
+              qEcho:"방금 들은 표현 가져다 쓰기", qWrap:"「%s」처럼 말해 보세요", qEndTurn:"내 말을 맺고 차례 넘기기", qExpand:"상대 이야기에 내 이야기 얹기", qTakeTurn:"끼어들어 말차례 가져오기", qKeepTurn:"이어서 길게 말하기", qEmpathy:"공감 나타내기", qContinuer:"더 말하게 되묻기", qCheckUnd:"내 말 이해했는지 확인하기", qFiller:"시간 벌며 이어 가기", qCloseTopic:"화제 정리하고 넘어가기", qInitiate:"먼저 말을 걸어 보세요", qCounter:"되받아 내 용건 꺼내기", qShiftTopic:"다른 이야기로 옮겨 가기", qAskSlow:"천천히", qAskAgain:"다시", qAskEasy:"쉽게", qAskFast:"빨리",
               nzNow:"지금이에요!", scafTitle:"도와주기", scafHint:"대화 중에 호아랑이 얼마나 도와줄까요?",
               scaf0:"안 도와주기", scaf1:"조금", scaf2:"보통", scaf3:"많이" },
         en: { qParaphrase:"Check what they meant", qRephrase:"If they didn't get it, explain again", qNative:"Ask in your language, say it in Korean",
@@ -4389,11 +4389,11 @@
        맞춰 두었으므로(1.5dB 안쪽) 어느 곡이 걸려도 음량이 튀지 않는다.
        ?v= 는 파일이 바뀌었을 때 기기에 남은 옛 파일을 흘려보내기 위한 것. */
     const HOME_BGM = [
-        "/static/bgm_hanok.mp3?v=116",    // 한옥 (원래 쓰던 곡)
-        "/static/bgm_danhwa.mp3?v=116",   // 단화
-        "/static/bgm_bird.mp3?v=116",     // 휘파람새
-        "/static/bgm_rain.mp3?v=116",     // 덕수궁 빗소리
-        "/static/bgm_spring.mp3?v=116",   // 싱그러운 봄 아침
+        "/static/bgm_hanok.mp3?v=117",    // 한옥 (원래 쓰던 곡)
+        "/static/bgm_danhwa.mp3?v=117",   // 단화
+        "/static/bgm_bird.mp3?v=117",     // 휘파람새
+        "/static/bgm_rain.mp3?v=117",     // 덕수궁 빗소리
+        "/static/bgm_spring.mp3?v=117",   // 싱그러운 봄 아침
     ];
     if (bgm && !bgm.getAttribute("src")) {
         bgm.setAttribute("src", HOME_BGM[Math.floor(Math.random() * HOME_BGM.length)]);
@@ -7331,6 +7331,18 @@
        ★ 감싸는 말(「…」라고 해 보세요)은 언어별로 번역하고(qWrap),
          문형 자체는 배우는 말이므로 어느 언어에서나 한국어 그대로 둔다. */
     const QUEST_FORM = {
+        /* v117 — 이름만 있고 문형이 없던 여덟 개를 채운다.
+           「말 끝에 상대에게 물어보세요」만 보면 질문을 하라는 말로 읽힌다.
+           실제로는 자기 말을 맺으며 차례를 넘기라는 것이다(차례 관리).
+           문형이 붙어야 무엇을 하라는 것인지 한 번에 읽힌다. */
+        qEndTurn: ["…저는 그렇습니다. ○○ 씨는 어떠십니까? · …저는 이렇습니다. ○○ 씨께서는요?", "…저는 그래요. ○○ 씨는요? · …저는 이런데, ○○ 씨는 어때요?", "…난 그래. 너는? · …난 이런데, 너는 어때?"],
+        qInitiate: ["실례합니다, 여쭐 것이 있습니다 · 잠시 여쭤봐도 되겠습니까?", "저기요, 뭐 좀 여쭤볼게요 · 잠깐 여쭤봐도 될까요?", "저기, 나 뭐 좀 물어볼게 · 잠깐 뭐 좀 물어봐도 돼?"],
+        qNewTopic: ["그런데 한 가지 더 여쭤봐도 되겠습니까? · 그리고 이것도 여쭙고 싶습니다", "그런데 혹시 다른 것도 있어요? · 그리고 이것도 좀 여쭤볼게요", "근데 다른 건 없어? · 그리고 이것도 좀 물어볼게"],
+        qExpand: ["저도 그런 적이 있습니다 · 저는 이런 적도 있었습니다", "저도 그런 적 있어요 · 저는 이런 적도 있었어요", "나도 그런 적 있어 · 나는 이런 적도 있었어"],
+        qShiftTopic: ["다른 것도 여쭤보고 싶습니다 · 그건 그렇고, 이것도 보고 싶습니다", "다른 것도 좀 볼게요 · 그건 그렇고, 이것도 좀 볼까요?", "다른 것도 좀 보자 · 그건 그렇고, 이것도 좀 볼까?"],
+        qSelfFix: ["아, 제 말은 그게 아니라… · 다시 말씀드리겠습니다", "아, 제 말은요… · 다시 말할게요", "아, 내 말은… · 다시 말할게"],
+        qNative: ["이것을 제 나라 말로 말씀드려도 되겠습니까? · 제 나라 말로 하면 무엇입니까?", "이거 제 나라 말로 말해도 돼요? · 제 나라 말로는 ~인데, 한국어로는요?", "이거 우리말로 말해도 돼? · 우리말로는 ~인데, 한국어로는?"],
+        qEcho: ["방금 말씀하신 그 표현을 써 보겠습니다 · 아까 그 말씀처럼 하면 되겠습니까?", "방금 그 말, 저도 써 볼게요 · 아까 그 말처럼 하면 돼요?", "방금 그 말, 나도 써 볼래 · 아까 그 말처럼 하면 돼?"],
         // 한 개만 주면 학습자가 그대로 읽어 맥락이 깨진다(v104에서 겪었다).
         // 두셋을 늘어놓으면 **고르는 일**이 생기고, 고르는 순간 대본이 아니게 된다.
         // 표현은 지어내지 않고 선행연구에서 확인된 것을 쓴다.

@@ -40,7 +40,8 @@ files.forEach((f) => {
 });
 ok("한 곡이 2.5MB 안쪽 (20명 동시 접속)", sizes.every(k => k < 2560), Math.max(...sizes) + "KB");
 ok("옛 320kbps 원본을 그대로 안 쓴다", !files.includes("bgm.mp3"));
-ok("?v= 로 옛 파일을 흘려보낸다", (L[1].match(/\?v=113/g) || []).length === 5);
+// 판올림마다 숫자가 바뀐다 — 특정 숫자를 박아 두면 올릴 때마다 깨진다.
+ok("?v= 로 옛 파일을 흘려보낸다", (L[1].match(/\?v=\d+/g) || []).length === 5);
 console.log("     (다섯 곡 합계 " + tot + "KB · 한 사람은 그중 한 곡만 받는다)");
 
 console.log("── ③ 접힌 페이더 대신 남는 한 줄 ──");
@@ -53,8 +54,10 @@ ok("대화가 시작되면 띄운다", /faderSection\.classList\.add\("fader-col
     다른 길로 대화 화면에 들어갔을 때 지난 대화의 값이 그대로 보인다) */
 ok("페이더를 펼치면 거둔다", (html.match(/styleLineShow\(false\)/g) || []).length === 3);
 ok("홈으로 가도 거둔다", /styleLineShow\(false\)[^\n]*\n\s*setScreen\("home"\)/.test(html));
-ok("말투는 speechTier() 한 곳만 본다", /\["sumFormal", "sumPolite", "sumCasual"\]\[speechTier\(\)\]/.test(html)
-                                     && (html.match(/function speechTier\(/g) || []).length === 1);
+// v116 — 두 화자의 화계가 갈리면 둘을 나란히 보인다. 계산은 speechOf() 한 곳.
+ok("말투 계산이 한 곳(speechOf)", (html.match(/function speechOf\(d, p\)/g) || []).length === 1
+   && !/const avg = \(\+distSlider\.value \+ \+powerSlider\.value\) \/ 2/.test(html));
+ok("비대칭이면 상대 화계도 보인다", /_mine === _theirs/.test(html) && /partnerSpeechOf/.test(html));
 ok("대등한 지위는 말하지 않는다", /if \(pi !== 2\) parts\.push/.test(html));
 ok("도움을 끄면 그 말도 없다", /scafSlider\.value > 0\) parts\.push\("🪜 "/.test(html));
 ok("언어를 바꾸면 한 줄도 따라간다", /!_sl\.hidden\) styleLinePaint\(\)/.test(html));

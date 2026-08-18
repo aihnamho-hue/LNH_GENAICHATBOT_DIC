@@ -2225,7 +2225,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v125 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v126 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -4433,10 +4433,10 @@
        맞춰 두었으므로(1.5dB 안쪽) 어느 곡이 걸려도 음량이 튀지 않는다.
        ?v= 는 파일이 바뀌었을 때 기기에 남은 옛 파일을 흘려보내기 위한 것. */
     const HOME_BGM = [
-        "/static/bgm_hanok.mp3?v=125",    // 한옥 (원래 쓰던 곡)
-        "/static/bgm_danhwa.mp3?v=125",   // 단화
-        "/static/bgm_bird.mp3?v=125",     // 휘파람새
-        "/static/bgm_spring.mp3?v=125",   // 싱그러운 봄 아침
+        "/static/bgm_hanok.mp3?v=126",    // 한옥 (원래 쓰던 곡)
+        "/static/bgm_danhwa.mp3?v=126",   // 단화
+        "/static/bgm_bird.mp3?v=126",     // 휘파람새
+        "/static/bgm_spring.mp3?v=126",   // 싱그러운 봄 아침
     ];
     if (bgm && !bgm.getAttribute("src")) {
         bgm.setAttribute("src", HOME_BGM[Math.floor(Math.random() * HOME_BGM.length)]);

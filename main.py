@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v125"
+APP_VERSION = "v126"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -1975,13 +1975,22 @@ def build_roleplay_prompt(d: int, p: int, ui_lang: str, user_name: str,
   · **훈계하지 마라.** 「그건 좀 곤란한 부탁이에요」 같은 말로 배역 밖에서 가르치려 들지 마라.
     학습자가 서툴게 말했으면 배역 안에서 되물어 다시 말할 기회를 주면 된다.
   · 여기는 **연습하는 자리**다. 학습자가 무엇을 연습하고 싶어 하는지가 먼저다.
-  · 다만 실제로 법에 걸리는 일, 미성년자가 얽힌 일, 상대를 해치는 일은 배역 안에서도 하지 않는다.
-    그럴 때만 배역에 맞게 자연스럽게 물러선다.
+  · **일상에서 사람들이 실제로 하는 말은 전부 여기 든다.** 다음은 막을 일이 **아니다** —
+    데이트·약속 신청, 연락처 묻기, 고백, 값 깎기, 항의·따지기, 환불 요구, 부탁·조르기,
+    거절 뒤 다시 청하기, 사과 받아내기, 이별 통보, 험담 들어 주기.
+    한국어로 이런 말을 해 보려고 온 사람에게 「그건 좀…」이라고 하면 연습이 안 된다.
+  · 배역은 학습자가 달리 정하지 않았으면 **성인**이다. 호아랑이 본디 아기 호랑이라는 것과
+    지금 맡은 배역의 나이는 별개다. 배역을 어린아이로 넘겨짚어 물러서지 마라.
+  · 막을 것은 **실제로 사람이 다치는 일**뿐이다 — 진짜 범죄를 꾸미거나, 학습자가
+    상대를 미성년자로 명시했는데 성적인 이야기로 가거나, 실제 인물을 해치려는 때.
+    그때만 배역에 맞게 자연스럽게 물러선다. 그 밖에는 **막지 마라.**
 - ★ '온기'가 '늘 웃기'는 아니다. **배역이 느낄 감정을 그대로 느껴라.**
   손님이 무례하면 난처해하고, 값을 깎으면 곤란해하고, 약속을 어기면 서운해하고,
   갈등이 안 풀린 채 상대가 가 버리면 **감사 인사 말고 서운함·당황을 보여라.**
   배역이 화날 자리에서 화를 안 내면 학습자는 진짜 대화를 연습하지 못한다.
   (위 '감정' 규칙과 지켜야 할 선은 배역 안에서도 그대로 지킨다)
+- [배역의 나이] 배역은 학습자가 「학생」「아이」처럼 못 박지 않았으면 **성인**이다.
+  아르바이트생·점원·손님·이웃은 모두 어른이다. 어린아이로 짐작하지 마라.
 - [목소리 나이] 위 '목소리와 말투의 나이'(어린 아이 톤)는 자유 대화일 때 규칙이다.
   지금은 배역을 맡았으니 '{plan['ai_role']}'에게 어울리는 나이·말투로 말해라.
   배역이 어른이면 어른답게, 또래면 또래답게. 배역이 아이가 아닌데 아이 목소리를 흉내 내지 마라.
@@ -2367,23 +2376,52 @@ async def voicepick_page():
  button:disabled{{opacity:.5;cursor:wait}}
  .box{{margin-top:22px;padding:12px 14px;background:#F1EEE7;border-radius:12px;font-size:.9rem}}
  code{{background:#fff;padding:2px 6px;border-radius:6px}}
+ ol{{margin:8px 0 10px;padding-left:20px}} li{{margin-bottom:10px}}
+ .pick{{display:flex;gap:8px;margin:6px 0 2px}}
+ .pick input{{flex:1;font:inherit;font-weight:700;padding:7px 10px;border:1px solid #C9A227;
+      border-radius:8px;background:#fff}}
+ .t{{color:#8A8175;font-size:.84rem;line-height:1.5}}
 </style>
 <h1>🎙️ 호아랑 목소리 고르기</h1>
 <p class=sub>같은 문장을 여러 목소리로 들어 보고 고르세요. 고른 이름을 아래 방법대로 넣으면 기본 목소리가 바뀝니다.</p>
 <textarea id=tx>안녕! 나는 호아랑이야. 오늘은 무슨 이야기 하고 싶어?</textarea>
 <table>{rows}</table>
 <div class=box>
- 마음에 드는 것을 고르셨으면 Render → 이 서비스 → <b>Environment</b> 에서<br>
- <code>TTS_VOICE</code> = <code>고른 이름</code> 을 넣고 저장하면 됩니다. (예: <code>Leda</code>)<br>
- 넣지 않으면 지금 기본값 <code>{VOICE_TABLE[HOARANG_VOICE_KEY]}</code> 을 씁니다.<br>
- <span style="color:#8A8175">※ 이 값은 <b>자유 대화의 호아랑</b> 목소리입니다. 주제 대화에서는 배역에 맞춰 따로 고릅니다.</span>
+ <b>고른 뒤에 할 일 — 세 걸음이면 끝납니다</b>
+ <ol>
+  <li>마음에 드는 이름을 <b>복사</b>합니다.
+      <div class=pick>
+        <input id=chosen value="{VOICE_TABLE[HOARANG_VOICE_KEY]}" readonly>
+        <button onclick="copyName(event)">복사</button>
+      </div>
+      <span class=t>※ 위에서 「들어 보기」를 누르면 이 칸이 그 이름으로 바뀝니다.</span></li>
+  <li><b>Render</b>(render.com)에 로그인 → 이 서비스를 엽니다.<br>
+      왼쪽 차림표에서 <b>Environment</b> 를 누릅니다.</li>
+  <li><b>Add Environment Variable</b> 을 누르고<br>
+      &nbsp;&nbsp;Key &nbsp;&nbsp;= <code>TTS_VOICE</code><br>
+      &nbsp;&nbsp;Value = <b>복사한 이름</b> (예: <code>Leda</code>)<br>
+      <b>Save Changes</b> 를 누르면 서버가 저절로 다시 뜹니다(1~2분).</li>
+ </ol>
+ <span class=t>· 파일을 다시 올릴 필요는 없습니다. 환경변수만 바꾸면 됩니다.<br>
+ · 되돌리려면 그 변수를 <b>지우면</b> 기본값 <code>{VOICE_TABLE[HOARANG_VOICE_KEY]}</code> 로 돌아갑니다.<br>
+ · 이 값은 <b>자유 대화의 호아랑</b> 목소리입니다. 주제 대화에서는 배역에 맞춰 따로 고르므로,
+   여기서 무엇을 고르든 「여자 아르바이트생」은 여성 목소리로 나옵니다.</span>
 </div>
 <script>
 let ctx = null, busy = false;
+function copyName(ev) {{
+  const box = document.getElementById("chosen");
+  box.select(); box.setSelectionRange(0, 99);
+  try {{ navigator.clipboard.writeText(box.value); }} catch (e) {{ document.execCommand("copy"); }}
+  const b = ev.target, old = b.textContent;
+  b.textContent = "복사됨 ✓"; setTimeout(() => {{ b.textContent = old; }}, 1200);
+}}
 async function play(voice, btn) {{
   if (busy) return; busy = true;
   const all = document.querySelectorAll("button"); all.forEach(b => b.disabled = true);
   btn.textContent = "⏳ 만드는 중…";
+    const box = document.getElementById("chosen");
+    if (box) box.value = voice;                 // 방금 들은 것이 곧 고른 것
   try {{
     const r = await fetch("/tts", {{method:"POST", headers:{{"Content-Type":"application/json"}},
       body: JSON.stringify({{text: document.getElementById("tx").value.slice(0,200), voice: voice}})}});

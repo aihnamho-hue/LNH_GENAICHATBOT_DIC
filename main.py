@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v118"
+APP_VERSION = "v119"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -673,6 +673,24 @@ INTERVENABLE = {q["id"] for q in QUEST_LLM} - {"qSelfFix", "qAskFast"}
 #   qContinuer  — 이어 갈 이야기가 진행 중이어야 한다
 #   qFiller     — 막혔을 때만 쓰는 말이다. 안 막혔는데 권하면 이상하다
 # 이 넷은 **LLM이 직전 발화를 보고 고를 때만** 나간다. 그 판단은 맥락을 본다.
+# ── 대화의 자리에 맞지 않는 개입 — 기능단계로 걸러 낸다 (v119) ────────────
+#   ★ v118까지 넛지는 대화가 **어디쯤 왔는지**를 몰랐다. 서버가 기능단계를
+#     세고 있었는데도 쓰지 않았다. 그래서
+#       · 인사만 주고받은 자리에서 「그럼 ~는 어떻겠습니까?」(대안 제시)
+#       · 다 끝내고 인사하는 자리에서 「이건 다른 이야기입니다만」(화제 전환)
+#     이 튀어나왔다. 자리에 맞지 않는 말은 배울 거리가 아니라 방해다.
+#   시작에서는 아직 **열리지 않은 것**을, 마무리에서는 **새로 벌이는 것**을 막는다.
+PHASE_BAN = {
+    # 시작 — 협상은 아직 열리지 않았고, 접거나 돌릴 화제도 아직 없다
+    "open": {"qAlt", "qCond", "qRefuse", "qCounter", "qHold",
+             "qCloseTopic", "qShiftTopic", "qReturn", "qNewTopic"},
+    "mid": set(),
+    # 마무리 — 새 화제·새 협상·판 벌이기는 대화를 되돌린다.
+    #   여기서 할 만한 것은 접기·차례 넘기기·되받기·공감·단절 수정뿐이다.
+    "close": {"qNewTopic", "qShiftTopic", "qReturn", "qInitiate", "qTakeTurn",
+              "qExpand", "qAlt", "qCond", "qRefuse", "qCounter", "qHold", "qNative"},
+}
+
 INTV_ANYTIME = ["qEndTurn", "qKeepTurn", "qEcho"]
 # ★ v118 — qNewTopic·qExpand 를 폴백에서 뺐다.
 #   폴백은 「자리를 못 찾았을 때 그래도 하나 내놓는」 자리다. 그러니 여기에는
@@ -851,11 +869,18 @@ def build_system_prompt(d: int, p: int, ui_lang: str = "", user_name: str = "") 
   예) D=높음 × P=낮음 → 친한데 팩폭하는 선배·교수 (반말 + 평가/지시).
 - 슬라이더 숫자가 0/50/100 사이의 중간값이면, 인접한 두 모드 사이를 자연스럽게 보간(블렌딩)해 강도를 조절한다.
 """
+    mine, yours = _speech_of(d, p), _partner_speech_of(d, p)
     coord = f"""
 
 # 현재 페이더 좌표
 - 친밀도(D) = {d}/100 ({d_band})
 - 사용자 지위(P) = {p}/100 ({p_band})
+
+# ★★ 화계 — 아래 어떤 규칙보다 먼저다 ★★
+- **너는 {LV_KO[yours]}.**
+- 사용자는 {LV_SHORT[mine]}로 말하도록 화면에서 안내받고 있다.
+- 처음부터 끝까지 하나만 쓴다. 중간에 바꾸지 마라.
+{"- ★ 합쇼체다. '-요'로 끝내지 마라. 「오셨어요?」가 아니라 「오셨습니까?」다." if yours == "formal" else ""}
 
 """
     sep = """
@@ -1078,8 +1103,46 @@ def _validate_script(raw, n_stages: int) -> list:
 _ONE_WORD = {"네", "예", "응", "어", "아", "음", "그래", "글쎄", "야"}
 
 
+# ── 화계(청자경어법) 세 단계 ─────────────────────────────────────
+#   합쇼체(formal) · 해요체(polite) · 해체(banmal)
+#   ★ v118까지 서버는 「존댓말/반말」 둘로만 갈랐다. 그래서 화면이
+#     「~습니다/습니까?로 아주 공손하게」라고 일러 주는 자리에서도
+#     호아랑과 대화문과 도움말은 죄다 해요체로 나왔다.
+#     Brown & Gilman(1960)의 두 축은 독립이며, 그 눈금은 app.html 의
+#     speechOf/partnerSpeechOf 와 **같아야 한다.** 다르면 배우는 사람이
+#     화면에서 보는 말과 귀로 듣는 말이 어긋난다.
+SPEECH_CLOSE = 60      # 이보다 가까워야 반말이 나온다
+SPEECH_FAR = 35        # 이보다 멀면 격식체(합쇼체)
+
+
+def _speech_of(d: int, p: int) -> str:
+    """학습자가 쓸 화계."""
+    if d >= SPEECH_CLOSE:
+        return "banmal" if p >= 45 else "polite"
+    if d <= SPEECH_FAR:
+        return "polite" if p >= 70 else "formal"
+    return "polite"
+
+
+def _partner_speech_of(d: int, p: int) -> str:
+    """호아랑(상대)이 쓸 화계 — 지위 축이 뒤집힌다."""
+    if d >= SPEECH_CLOSE:
+        return "banmal" if p <= 55 else "polite"
+    if d <= SPEECH_FAR:
+        return "polite" if p <= 30 else "formal"
+    return "polite"
+
+
+LV_KO = {
+    "formal": "합쇼체(하십시오체) — 반드시 '-습니다 / -습니까?'로 끝낸다",
+    "polite": "해요체 — 반드시 '-아요/-어요 / -아요?/-어요?'로 끝낸다",
+    "banmal": "해체(반말) — 반드시 '-아/-어 / -아?/-어?'로 끝낸다",
+}
+LV_SHORT = {"formal": "합쇼체", "polite": "해요체", "banmal": "해체(반말)"}
+
+
 def _speech_level(text: str) -> str:
-    """한 발화의 말투 — "polite" / "banmal" / "" (판정 불가).
+    """한 발화의 화계 — "formal" / "polite" / "banmal" / "" (판정 불가).
     형태소 분석 없이 마지막 어절의 종결형만 본다. 종결어미만으로 충분히 갈린다."""
     t = (text or "").strip().rstrip("!?.…~♪ ")
     if not t:
@@ -1090,7 +1153,12 @@ def _speech_level(text: str) -> str:
             t = t.split(sep)[-1].strip().rstrip("!?.…~ ")
     if not t or t in _ONE_WORD:
         return ""
-    for e in ("요", "니다", "니까", "세요", "십시오", "ㅂ니다"):
+    # 합쇼체를 먼저 본다 — 「합니다」는 「요」로 안 끝나지만 「하십시오」는 격식이다
+    for e in ("습니다", "ㅂ니다", "습니까", "ㅂ니까", "십시오", "ㅂ시다",
+              "니다", "니까"):
+        if t.endswith(e):
+            return "formal"
+    for e in ("요", "세요", "래요", "죠"):
         if t.endswith(e):
             return "polite"
     for e in ("야", "어", "아", "지", "니", "냐", "데", "래", "자", "군", "네",
@@ -1103,16 +1171,35 @@ def _speech_level(text: str) -> str:
 def _style_offenders(script: list, want_user: str, want_ai: str) -> list:
     """정해 둔 말투를 어긴 줄의 번호를 돌려준다.
     '섞였는가'만 보면 한쪽으로 통일된 채 설정과 어긋난 경우를 놓친다.
-    화자마다 쓸 말투를 미리 정해 두고 줄마다 대조한다."""
+    화자마다 쓸 말투를 미리 정해 두고 줄마다 대조한다.
+
+    ★ 두 축을 다르게 다룬다(v119).
+      ㄱ) 존대↔반말이 어긋난 줄은 **그 줄 자체가** 잘못이다. 배우는 사람이 바로 따라 한다.
+      ㄴ) 합쇼체↔해요체는 실제 입말에서 늘 섞인다(화계 넘나들기). 한 줄씩 잡으면
+         손질이 끝나지 않고, 대화문이 낭독체가 된다. **판이 기울었을 때만** 잡는다."""
     bad = []
+    soft = {"user": [], "ai": []}
+    seen = {"user": 0, "ai": 0}
+    hit = {"user": 0, "ai": 0}
     for i, l in enumerate(script or []):
         lv = _speech_level(l.get("text", ""))
         if not lv:
             continue
-        want = want_user if l.get("speaker") == "user" else want_ai
-        if lv != want:
-            bad.append(i)
-    return bad
+        who = "user" if l.get("speaker") == "user" else "ai"
+        want = want_user if who == "user" else want_ai
+        if (lv == "banmal") != (want == "banmal"):
+            bad.append(i)          # 존대↔반말 — 무조건 잘못
+            continue
+        seen[who] += 1
+        if lv == want:
+            hit[who] += 1
+        else:
+            soft[who].append(i)
+    # 원하는 화계가 절반에 못 미치면 그 화자의 어긋난 줄을 함께 고친다
+    for who in ("user", "ai"):
+        if seen[who] >= 2 and hit[who] * 2 < seen[who]:
+            bad.extend(soft[who])
+    return sorted(set(bad))
 
 
 def _link_expr_to_script(stages: list, script: list) -> None:
@@ -1227,12 +1314,79 @@ def _deference_offenders(script: list, want_user: str, want_ai: str) -> list:
     누가 윗사람인지는 말투로 가른다 — 한쪽이 존댓말, 다른 쪽이 반말이면
     반말을 쓰는 쪽이 윗사람이다. 둘 다 존댓말이면 알 수 없으므로 손대지 않는다.
     """
-    if want_user == want_ai:
-        return []                       # 대등한 사이 — 판단 근거가 없다
+    # ★ 화계가 셋이 된 뒤로는 '다르다'만으로 위아래를 못 가른다(v119).
+    #   합쇼체 : 해요체는 격식의 차이지 위아래가 아니다.
+    #   한쪽만 반말일 때에만 위아래가 분명하다.
+    if (want_user == "banmal") == (want_ai == "banmal"):
+        return []                       # 위아래를 가릴 근거가 없다
     upper = "user" if want_user == "banmal" else "ai"
     return [i for i, l in enumerate(script or [])
             if l.get("speaker") == upper
             and any(w in (l.get("text") or "") for w in _DEFERENTIAL)]
+
+
+# 대답으로만 쓰이는 첫마디 — 이 말로 대화를 열 수는 없다
+_ANSWER_HEAD = ("네", "예", "아니요", "아뇨", "아니", "응", "어", "그럼요",
+                "맞아요", "맞습니다", "알겠어요", "알겠습니다", "괜찮아요", "괜찮습니다")
+
+
+def _cue_missing(plan: dict) -> list:
+    """cue 없이 '먼저 여는 말'로 놓였지만 실은 **대답**인 표현을 찾는다.
+
+    ★ 「네, 여기 신분증이요.」는 누가 달라고 해야 나오는 말이다.
+      그런데 cue가 비어 있으면 화면에는 「② 먼저 말 걸어 보기」로 뜨고
+      **대화이동 연속체가 통째로 사라진다.** 학습자는 무엇에 대한 대답인지
+      모른 채 한 문장만 읽는다 — 연속체를 익히자는 연습이 낱말 읽기가 된다.
+    """
+    out = []
+    for si, st in enumerate(plan.get("stages") or []):
+        for ei, e in enumerate(st.get("expressions") or []):
+            if not isinstance(e, dict) or (e.get("cue") or "").strip():
+                continue
+            t = (e.get("text") or "").strip()
+            if not t:
+                continue
+            head = t.split()[0].rstrip(",.!?~…") if t.split() else ""
+            if head in _ANSWER_HEAD or "여기요" in t or "여기 있" in t:
+                out.append((si, ei, t))
+    return out
+
+
+async def _fill_cues(plan: dict, want_ai: str) -> None:
+    """앞말이 빠진 표현들에 상대의 선행 발화를 한 번에 채워 넣는다."""
+    holes = _cue_missing(plan)
+    if not holes or len(holes) > 8:
+        return
+    lines = "\n".join(f"{n}\t{t}" for n, (_, _, t) in enumerate(holes))
+    prompt = f"""아래는 한국어 학습자가 말할 발화들이다. 모두 **무언가에 대한 대답**인데
+바로 앞에 올 상대의 말이 빠져 있다. 각 줄에 어울리는 **상대의 선행 발화**를 하나씩 지어라.
+
+- 상대는 {LV_KO.get(want_ai, "해요체")}.
+- 한 문장, 짧은 구어체. 국제 통용 표준 교육과정 중급(4급 이하) 어휘·문법.
+- 대답과 맞물려야 한다. 예) 대답 "네, 여기 신분증이요." → 앞말 "신분증 좀 보여 주시겠습니까?"
+
+번호\t학습자의 대답
+{lines}
+
+JSON만 출력: {{"cues":[{{"i":번호,"cue":"상대의 선행 발화"}}]}}"""
+    try:
+        data = await _gen_json(prompt, timeout_s=15.0)
+    except Exception as e:
+        print(f"[상황극] 앞말 채우기 실패: {e}")
+        return
+    if not isinstance(data, dict):
+        return
+    got = 0
+    for it in (data.get("cues") or []):
+        if not isinstance(it, dict):
+            continue
+        n = _clamp_int(it.get("i"), 0, len(holes) - 1, -1)
+        c = _clean_str(it.get("cue"), 90)
+        if n >= 0 and c:
+            si, ei, _ = holes[n]
+            plan["stages"][si]["expressions"][ei]["cue"] = c
+            got += 1
+    print(f"[상황극] 앞말 {got}/{len(holes)}개 채움 — 연속체가 살아난다")
 
 
 async def _fix_style(plan: dict, want_user: str, want_ai: str) -> None:
@@ -1247,7 +1401,9 @@ async def _fix_style(plan: dict, want_user: str, want_ai: str) -> None:
     bad = sorted(set(style_bad) | set(defer_bad))
     if not bad or len(bad) > 8:
         return
-    ko = {"polite": "존댓말(해요체, '-요/-습니다'로 끝남)", "banmal": "반말(해체, '-아/-어/-야'로 끝남)"}
+    ko = {"formal": "합쇼체('-습니다/-습니까?'로 끝남)",
+          "polite": "해요체('-아요/-어요'로 끝남)",
+          "banmal": "반말 해체('-아/-어/-야'로 끝남)"}
     lines = "\n".join(
         f"{i}\t{script[i]['text']}\t→ {ko[want_user if script[i]['speaker'] == 'user' else want_ai]}"
         + ("\t※ 이 사람은 윗사람이다. 아랫사람이 할 말(명심하겠습니다·죄송합니다 등)을 "
@@ -1539,36 +1695,36 @@ async def roleplay_setup(request: Request):
     # ── 말투(레지스터) 지시 ──
     # 학습자가 고른 말투와 페이더(친밀도 D·지위 P)를 대화문·표현에 그대로 반영한다.
     # 한 사람이 한 대화 안에서 반말과 존댓말을 섞으면 학습자가 배울 본이 되지 못한다.
+    # ★ 화계는 세 단계다 — 합쇼체 · 해요체 · 해체(v119).
+    #   화면이 「~습니다/습니까?로」라고 일러 준 자리에서 대화문이 해요체로 나오면,
+    #   학습자는 보는 말과 읽는 말이 다른 본보기를 받는다.
     if style == "polite":
         want_user = want_ai = "polite"
     elif style == "banmal":
         want_user = want_ai = "banmal"
     else:
-        # auto — 페이더로 정한다. 반말은 '가까운 사이'에서만 나오고,
-        # 지위(P)가 위아래를 갈라 비대칭(한쪽만 반말)을 만든다.
-        close = d_val >= 60
-        want_user = "banmal" if (close and p_val >= 45) else "polite"
-        want_ai = "banmal" if (close and p_val <= 55) else "polite"
-    _LV_KO = {"polite": "존댓말(해요체)", "banmal": "반말(해체)"}
+        want_user = _speech_of(d_val, p_val)
+        want_ai = _partner_speech_of(d_val, p_val)
     if style == "polite":
-        style_line = (f"두 사람 모두 **존댓말(해요체/합쇼체)** 로 말한다. "
+        style_line = (f"두 사람 모두 **해요체 존댓말**로 말한다. "
                       f"{ai_role or '상대'}도 반말을 쓰지 않는다.")
     elif style == "banmal":
         style_line = ("두 사람 모두 **반말(해체)** 로 말한다. "
                       "'-요'로 끝나는 존댓말을 쓰지 않는다.")
     else:
         # auto — 페이더 좌표로 관계를 읽는다. D 높으면 가깝고, P 높으면 학습자가 윗사람.
-        close = "가까운 사이" if d_val >= 60 else ("서먹한 사이" if d_val <= 30 else "보통 사이")
+        close = "가까운 사이" if d_val >= 60 else ("서먹한 사이" if d_val <= 35 else "보통 사이")
         rank = ("학습자가 윗사람" if p_val >= 65 else
                 "학습자가 아랫사람" if p_val <= 35 else "둘이 대등")
         style_line = (
             f"두 사람의 관계는 **{close}**이고 **{rank}**이다(친밀도 {d_val}, 지위 {p_val}).\n"
-            f"   이 관계에 맞는 말투를 **각 화자마다 하나로 정해** 대화문과 표현 전체에 똑같이 써라.\n"
-            f"   윗사람이 아랫사람에게 반말을 쓰기로 했으면 끝까지 반말이고, "
-            f"아랫사람은 끝까지 존댓말이다. 중간에 바뀌면 안 된다.")
-    # 모델이 헷갈리지 않게 화자별 말투를 못 박아 준다 — 이것이 검증 기준이 된다
-    style_line += (f"\n   ▶ **{my_role or '학습자'}는 {_LV_KO[want_user]}만 쓴다.**"
-                   f"\n   ▶ **{ai_role or '상대'}는 {_LV_KO[want_ai]}만 쓴다.**")
+            f"   이 관계에서 쓸 화계를 아래에 못 박아 둔다. **한 화자는 처음부터 끝까지 하나만** 쓴다.")
+    # 모델이 헷갈리지 않게 화자별 화계를 못 박아 준다 — 이것이 검증 기준이 된다
+    style_line += (f"\n   ▶ **{my_role or '학습자'}는 {LV_KO[want_user]}.**"
+                   f"\n   ▶ **{ai_role or '상대'}는 {LV_KO[want_ai]}.**")
+    if "formal" in (want_user, want_ai):
+        style_line += ("\n   ▶ ★ 합쇼체를 맡은 쪽은 '-요'로 끝내지 마라. "
+                       "「오셨어요?」가 아니라 「오셨습니까?」, 「알겠어요」가 아니라 「알겠습니다」다.")
 
     native = LANG_NAMES.get(ui_lang, "")
     native_line = f"학습자의 모국어는 {native}다. 각 단계의 native 필드에 name의 {native} 번역을 넣어라." if native \
@@ -1613,6 +1769,11 @@ async def roleplay_setup(request: Request):
        · text   — 학습자가 말할 발화 (필수)
        · cue    — text 바로 앞에 올 상대({ai_role or '상대'})의 발화.
                   **학습자가 먼저 말을 여는 자리면 빈 문자열로 둔다.**
+                  ★★ 「네」「예」「아니요」「알겠습니다」로 시작하는 말,
+                     「여기 있습니다」처럼 무언가를 건네는 말은 **대답이다.**
+                     이런 말에 cue를 비워 두면 안 된다 — 그 말로 대화를 열 수는 없다.
+                     나쁜 예) text "네, 여기 신분증이요." / cue ""   ← 무엇에 대한 대답인가?
+                     좋은 예) text "네, 여기 신분증이요." / cue "신분증 좀 보여 주시겠습니까?"
        · follow — text 바로 뒤에 올 상대의 반응. **3항 연속체로 연습시킬 때만** 채우고,
                   두 마디로 끝나는 자리면 빈 문자열로 둔다.
 
@@ -1684,6 +1845,8 @@ JSON만 출력하라. 스키마:
         if bad:
             print(f"[상황극] 말투 어긋남 {len(bad)}줄 — 손질 시도")
             await _fix_style(plan, want_user, want_ai)
+        # 「먼저 말 걸어 보기」로 놓인 대답에 앞말을 채운다 — 연속체가 보여야 한다
+        await _fill_cues(plan, want_ai)
     if plan is None:
         raise HTTPException(status_code=502, detail=("plan_generation_failed | " + _fail_reason(data))[:250])
 
@@ -1699,7 +1862,7 @@ JSON만 출력하라. 스키마:
 _STYLE_RULES = {
     "polite": "말투: 존댓말(해요체) 고정. 아래 페이더 규칙과 충돌하면 이 말투 지시가 우선한다.",
     "banmal": "말투: 반말(해체) 고정. 아래 페이더 규칙과 충돌하면 이 말투 지시가 우선한다.",
-    "auto": "말투: 페이더 좌표(D/P)를 따른다.",
+    "auto": "",   # 페이더 좌표에서 계산한 화계를 아래에서 직접 넣는다
 }
 
 
@@ -1708,6 +1871,12 @@ def build_roleplay_prompt(d: int, p: int, ui_lang: str, user_name: str,
                           idc_levels: dict | None = None,
                           idc_counts: dict | None = None) -> str:
     base = build_system_prompt(d, p, ui_lang, user_name)
+    # 배역을 맡아도 화계는 페이더가 정한다 — 배역이 화계를 덮어쓰면 안내와 어긋난다
+    _mine, _yours = _speech_of(d, p), _partner_speech_of(d, p)
+    rp_speech_line = (f"★ 화계: **너({plan['ai_role']})는 {LV_KO[_yours]}.** "
+                      f"학습자는 {LV_SHORT[_mine]}로 말하도록 안내받고 있다. "
+                      + ("배역이 무엇이든 '-요'로 끝내지 마라. 「오셨어요?」가 아니라 「오셨습니까?」다."
+                         if _yours == "formal" else "끝까지 이 화계만 쓴다."))
     stages_txt = "\n".join(
         f"  {i + 1}. {s['name']} — {s['desc']}" for i, s in enumerate(plan["stages"]))
     rp_block = f"""
@@ -1727,7 +1896,7 @@ def build_roleplay_prompt(d: int, p: int, ui_lang: str, user_name: str,
 - [목소리 나이] 위 '목소리와 말투의 나이'(어린 아이 톤)는 자유 대화일 때 규칙이다.
   지금은 배역을 맡았으니 '{plan['ai_role']}'에게 어울리는 나이·말투로 말해라.
   배역이 어른이면 어른답게, 또래면 또래답게. 배역이 아이가 아닌데 아이 목소리를 흉내 내지 마라.
-{_STYLE_RULES.get(style, _STYLE_RULES['auto'])}
+{_STYLE_RULES.get(style) or rp_speech_line}
 
 [대화의 기능단계 — 네 머릿속 지도]
 {stages_txt}
@@ -3229,9 +3398,32 @@ async def _handle_session(websocket: WebSocket):
         try:
             await websocket.send_text(json.dumps({
                 "type": "intervene", "qid": qid, "el": el}))
-            print(f"[개입] {qid}({el}) — {turns}번째 차례 · 누적 {idc_state['intv_n']}회")
+            print(f"[개입] {qid}({el}) — {turns}번째 차례 · 누적 {idc_state['intv_n']}회"
+                  f" · 자리 {_stage_phase()}")
         except Exception as e:
             print(f"[개입] 전송 실패(무시): {e}")
+
+    def _stage_phase() -> str:
+        """대화가 지금 어디쯤인가 — "open" 시작 · "mid" 전개 · "close" 마무리.
+
+        서버는 이미 기능단계 충족을 세고 있다(rp_progress["done"]).
+        넛지가 그것을 **보게** 하는 것이 이 함수의 전부다.
+        자유 대화에는 과업이 없어 마무리가 없다 — 첫 두 차례만 시작으로 본다.
+        """
+        if not rp_plan:
+            # 자유 대화에는 과업이 없으니 단계도 없다. 막을 자리가 없으므로 늘 '전개'다.
+            # (첫 차례를 'open'으로 잡아 봤더니, 상대가 대뜸 무언가를 청해 온
+            #  자리에서 협상을 막아 버렸다 — 자유 대화에서는 그것이 옳은 자리다.)
+            return "mid"
+        total = rp_progress["total"] or len(rp_plan.get("stages") or [])
+        if not total:
+            return "mid"
+        done = len(rp_progress["done"])
+        if done == 0:
+            return "open"
+        if done >= total - 1 or rp_progress["percent"] >= 100:
+            return "close"
+        return "mid"
 
     def _fit_intervention() -> str:
         """지금 이 자리에 **맞는** 개입을 고른다.
@@ -3262,9 +3454,13 @@ async def _handle_session(websocket: WebSocket):
         me = [m["text"].strip() for m in convo if m["role"] == "user" and m["text"].strip()]
         last_me = me[-1] if me else ""
 
+        phase = _stage_phase()
+
         def ok(qid: str) -> bool:
             if qid in idc_state["intv_ids"] or qid in rp_progress["quests"]:
                 return False
+            if qid in PHASE_BAN.get(phase, ()):
+                return False        # 이 자리에서 할 말이 아니다
             q = next((x for x in QUEST_LLM if x["id"] == qid), None)
             if q is None:
                 return False
@@ -3320,9 +3516,19 @@ async def _handle_session(websocket: WebSocket):
         # 무언가를 청해 왔나 — 협상(거절·대안·조건)이 열리는 자리.
         # 끝의 마침표·느낌표까지 떼고 본다 — 「도와주세요.」가 마침표 하나 때문에 안 걸렸다.
         _tail = last_ai.rstrip().rstrip(".!~… ")
-        requested = _tail.endswith(("까요?", "실래요?", "시겠어요?", "주세요", "주시겠어요?",
-                                    "어때요?", "어떠세요?", "주실래요?", "주시겠습니까?",
-                                    "해 주세요", "부탁드려요", "부탁드립니다"))
+        # ★ v118까지 이 자리가 너무 넓었다. 「예약은 하셨을까요?」는 **묻는 말**인데
+        #   「~까요?」 하나로 청하는 말이 되어, 인사만 나눈 자리에서
+        #   「그럼 ~는 어떻겠습니까?」(대안 제시)가 튀어나왔다.
+        #   청하는 말은 **상대가 앞으로 할 일**을 두고 하는 말이다.
+        #   지난 일을 묻는 말(-았/-었/-였/-셨)은 청하는 말일 수 없다.
+        _past = bool(re.search(r"(았|었|였|셨)(을까요|나요|어요|습니까|습니다|는데요)?"
+                               r"\s*[?.!~…]*$", _tail))
+        _REQ_SURE = ("주세요", "주십시오", "주시겠어요?", "주시겠습니까?", "주실래요?",
+                     "부탁드려요", "부탁드립니다", "부탁해요", "부탁해")
+        _REQ_MAYBE = ("까요?", "실래요?", "시겠어요?", "시겠습니까?",
+                      "어때요?", "어떠세요?", "어떻습니까?")
+        requested = (_tail.endswith(_REQ_SURE)
+                     or (_tail.endswith(_REQ_MAYBE) and not _past))
         # 학습자가 이미 받아들였나 — 그러면 거절을 시킬 자리가 아니다.
         agreed_me = last_me.strip().rstrip(".!~ ") in (
             "네", "예", "응", "어", "좋아요", "좋아", "그래요", "그래", "알겠어요", "알겠습니다",
@@ -3728,8 +3934,20 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
                         f"- 지금 이 학습자에게 필요한 상호작용: {focus}")
                 extra = ("- 위 상호작용이 자연스럽게 실현되는 발화면 더 좋다. "
                          "다만 억지로 끼워 맞추지 말고, 흐름에 맞는 말을 우선하라.")
+            # ★ v118까지 도움말 프롬프트에는 화계가 **한 글자도** 없었다.
+            #   화면은 「~습니다/습니까?로 아주 공손하게」라 일러 주는데
+            #   도움말은 「네, 30분 정도는 괜찮아요」로 나왔다 — 학습자가 그대로 읽는다.
+            _mine = ("banmal" if rp_style == "banmal" else
+                     "polite" if rp_style == "polite" else _speech_of(d, p))
+            speech_line = (f"[★ 화계 — 반드시 지켜라]\n"
+                           f"학습자는 {LV_KO[_mine]}. 두 제안 모두 이 화계로 쓴다.\n"
+                           + ("★ 합쇼체다. '-요'로 끝내지 마라. "
+                              "「괜찮아요」가 아니라 「괜찮습니다」, "
+                              "「누구세요?」가 아니라 「누구십니까?」다.\n"
+                              if _mine == "formal" else ""))
             prompt = f"""{head}
 
+{speech_line}
 [최근 대화]
 {transcript}
 
@@ -3803,7 +4021,7 @@ JSON만 출력: {{"hints":["",""]}}"""
 기회 자체가 없었던 범주는 "mid"로 두고 why에 그 사실을 적어라.
 why는 학습자가 읽을 한 문장(30자 이내). 실제 발화를 근거로 칭찬하거나 다음에 해 볼 것을 말하라.
 ★ 읽는 사람은 한국어를 배우는 중급 학습자다. **다음 말은 절대 쓰지 마라** —
-  화행, 레지스터, 담화, 대화이동, 기능 단계, 의사소통 전략, 명료화, 구인, 발화 순서, 연속체.
+  화행, 레지스터, 담화, 대화이동, 기능 단계, 의사소통 전략, 명료화, 구인, 발화 순서, 연속체, 화계, 합쇼체, 해요체, 해체.
   대신 학습자가 바로 아는 말로 풀어 써라.
   예) "적절한 화행을 시작하지 못했습니다" → "먼저 말을 걸어 보면 좋겠어요"
       "레지스터를 선택하지 못했습니다"     → "상대에 맞는 높임말을 써 보세요"

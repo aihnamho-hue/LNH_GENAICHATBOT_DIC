@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """fittest.py — 넛지가 상황마다 다른 것을 고르는가 (v114)
    _fit_intervention 을 실제로 떼어 와 여러 대화 모양에 대고 돌려 본다."""
-import io, re, sys, textwrap
+import io, sys, re, sys, textwrap
 from collections import Counter
 
-SRC = "/sessions/great-dazzling-ramanujan/mnt/음성 대화형 챗봇/main.py"
+SRC = (sys.argv[1] if len(sys.argv) > 1 else "main.py")
 s = io.open(SRC, encoding="utf-8").read()
 
 QUEST_LLM = eval(re.search(r"QUEST_LLM = (\[.*?\n\])", s, re.S).group(1))
@@ -12,9 +12,15 @@ INTV_ANYTIME = eval(re.search(r"INTV_ANYTIME = (\[[^\]]*\])", s).group(1))
 IDC_LEVEL_MODEL = int(re.search(r"IDC_LEVEL_MODEL\s*=\s*(\d+)", s).group(1))
 IDC_LEVEL_SOLO  = int(re.search(r"IDC_LEVEL_SOLO\s*=\s*(\d+)", s).group(1))
 
-body = s[s.index("    def _fit_intervention() -> str:"):s.index("    def _intv_overdue() -> bool:")]
-src = "def make(convo, idc_state, rp_progress, scaf_level):\n" + textwrap.indent(body, "") + "\n    return _fit_intervention()\n"
-g = dict(re=re, QUEST_LLM=QUEST_LLM, INTV_ANYTIME=INTV_ANYTIME,
+# ★ v119부터 _fit_intervention 은 _stage_phase(대화의 자리)를 본다. 함께 떼어 온다.
+PHASE_BAN = {}
+exec(re.search(r"^PHASE_BAN = \{[\s\S]*?^\}", s, re.M).group(0), globals())
+body = s[s.index("    def _stage_phase() -> str:"):s.index("    def _intv_overdue() -> bool:")]
+src = ("def make(convo, idc_state, rp_progress, scaf_level, rp_plan=None):\n"
+       + textwrap.indent(body, "")
+       + "\n    _user_turns = lambda: len([m for m in convo if m['role'] == 'user'])"
+       + "\n    return _fit_intervention()\n")
+g = dict(re=re, QUEST_LLM=QUEST_LLM, INTV_ANYTIME=INTV_ANYTIME, PHASE_BAN=PHASE_BAN,
          IDC_LEVEL_MODEL=IDC_LEVEL_MODEL, IDC_LEVEL_SOLO=IDC_LEVEL_SOLO)
 exec(src, g)
 make = g["make"]

@@ -5,7 +5,9 @@
 서버를 띄우지 않고 함수만 떼어 실행해, 학습자가 겪을 결과를 직접 만들어 본다."""
 import re, io, sys, hashlib, base64, struct, asyncio, os, time
 
-ROOT = "/sessions/gifted-youthful-edison/mnt/음성 대화형 챗봇"
+# ★ 세션마다 바뀌는 절대경로를 박아 두면 다음 판에서 반드시 깨진다.
+#   인자로 받고, 없으면 이 파일이 있는 폴더를 본다.
+ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__))
 PY = io.open(f"{ROOT}/main.py", encoding="utf-8").read()
 HT = io.open(f"{ROOT}/app.html", encoding="utf-8").read()
 
@@ -285,11 +287,13 @@ ok("자유대화", "넛지 고르기 함수들이 rp_plan 을 안 본다",
                  "send_teach_intervention")))
 
 print("\n════════ ⑭ 맥락 판정을 실제로 돌려 본다 ════════")
-_src = re.search(r'    def _fit_intervention\(\).*?(?=\n    def _intv_overdue)', PY, re.S).group(0)
+_src = re.search(r'    def _stage_phase\(\).*?(?=\n    def _intv_overdue)', PY, re.S).group(0)
 _src = "\n".join(l[4:] if l.startswith("    ") else l for l in _src.split("\n"))
 _QL = [{"id": m.group(1), "el": m.group(2)}
        for m in re.finditer(r'\{"id":\s*"(\w+)",\s*"el":\s*"(\w+)"', PY)]
-def _fit(last_ai, turns, done=()):
+exec(re.search(r"^PHASE_BAN = \{[\s\S]*?^\}", PY, re.M).group(0), globals())
+def _fit(last_ai, turns, done=(), stages=0, stages_done=0, percent=0):
+    """stages=0 이면 자유 대화. stages>0 이면 주제 대화이고 stages_done 만큼 밟았다."""
     convo = []
     for t in turns[:-1]:
         convo += [{"role": "ai", "text": "네."}, {"role": "user", "text": t}]
@@ -297,24 +301,124 @@ def _fit(last_ai, turns, done=()):
     if turns: convo.append({"role": "user", "text": turns[-1]})
     exec(__import__("re").search(r"INTV_ANYTIME\s*=\s*[\s\S]*?\n(?=[A-Z_]+\s*=|\n)", PY).group(0), globals())
     _ns = {"re": __import__("re"), "scaf_level": 2, "INTV_ANYTIME": INTV_ANYTIME, "convo": convo, "QUEST_LLM": _QL,
+           "PHASE_BAN": PHASE_BAN, "_user_turns": lambda: len(turns),
+           "rp_plan": ({"stages": [{}] * stages} if stages else None),
            "idc_state": {"intv_ids": set(done), "levels": {}},
-           "rp_progress": {"quests": set()}, "IDC_LEVEL_MODEL": 3, "IDC_LEVEL_SOLO": 1}
+           "rp_progress": {"quests": set(), "total": stages,
+                           "done": set(range(stages_done)), "percent": percent},
+           "IDC_LEVEL_MODEL": 3, "IDC_LEVEL_SOLO": 1}
     exec(_src, _ns); return _ns["_fit_intervention"]()
 for label, ai, turns, want in [
     ("물어봤는데 짧게만 답한다", "주말에 뭐 했어요?", ["네", "그냥요"], ("qKeepTurn", "qExpand")),
-    ("상대가 길게 말했다", "저는 어제 친구랑 영화를 봤는데요, 그 영화가 정말 재미있었어요. 특히 마지막 장면이 인상 깊었어요.", ["아 그래요"], ("qParaphrase", "qEcho")),
+    # ★ 이 대사는 '길기만 한 말'이 아니라 **지난 일 이야기**다(-었어요 + 묻지 않음).
+    #   그러면 「천천히 말해 주세요」가 아니라 「그래서요?」·공감이 맞다.
+    #   v118까지 기대값이 길이만 보고 있었다 — 검사가 틀렸던 것이다.
+    ("지난 일을 길게 이야기했다", "저는 어제 친구랑 영화를 봤는데요, 그 영화가 정말 재미있었어요. 특히 마지막 장면이 인상 깊었어요.", ["아 그래요"], ("qContinuer", "qEmpathy", "qEcho")),
+    # 이야기가 아니라 **설명**이 길게 쏟아진 자리 — 여기가 「천천히」의 자리다
+    ("설명이 한꺼번에 길게 왔다", "환불 규정은 구입일로부터 칠 일 이내이고 영수증과 포장이 그대로 있어야 하며 온라인 주문은 절차가 조금 다릅니다", ["아 네"], ("qAskSlow", "qParaphrase", "qAskAgain", "qCheckUnd", "qAskEasy")),
     ("물어봤고 길게 답했다", "주말에 뭐 했어요?", ["저는 친구를 만나서 같이 밥을 먹고 영화를 봤어요"], ("qEndTurn", "qExpand")),
     ("상대가 말을 맺었다", "저는 곶감을 제일 좋아해요.", ["아 네 저도요 저는 떡볶이도 좋아해요"], ("qExpand", "qNewTopic", "qEndTurn")),
-    ("대화가 아직 없다", "", [], ("",)),
+    ("대화가 아직 없다", "", [], ("qInitiate",)),   # 먼저 말을 걸 자리다
 ]:
     g = _fit(ai, turns)
     ok("맥락", f"{label:22} → {g or '(없음)'}", g in want, g)
+
+print("\n──── ⑤ 청하는 말과 묻는 말을 가르는가 (v119) ────")
+# 「예약은 하셨을까요?」는 **지난 일을 묻는 말**이다. 청하는 말로 잘못 읽으면
+# 인사만 나눈 자리에서 「그럼 ~는 어떻겠습니까?」(대안 제시)가 튀어나온다.
+_neg = {"qAlt", "qCond", "qRefuse", "qCounter"}
+for label, ai in [("예약은 하셨을까요?", "예약은 하셨을까요?"),
+                  ("진료 보러 오셨어요?", "진료 보러 오셨어요?"),
+                  ("점심 드셨어요?", "점심 드셨어요?")]:
+    g = _fit(ai, ["네 왔어요"], stages=5, stages_done=2)
+    ok("청하는 말", f"{label:18} → 협상 안 열림 ({g})", g not in _neg, g)
+for label, ai in [("신분증 좀 주시겠어요?", "신분증 좀 주시겠어요?"),
+                  ("2시로 예약해 드릴까요?", "2시로 예약해 드릴까요?")]:
+    g = _fit(ai, ["음…"], stages=5, stages_done=2)
+    ok("청하는 말", f"{label:18} → 협상 열림 ({g})", g in _neg, g)
+
+print("\n──── ⑥ 대화의 자리를 아는가 (v119) ────")
+# 마무리 단계에서 새 화제를 꺼내라고 하면 대화가 되돌아간다
+_close = [_fit("네, 그럼 안녕히 가세요.", ["네 감사합니다"], stages=5, stages_done=4, percent=100),
+          _fit("더 궁금한 점 있으세요?", ["아니요 없어요"], stages=5, stages_done=5, percent=120),
+          _fit("정문으로 나가시면 돼요.", ["네 알겠습니다"], stages=4, stages_done=4, percent=100)]
+ok("자리", f"마무리에서 화제를 새로 벌이지 않는다 {_close}",
+   not (set(_close) & PHASE_BAN["close"]), _close)
+# 시작 단계에서 협상·화제 접기는 아직 열리지 않았다
+_open = [_fit("안녕하세요, 어떻게 오셨어요?", ["안녕하십니까"], stages=5, stages_done=0),
+         _fit("네, 무엇을 도와드릴까요?", ["저기요"], stages=5, stages_done=0)]
+ok("자리", f"시작에서 협상·화제 접기가 안 나온다 {_open}",
+   not (set(_open) & PHASE_BAN["open"]), _open)
+ok("자리", "전개에서는 막지 않는다", PHASE_BAN["mid"] == set())
+ok("자리", "자유 대화는 단계가 없으니 막지 않는다",
+   _fit("이거 좀 도와주세요.", ["음…"]) in {"qAlt", "qCond", "qRefuse", "qCounter"},
+   _fit("이거 좀 도와주세요.", ["음…"]))
+
 _g1 = _fit("주말에 뭐 했어요?", ["네", "그냥요"])
 _g2 = _fit("주말에 뭐 했어요?", ["네", "그냥요"], done=(_g1,))
 ok("맥락", "이미 띄운 것은 다시 안 고른다", _g2 and _g2 != _g1, f"{_g1} → {_g2}")
 
 
 # ═══════════════════════════════════════════════════════════
+print("\n════════ ⑯ 화계 — 서버와 화면이 같은 눈금인가 (v119) ════════")
+# 학습자가 화면에서 「~습니다/습니까?로」를 읽는데 호아랑·대화문·도움말이
+# 해요체로 나오면, 보는 말과 듣는 말이 어긋난다(v118까지 그랬다).
+# 두 벌의 식이 **한 칸도** 달라서는 안 된다. 50칸을 전부 대조한다.
+_sv = {"SPEECH_CLOSE": 60, "SPEECH_FAR": 35}
+for _f in ("_speech_of", "_partner_speech_of"):
+    exec(re.search(r"def " + _f + r"\(.*?\n(?=\n\n)", PY, re.S).group(0), _sv)
+def _jsrun(fn, d, p):
+    """화면 쪽 함수를 그대로 읽어 돌린다 — 두 줄짜리 조건식이라 옮길 수 있다."""
+    body = re.search(r"function " + fn + r"\(d, p\) \{(.*?)\n    \}", HT, re.S).group(1)
+    out = None
+    for ln in body.split("\n"):
+        ln = ln.split("//")[0].strip()
+        m = re.match(r"if \(d (>=|<=) (SPEECH_CLOSE|SPEECH_FAR)\)\s*return (.+);", ln)
+        if m:
+            lim = 60 if m.group(2) == "SPEECH_CLOSE" else 35
+            if (d >= lim if m.group(1) == ">=" else d <= lim):
+                mm = re.match(r"p (>=|<=) (\d+) \? (\d) : (\d)", m.group(3))
+                hit = (p >= int(mm.group(2))) if mm.group(1) == ">=" else (p <= int(mm.group(2)))
+                return int(mm.group(3)) if hit else int(mm.group(4))
+        m2 = re.match(r"return (\d);", ln)
+        if m2: out = int(m2.group(1))
+    return out
+_TIER = ["formal", "polite", "banmal"]
+_diff = []
+for d in (0, 25, 50, 75, 100):
+    for p in (0, 25, 50, 75, 100):
+        for pyf, jsf in (("_speech_of", "speechOf"), ("_partner_speech_of", "partnerSpeechOf")):
+            a, b = _sv[pyf](d, p), _TIER[_jsrun(jsf, d, p)]
+            if a != b: _diff.append(f"D{d}P{p} {jsf}: 서버 {a} / 화면 {b}")
+ok("화계", "서버와 화면이 50칸 모두 같다", not _diff, _diff[:4])
+ok("화계", "합쇼체·해요체·해체 세 단계가 다 나온다",
+   {_sv["_speech_of"](d, p) for d in range(0, 101, 5) for p in range(0, 101, 5)}
+   == {"formal", "polite", "banmal"})
+ok("화계", "도움말 프롬프트에 화계가 들어간다", "화계 — 반드시 지켜라" in PY)
+ok("화계", "상황극 프롬프트에 화계가 들어간다", "rp_speech_line" in PY)
+ok("화계", "자유 대화 프롬프트에 화계가 들어간다", "화계 — 아래 어떤 규칙보다 먼저다" in PY)
+ok("화계", "화면 안내가 어미 형태다(~습니다/습니까?)", "~습니다/습니까?" in HT)
+ok("화계", "「존댓말로 아주 공손하게」는 사라졌다", "존댓말로 아주 공손하게" not in HT)
+ok("화계", "합쇼체를 따로 판정한다", '"formal"' in PY and "습니까" in PY)
+
+print("\n════════ ⑰ 발화 연습 — 앞말 없는 대답 (v119) ════════")
+_cm = {}
+exec(re.search(r"_ANSWER_HEAD = .*?(?=\n\nasync def _fix_style)", PY, re.S).group(0), _cm)
+_plan = {"stages": [{"expressions": [
+    {"text": "네, 여기 신분증이요.", "cue": ""},
+    {"text": "저기요, 이거 얼마예요?", "cue": ""},
+    {"text": "알겠습니다.", "cue": ""},
+    {"text": "네, 좋아요.", "cue": "이걸로 하시겠어요?"},
+]}]}
+_holes = [t for _, _, t in _cm["_cue_missing"](_plan)]
+ok("연습", "「네, 여기 신분증이요.」는 대답이다 — 앞말을 채운다", "네, 여기 신분증이요." in _holes)
+ok("연습", "「알겠습니다.」도 대답이다", "알겠습니다." in _holes)
+ok("연습", "「저기요, 이거 얼마예요?」는 먼저 여는 말 — 건드리지 않는다",
+   "저기요, 이거 얼마예요?" not in _holes)
+ok("연습", "앞말이 이미 있으면 건드리지 않는다", len(_holes) == 2, _holes)
+ok("연습", "계획을 만든 뒤 앞말을 채운다", "await _fill_cues(plan, want_ai)" in PY)
+ok("연습", "계획 프롬프트가 「대답에 cue를 비우지 마라」고 못 박는다", "그 말로 대화를 열 수는 없다" in PY)
+
 print("\n════════ ⑮ 넛지가 0이 되는 길이 남았는가 (v107 최대 사고) ════════")
 _fade = re.search(r'IDC_FADE_AT = \{IDC_LEVEL_MODEL: (\d+), IDC_LEVEL_PROMPT: (\d+)\}', PY)
 _m, _p = int(_fade.group(1)), int(_fade.group(2))
@@ -326,7 +430,7 @@ ok("페이딩", "기기 누적을 한 번 비운다", 'idcCountsVer") !== "3"' i
 ok("페이딩", "접속 때 자율 개수를 로그로 남긴다", "자율 도달" in PY)
 
 # 여덟 요소가 모두 자율일 때 넛지가 나가는가 — 실제로 돌려 본다
-_src = re.search(r'    def _fit_intervention\(\).*?(?=\n    def _intv_overdue)', PY, re.S).group(0)
+_src = re.search(r'    def _stage_phase\(\).*?(?=\n    def _intv_overdue)', PY, re.S).group(0)
 _src = "\n".join(l[4:] if l.startswith("    ") else l for l in _src.split("\n"))
 _QL = [{"id": m.group(1), "el": m.group(2)}
        for m in re.finditer(r'\{"id":\s*"(\w+)",\s*"el":\s*"(\w+)"', PY)]
@@ -335,7 +439,8 @@ def _fit_solo(scaf):
     convo = [{"role": "ai", "text": "주말에 뭐 했어요?"}, {"role": "user", "text": "네"}]
     _ns = {"re": __import__("re"), "INTV_ANYTIME": INTV_ANYTIME, "convo": convo, "QUEST_LLM": _QL,
            "idc_state": {"intv_ids": set(), "levels": dict(_ALLSOLO)},
-           "rp_progress": {"quests": set()},
+           "rp_progress": {"quests": set(), "total": 0, "done": set(), "percent": 0},
+           "PHASE_BAN": PHASE_BAN, "_user_turns": lambda: 1, "rp_plan": None,
            "IDC_LEVEL_MODEL": 3, "IDC_LEVEL_SOLO": 1, "scaf_level": scaf}
     exec(_src, _ns); return _ns["_fit_intervention"]()
 ok("페이딩", "여덟 요소가 다 자율이어도 「많이」면 넛지가 나온다", bool(_fit_solo(3)), _fit_solo(3))
@@ -358,7 +463,9 @@ FILES = ["main.py", "app.html", "templates/index.html", "templates/app.html",
 for f in FILES:
     a, b = md5(f"{ROOT}/{f}"), md5(f"{ROOT}/깃헙에 올릴 파일/{f}")
     ok("배포", f"{f} 동기화", a is not None and a == b, f"{a} / {b}")
-gz = os.path.getsize(f"{ROOT}/깃헙에 올릴 파일/app.html.gz")
+_pub = f"{ROOT}/깃헙에 올릴 파일"
+# 배포 폴더가 없어도 검사가 죽지 않게 — 여기서 죽으면 뒤가 통째로 미검증이 된다
+gz = os.path.getsize(f"{_pub}/app.html.gz") if os.path.isfile(f"{_pub}/app.html.gz") else 0
 raw = os.path.getsize(f"{ROOT}/app.html")
 ok("배포", f"app.html.gz 최신 ({gz//1024}KB / 원본 {raw//1024}KB)", gz > 100_000)
 

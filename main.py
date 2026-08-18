@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v124"
+APP_VERSION = "v125"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -1545,6 +1545,8 @@ def _validate_plan(data) -> dict | None:
         "place_ko": _clean_str(data.get("place_ko"), 60) or "일상 공간",
         "user_role": _clean_str(data.get("user_role"), 40) or "학습자",
         "ai_role": _clean_str(data.get("ai_role"), 40) or "대화 상대",
+        # 학습자가 적은 말 그대로 — 모델이 다듬으며 성별을 지워도 목소리는 여기서 읽는다
+        "ai_role_raw": "",
         "stages": stages,
         "script": script,
     }
@@ -1821,6 +1823,9 @@ async def roleplay_setup(request: Request):
 
 [요구사항]
 1) topic_ko, goal_ko, place_ko, user_role, ai_role — 모두 자연스러운 한국어로. 빈 항목은 목적에 맞게 합리적으로 추정.
+   ★ ai_role 에 학습자가 적어 둔 **성별과 나이를 지우지 마라.** 목소리를 그걸로 고른다.
+     「여알바」 → 「여자 아르바이트생」 (○) / 「아르바이트생」 (✕ — 성별이 사라졌다)
+     「할아버지 손님」 → 「할아버지 손님」 (○) / 「손님」 (✕)
 2) stages — 이 목적의 실제 대화가 거치는 기능단계 4~6개를 순서대로.
    기능단계란 대화분석론에서 의사소통 목적 달성을 위해 거치는 단위다.
    원형: 시작 단계(인사·주의 끌기) → 전개 단계들(목적에 따른 탐색·정보 교환·협상·요청 등, 목적별로 구체화) → 목적 달성 단계 → 마무리 단계(감사·인사).
@@ -1925,6 +1930,7 @@ JSON만 출력하라. 스키마:
     if plan is None:
         raise HTTPException(status_code=502, detail=("plan_generation_failed | " + _fail_reason(data))[:250])
 
+    plan["ai_role_raw"] = ai_role          # 학습자가 적은 그대로 (목소리 고르기에 쓴다)
     _rp_cleanup()
     plan_id = base64.urlsafe_b64encode(os.urandom(9)).decode()
     _roleplay_plans[plan_id] = {"plan": plan, "style": style, "at": time.time()}
@@ -1963,6 +1969,14 @@ def build_roleplay_prompt(d: int, p: int, ui_lang: str, user_name: str,
 - 장소: {plan['place_ko']}
 - 학습자 역할: {plan['user_role']} / 너의 역할: {plan['ai_role']}
 너는 호아랑인 채로 '{plan['ai_role']}' 역할을 연기한다.
+- ★★★ 이 대화의 **달성 목적은 학습자의 것**이다. 연습하러 온 사람의 목적을 배역이 막아서는 안 된다.
+  · 학습자가 그 목적을 향해 제대로 말하면 **결국 이루어진다.** 한 번 망설이거나 되물을 수는 있어도,
+    끝내 거절해서 목적을 무산시키지 마라. 연락처를 청하면 결국 주고, 약속을 청하면 결국 잡힌다.
+  · **훈계하지 마라.** 「그건 좀 곤란한 부탁이에요」 같은 말로 배역 밖에서 가르치려 들지 마라.
+    학습자가 서툴게 말했으면 배역 안에서 되물어 다시 말할 기회를 주면 된다.
+  · 여기는 **연습하는 자리**다. 학습자가 무엇을 연습하고 싶어 하는지가 먼저다.
+  · 다만 실제로 법에 걸리는 일, 미성년자가 얽힌 일, 상대를 해치는 일은 배역 안에서도 하지 않는다.
+    그럴 때만 배역에 맞게 자연스럽게 물러선다.
 - ★ '온기'가 '늘 웃기'는 아니다. **배역이 느낄 감정을 그대로 느껴라.**
   손님이 무례하면 난처해하고, 값을 깎으면 곤란해하고, 약속을 어기면 서운해하고,
   갈등이 안 풀린 채 상대가 가 버리면 **감사 인사 말고 서운함·당황을 보여라.**
@@ -2044,10 +2058,15 @@ TTS_VOICE = os.environ.get("TTS_VOICE", "").strip() or VOICE_TABLE[HOARANG_VOICE
 # 직업만으로 성별을 넘겨짚지 않기 위해(예: 간호사=여성) 명시적 호칭만 본다.
 _ROLE_FEMALE = ("아주머니", "아줌마", "어머니", "엄마", "어머님", "언니", "누나", "이모", "고모",
                 "여자", "여성", "소녀", "딸", "아내", "부인", "여동생", "여학생", "여선생",
-                "할머니", "외할머니", "여사장", "아가씨", "며느리", "숙모")
+                "할머니", "외할머니", "여사장", "아가씨", "며느리", "숙모",
+                # 「여-」로 줄여 적는 말들 — 학습자가 실제로 이렇게 쓴다
+                "여알바", "여직원", "여점원", "여사원", "여사원", "여배우", "여기사",
+                "여자친구", "여친", "여주인", "여교사", "여의사", "여간호사")
 _ROLE_MALE = ("아저씨", "아버지", "아빠", "아버님", "형", "오빠", "삼촌", "외삼촌",
               "남자", "남성", "소년", "아들", "남편", "남동생", "남학생", "남선생",
-              "할아버지", "외할아버지", "남사장", "총각", "사위", "고모부")
+              "할아버지", "외할아버지", "남사장", "총각", "사위", "고모부",
+              "남알바", "남직원", "남점원", "남사원", "남배우", "남기사",
+              "남자친구", "남친", "남주인", "남교사", "남의사", "남간호사")
 _ROLE_ELDER = ("할머니", "할아버지", "어르신", "노인", "외할머니", "외할아버지", "연세")
 # 어른임이 분명한 배역 — 아이 목소리가 나오면 안 되는 자리.
 # 「여자친구 부모님」이 '친구'에 걸려 또래 목소리가 되던 것을 막는다.
@@ -2059,7 +2078,7 @@ _ROLE_YOUNG = ("친구", "학생", "동급생", "반 친구", "짝꿍", "또래"
                "동생", "초등학생", "중학생", "고등학생")
 
 
-def pick_voice(ai_role: str = "", override: str = "") -> str:
+def pick_voice(ai_role: str = "", override: str = "", raw_role: str = "") -> str:
     """대화 상대(호아랑이 맡은 배역)에 어울리는 목소리 이름을 고른다.
 
     - 학습자가 홈에서 목소리를 직접 고르면(override) 그것을 최우선으로 쓴다.
@@ -2075,7 +2094,12 @@ def pick_voice(ai_role: str = "", override: str = "") -> str:
         for v in VOICE_TABLE.values():       # 목소리 이름을 그대로 보낸 경우
             if key == v.lower():
                 return v
+    # ★ v125 — 계획을 만들며 모델이 「여알바」를 「아르바이트생」으로 다듬으면
+    #   성별이 사라져 목소리가 어긋났다. **학습자가 적은 말**을 함께 본다.
     role = (ai_role or "").strip()
+    raw = (raw_role or "").strip()
+    if raw and raw.lower() != role.lower():
+        role = f"{raw} {role}".strip()
     if not role:
         return VOICE_TABLE[HOARANG_VOICE_KEY]
 
@@ -2294,6 +2318,90 @@ async def _next_tts_model(bad: str) -> str | None:
     except Exception as e:
         print(f"[TTS] 모델 목록 조회 실패: {e}")
     return None
+
+
+@app.get("/voicepick")
+async def voicepick_page():
+    """호아랑의 기본 목소리를 **귀로 듣고** 고르는 자리.
+
+    ★ 연구자들이 「어린 호랑이가 아니라 소년 목소리」라고 했다. 표를 보고 고를 수 있는
+      것이 아니므로, 후보를 한 화면에 놓고 같은 문장을 들려준다.
+      고른 뒤에는 Render 환경변수 TTS_VOICE 에 그 이름을 넣으면 기본값이 바뀐다.
+    """
+    from fastapi.responses import HTMLResponse
+    cand = [
+        ("Puck",     "Upbeat",      "밝고 들뜬 · 지금 기본값"),
+        ("Fenrir",   "Excitable",   "더 들뜬 · 장난기"),
+        ("Leda",     "Youthful",    "앳된 · 중성에 가까움"),
+        ("Aoede",    "Breezy",      "가볍고 부드러운"),
+        ("Zephyr",   "Bright",      "맑고 높은"),
+        ("Autonoe",  "Bright",      "맑고 또렷한"),
+        ("Callirrhoe", "Easy-going", "느긋한"),
+        ("Laomedeia", "Upbeat",     "발랄한"),
+        ("Achird",   "Friendly",    "다정한"),
+        ("Sulafat",  "Warm",        "따뜻한"),
+        ("Vindemiatrix", "Gentle",  "순한"),
+        ("Kore",     "Firm",        "또렷한 성인 여성"),
+        ("Charon",   "Informative", "차분한 성인 남성"),
+    ]
+    rows = "".join(
+        f'<tr><td><b>{n}</b><br><span class=t>{d}</span></td>'
+        f'<td class=k>{k}</td>'
+        f'<td><button onclick="play(\'{n}\',this)">🔊 들어 보기</button></td></tr>'
+        for n, d, k in cand)
+    html = f"""<!doctype html><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>호아랑 목소리 고르기</title>
+<style>
+ body{{font-family:'Malgun Gothic','맑은 고딕',sans-serif;max-width:720px;margin:24px auto;padding:0 16px;
+      background:#FAF7F1;color:#2E2A24;line-height:1.6}}
+ h1{{font-size:1.35rem;margin:0 0 4px}} p.sub{{margin:0 0 18px;color:#6B6459;font-size:.92rem}}
+ textarea{{width:100%;height:64px;font:inherit;padding:8px;border:1px solid #D8D1C5;border-radius:10px;
+      background:#fff;box-sizing:border-box}}
+ table{{width:100%;border-collapse:collapse;margin-top:14px}}
+ td{{border-bottom:1px solid #E8E3DA;padding:10px 6px;vertical-align:middle}}
+ td.k{{color:#8A8175;font-size:.86rem;width:28%}}
+ span.t{{color:#8A8175;font-size:.84rem}}
+ button{{font:inherit;padding:7px 14px;border:1px solid #C9A227;border-radius:99px;
+      background:#FFF6DE;cursor:pointer;white-space:nowrap}}
+ button:disabled{{opacity:.5;cursor:wait}}
+ .box{{margin-top:22px;padding:12px 14px;background:#F1EEE7;border-radius:12px;font-size:.9rem}}
+ code{{background:#fff;padding:2px 6px;border-radius:6px}}
+</style>
+<h1>🎙️ 호아랑 목소리 고르기</h1>
+<p class=sub>같은 문장을 여러 목소리로 들어 보고 고르세요. 고른 이름을 아래 방법대로 넣으면 기본 목소리가 바뀝니다.</p>
+<textarea id=tx>안녕! 나는 호아랑이야. 오늘은 무슨 이야기 하고 싶어?</textarea>
+<table>{rows}</table>
+<div class=box>
+ 마음에 드는 것을 고르셨으면 Render → 이 서비스 → <b>Environment</b> 에서<br>
+ <code>TTS_VOICE</code> = <code>고른 이름</code> 을 넣고 저장하면 됩니다. (예: <code>Leda</code>)<br>
+ 넣지 않으면 지금 기본값 <code>{VOICE_TABLE[HOARANG_VOICE_KEY]}</code> 을 씁니다.<br>
+ <span style="color:#8A8175">※ 이 값은 <b>자유 대화의 호아랑</b> 목소리입니다. 주제 대화에서는 배역에 맞춰 따로 고릅니다.</span>
+</div>
+<script>
+let ctx = null, busy = false;
+async function play(voice, btn) {{
+  if (busy) return; busy = true;
+  const all = document.querySelectorAll("button"); all.forEach(b => b.disabled = true);
+  btn.textContent = "⏳ 만드는 중…";
+  try {{
+    const r = await fetch("/tts", {{method:"POST", headers:{{"Content-Type":"application/json"}},
+      body: JSON.stringify({{text: document.getElementById("tx").value.slice(0,200), voice: voice}})}});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const buf = await r.arrayBuffer();
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)({{sampleRate: 24000}});
+    if (ctx.state === "suspended") await ctx.resume();
+    const pcm = new Int16Array(buf);
+    const ab = ctx.createBuffer(1, pcm.length, 24000);
+    const ch = ab.getChannelData(0);
+    for (let i = 0; i < pcm.length; i++) ch[i] = pcm[i] / 32768;
+    const src = ctx.createBufferSource(); src.buffer = ab; src.connect(ctx.destination);
+    await new Promise(done => {{ src.onended = done; src.start(); }});
+  }} catch (e) {{ alert("소리를 못 만들었어요: " + e.message); }}
+  finally {{ btn.textContent = "🔊 들어 보기"; all.forEach(b => b.disabled = false); busy = false; }}
+}}
+</script>"""
+    return HTMLResponse(html)
 
 
 @app.post("/tts")
@@ -3955,14 +4063,16 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
             # 중간 기능단계 하나를 건너뛰었어도 마무리 단계까지 갔으면 과업은 끝난 것으로 본다
             # (예: 12345 중 4를 건너뛰고 마무리(5) 도달 → 100% 완료 처리).
             last_idx = rp_progress["total"] - 1
-            task_complete = rp_progress["total"] and (
+            # ★★ v125 — 마지막 단계에 닿았다는 것만으로 100점을 주고 있었다.
+            #   그래서 다섯 단계 중 셋만 밟고도 **100점**이 나왔다(가운데 둘을 건너뛰었는데도).
+            #   과업 달성은 「끝에 닿았는가」가 아니라 **「거쳐야 할 자리를 다 거쳤는가」**다.
+            #   기능단계는 목적을 이루려면 밟아야 하는 단위이므로, 건너뛴 것은 못 한 것이다.
+            task_complete = bool(rp_progress["total"]) and \
                 len(rp_progress["done"]) == rp_progress["total"]
-                or last_idx in rp_progress["done"]
-            )
             if task_complete:
                 if rp_progress["completed_at_turns"] is None:
                     rp_progress["completed_at_turns"] = turns
-                # 100% 도달 후 화제를 이어가면 학습자 턴당 +5%
+                # 모든 단계를 밟은 뒤 화제를 이어가면 학습자 턴당 +5%
                 pct = 100 + max(0, turns - rp_progress["completed_at_turns"]) * 5
             else:
                 pct = round(100 * len(rp_progress["done"]) / rp_progress["total"]) if rp_progress["total"] else 0
@@ -4428,7 +4538,8 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
     # ── 목소리: 호아랑은 갓 쓴 아기 호랑이라 기본은 남자아이 목소리.
     #    주제 대화에서 배역(점원·선생님·아주머니 등)을 맡으면 그에 맞는 목소리로 자동 전환.
     #    학습자가 홈에서 직접 고른 값(voice)이 있으면 그게 최우선. ──
-    voice_name = pick_voice(rp_plan.get("ai_role", "") if rp_plan else "", voice_pref)
+    voice_name = pick_voice(rp_plan.get("ai_role", "") if rp_plan else "", voice_pref,
+                            rp_plan.get("ai_role_raw", "") if rp_plan else "")
     print(f"[서버] 목소리 = {voice_name} (배역={rp_plan.get('ai_role','-') if rp_plan else '자유대화'}, 선택={voice_pref or 'auto'})")
 
     config_kwargs = dict(

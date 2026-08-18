@@ -492,6 +492,47 @@ ok("도움말", "빈손이면 화면이 미리 쓴 문형으로 메운다",
    "scfLastQid" in HT and "questForm(scfLastQid)" in HT)
 ok("도움말", "서버가 qid 를 함께 보낸다", '"qid": (_q or {}).get("id", "")' in PY)
 
+print("\n════════ ㉒ 점수·태도·목소리 (v125) ════════")
+# ★ 다섯 단계 중 셋만 밟고도 100점이 나왔다. 마지막 단계에 닿았다는 것만으로
+#   과업 달성으로 쳤기 때문이다. 기능단계는 **거쳐야 하는 자리**이므로 건너뛴 것은 못 한 것이다.
+ok("점수", "모든 단계를 밟아야 과업 달성이다",
+   'len(rp_progress["done"]) == rp_progress["total"]' in PY
+   and "or last_idx in rp_progress[\"done\"]" not in PY)
+ok("점수", "그 전에는 밟은 만큼만 준다", "pct = round(100 * len(rp_progress[\"done\"]) / rp_progress[\"total\"])" in PY)
+ok("결과", "상호작용 대화 능력 글씨를 키웠다",
+   ".idc-name { font-size: 15.5px" in HT and ".idc-why { font-size: 13px" in HT)
+
+ok("태도", "배역이 학습자의 목적을 막지 않는다", "달성 목적은 학습자의 것" in PY and "끝내 거절해서 목적을 무산시키지 마라" in PY)
+ok("태도", "배역 밖에서 훈계하지 않는다", "훈계하지 마라" in PY)
+ok("태도", "그래도 지킬 선은 남겨 둔다", "미성년자가 얽힌 일" in PY)
+
+print("\n──── 목소리 ────")
+ok("목소리", "학습자가 적은 배역을 그대로 보관한다", '"ai_role_raw"' in PY and 'plan["ai_role_raw"] = ai_role' in PY)
+ok("목소리", "목소리를 고를 때 그 원문도 본다", "def pick_voice(ai_role: str = \"\", override: str = \"\", raw_role: str = \"\")" in PY)
+ok("목소리", "계획이 성별을 지우지 않게 못 박는다", "성별과 나이를 지우지 마라" in PY)
+ok("목소리", "「여알바」류를 알아본다", '"여알바"' in PY and '"남알바"' in PY)
+_pv = {"re": re, "hashlib": __import__("hashlib")}
+for _n in ("_ROLE_FEMALE", "_ROLE_MALE", "_ROLE_ELDER", "_ROLE_ADULT", "_ROLE_YOUNG",
+           "VOICE_TABLE", "HOARANG_VOICE_KEY"):
+    _m = re.search(r"^" + _n + r" = .*?\n(?=[A-Z_#\n])", PY, re.S | re.M)
+    if _m: exec(_m.group(0), _pv)
+exec(re.search(r"def pick_voice\(.*?\n(?=\n\n)", PY, re.S).group(0), _pv)
+_f = _pv["pick_voice"]
+ok("목소리", "「여알바」→ 여성 (모델이 「아르바이트생」으로 다듬어도)",
+   _f("아르바이트생", "", "여알바") == _pv["VOICE_TABLE"]["woman"], _f("아르바이트생", "", "여알바"))
+ok("목소리", "「할아버지 손님」→ 어르신 남성",
+   _f("할아버지 손님", "", "할아버지 손님") == _pv["VOICE_TABLE"]["elder_m"])
+ok("목소리", "학습자가 고른 것이 배역을 이긴다",
+   _f("여자 아르바이트생", "boy", "여알바") == _pv["VOICE_TABLE"]["boy"])
+
+ok("고르기", "성별을 먼저, 나이를 그다음", "VOICE_SEX" in HT and "VOICE_AGE" in HT and "VOICE_MAP" in HT)
+ok("고르기", "자동·남성·여성 셋", HT.count('key: "auto", emoji') == 1 and '{ key: "m",' in HT and '{ key: "f",' in HT)
+ok("고르기", "아이·성인·어르신 셋", all(f'key: "{k}"' in HT for k in ("young", "adult", "elder")))
+ok("고르기", "여섯 짝이 서버 열쇠와 맞는다",
+   all(v in PY for v in ("boy", "girl", "man", "woman", "elder_m", "elder_f")))
+ok("고르기", "자동이면 나이를 묻지 않는다", 'if (sex === "auto") return;' in HT)
+ok("페이지", "/voicepick 으로 귀로 듣고 고른다", '@app.get("/voicepick")' in PY and "TTS_VOICE" in PY)
+
 print("\n════════ ㉑ 없는 이름이 있는가 (v124) ════════")
 # ★★ v122에서 send_hints 안에 `native` 를 썼는데 그 스코프에는 그런 이름이 없었다.
 #   그 자리는 예외를 삼키는 try 안이라, **두 판 내내 도움말이 한 번도 안 만들어졌는데도**

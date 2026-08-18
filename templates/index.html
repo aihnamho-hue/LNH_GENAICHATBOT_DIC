@@ -582,6 +582,20 @@
 
         /* ── 목소리 선택 ── */
         .voice-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; text-align: left; }
+        /* ── 목소리 고르기 두 걸음 (v125) ── */
+        .vp-cap { font-size: 12.5px; font-weight: 800; color: var(--muted); margin: 10px 2px 6px; }
+        .vp-cap:first-child { margin-top: 0; }
+        .vp-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .vp-chip { position: relative; display: flex; flex-direction: column; align-items: center;
+                   gap: 3px; padding: 12px 4px 10px; border-radius: 14px; cursor: pointer;
+                   border: 1.5px solid var(--sand); background: #fff; font-family: inherit; }
+        .vp-chip:hover { border-color: var(--accent-ink); }
+        .vp-chip.on { border-color: var(--accent-ink); background: var(--accent-soft); border-width: 2px; }
+        .vp-emo { font-size: 24px; line-height: 1; }
+        .vp-lb { font-size: 12.5px; font-weight: 800; color: var(--ink); text-align: center; }
+        .vp-play { position: absolute; top: 4px; right: 5px; font-size: 13px; opacity: .65; }
+        .vp-play:hover { opacity: 1; }
+        .vp-note { font-size: 11.5px; font-weight: 600; color: var(--muted); margin: 7px 2px 0; line-height: 1.45; }
         .voice-item { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--navy-soft);
             border-radius: 13px; padding: 10px 12px; background: #fff; cursor: pointer; transition: border-color .15s, background .15s; }
         .voice-item:hover { border-color: var(--accent-ink); }
@@ -760,22 +774,24 @@
         @media (prefers-reduced-motion: reduce) { .lang-box.more::after { animation: none; } }
         .idc-head { display: flex; align-items: baseline; gap: 6px; margin: 4px 0 8px; text-align: left; }
         .idc-head .idc-h-title { font-size: 13px; font-weight: 900; color: var(--accent-ink); }
-        .idc-head .idc-h-sub { font-size: 11px; font-weight: 700; color: var(--muted); }
+        .idc-head .idc-h-sub { font-size: 13px; font-weight: 700; color: var(--muted); }
         .idc-list { text-align: left; display: flex; flex-direction: column; gap: 6px; margin: 0 0 10px; }
-        .idc-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 9px; border-radius: 12px;
+        .idc-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 12px;
                    background: #F7F4EC; border: 1px solid #E7E0D2; }
         .idc-row.na { background: #F3F1EE; border-style: dashed; opacity: 0.75; }
-        .idc-grade { flex: none; width: 34px; text-align: center; font-size: 11px; font-weight: 900;
-                     border-radius: 8px; padding: 3px 0; color: #fff; }
+        /* ★ v125 — 예전에 「점수를 키워 달라」고 하신 것은 점수 칸이 아니라
+           **여기, 상호작용 대화 능력** 부분이었다. 결과에서 가장 오래 읽는 자리다. */
+        .idc-grade { flex: none; width: 42px; text-align: center; font-size: 14px; font-weight: 900;
+                     border-radius: 9px; padding: 5px 0; color: #fff; }
         .idc-grade.hi { background: #58CC02; }
         .idc-grade.mid { background: #E6A700; }
         .idc-grade.lo { background: #C9A79A; }
         .idc-grade.na { background: #CFC7BA; }
         .idc-body { min-width: 0; }
-        .idc-name { font-size: 12px; font-weight: 800; color: var(--ink); }
-        .idc-why { font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 2px; line-height: 1.35; }
-        .idc-note { font-size: 10.5px; font-weight: 600; color: var(--muted); text-align: left;
-                    margin: 0 0 12px; line-height: 1.4; }
+        .idc-name { font-size: 15.5px; font-weight: 800; color: var(--ink); letter-spacing: -.01em; }
+        .idc-why { font-size: 13px; font-weight: 600; color: var(--muted); margin-top: 3px; line-height: 1.45; }
+        .idc-note { font-size: 12px; font-weight: 600; color: var(--muted); text-align: left;
+                    margin: 0 0 12px; line-height: 1.5; }
 
         /* ── 주제 자동 추천 (예) 표시 + 🎲 목적 재추첨 ── */
         /* 📷 교재 사진으로 채우기 */
@@ -2209,7 +2225,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v124 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v125 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -4417,10 +4433,10 @@
        맞춰 두었으므로(1.5dB 안쪽) 어느 곡이 걸려도 음량이 튀지 않는다.
        ?v= 는 파일이 바뀌었을 때 기기에 남은 옛 파일을 흘려보내기 위한 것. */
     const HOME_BGM = [
-        "/static/bgm_hanok.mp3?v=124",    // 한옥 (원래 쓰던 곡)
-        "/static/bgm_danhwa.mp3?v=124",   // 단화
-        "/static/bgm_bird.mp3?v=124",     // 휘파람새
-        "/static/bgm_spring.mp3?v=124",   // 싱그러운 봄 아침
+        "/static/bgm_hanok.mp3?v=125",    // 한옥 (원래 쓰던 곡)
+        "/static/bgm_danhwa.mp3?v=125",   // 단화
+        "/static/bgm_bird.mp3?v=125",     // 휘파람새
+        "/static/bgm_spring.mp3?v=125",   // 싱그러운 봄 아침
     ];
     if (bgm && !bgm.getAttribute("src")) {
         bgm.setAttribute("src", HOME_BGM[Math.floor(Math.random() * HOME_BGM.length)]);
@@ -7202,46 +7218,124 @@
        호아랑은 갓 쓴 아기 호랑이라 기본 목소리는 남자아이(서버 Puck).
        주제 대화에서는 호아랑이 맡은 배역에 맞춰 서버가 알아서 목소리를 고른다(auto).
        학습자가 여기서 직접 고르면 그 값이 항상 우선한다. */
-    const VOICE_KEYS = ["boy", "girl", "man", "woman", "elder_f"];
+    /* ★★ v125 — 목소리 고르기를 두 걸음으로 바꿨다.
+       ① 성별 — 배역에 맞춰 자동(기본) · 남성 · 여성
+       ② 나이 — 아이 · 성인 · 어르신   (성별을 고른 뒤에만 보인다)
+       예전에는 다섯 개가 한 줄로 늘어서 있어 무엇을 고르는 것인지 알기 어려웠다.
+       '자동'은 주제 대화의 배역(「여자 아르바이트생」)에서 성별·나이를 읽어 정한다. */
+    /* 새 열쇠 여섯. 18개 언어 표를 다 건드리는 대신 여기 모아 둔다
+       (없는 언어는 영어로 떨어진다 — t() 와 같은 규칙). */
+    const VP_TXT = {
+        ko: { s1:"① 누구의 목소리로?", s2:"② 나이는?",
+              sex:["배역에 맞춰 자동", "남성", "여성"], age:["아이", "성인", "어르신"],
+              autoD:"주제 대화에서 정한 배역(예: 여자 아르바이트생)에 맞춰 알아서 골라요." },
+        en: { s1:"① Whose voice?", s2:"② How old?",
+              sex:["Auto (match the role)", "Male", "Female"], age:["Child", "Adult", "Elder"],
+              autoD:"Picks automatically from the role you set in Topic Practice." },
+        zh: { s1:"① 谁的声音？", s2:"② 年龄？", sex:["自动（配合角色）","男性","女性"], age:["孩子","成人","长者"],
+              autoD:"根据主题对话中设定的角色自动选择。" },
+        ja: { s1:"① 誰の声で？", s2:"② 年齢は？", sex:["自動（役に合わせる）","男性","女性"], age:["子ども","大人","お年寄り"],
+              autoD:"テーマ会話で決めた役に合わせて選びます。" },
+        vi: { s1:"① Giọng của ai?", s2:"② Bao nhiêu tuổi?", sex:["Tự động (theo vai)","Nam","Nữ"], age:["Trẻ em","Người lớn","Người cao tuổi"],
+              autoD:"Tự chọn theo vai bạn đặt trong Hội thoại chủ đề." },
+        ru: { s1:"① Чей голос?", s2:"② Возраст?", sex:["Авто (по роли)","Мужской","Женский"], age:["Ребёнок","Взрослый","Пожилой"],
+              autoD:"Выбирается по роли, заданной в тематическом диалоге." },
+        es: { s1:"① ¿Qué voz?", s2:"② ¿Qué edad?", sex:["Auto (según el rol)","Masculina","Femenina"], age:["Niño","Adulto","Mayor"],
+              autoD:"Se elige según el rol que definas en la Práctica por Tema." },
+    };
+    function vpT(k) { const o = VP_TXT[uiLang] || VP_TXT.en; return o[k]; }
+    const VOICE_SEX = [
+        { key: "auto", emoji: "✨" },
+        { key: "m",    emoji: "👨" },
+        { key: "f",    emoji: "👩" },
+    ];
+    const VOICE_AGE = [
+        { key: "young", emoji: "🧒" },
+        { key: "adult", emoji: "🧑" },
+        { key: "elder", emoji: "🧓" },
+    ];
+    // 성별 × 나이 → 서버의 목소리 열쇠
+    const VOICE_MAP = {
+        "m:young": "boy",  "m:adult": "man",   "m:elder": "elder_m",
+        "f:young": "girl", "f:adult": "woman", "f:elder": "elder_f",
+    };
+    function voiceSexOf(pref) {
+        if (!pref || pref === "auto") return "auto";
+        for (const k in VOICE_MAP) if (VOICE_MAP[k] === pref) return k.split(":")[0];
+        return "auto";
+    }
+    function voiceAgeOf(pref) {
+        for (const k in VOICE_MAP) if (VOICE_MAP[k] === pref) return k.split(":")[1];
+        return "adult";
+    }
+    const VOICE_KEYS = ["boy", "girl", "man", "woman", "elder_f"];   // 옛 값 읽기용
     const VOICE_EMOJI = ["🧒", "👧", "🧑", "👩", "🧓"];
     let voicePref = localStorage.getItem("voicePref") || "boy";   // 기본 = 밝은 남자아이(호아랑 본래 목소리)
     let voiceBusy = false;
 
+    /* 두 걸음으로 고른다 — ① 성별  ② 나이(성별을 고른 뒤에만) */
     function renderVoiceList() {
         const box = document.getElementById("voiceList");
         if (!box) return;
-        const names = t("vcN") || [], descs = t("vcD") || [];
-        const rows = [{ key: "auto", emoji: "✨", name: t("vcAuto"), desc: t("vcAutoD") }];
-        VOICE_KEYS.forEach((k, i) => rows.push({ key: k, emoji: VOICE_EMOJI[i], name: names[i] || k, desc: descs[i] || "" }));
+        const sexN = vpT("sex"), ageN = vpT("age");
+        const sex = voiceSexOf(voicePref);
+        const age = voiceAgeOf(voicePref);
         box.innerHTML = "";
-        rows.forEach((r) => {
-            const item = document.createElement("div");
-            item.className = "voice-item" + (voicePref === r.key ? " on" : "");
-            item.innerHTML = '<span class="vi-emoji"></span>'
-                + '<span class="vi-txt"><span class="vi-name"></span><span class="vi-desc"></span></span>';
-            item.querySelector(".vi-emoji").textContent = r.emoji;
-            item.querySelector(".vi-name").textContent = r.name;
-            item.querySelector(".vi-desc").textContent = r.desc;
-            item.addEventListener("click", () => {
-                voicePref = r.key;
+
+        const line = (cls) => { const d = document.createElement("div"); d.className = cls; return d; };
+        const cap = (txt) => { const d = line("vp-cap"); d.textContent = txt; return d; };
+
+        box.appendChild(cap(vpT("s1")));
+        const r1 = line("vp-row");
+        VOICE_SEX.forEach((o, i2) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "vp-chip" + (sex === o.key ? " on" : "");
+            b.innerHTML = '<span class="vp-emo"></span><span class="vp-lb"></span>';
+            b.querySelector(".vp-emo").textContent = o.emoji;
+            b.querySelector(".vp-lb").textContent = sexN[i2] || o.key;
+            b.addEventListener("click", () => {
+                voicePref = (o.key === "auto") ? "auto" : (VOICE_MAP[o.key + ":" + age] || "auto");
                 localStorage.setItem("voicePref", voicePref);
                 renderVoiceList();
             });
-            if (r.key !== "auto") {           // '자동'은 배역이 정해져야 알 수 있어 미리 듣기 없음
-                const play = document.createElement("button");
-                play.type = "button"; play.className = "vi-play"; play.textContent = "🔊";
-                play.title = t("vcPlay");
-                play.addEventListener("click", async (e) => {
-                    e.stopPropagation();
-                    if (voiceBusy) return;
-                    voiceBusy = true; play.disabled = true; play.textContent = "⏳";
-                    try { await ttsPlay(t("vcSample"), r.key); }
-                    finally { voiceBusy = false; play.disabled = false; play.textContent = "🔊"; }
-                });
-                item.appendChild(play);
-            }
-            box.appendChild(item);
+            r1.appendChild(b);
         });
+        box.appendChild(r1);
+        const note = line("vp-note");
+        note.textContent = (sex === "auto") ? vpT("autoD") : "";
+        if (note.textContent) box.appendChild(note);
+
+        if (sex === "auto") return;      // 자동이면 나이를 고를 것이 없다
+
+        box.appendChild(cap(vpT("s2")));
+        const r2 = line("vp-row");
+        VOICE_AGE.forEach((o, i2) => {
+            const key = VOICE_MAP[sex + ":" + o.key];
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "vp-chip" + (voicePref === key ? " on" : "");
+            b.innerHTML = '<span class="vp-emo"></span><span class="vp-lb"></span>'
+                        + '<span class="vp-play">🔊</span>';
+            b.querySelector(".vp-emo").textContent = o.emoji;
+            b.querySelector(".vp-lb").textContent = ageN[i2] || o.key;
+            b.addEventListener("click", () => {
+                voicePref = key;
+                localStorage.setItem("voicePref", voicePref);
+                renderVoiceList();
+            });
+            const play = b.querySelector(".vp-play");
+            play.title = t("vcPlay");
+            play.addEventListener("click", async (e) => {
+                e.stopPropagation();
+                if (voiceBusy) return;
+                voiceBusy = true; play.textContent = "⏳";
+                try { await ttsPlay(t("vcSample"), key); }
+                finally { voiceBusy = false; play.textContent = "🔊"; }
+            });
+            r2.appendChild(b);
+        });
+        box.appendChild(r2);
     }
     function openVoicePicker() {
         document.getElementById("voiceTitleEl").textContent = t("vcTitle");

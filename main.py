@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v119"
+APP_VERSION = "v120"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -1112,7 +1112,11 @@ _ONE_WORD = {"네", "예", "응", "어", "아", "음", "그래", "글쎄", "야"
 #     speechOf/partnerSpeechOf 와 **같아야 한다.** 다르면 배우는 사람이
 #     화면에서 보는 말과 귀로 듣는 말이 어긋난다.
 SPEECH_CLOSE = 60      # 이보다 가까워야 반말이 나온다
-SPEECH_FAR = 35        # 이보다 멀면 격식체(합쇼체)
+SPEECH_FAR = 15        # 이보다 멀면 격식체(합쇼체)
+#   ★ v120 — 35에서 15로 내렸다. 화면의 친밀도 눈금은
+#     0~15 낯선 사이 · 16~35 아는 사이 · 36~65 적당한 사이 · … 인데,
+#     35로 잡아 두니 **「아는 사이」인데도 합쇼체**가 나와 과했다.
+#     이제 합쇼체는 「낯선 사이」 칸에서만 나오고, 아는 사이부터는 해요체다.
 
 
 def _speech_of(d: int, p: int) -> str:
@@ -1841,12 +1845,16 @@ JSON만 출력하라. 스키마:
     # 말투가 어긋난 대화문은 본보기가 못 된다. 통째로 다시 만들지 않고
     # 어긋난 줄만 골라 손질한다 — 빠르고, 나머지 줄이 흔들리지 않는다.
     if plan is not None:
+        # ★ v120 — 둘을 **나란히** 돌린다. 차례로 돌리면 계획 만들기가 15초 더 걸렸다.
+        #   서로 다른 곳을 고치므로(대화문 / 표현의 앞말) 겹칠 일이 없다.
+        jobs = []
         bad = _style_offenders(plan.get("script"), want_user, want_ai)
         if bad:
             print(f"[상황극] 말투 어긋남 {len(bad)}줄 — 손질 시도")
-            await _fix_style(plan, want_user, want_ai)
+            jobs.append(_fix_style(plan, want_user, want_ai))
         # 「먼저 말 걸어 보기」로 놓인 대답에 앞말을 채운다 — 연속체가 보여야 한다
-        await _fill_cues(plan, want_ai)
+        jobs.append(_fill_cues(plan, want_ai))
+        await asyncio.gather(*jobs, return_exceptions=True)
     if plan is None:
         raise HTTPException(status_code=502, detail=("plan_generation_failed | " + _fail_reason(data))[:250])
 
@@ -3398,6 +3406,14 @@ async def _handle_session(websocket: WebSocket):
         try:
             await websocket.send_text(json.dumps({
                 "type": "intervene", "qid": qid, "el": el}))
+            # ★★ v120 — 넛지는 **기능만** 알리고, 형식은 도움말이 준다.
+            #   예전에는 넛지 말풍선이 미리 만들어 둔 제시 문형을 그대로 보여 줬다.
+            #   그 문형은 대화 맥락을 모르고 쓰인 것이라 다섯 중 셋은 어긋났다
+            #   (「시간을 끌어 보세요」 자리에 「저는 그렇습니다, ○○ 씨는요?」).
+            #   이제 학습자가 「뭐라고 말하지? 도와줘」를 누르면,
+            #   **첫 번째 제안**이 방금 알린 그 요소가 실현된 발화로 나온다.
+            #   도움말은 지금 맥락과 화계를 보고 만들므로 어긋날 자리가 없다.
+            idc_state["hint_focus"] = {"qid": qid, "el": el, "turn": turns}
             print(f"[개입] {qid}({el}) — {turns}번째 차례 · 누적 {idc_state['intv_n']}회"
                   f" · 자리 {_stage_phase()}")
         except Exception as e:
@@ -3884,6 +3900,7 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
             rp_progress["running"] = False
 
     hint_state = {"running": False}
+    idc_state.setdefault("hint_focus", None)   # 넛지가 알린 것 — 도움말 첫 제안이 이어받는다
 
     async def send_hints():
         """🪜 도움말: 지금 대화 맥락에서 학습자의 '다음 턴'에 쓸 발화 2개 제안.
@@ -3945,9 +3962,23 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
                               "「괜찮아요」가 아니라 「괜찮습니다」, "
                               "「누구세요?」가 아니라 「누구십니까?」다.\n"
                               if _mine == "formal" else ""))
+            # ★ 방금 넛지로 알린 것이 있으면 **첫 제안**이 그것을 실현해야 한다.
+            #   두 차례가 지나도록 안 눌렀으면 흘려보낸다 — 이미 지난 자리다.
+            focus_line = ""
+            _fc = idc_state.get("hint_focus")
+            if _fc and _user_turns() - _fc.get("turn", 0) <= 2:
+                _q = next((x for x in QUEST_LLM if x["id"] == _fc["qid"]), None)
+                if _q:
+                    focus_line = (
+                        "[★★ 첫 번째 제안은 이것이어야 한다 ★★]\n"
+                        f"방금 학습자에게 「{_q['desc']}」를 해 보라고 알렸다.\n"
+                        "→ **첫 번째 제안은 그것이 실제로 실현된 발화**여야 한다. "
+                        "지금 상대가 한 말에 얹어서 자연스럽게 만들어라.\n"
+                        "→ 두 번째 제안은 그것과 상관없이, 이 자리에서 자연스러운 다른 말로 둔다.\n")
+                idc_state["hint_focus"] = None      # 한 번만 쓴다
             prompt = f"""{head}
 
-{speech_line}
+{speech_line}{focus_line}
 [최근 대화]
 {transcript}
 

@@ -446,7 +446,27 @@
         .ham-peek.qz { bottom: auto; top: 50%; transform: translate(105%, -50%); align-items: center; }
         .ham-peek.qz.show { transform: translate(0, -50%); }
         .ham-peek.qz .hp-bubble::before, .ham-peek.qz .hp-bubble::after { bottom: auto; top: 50%; margin-top: -8px; }
-        @media (prefers-reduced-motion: reduce) { .ham-peek { transition-duration: 0.15s; } }
+        /* ★ v120 — 넛지 말풍선은 두 줄이다. 위는 「지금이에요.」, 아래가 할 일. */
+        .nz-now { display: block; font-size: .82em; opacity: .62; font-weight: 600;
+                  letter-spacing: -.01em; margin-bottom: 2px; }
+        /* 넛지가 뜨면 「도와줘」 단추가 같이 움직인다 — 형식은 여기에 있다 */
+        .scf-btn.nudge-live { animation: nudgeBeat 1.5s ease-in-out infinite;
+                              border-color: var(--gold, #C9A227) !important; }
+        @keyframes nudgeBeat {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(201, 162, 39, .0); }
+            50%      { box-shadow: 0 0 0 6px rgba(201, 162, 39, .22); }
+        }
+        /* 계획 만드는 중 — 얼마나 남았는지 보이게 (v120) */
+        .mk-wrap { margin-top: 10px; }
+        .mk-bar { height: 6px; border-radius: 99px; background: rgba(0,0,0,.08); overflow: hidden; }
+        .mk-fill { height: 100%; width: 0%; border-radius: 99px;
+                   background: linear-gradient(90deg, #7FA8C9, #C9A227);
+                   transition: width .5s ease; }
+        .mk-msg { margin-top: 6px; font-size: .84rem; text-align: center; opacity: .72; }
+        @media (prefers-reduced-motion: reduce) {
+            .ham-peek { transition-duration: 0.15s; }
+            .scf-btn.nudge-live { animation: none; }
+        }
 
         /* ── 앱 설치 권유 화면 — 사이트를 열면 가장 먼저 뜬다 ── */
         /* 오늘의 퀘스트 카드 */
@@ -1625,6 +1645,10 @@
         <p class="rp-note" id="rpFaderNoteEl" style="text-align:center;"></p>
         <div class="consent-actions">
             <button class="action-btn" id="rpMakeBtn"></button>
+            <div class="mk-wrap hidden" id="rpMakeProg" aria-live="polite">
+                <div class="mk-bar"><div class="mk-fill" id="rpMakeFill"></div></div>
+                <div class="mk-msg" id="rpMakeMsg"></div>
+            </div>
             <button class="export-btn" id="rpCancelBtn"></button>
         </div>
     </div>
@@ -2004,7 +2028,7 @@
                 </div>
                 <div class="fader-row">
                     <span class="end-label" id="distLowLbl">낯선 사이</span>
-                    <input type="range" id="distSlider" min="0" max="100" value="70" step="1">
+                    <input type="range" id="distSlider" min="0" max="100" value="75" step="1">
                     <span class="end-label" id="distHighLbl">절친</span>
                 </div>
             </div>
@@ -2181,7 +2205,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v119 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v120 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -4389,11 +4413,11 @@
        맞춰 두었으므로(1.5dB 안쪽) 어느 곡이 걸려도 음량이 튀지 않는다.
        ?v= 는 파일이 바뀌었을 때 기기에 남은 옛 파일을 흘려보내기 위한 것. */
     const HOME_BGM = [
-        "/static/bgm_hanok.mp3?v=119",    // 한옥 (원래 쓰던 곡)
-        "/static/bgm_danhwa.mp3?v=119",   // 단화
-        "/static/bgm_bird.mp3?v=119",     // 휘파람새
-        "/static/bgm_rain.mp3?v=119",     // 덕수궁 빗소리
-        "/static/bgm_spring.mp3?v=119",   // 싱그러운 봄 아침
+        "/static/bgm_hanok.mp3?v=120",    // 한옥 (원래 쓰던 곡)
+        "/static/bgm_danhwa.mp3?v=120",   // 단화
+        "/static/bgm_bird.mp3?v=120",     // 휘파람새
+        "/static/bgm_rain.mp3?v=120",     // 덕수궁 빗소리
+        "/static/bgm_spring.mp3?v=120",   // 싱그러운 봄 아침
     ];
     if (bgm && !bgm.getAttribute("src")) {
         bgm.setAttribute("src", HOME_BGM[Math.floor(Math.random() * HOME_BGM.length)]);
@@ -5084,6 +5108,60 @@
     document.getElementById("rpBriefX").addEventListener("click", () => { rpBriefOverlay.classList.add("hidden"); goHome(); });
     document.getElementById("rpResultX").addEventListener("click", goHome);
 
+    /* ★ 계획 만들기는 20~40초가 걸린다 (v120).
+       그동안 「계획을 만드는 중... ⏳」 한 줄뿐이라 멈춘 것처럼 보였다.
+       진짜 진행률은 알 수 없으므로 **시간으로 그린다** — 앞은 빠르게,
+       뒤는 느리게, 95%에서 멈춰 서서 응답을 기다린다.
+       거짓으로 100%를 채우지 않는 것이 요점이다. 도착하면 그때 100%가 된다.
+       문구는 실제로 서버가 하는 일의 차례를 그대로 따른다. */
+    const MK_MSG = {
+        ko:["상황을 읽는 중…", "대화 단계를 짜는 중…", "표현과 대화문을 쓰는 중…", "거의 다 됐어요…"],
+        en:["Reading the situation…", "Planning the stages…", "Writing expressions & dialogue…", "Almost there…"],
+        zh:["正在理解情境…", "正在安排对话步骤…", "正在写表达和对话…", "快好了…"],
+        ja:["状況を読んでいます…", "会話ステップを組んでいます…", "表現と会話文を書いています…", "もう少しです…"],
+        vi:["Đang đọc tình huống…", "Đang sắp xếp các bước…", "Đang viết mẫu câu & hội thoại…", "Sắp xong…"],
+        th:["กำลังอ่านสถานการณ์…", "กำลังจัดขั้นตอน…", "กำลังเขียนประโยคและบทสนทนา…", "ใกล้เสร็จแล้ว…"],
+        id:["Membaca situasi…", "Menyusun tahapan…", "Menulis ungkapan & dialog…", "Hampir selesai…"],
+        mn:["Нөхцөл байдлыг уншиж байна…", "Алхмуудыг зохиож байна…", "Хэллэг, яриа бичиж байна…", "Бараг дууслаа…"],
+        uz:["Vaziyat o‘qilmoqda…", "Bosqichlar tuzilmoqda…", "Iboralar va dialog yozilmoqda…", "Deyarli tayyor…"],
+        ru:["Читаем ситуацию…", "Составляем этапы…", "Пишем выражения и диалог…", "Почти готово…"],
+        es:["Leyendo la situación…", "Planificando las etapas…", "Escribiendo expresiones y diálogo…", "Casi listo…"],
+        fr:["Lecture de la situation…", "Organisation des étapes…", "Rédaction des expressions et du dialogue…", "Presque fini…"],
+        ne:["अवस्था पढ्दै…", "चरणहरू मिलाउँदै…", "अभिव्यक्ति र संवाद लेख्दै…", "लगभग सकियो…"],
+        lo:["ກຳລັງອ່ານສະຖານະການ…", "ກຳລັງຈັດຂັ້ນຕອນ…", "ກຳລັງຂຽນສຳນວນ ແລະ ບົດສົນທະນາ…", "ເກືອບແລ້ວ…"],
+        my:["အခြေအနေကို ဖတ်နေသည်…", "အဆင့်များ စီစဉ်နေသည်…", "အသုံးအနှုန်းနှင့် စကားပြော ရေးနေသည်…", "နီးပါးပြီး…"],
+        km:["កំពុងអានស្ថានភាព…", "កំពុងរៀបចំជំហាន…", "កំពុងសរសេរឃ្លា និងសន្ទនា…", "ជិតរួចរាល់…"],
+        uk:["Читаємо ситуацію…", "Складаємо етапи…", "Пишемо вирази й діалог…", "Майже готово…"],
+        ky:["Кырдаалды окуп жатабыз…", "Кадамдарды түзүп жатабыз…", "Сөз айкаштарын жана диалогду жазып жатабыз…", "Дээрлик даяр…"],
+    };
+    let mkTimer = null, mkT0 = 0;
+    function mkProgStart() {
+        const wrap = document.getElementById("rpMakeProg");
+        const fill = document.getElementById("rpMakeFill");
+        const msg = document.getElementById("rpMakeMsg");
+        if (!wrap || !fill || !msg) return;
+        const words = MK_MSG[uiLang] || MK_MSG.en;
+        wrap.classList.remove("hidden");
+        mkT0 = Date.now();
+        fill.style.width = "4%";
+        msg.textContent = words[0];
+        clearInterval(mkTimer);
+        mkTimer = setInterval(() => {
+            const sec = (Date.now() - mkT0) / 1000;
+            // 12초에 60% · 30초에 88% · 그 뒤로는 95%에 붙어 기다린다
+            const pct = Math.min(95, 100 * (1 - Math.exp(-sec / 13)));
+            fill.style.width = pct.toFixed(0) + "%";
+            msg.textContent = words[sec < 7 ? 0 : sec < 18 ? 1 : sec < 32 ? 2 : 3];
+        }, 400);
+    }
+    function mkProgStop(done) {
+        clearInterval(mkTimer); mkTimer = null;
+        const wrap = document.getElementById("rpMakeProg");
+        const fill = document.getElementById("rpMakeFill");
+        if (fill) fill.style.width = "100%";
+        setTimeout(() => { if (wrap) wrap.classList.add("hidden"); }, 350);
+    }
+
     document.getElementById("rpMakeBtn").addEventListener("click", async () => {
         // 빈칸은 화면에 '예)'로 보여준 추천값을 그대로 사용 — 보이는 것과 실제가 일치
         const goal = rpGoalInput.value.trim() || (sgData ? sgData.goals[sgGoalIdx] : "");
@@ -5092,6 +5170,7 @@
         const btn = document.getElementById("rpMakeBtn");
         btn.disabled = true;
         btn.textContent = t("rpMaking");
+        mkProgStart();
         try {
             const res = await fetch("/roleplay-setup", {
                 method: "POST",
@@ -5122,6 +5201,7 @@
             console.warn("계획 생성 실패:", e);
             alert(t("rpPlanFail") + "\n\n(" + (e && e.message ? e.message : e) + ")");
         } finally {
+            mkProgStop();
             btn.disabled = false;
             btn.textContent = t("rpMake");
         }
@@ -7259,6 +7339,17 @@
          (같은 식을 두 벌 두면 한쪽만 고쳐져 어긋난다 — v104에서 겪었다.)
        ★ 지위는 '대등'일 때는 말하지 않는다. 기본값이라 아무 정보가 없고,
          한 줄이 길어지면 휴대폰에서 두 줄로 넘어가 도리어 안 읽힌다. */
+    /* ★ 넛지가 뜨면 「뭐라고 말하지? 도와줘」 단추가 같이 움직인다 (v120).
+       넛지는 기능만 알리므로, 형식이 필요한 학습자가 어디를 눌러야 하는지
+       바로 보여야 한다. 20초 지나면 저절로 가라앉는다 — 지난 자리이므로. */
+    let scfNudgeTimer = null;
+    function scfNudge(on) {
+        const b = document.getElementById("scfBtn");
+        if (!b) return;
+        clearTimeout(scfNudgeTimer);
+        b.classList.toggle("nudge-live", !!on);
+        if (on) scfNudgeTimer = setTimeout(() => b.classList.remove("nudge-live"), 20000);
+    }
     function styleLinePaint() {
         const el = document.getElementById("styleLine");
         if (!el || !distSlider || !powerSlider) return;
@@ -7380,11 +7471,26 @@
         return speechOf(+distSlider.value, +powerSlider.value);
     }
     /* 퀘스트·넛지에 보일 이름. 문형이 있는 것은 말투 단계에 맞춰 지금 만든다. */
-    function questLabel(qid) {
+    /* ★★ v120 — 넛지는 **무엇을 할 자리인지**만 알린다.
+       예전에는 미리 만들어 둔 제시 문형을 그대로 보여 줬는데, 그 문형은
+       지금 대화가 무슨 이야기인지 모르고 쓰인 것이라 자주 어긋났다
+       (「시간을 끌어 보세요」 자리에 「저는 그렇습니다, ○○ 씨는요?」).
+       형식이 필요하면 학습자가 「뭐라고 말하지? 도와줘」를 누른다 —
+       그러면 **첫 번째 제안**이 방금 알린 그 요소가 실현된 발화로 나온다.
+       도움말은 지금 맥락과 화계를 보고 만드므로 어긋날 자리가 없다. */
+    const NZ_NOW = {
+        ko:"지금이에요.", en:"Now's the moment.", zh:"就是现在。", ja:"今です。",
+        vi:"Chính là lúc này.", th:"ตอนนี้เลย", id:"Sekarang saatnya.",
+        mn:"Яг одоо.", uz:"Hozir!", ru:"Вот сейчас.", es:"Es el momento.",
+        fr:"C'est le moment.", ne:"अहिले नै हो।", lo:"ຕອນນີ້ເລີຍ.",
+        my:"အခုပါပဲ။", km:"ឥឡូវនេះហើយ។", uk:"Ось зараз.", ky:"Дал ушул учур.",
+    };
+    function questLabel(qid) { return t(qid); }
+    /* 제시 문형은 지우지 않았다 — 「한국어 상호작용 대화 능력」 학습 화면과
+       논문 대응표가 이것을 쓴다. 대화 중에 보여 주지 않을 뿐이다. */
+    function questForm(qid) {
         const f = QUEST_FORM[qid];
-        if (!f) return t(qid);
-        const form = f[speechTier()] || f[1];
-        return (t("qWrap") || "「%s」").replace("%s", form);
+        return f ? (f[speechTier()] || f[1]) : "";
     }
     /* 친밀도(D)와 지위(P)를 평균 내어 5단계 말투 레벨로. 두 슬라이더가 아직 없으면 가운데. */
     /* ── 말투 계산: 친밀도와 지위를 '따로' 본다 (v116) ──
@@ -7400,7 +7506,12 @@
        서버의 대화문 생성도 같은 규칙을 쓴다(want_user/want_ai). 두 곳이 어긋나면
        「먼저 듣기는 반말인데 빠른 단추는 존댓말」이 된다 — v115에서 실제로 그랬다. */
     const SPEECH_CLOSE = 60;    // 이보다 가까워야 반말이 나온다
-    const SPEECH_FAR = 35;      // 이보다 멀면 격식체(합쇼체)
+    const SPEECH_FAR = 15;      /* 이보다 멀면 격식체(합쇼체)
+       ★ v120 — 35에서 15로 내렸다. 친밀도 눈금은
+         0~15 낯선 사이 · 16~35 아는 사이 · 36~65 적당한 사이 · … 인데
+         35로 잡아 두니 「아는 사이」인데도 합쇼체가 나와 과했다.
+         이제 합쇼체는 「낯선 사이」 칸에서만, 아는 사이부터는 해요체다.
+         ※ 서버(main.py)의 SPEECH_FAR 와 반드시 같아야 한다. */
     function speechOf(d, p) {
         // 0 합쇼체 · 1 해요체 · 2 해체(반말) — 학습자가 쓸 말투
         if (d >= SPEECH_CLOSE) return p >= 45 ? 2 : 1;   // 가까움: 내가 위면 반말, 아래면 해요체
@@ -7822,6 +7933,7 @@
                     playDing();   // 단계 달성 — 짧은 딩동 (문 연출은 대화 시작·종료에서만)
                 }
             } else if (msg.type === "hint") {
+                scfNudge(false);              // 도움말이 왔다 — 단추는 가라앉는다
                 // 🪜 비계 응답 — 패널이 열려 있을 때만 표시
                 clearTimeout(scfTimer);
                 if (!scfPanel.classList.contains("hidden")) renderScaffoldItems(msg.items || [], msg.stage || "");
@@ -7834,7 +7946,11 @@
                     /* ★ v119 — 앞머리 「지금이에요!」를 뺐다.
                        개입 이름이 이미 「~해 보세요!」 꼴이라 두 번 말하는 셈이었고,
                        말풍선이 좁아 정작 읽어야 할 이름이 밀려났다. */
-                    if (label) hamPeekHtml(label, "", 5200);
+                    if (label) {
+                        hamPeekHtml('<span class="nz-now">' + escapeHtml(NZ_NOW[uiLang] || NZ_NOW.en)
+                                    + "</span>" + escapeHtml(label), "", 5600);
+                        scfNudge(true);      // 「도와줘」 단추도 같이 움직인다
+                    }
                 } catch (e) {}
             } else if (msg.type === "final_score") {
                 // 종료 버튼에 대한 서버의 최종 분석 결과 — 퍼센트를 점수로 치환

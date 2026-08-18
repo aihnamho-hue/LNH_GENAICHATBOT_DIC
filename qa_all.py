@@ -401,6 +401,42 @@ ok("화계", "화면 안내가 어미 형태다(~습니다/습니까?)", "~습�
 ok("화계", "「존댓말로 아주 공손하게」는 사라졌다", "존댓말로 아주 공손하게" not in HT)
 ok("화계", "합쇼체를 따로 판정한다", '"formal"' in PY and "습니까" in PY)
 
+print("\n════════ ⑱ 넛지는 이름만 · 형식은 도움말이 (v120) ════════")
+# ★ 미리 만들어 둔 제시 문형은 지금 대화가 무슨 이야기인지 모른다.
+#   다섯 중 셋이 어긋났다 — 「시간을 끌어 보세요」 자리에 의견 교환 문형이 나왔다.
+#   이제 넛지는 **무엇을 할 자리인지**만 알리고, 형식은 도움말이 맥락을 보고 만든다.
+ok("넛지", "말풍선이 제시 문형을 쓰지 않는다",
+   "function questLabel(qid) { return t(qid); }" in HT)
+ok("넛지", "제시 문형은 지우지 않았다(학습 화면·대응표가 쓴다)", "function questForm(qid)" in HT)
+ok("넛지", "말풍선에 「지금이에요.」가 있다", "NZ_NOW" in HT and "지금이에요." in HT)
+ok("넛지", "「지금이에요.」가 18개 언어에 다 있다",
+   len(re.search(r"const NZ_NOW = \{(.*?)\};", HT, re.S).group(1).split(":")) - 1 == 18,
+   len(re.search(r"const NZ_NOW = \{(.*?)\};", HT, re.S).group(1).split(":")) - 1)
+ok("넛지", "「도와줘」 단추가 같이 움직인다", "scfNudge(true)" in HT and "nudge-live" in HT)
+ok("넛지", "도움말이 오면 가라앉는다", "scfNudge(false)" in HT)
+ok("넛지", "서버가 방금 알린 것을 기억한다", 'idc_state["hint_focus"] = {"qid": qid' in PY)
+ok("넛지", "도움말 첫 제안이 그것을 이어받는다",
+   "첫 번째 제안은 이것이어야 한다" in PY and "focus_line" in PY)
+ok("넛지", "두 차례가 지나면 흘려보낸다", '_user_turns() - _fc.get("turn", 0) <= 2' in PY)
+ok("넛지", "한 번 쓰면 비운다", 'idc_state["hint_focus"] = None' in PY)
+
+print("\n════════ ⑲ 화계 눈금 · 계획 만들기 (v120) ════════")
+ok("화계", "합쇼체는 「낯선 사이」 칸에서만 (눈금 15)",
+   "SPEECH_FAR = 15" in PY and "const SPEECH_FAR = 15;" in HT)
+_sf = {"SPEECH_CLOSE": 60, "SPEECH_FAR": 15}
+exec(re.search(r"def _speech_of\(.*?\n(?=\n\n)", PY, re.S).group(0), _sf)
+ok("화계", "「아는 사이」(25)는 해요체다", _sf["_speech_of"](25, 50) == "polite", _sf["_speech_of"](25, 50))
+ok("화계", "「낯선 사이」(10)는 합쇼체다", _sf["_speech_of"](10, 50) == "formal", _sf["_speech_of"](10, 50))
+ok("계획", "말투 손질과 앞말 채우기를 나란히 돌린다",
+   "await asyncio.gather(*jobs, return_exceptions=True)" in PY)
+ok("계획", "만드는 동안 진행률이 보인다",
+   "mkProgStart()" in HT and 'id="rpMakeFill"' in HT)
+ok("계획", "거짓으로 100%를 채우지 않는다", "Math.min(95," in HT)
+ok("계획", "진행 문구가 18개 언어에 다 있다",
+   len(re.search(r"const MK_MSG = \{(.*?)\n    \};", HT, re.S).group(1).split("],")) - 1 == 18)
+ok("스타일", "자유 대화 친밀도 초기값 75",
+   'id="distSlider" min="0" max="100" value="75"' in HT)
+
 print("\n════════ ⑰ 발화 연습 — 앞말 없는 대답 (v119) ════════")
 _cm = {}
 exec(re.search(r"_ANSWER_HEAD = .*?(?=\n\nasync def _fix_style)", PY, re.S).group(0), _cm)
@@ -416,7 +452,7 @@ ok("연습", "「알겠습니다.」도 대답이다", "알겠습니다." in _ho
 ok("연습", "「저기요, 이거 얼마예요?」는 먼저 여는 말 — 건드리지 않는다",
    "저기요, 이거 얼마예요?" not in _holes)
 ok("연습", "앞말이 이미 있으면 건드리지 않는다", len(_holes) == 2, _holes)
-ok("연습", "계획을 만든 뒤 앞말을 채운다", "await _fill_cues(plan, want_ai)" in PY)
+ok("연습", "계획을 만든 뒤 앞말을 채운다", "_fill_cues(plan, want_ai)" in PY)
 ok("연습", "계획 프롬프트가 「대답에 cue를 비우지 마라」고 못 박는다", "그 말로 대화를 열 수는 없다" in PY)
 
 print("\n════════ ⑮ 넛지가 0이 되는 길이 남았는가 (v107 최대 사고) ════════")

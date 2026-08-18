@@ -14,7 +14,7 @@
 // 이번 사고(vuBars TDZ)처럼 스크립트가 중간에 죽는 문제를 배포 전에 걸러 낸다.
 const fs = require("fs");
 const { JSDOM } = require("jsdom");
-const html = fs.readFileSync(process.argv[2] || "app.html", "utf8");
+const html = fs.readFileSync(process.argv[2], "utf8");
 
 const errors = [];
 const vc = new (require("jsdom").VirtualConsole)();

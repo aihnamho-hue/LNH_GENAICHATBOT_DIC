@@ -1,9 +1,9 @@
 // 📷 교재 사진으로 상황 채우기 — 화면·동작·안전장치 검사
 const fs=require("fs"), {JSDOM}=require("jsdom");
-const html=fs.readFileSync("app.html","utf8");
+const html=fs.readFileSync("i.html","utf8");
 // 지원 언어 수는 늘어난다 — 숫자를 박아 두지 말고 언어 고르기 단추에서 센다
 const LANGS=(html.match(/data-lang="[a-z]+"/g)||[]).length;
-const py=fs.readFileSync("main.py","utf8");
+const py=fs.readFileSync("/sessions/gifted-youthful-edison/mnt/음성 대화형 챗봇/main.py","utf8");
 let fail=0; const ok=(n,c)=>{console.log((c?"  ✅ ":"  ❌ ")+n); if(!c)fail++;};
 
 console.log("── 서버 ──");

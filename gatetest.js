@@ -1,5 +1,5 @@
 const fs = require("fs"); const { JSDOM } = require("jsdom");
-const html = fs.readFileSync("app.html", "utf8");
+const html = fs.readFileSync("i.html", "utf8");
 
 function boot(url, opts = {}) {
   const errs = [];
@@ -67,7 +67,7 @@ console.log("⑤ '웹에서 그냥 볼게요' — 관문을 닫고 웹으로 쓸
   ok("웹으로 계속 버튼이 있다", !!d.getElementById("igWebBtn"));
   d.getElementById("igWebBtn").click();
   ok("관문이 닫힌다", !vis(d.getElementById("installGate")));
-  ok("숨은 ?web=1 우회는 없앴다", !/TEACHER_WEB/.test(require("fs").readFileSync("app.html","utf8")));
+  ok("숨은 ?web=1 우회는 없앴다", !/TEACHER_WEB/.test(require("fs").readFileSync("i.html","utf8")));
 }
 
 const AOS = "Mozilla/5.0 (Linux; Android 13; SM-S911N) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36";

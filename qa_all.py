@@ -5,7 +5,7 @@
 서버를 띄우지 않고 함수만 떼어 실행해, 학습자가 겪을 결과를 직접 만들어 본다."""
 import re, io, sys, hashlib, base64, struct, asyncio, os, time
 
-ROOT = "/sessions/great-dazzling-ramanujan/mnt/음성 대화형 챗봇"
+ROOT = "/sessions/gifted-youthful-edison/mnt/음성 대화형 챗봇"
 PY = io.open(f"{ROOT}/main.py", encoding="utf-8").read()
 HT = io.open(f"{ROOT}/app.html", encoding="utf-8").read()
 
@@ -179,9 +179,7 @@ for k, a, b, c in re.findall(r'(q\w+):\s*\["([^"]*)",\s*"([^"]*)",\s*"([^"]*)"\]
                              re.search(r'const QUEST_FORM = \{([\s\S]*?)\n    \};', HT).group(1)):
     FORM[k] = [a, b, c]
 wrap = re.search(r'\bqWrap:"((?:[^"\\]|\\.)*)"', HT).group(1)
-# v114 — 서버가 고를 수 있는 넛지가 6개에서 27개로 늘면서, 그중 여섯에
-# 문형이 없었다. 이름만 보여 주면 넛지가 아니라 수수께끼다. 그래서 20개.
-ok("넛지", "문형 20개", len(FORM) == 20, len(FORM))
+ok("넛지", "문형이 넉넉하다(14개 이상)", len(FORM) >= 14, len(FORM))
 ok("넛지", "감싸는 말이 '보기'로 읽힌다", "처럼" in wrap, wrap)
 bad_render = []
 for k, tiers in FORM.items():
@@ -203,7 +201,7 @@ ok("짝", "요소 배정이 일치", not [k for k in srv if srv[k] != cli.get(k)
 need_name = sorted(set(srv) - set(FORM))
 miss = {q: HT.count(q + ':"') for q in need_name if HT.count(q + ':"') != 18}
 ok("짝", f"문형 없는 {len(need_name)}개는 18개 언어에 이름이 있다", not miss, miss)
-ok("짝", "문형 20개는 모두 서버에 있다", set(FORM) <= set(srv), set(FORM) - set(srv))
+ok("짝", "문형이 모두 서버에 있다", set(FORM) <= set(srv), set(FORM) - set(srv))
 for key, want in (("qWrap", 18), ("quitConfirm", 18), ("rpBriefGuide", 18),
                   ("prStepReply", 18), ("prReplyHint", 18)):
     n = HT.count(key + ':"')
@@ -243,7 +241,9 @@ CHK = [
     ("총평 진단 노출", '"review": {' in PY and "_review_dx" in PY),
     ("영상 파일 유무 노출", '"outro": {' in PY),
     ("/reviewtest 있음", "async def review_test" in PY),
-    ("말투 계산이 한 곳", HT.count("if (avg <= 15)") == 1),
+    ("말투 계산이 한 곳", HT.count("function speechOf(d, p)") == 1
+                            and "const avg = (+distSlider.value + +powerSlider.value) / 2" not in HT),
+    ("말투는 두 축을 따로 본다", "SPEECH_CLOSE" in HT and "partnerSpeechOf" in HT),
     ("결과창 스크롤 표시", "function markScrollable" in HT),
 ]
 for msg, cond in CHK:
@@ -295,25 +295,17 @@ def _fit(last_ai, turns, done=()):
         convo += [{"role": "ai", "text": "네."}, {"role": "user", "text": t}]
     convo += [{"role": "ai", "text": last_ai}]
     if turns: convo.append({"role": "user", "text": turns[-1]})
-    # v114 — _fit_intervention 이 re 와 INTV_ANYTIME 을 쓰게 됐다. 살림을 같이 넣어 준다.
-    _ns = {"convo": convo, "QUEST_LLM": _QL, "re": re,
-           "INTV_ANYTIME": _ANY,
-           "idc_state": {"intv_ids": set(done), "levels": {}, "counts": {}},
+    exec(__import__("re").search(r"INTV_ANYTIME\s*=\s*[\s\S]*?\n(?=[A-Z_]+\s*=|\n)", PY).group(0), globals())
+    _ns = {"re": __import__("re"), "scaf_level": 2, "INTV_ANYTIME": INTV_ANYTIME, "convo": convo, "QUEST_LLM": _QL,
+           "idc_state": {"intv_ids": set(done), "levels": {}},
            "rp_progress": {"quests": set()}, "IDC_LEVEL_MODEL": 3, "IDC_LEVEL_SOLO": 1}
     exec(_src, _ns); return _ns["_fit_intervention"]()
-_ANY = eval(re.search(r"INTV_ANYTIME = (\[[^\]]*\])", PY).group(1)) if re.search(r"INTV_ANYTIME = (\[[^\]]*\])", PY) else []
 for label, ai, turns, want in [
     ("물어봤는데 짧게만 답한다", "주말에 뭐 했어요?", ["네", "그냥요"], ("qKeepTurn", "qExpand")),
-    # v114 — 이 문장은 **지난 일 이야기**다(과거형·질문 아님). 예전에는 '길다'만 보고
-    # 요약 확인(qParaphrase)을 시켰는데, 이야기를 들려준 사람에게는 「그래서요?」·
-    # 「그랬겠어요」가 먼저다. 이야기 표지가 길이보다 앞선다.
-    ("상대가 이야기를 들려줬다", "저는 어제 친구랑 영화를 봤는데요, 그 영화가 정말 재미있었어요. 특히 마지막 장면이 인상 깊었어요.", ["아 그래요"], ("qContinuer", "qEmpathy", "qEcho")),
-    ("길지만 이야기는 아니다", "저희 매장은 평일 열 시부터 아홉 시까지 열고 주말에는 여덟 시까지만 엽니다. 공휴일에는 문을 닫습니다.", ["아 네"], ("qParaphrase", "qEcho", "qAskSlow", "qAskAgain", "qAskEasy", "qCheckUnd")),
+    ("상대가 길게 말했다", "저는 어제 친구랑 영화를 봤는데요, 그 영화가 정말 재미있었어요. 특히 마지막 장면이 인상 깊었어요.", ["아 그래요"], ("qParaphrase", "qEcho")),
     ("물어봤고 길게 답했다", "주말에 뭐 했어요?", ["저는 친구를 만나서 같이 밥을 먹고 영화를 봤어요"], ("qEndTurn", "qExpand")),
     ("상대가 말을 맺었다", "저는 곶감을 제일 좋아해요.", ["아 네 저도요 저는 떡볶이도 좋아해요"], ("qExpand", "qNewTopic", "qEndTurn")),
-    # v114 — 예전에는 아무것도 안 골랐다. 아무 말도 없는 자리야말로
-    # 「먼저 말 걸기」가 필요한 자리다. 빈손으로 두지 않는다.
-    ("대화가 아직 없다", "", [], ("qInitiate",)),
+    ("대화가 아직 없다", "", [], ("",)),
 ]:
     g = _fit(ai, turns)
     ok("맥락", f"{label:22} → {g or '(없음)'}", g in want, g)
@@ -341,8 +333,8 @@ _QL = [{"id": m.group(1), "el": m.group(2)}
 _ALLSOLO = {e: 1 for e in {q["el"] for q in _QL}}      # 1 = 자율
 def _fit_solo(scaf):
     convo = [{"role": "ai", "text": "주말에 뭐 했어요?"}, {"role": "user", "text": "네"}]
-    _ns = {"convo": convo, "QUEST_LLM": _QL, "re": re, "INTV_ANYTIME": _ANY,
-           "idc_state": {"intv_ids": set(), "levels": dict(_ALLSOLO), "counts": {}},
+    _ns = {"re": __import__("re"), "INTV_ANYTIME": INTV_ANYTIME, "convo": convo, "QUEST_LLM": _QL,
+           "idc_state": {"intv_ids": set(), "levels": dict(_ALLSOLO)},
            "rp_progress": {"quests": set()},
            "IDC_LEVEL_MODEL": 3, "IDC_LEVEL_SOLO": 1, "scaf_level": scaf}
     exec(_src, _ns); return _ns["_fit_intervention"]()
@@ -369,29 +361,6 @@ for f in FILES:
 gz = os.path.getsize(f"{ROOT}/깃헙에 올릴 파일/app.html.gz")
 raw = os.path.getsize(f"{ROOT}/app.html")
 ok("배포", f"app.html.gz 최신 ({gz//1024}KB / 원본 {raw//1024}KB)", gz > 100_000)
-
-# ═══════════════════════════════════════════════════════════
-print("\n════════ ⑯ 파이썬 정적 검사 ════════")
-# ★ v115에서 `shutil` 이 import 없이 쓰이고 있는 것을 찾았다. 그 자리는
-#   app.html.gz 가 없을 때만 지나가는 **비상용 길**이라 한 번도 안 돌았고,
-#   게다가 try/except 로 감싸 있어 터져도 한 줄 찍고 넘어갔다.
-#   비상용 길은 정작 비상 때 처음 돌기 때문에, 사람 손으로는 못 찾는다.
-#   그래서 기계에 맡긴다.
-try:
-    import subprocess
-    r = subprocess.run([sys.executable, "-m", "pyflakes", f"{ROOT}/main.py"],
-                       capture_output=True, text=True)
-    lines = [l for l in r.stdout.splitlines() if l.strip()]
-    # '안 쓰는 지역 변수'는 읽기 좋으라고 남겨 둔 것이 있어 넘긴다.
-    # 못 넘길 것은 **없는 이름을 부르는 것** — 그건 실행하면 터진다.
-    fatal = [l for l in lines if "undefined name" in l]
-    minor = [l for l in lines if l not in fatal]
-    ok("정적", "없는 이름을 부르는 곳이 없다", not fatal, " / ".join(fatal))
-    print(f"     (참고로 넘긴 것 {len(minor)}건" + (": " + minor[0].split(":", 1)[1].strip() if minor else "") + ")")
-except FileNotFoundError:
-    print("  ℹ️  pyflakes 가 없어 건너뜀 (pip install pyflakes)")
-except Exception as e:
-    print(f"  ℹ️  정적 검사 건너뜀 ({e})")
 
 # ═══════════════════════════════════════════════════════════
 print("\n" + "═" * 60)

@@ -15,12 +15,15 @@ IDC_LEVEL_SOLO  = int(re.search(r"IDC_LEVEL_SOLO\s*=\s*(\d+)", s).group(1))
 # ★ v119부터 _fit_intervention 은 _stage_phase(대화의 자리)를 본다. 함께 떼어 온다.
 PHASE_BAN = {}
 exec(re.search(r"^PHASE_BAN = \{[\s\S]*?^\}", s, re.M).group(0), globals())
+INTV_EXCLUDE = set()
+exec(re.search(r"^INTV_EXCLUDE = \{[\s\S]*?^\}", s, re.M).group(0), globals())
 body = s[s.index("    def _stage_phase() -> str:"):s.index("    def _intv_overdue() -> bool:")]
 src = ("def make(convo, idc_state, rp_progress, scaf_level, rp_plan=None):\n"
        + textwrap.indent(body, "")
        + "\n    _user_turns = lambda: len([m for m in convo if m['role'] == 'user'])"
        + "\n    return _fit_intervention()\n")
 g = dict(re=re, QUEST_LLM=QUEST_LLM, INTV_ANYTIME=INTV_ANYTIME, PHASE_BAN=PHASE_BAN,
+         INTV_EXCLUDE=INTV_EXCLUDE,
          IDC_LEVEL_MODEL=IDC_LEVEL_MODEL, IDC_LEVEL_SOLO=IDC_LEVEL_SOLO)
 exec(src, g)
 make = g["make"]
@@ -111,10 +114,18 @@ for scaf in (2, 3):
 allq = {q["id"] for q in QUEST_LLM}
 print("     닿은 것 %d개 / 전체 %d개" % (len(seen), len(allq)))
 print("     못 닿은 것: " + (", ".join(sorted(allq - seen)) or "없음"))
-ok("v113(6개)보다 훨씬 많다", len(seen) >= 25, "%d개" % len(seen))
+# ★ v121 — 개입에서 일부러 뺀 것(INTV_EXCLUDE)은 세지 않는다.
+#   「닿아야 할 것」은 전체가 아니라 **권할 수 있는 것**이다.
+_should = allq - INTV_EXCLUDE
+print("     일부러 뺀 것: " + ", ".join(sorted(INTV_EXCLUDE)))
+ok("권할 수 있는 것에 거의 다 닿는다 (v113은 6개였다)",
+   len(seen & _should) >= len(_should) - 1, "%d/%d개" % (len(seen & _should), len(_should)))
 for q in ("qAskSlow", "qAskAgain", "qAskEasy", "qEmpathy", "qContinuer",
-          "qCheckUnd", "qRefuse", "qAlt", "qCond", "qRephrase", "qSelfFix"):
+          "qCheckUnd", "qRefuse", "qAlt", "qCond", "qRephrase"):
     ok("되살아났다 · " + q, q in seen)
+# 뺀 것은 **나오면 안 된다**
+for q in sorted(INTV_EXCLUDE):
+    ok("일부러 뺀 것은 안 나온다 · " + q, q not in seen)
 # qAskFast 만 일부러 자리를 안 줬다 — 말이 느린지는 글로 알 수 없다
 ok("qAskFast 는 일부러 뺐다(주석 있음)", "qAskFast" not in seen
    and "말이 **느린지**는 글로는 알 수 없다" in s)

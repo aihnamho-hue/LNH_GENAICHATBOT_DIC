@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v120"
+APP_VERSION = "v121"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -644,7 +644,23 @@ QUEST_LLM = [
 # 표현이 필요하면 학습자가 🪜 도움말을 눌러 요청한다(비계는 요청 시 · 맥락에 맞게).
 # 챗봇이 형식까지 미는 자리는 두지 않는다 — 타이밍과 형식을 모두 주면 받아쓰기가 된다.
 # qSelfFix는 제외한다. 자기 수정은 시켜서 하면 자기 수정이 아니다.
-INTERVENABLE = {q["id"] for q in QUEST_LLM} - {"qSelfFix", "qAskFast"}
+# ── 개입(넛지)으로는 권하지 않는 항목 ────────────────────────────
+#   퀘스트 자체는 살아 있다. 학습자가 스스로 하면 실현으로 세고 점수에도 들어간다.
+#   다만 **챗봇이 먼저 「지금 이걸 해 보라」고 시키지는 않는다.**
+INTV_EXCLUDE = {
+    # 스스로 알아채고 고치는 일이다. 시켜서 하면 자기 수정이 아니다.
+    "qSelfFix",
+    # 말이 느린지는 글로 잴 수 없다(v118). 빠른 단추로는 언제든 쓸 수 있다.
+    "qAskFast",
+    # ★ v121 — 끼어들기는 **호아랑이 말하는 도중에** 마이크를 눌러야 성립한다.
+    #   글로 「끼어들어 보세요」라고 띄우는 시점에는 이미 상대의 말이 끝나 있다.
+    #   지금 구조로는 시킬 수 없는 일이라 권하지 않는다.
+    "qTakeTurn",
+    # ★ v121 — 「모르는 말을 다른 말로」는 **학습자가 무엇을 모르는지** 알아야
+    #   권할 수 있다. 서버는 학습자가 한 말만 보므로 모르는 낱말을 알 길이 없다.
+    "qCircum",
+}
+INTERVENABLE = {q["id"] for q in QUEST_LLM} - INTV_EXCLUDE
 # ★ v118 — qAskFast(「빨리 말해 달라기」)를 개입 대상에서 뺀다.
 #   ㄱ) 「상대가 너무 느리다」는 발화의 모양으로 잴 수 없다. 자리를 만들 수가 없어
 #       어느 표지에도 못 들어갔고, 그래서 **한 번도 나온 적이 없다**(죽은 항목이었다).
@@ -1332,6 +1348,24 @@ def _deference_offenders(script: list, want_user: str, want_ai: str) -> list:
 # 대답으로만 쓰이는 첫마디 — 이 말로 대화를 열 수는 없다
 _ANSWER_HEAD = ("네", "예", "아니요", "아뇨", "아니", "응", "어", "그럼요",
                 "맞아요", "맞습니다", "알겠어요", "알겠습니다", "괜찮아요", "괜찮습니다")
+
+
+def _hint_trim(t: str, cap: int = 112) -> str:
+    """도움말 제안이 길면 **문장 끝에서** 자른다.
+
+    ★ 그냥 잘랐더니 「막 어려운 상황 속에서도」처럼 말이 중간에 끊겼다.
+      학습자가 따라 읽을 말인데 끊겨 있으면 읽을 수가 없다.
+      끝을 못 찾으면 차라리 말줄임표를 붙여 '여기서 끝이 아님'을 보인다.
+    """
+    t = (t or "").strip()
+    if len(t) <= cap:
+        return t
+    cut = t[:cap]
+    for sep in ("? ", "! ", ". ", "?", "!", "."):
+        i = cut.rfind(sep)
+        if i >= cap // 2:
+            return cut[:i + len(sep)].strip()
+    return cut.rstrip(" ,·") + "…"
 
 
 def _cue_missing(plan: dict) -> list:
@@ -3477,6 +3511,8 @@ async def _handle_session(websocket: WebSocket):
                 return False
             if qid in PHASE_BAN.get(phase, ()):
                 return False        # 이 자리에서 할 말이 아니다
+            if qid in INTV_EXCLUDE:
+                return False        # 챗봇이 먼저 시킬 일이 아니다
             q = next((x for x in QUEST_LLM if x["id"] == qid), None)
             if q is None:
                 return False
@@ -3962,20 +3998,35 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
                               "「괜찮아요」가 아니라 「괜찮습니다」, "
                               "「누구세요?」가 아니라 「누구십니까?」다.\n"
                               if _mine == "formal" else ""))
-            # ★ 방금 넛지로 알린 것이 있으면 **첫 제안**이 그것을 실현해야 한다.
-            #   두 차례가 지나도록 안 눌렀으면 흘려보낸다 — 이미 지난 자리다.
+            # ══ 도와주기 페이더가 **도움말에도** 걸린다 (v121) ══════════════
+            #   ★ 생각을 바꿨다. 예전에는 페이더가 「넛지를 얼마나 던질까」만 정했고,
+            #     도움말은 늘 기능 단계와 맥락만 봤다. 그래서 넛지로 알린 것과
+            #     도움말이 주는 말이 따로 놀았다.
+            #     이제 페이더는 **도움말의 두 제안에 상호작용 요소를 얼마나 자주 실을까**를 정한다.
+            #       0 끔    — 기능 단계 + 맥락. 요소는 얹지 않는다.
+            #       1 적게  — 넛지가 방금 알린 것이 있을 때만 얹는다.
+            #       2 보통  — 넛지가 없어도 맥락에 맞는 요소를 골라 얹는다(자율 요소는 아낀다).
+            #       3 많이  — 자율에 이른 요소까지 골라 늘 얹는다.
+            #     (2와 3의 차이는 _fit_intervention 이 이미 눈금을 보고 가른다)
             focus_line = ""
-            _fc = idc_state.get("hint_focus")
-            if _fc and _user_turns() - _fc.get("turn", 0) <= 2:
-                _q = next((x for x in QUEST_LLM if x["id"] == _fc["qid"]), None)
-                if _q:
-                    focus_line = (
-                        "[★★ 첫 번째 제안은 이것이어야 한다 ★★]\n"
-                        f"방금 학습자에게 「{_q['desc']}」를 해 보라고 알렸다.\n"
-                        "→ **첫 번째 제안은 그것이 실제로 실현된 발화**여야 한다. "
-                        "지금 상대가 한 말에 얹어서 자연스럽게 만들어라.\n"
-                        "→ 두 번째 제안은 그것과 상관없이, 이 자리에서 자연스러운 다른 말로 둔다.\n")
-                idc_state["hint_focus"] = None      # 한 번만 쓴다
+            _q = None
+            if scaf_level >= 1:
+                _fc = idc_state.get("hint_focus")
+                if _fc and _user_turns() - _fc.get("turn", 0) <= 3:
+                    _q = next((x for x in QUEST_LLM if x["id"] == _fc["qid"]), None)
+                    idc_state["hint_focus"] = None      # 한 번만 쓴다
+                elif scaf_level >= 2:
+                    _qid = _fit_intervention()          # 넛지가 없어도 맥락에 맞는 것을 고른다
+                    _q = next((x for x in QUEST_LLM if x["id"] == _qid), None)
+            if _q:
+                focus_line = (
+                    "[★★ 두 제안 모두 이것을 담아라 ★★]\n"
+                    f"지금 이 학습자에게 필요한 것: 「{_q['desc']}」\n"
+                    "→ **두 제안 모두** 그것이 실제로 실현된 발화여야 한다.\n"
+                    "→ 다만 **서로 다른 방식으로.** 같은 말을 두 번 쓰지 마라.\n"
+                    "→ 억지로 끼워 맞추지 마라. 상대가 방금 한 말에 자연스럽게 얹어야 한다.\n"
+                    "   지금 맥락에서 도저히 안 되면, 이 지시는 접고 흐름에 맞는 말을 주어라.\n")
+                print(f"[도움말] 요소 싣기 — {_q['id']}({_q['el']}) · 페이더 {scaf_level}")
             prompt = f"""{head}
 
 {speech_line}{focus_line}
@@ -4006,12 +4057,17 @@ JSON만 출력: {{"done":[번호,...],"idc":["key",...],"quest":["id",...],"abc"
   둘 다 같은 방식이면 학습자는 대화를 여는 길이 하나뿐이라고 배운다.
 {extra}
 - 국제 통용 표준 교육과정 중급(4급 이하) 어휘·문법, 짧은 구어체로.
+- ★★ 짧게 써라. 한 제안은 **두 문장을 넘기지 말고 45자 안팎**으로.
+  화면 칸이 좁아 길면 **말이 중간에서 잘린다.** 잘린 말은 따라 읽을 수 없다.
+  나쁜 예) "오오, 그거 유명한 게임이잖아! 나중에 나도 좀 가르쳐줘! 나는 '용맹한 친구들'이라는 만화책 보는데, 진짜 재밌어! 막 어려운 상황 속에서도"
+  좋은 예) "오, 그거 유명하잖아! 나도 좀 가르쳐줘."
 JSON만 출력: {{"hints":["",""]}}"""
             # 클라이언트 폴백(13초)보다 먼저 끝나야 한다. 늦으면 화면이 연습 표현으로 되돌아간다.
             data = await _gen_json(prompt, timeout_s=9.0, temperature=0.7)
             hints = []
             if isinstance(data, dict):
-                hints = [_clean_str(h, 80) for h in (data.get("hints") or []) if _clean_str(h, 80)][:2]
+                hints = [_hint_trim(_clean_str(h, 200)) for h in (data.get("hints") or [])
+                         if _clean_str(h, 200)][:2]
             # 지시를 어기고 대화를 닫는 말이 나오면 걸러 낸다.
             # 「아니, 없어.」 같은 것을 학습자에게 주면 막힌 사람을 더 막히게 한다.
             hints = [h for h in hints if not _is_dead_end(h)]

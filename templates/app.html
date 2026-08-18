@@ -447,8 +447,10 @@
         .ham-peek.qz.show { transform: translate(0, -50%); }
         .ham-peek.qz .hp-bubble::before, .ham-peek.qz .hp-bubble::after { bottom: auto; top: 50%; margin-top: -8px; }
         /* ★ v120 — 넛지 말풍선은 두 줄이다. 위는 「지금이에요.」, 아래가 할 일. */
-        .nz-now { display: block; font-size: .82em; opacity: .62; font-weight: 600;
-                  letter-spacing: -.01em; margin-bottom: 2px; }
+        /* 넛지 말풍선은 두 줄 — 위는 「지금이에요.」(작게), 아래가 할 일(크게) */
+        .ham-peek.nz .hp-bubble { font-size: .84em; color: #8A8175; font-weight: 600; }
+        .ham-peek.nz .hp-bubble .qz-items { font-size: 1.2em; color: #2E2A24;
+                                            font-weight: 800; margin-top: 3px; }
         /* 넛지가 뜨면 「도와줘」 단추가 같이 움직인다 — 형식은 여기에 있다 */
         .scf-btn.nudge-live { animation: nudgeBeat 1.5s ease-in-out infinite;
                               border-color: var(--gold, #C9A227) !important; }
@@ -2205,7 +2207,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v120 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v121 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -4413,11 +4415,11 @@
        맞춰 두었으므로(1.5dB 안쪽) 어느 곡이 걸려도 음량이 튀지 않는다.
        ?v= 는 파일이 바뀌었을 때 기기에 남은 옛 파일을 흘려보내기 위한 것. */
     const HOME_BGM = [
-        "/static/bgm_hanok.mp3?v=120",    // 한옥 (원래 쓰던 곡)
-        "/static/bgm_danhwa.mp3?v=120",   // 단화
-        "/static/bgm_bird.mp3?v=120",     // 휘파람새
-        "/static/bgm_rain.mp3?v=120",     // 덕수궁 빗소리
-        "/static/bgm_spring.mp3?v=120",   // 싱그러운 봄 아침
+        "/static/bgm_hanok.mp3?v=121",    // 한옥 (원래 쓰던 곡)
+        "/static/bgm_danhwa.mp3?v=121",   // 단화
+        "/static/bgm_bird.mp3?v=121",     // 휘파람새
+        "/static/bgm_rain.mp3?v=121",     // 덕수궁 빗소리
+        "/static/bgm_spring.mp3?v=121",   // 싱그러운 봄 아침
     ];
     if (bgm && !bgm.getAttribute("src")) {
         bgm.setAttribute("src", HOME_BGM[Math.floor(Math.random() * HOME_BGM.length)]);
@@ -6356,9 +6358,15 @@
     /* 호아랑이 오른쪽에서 빼꼼 나와 한마디 하고 들어간다 */
     let hamPeekTimer = null;
     /* 제목은 굵게, 항목은 얇게 — 같은 크기로 두되 굵기만 다르게 한다 */
-    function hamPeekHtml(title, items, ms) {
+    /* ★ v121 — 이름이 Html 이지만 안에서는 textContent 를 쓴다.
+       v120에서 '<span class="nz-now">…</span>' 를 넘겼더니 **태그가 글자 그대로** 떴다.
+       태그를 세우지 말고, 필요한 꾸밈은 네 번째 인자(cls)로 준다. */
+    function hamPeekHtml(title, items, ms, cls) {
         const el = document.getElementById("hamPeek");
-        if (el) el.classList.add("qz");        // 퀘스트 안내는 버튼 옆에서
+        if (el) {
+            el.classList.add("qz");            // 퀘스트 안내는 버튼 옆에서
+            el.classList.toggle("nz", cls === "nz");
+        }
         const tx = document.getElementById("hamPeekText");
         if (!el) return;
         if (tx) {
@@ -7947,8 +7955,8 @@
                        개입 이름이 이미 「~해 보세요!」 꼴이라 두 번 말하는 셈이었고,
                        말풍선이 좁아 정작 읽어야 할 이름이 밀려났다. */
                     if (label) {
-                        hamPeekHtml('<span class="nz-now">' + escapeHtml(NZ_NOW[uiLang] || NZ_NOW.en)
-                                    + "</span>" + escapeHtml(label), "", 5600);
+                        // 위 줄 「지금이에요.」 · 아래 줄 할 일 — 태그가 아니라 두 인자로 준다
+                        hamPeekHtml(NZ_NOW[uiLang] || NZ_NOW.en, label, 5600, "nz");
                         scfNudge(true);      // 「도와줘」 단추도 같이 움직인다
                     }
                 } catch (e) {}

@@ -292,6 +292,7 @@ _src = "\n".join(l[4:] if l.startswith("    ") else l for l in _src.split("\n"))
 _QL = [{"id": m.group(1), "el": m.group(2)}
        for m in re.finditer(r'\{"id":\s*"(\w+)",\s*"el":\s*"(\w+)"', PY)]
 exec(re.search(r"^PHASE_BAN = \{[\s\S]*?^\}", PY, re.M).group(0), globals())
+exec(re.search(r"^INTV_EXCLUDE = \{[\s\S]*?^\}", PY, re.M).group(0), globals())
 def _fit(last_ai, turns, done=(), stages=0, stages_done=0, percent=0):
     """stages=0 이면 자유 대화. stages>0 이면 주제 대화이고 stages_done 만큼 밟았다."""
     convo = []
@@ -301,7 +302,7 @@ def _fit(last_ai, turns, done=(), stages=0, stages_done=0, percent=0):
     if turns: convo.append({"role": "user", "text": turns[-1]})
     exec(__import__("re").search(r"INTV_ANYTIME\s*=\s*[\s\S]*?\n(?=[A-Z_]+\s*=|\n)", PY).group(0), globals())
     _ns = {"re": __import__("re"), "scaf_level": 2, "INTV_ANYTIME": INTV_ANYTIME, "convo": convo, "QUEST_LLM": _QL,
-           "PHASE_BAN": PHASE_BAN, "_user_turns": lambda: len(turns),
+           "PHASE_BAN": PHASE_BAN, "INTV_EXCLUDE": INTV_EXCLUDE, "_user_turns": lambda: len(turns),
            "rp_plan": ({"stages": [{}] * stages} if stages else None),
            "idc_state": {"intv_ids": set(done), "levels": {}},
            "rp_progress": {"quests": set(), "total": stages,
@@ -415,10 +416,53 @@ ok("넛지", "「지금이에요.」가 18개 언어에 다 있다",
 ok("넛지", "「도와줘」 단추가 같이 움직인다", "scfNudge(true)" in HT and "nudge-live" in HT)
 ok("넛지", "도움말이 오면 가라앉는다", "scfNudge(false)" in HT)
 ok("넛지", "서버가 방금 알린 것을 기억한다", 'idc_state["hint_focus"] = {"qid": qid' in PY)
-ok("넛지", "도움말 첫 제안이 그것을 이어받는다",
-   "첫 번째 제안은 이것이어야 한다" in PY and "focus_line" in PY)
-ok("넛지", "두 차례가 지나면 흘려보낸다", '_user_turns() - _fc.get("turn", 0) <= 2' in PY)
+ok("넛지", "도움말 **두 제안 모두** 그것을 이어받는다",
+   "두 제안 모두 이것을 담아라" in PY and "focus_line" in PY)
+ok("넛지", "세 차례가 지나면 흘려보낸다", '_user_turns() - _fc.get("turn", 0) <= 3' in PY)
 ok("넛지", "한 번 쓰면 비운다", 'idc_state["hint_focus"] = None' in PY)
+ok("넛지", "억지로 끼워 맞추지 말라고 못 박는다", "이 지시는 접고 흐름에 맞는 말을" in PY)
+
+# ★ v121 — 도와주기 페이더가 **도움말에도** 걸린다.
+#   0 끔이면 요소를 얹지 않고, 2 이상이면 넛지가 없어도 골라 얹는다.
+ok("페이더", "0(끔)에서는 도움말에 요소를 얹지 않는다", "if scaf_level >= 1:" in PY)
+ok("페이더", "2 이상이면 넛지 없이도 요소를 고른다",
+   "elif scaf_level >= 2:" in PY and "_qid = _fit_intervention()" in PY)
+ok("페이더", "요소를 실었으면 로그로 남긴다", "[도움말] 요소 싣기" in PY)
+
+print("\n──── 도움말이 잘리지 않는가 (v121) ────")
+_ht = {}
+exec(re.search(r"def _hint_trim\(.*?\n(?=\n\n)", PY, re.S).group(0), _ht)
+_trim = _ht["_hint_trim"]
+_long = "오오, 그거 유명한 게임이잖아! 나중에 나도 좀 가르쳐줘! 나는 '용맹한 친구들'이라는 만화책 보는데, 진짜 재밌어! 막 어려운 상황 속에서도 서로 도와주고 그러거든!"
+_got = _trim(_long)
+ok("도움말", f"긴 제안을 문장 끝에서 자른다 ({len(_got)}자)",
+   len(_got) <= 112 and _got.rstrip()[-1] in "?!.…", _got[-24:])
+ok("도움말", "짧은 것은 건드리지 않는다", _trim("오, 그거 유명하잖아! 나도 좀 가르쳐줘.") == "오, 그거 유명하잖아! 나도 좀 가르쳐줘.")
+ok("도움말", "끝을 못 찾으면 말줄임표를 붙인다", _trim("가" * 200).endswith("…"))
+ok("도움말", "짧게 쓰라고 못 박는다", "두 문장을 넘기지 말고 45자 안팎" in PY)
+
+print("\n──── 개입에서 뺀 항목 (v121) ────")
+exec(re.search(r"^INTV_EXCLUDE = \{[\s\S]*?^\}", PY, re.M).group(0), globals())
+for _q, _why in (("qTakeTurn", "끼어들기 — 상대가 말하는 도중에 눌러야 성립"),
+                 ("qCircum", "돌려 말하기 — 무엇을 모르는지 서버가 알 수 없다"),
+                 ("qSelfFix", "자기 수정 — 시켜서 하는 일이 아니다"),
+                 ("qAskFast", "빨리 — 말이 느린지는 글로 못 잰다")):
+    ok("제외", f"{_q} 는 권하지 않는다 ({_why})", _q in INTV_EXCLUDE)
+ok("제외", "고르기에서도 걸러 낸다", "if qid in INTV_EXCLUDE:" in PY)
+ok("제외", "퀘스트 자체는 살아 있다(점수에는 들어간다)",
+   all(f'"{q}"' in PY for q in ("qTakeTurn", "qCircum")) and "INTERVENABLE = {q[\"id\"] for q in QUEST_LLM} - INTV_EXCLUDE" in PY)
+_ex = [_fit(a, m, stages=5, stages_done=2) for a, m in
+       (("네?", ["음 그거"]), ("뭐라고요?", ["그"]), ("응 그래.", ["어"]), ("그렇구나.", ["응"]))]
+ok("제외", f"뺀 항목이 실제로 안 나온다 {_ex}", not (set(_ex) & INTV_EXCLUDE), _ex)
+
+print("\n──── 말풍선이 태그를 뱉지 않는가 (v121) ────")
+# ★ hamPeekHtml 은 이름과 달리 textContent 를 쓴다. 태그를 넘기면 글자 그대로 뜬다.
+#   (다른 곳의 '<span class= 는 innerHTML 로 쓰이므로 정상이다)
+_shown = re.sub(r"/\*[\s\S]*?\*/", "", HT)          # 주석은 화면에 안 나온다
+ok("말풍선", "넛지가 태그를 문자열로 넘기지 않는다", "nz-now" not in _shown)
+ok("말풍선", "꾸밈은 네 번째 인자로 준다",
+   'hamPeekHtml(title, items, ms, cls)' in HT and 'hamPeekHtml(NZ_NOW[uiLang] || NZ_NOW.en, label, 5600, "nz")' in HT)
+ok("말풍선", "두 줄 모양이 CSS 에 있다", ".ham-peek.nz .hp-bubble .qz-items" in HT)
 
 print("\n════════ ⑲ 화계 눈금 · 계획 만들기 (v120) ════════")
 ok("화계", "합쇼체는 「낯선 사이」 칸에서만 (눈금 15)",
@@ -476,7 +520,7 @@ def _fit_solo(scaf):
     _ns = {"re": __import__("re"), "INTV_ANYTIME": INTV_ANYTIME, "convo": convo, "QUEST_LLM": _QL,
            "idc_state": {"intv_ids": set(), "levels": dict(_ALLSOLO)},
            "rp_progress": {"quests": set(), "total": 0, "done": set(), "percent": 0},
-           "PHASE_BAN": PHASE_BAN, "_user_turns": lambda: 1, "rp_plan": None,
+           "PHASE_BAN": PHASE_BAN, "INTV_EXCLUDE": INTV_EXCLUDE, "_user_turns": lambda: 1, "rp_plan": None,
            "IDC_LEVEL_MODEL": 3, "IDC_LEVEL_SOLO": 1, "scaf_level": scaf}
     exec(_src, _ns); return _ns["_fit_intervention"]()
 ok("페이딩", "여덟 요소가 다 자율이어도 「많이」면 넛지가 나온다", bool(_fit_solo(3)), _fit_solo(3))

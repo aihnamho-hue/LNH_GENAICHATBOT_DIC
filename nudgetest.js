@@ -24,7 +24,9 @@ const forms = Object.keys(QUEST_FORM);
 const TIERS = ["격식", "해요체", "반말"];
 
 console.log("── 구조 ──");
-ok("QUEST_FORM 14개", forms.length === 14, "실제 " + forms.length);
+/* v114 — 서버가 고를 수 있는 넛지가 6개 → 27개로 늘었다. 그중 여섯(거절·대안·
+   재요청·돌려 말하기·명료화 응답·화제 복귀)에 문형이 없어 이름만 나왔다. 채워서 20개. */
+ok("QUEST_FORM 20개", forms.length === 20, "실제 " + forms.length);
 ok("모두 3단계", forms.every(k => QUEST_FORM[k].length === 3));
 ok("빈 문형 없음", forms.every(k => QUEST_FORM[k].every(v => v && v.trim())));
 ok("한국어 qWrap 이 '보기'로 읽힌다", !!wrapKo && /처럼/.test(wrapKo), wrapKo);
@@ -60,7 +62,7 @@ BAN.forEach(w => ok(`'${w}' 안 나옴`, !shown.some(s => s.includes(w)),
 console.log("\n── 서버와 짝이 맞는가 ──");
 const srvIds = [...py.matchAll(/\{"id":\s*"(\w+)"/g)].map(m => m[1]);
 ok("서버 퀘스트 28개", srvIds.length === 28, "실제 " + srvIds.length);
-ok("문형 14개가 모두 서버에 있다", forms.every(k => srvIds.includes(k)),
+ok("문형 20개가 모두 서버에 있다", forms.every(k => srvIds.includes(k)),
    forms.filter(k => !srvIds.includes(k)).join(","));
 const noName = srvIds.filter(id => !forms.includes(id) && !new RegExp('\\b' + id + ':"').test(html));
 ok("문형 없는 것은 모두 이름이 있다", noName.length === 0, noName.join(","));
@@ -72,7 +74,7 @@ const notSuggest = plain.filter(id => {
     const m = html.match(new RegExp('\\b' + id + ':"([^"]*)"'));
     return m && /[가-힣]/.test(m[1]) && !/보세요$/.test(m[1]);
 });
-ok("14개 모두 권유형", notSuggest.length === 0, notSuggest.join(","));
+ok("20개 모두 권유형", notSuggest.length === 0, notSuggest.join(","));
 
 console.log(fail ? `\n💥 실패 ${fail}건` : "\n🎉 넛지 이름 이상 없음");
 process.exit(fail ? 1 : 0);

@@ -23,7 +23,14 @@ const L = /const HOME_BGM = \[([\s\S]*?)\];/.exec(html);
 const files = L ? [...L[1].matchAll(/"\/static\/([^"?]+)/g)].map(m => m[1]) : [];
 ok("다섯 곡이 목록에 있다", files.length === 5, files.join(" "));
 ok("무작위로 고른다", /HOME_BGM\[Math\.floor\(Math\.random\(\) \* HOME_BGM\.length\)\]/.test(html));
-ok("src 를 비워 두고 고른 하나만 받는다", /<audio id="bgm" loop preload="none">/.test(html));
+/* ★ v114 — v113에서 preload="none" 으로 뒀다가 **배경음이 아예 안 났다.**
+   아직 아무것도 안 받아 온 요소를 createMediaElementSource 로 물리면
+   사파리가 소리를 안 내보낸다. 가벼움은 preload 가 아니라
+   **src 를 하나만 꽂는 것**으로 이미 얻고 있었다. 되돌리지 않도록 못 박는다. */
+ok("src 를 비워 두고 고른 하나만 꽂는다", /<audio id="bgm" loop preload="auto">/.test(html)
+                                        && !/id="bgm"[^>]*src=/.test(html));
+ok("꽂은 뒤 load() 로 밀어 준다", /bgm\.setAttribute\("src"[\s\S]{0,900}bgm\.load\(\)/.test(html));
+ok("그래프에 물리기 전에도 밀어 준다", /el\.readyState === 0\) \{ try \{ el\.load\(\)/.test(html));
 let tot = 0, sizes = [];
 files.forEach((f) => {
   const p = path.join("static", f);
@@ -41,7 +48,11 @@ ok("자리가 있다", /<div class="style-line" id="styleLine" hidden>/.test(htm
 ok("모양이 있다", /\.style-line \{/.test(html));
 ok("그리는 함수가 있다", /function styleLinePaint\(/.test(html) && /function styleLineShow\(/.test(html));
 ok("대화가 시작되면 띄운다", /faderSection\.classList\.add\("fader-collapsed"\);\s*\n\s*try \{ styleLineShow\(true\)/.test(html));
-ok("페이더를 펼치면 거둔다", (html.match(/styleLineShow\(false\)/g) || []).length === 2);
+/* v115 — 홈으로 돌아갈 때도 거둔다. 페이더를 펼치는 두 곳 + goHome = 세 곳.
+   (홈에서는 이 줄이 대화 화면 쪽에 있어 눈에 안 보이지만, 남겨 두면
+    다른 길로 대화 화면에 들어갔을 때 지난 대화의 값이 그대로 보인다) */
+ok("페이더를 펼치면 거둔다", (html.match(/styleLineShow\(false\)/g) || []).length === 3);
+ok("홈으로 가도 거둔다", /styleLineShow\(false\)[^\n]*\n\s*setScreen\("home"\)/.test(html));
 ok("말투는 speechTier() 한 곳만 본다", /\["sumFormal", "sumPolite", "sumCasual"\]\[speechTier\(\)\]/.test(html)
                                      && (html.match(/function speechTier\(/g) || []).length === 1);
 ok("대등한 지위는 말하지 않는다", /if \(pi !== 2\) parts\.push/.test(html));

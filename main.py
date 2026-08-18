@@ -6,6 +6,7 @@ import time
 import datetime
 import re
 import hashlib
+import shutil          # ★ v115 — 55행에서 쓰면서 import 가 없었다. 아래 각주 참조.
 from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
@@ -22,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v113"
+APP_VERSION = "v115"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -52,6 +53,10 @@ def _resolve_base_template() -> str:
     root = Path("app.html")
     if root.exists():
         try:
+            # ※ 이 길은 app.html.gz 가 없을 때만 지나간다. gz 가 늘 있었기 때문에
+            #   import 가 빠져 있어도 **한 번도 드러나지 않았다.** 게다가 통째로
+            #   try/except 로 감싸 놓아, 터져도 「복사 실패」 한 줄만 찍고 넘어갔다.
+            #   비상용 길이 정작 비상 때 안 도는 상태였다 (v115에서 잡음).
             shutil.copyfile(root, Path("templates") / "app.html")
             print("[서버] 루트의 app.html 을 화면 파일로 사용")
             return "app.html"
@@ -3218,13 +3223,26 @@ async def _handle_session(websocket: WebSocket):
     def _fit_intervention() -> str:
         """지금 이 자리에 **맞는** 개입을 고른다.
 
-        LLM이 자리를 못 골랐을 때 서버가 채우는데, 예전에는 '가장 덜 실현된 요소'만
-        보고 골랐다. 그러면 흐름과 상관없는 것이 튀어나온다 —
-        이야기가 없는데 「그래서요?」, 공감할 거리가 없는데 「그랬겠어요」.
-        학습자는 시킨 대로 말했을 뿐인데 대화가 어그러진다.
+        ── v114에서 무엇이 잘못돼 있었나 ──
+        퀘스트는 28개인데 이 함수가 고를 수 있는 것은 **여섯 개뿐**이었다.
+        qKeepTurn·qExpand·qParaphrase·qEcho·qEndTurn·qNewTopic — 죄다 대화이동과 화제다.
+        나머지 22개는 코드에 있으나 **영영 나오지 않았다.** 「천천히 말해 주세요」
+        「다시 말해 주세요」 같은 의사소통 전략이 한 번도 안 나온 것이 그래서다.
 
-        그래서 **직전 두 발화의 모양**으로 자리를 좁힌다.
-        말뜻까지는 못 읽지만, 어떤 자리인지는 모양만으로도 상당히 갈린다.
+        어쩌다 이렇게 됐나. v104에서 「많이 힘드셨겠습니다」가 맥락 없이 따라 읽혀
+        대화가 어그러졌다. 그래서 맥락을 타는 것들을 후보에서 **빼 버렸다.**
+        빼는 것은 고치는 것이 아니었다. 안 나오면 어그러지지도 않지만 배우지도 못한다.
+
+        제대로 된 답은 **각각에게 자기 자리를 주는 것**이다.
+        「천천히 말해 주세요」는 아무 때나가 아니라 **상대가 한꺼번에 길게 말했을 때**
+        하는 말이다. 「쉽게 말해 주세요」는 **어려운 말이 나왔을 때** 하는 말이다.
+        그 자리를 말뜻까지 읽지 않고 **발화의 모양만으로** 상당 부분 가려낼 수 있다.
+
+        ── 어떻게 고르나 ──
+        ① 직전 발화들의 모양으로 **상황 표지**를 세운다.
+        ② 표지마다 그 자리에 어울리는 후보를 모은다(여러 표지가 겹치면 다 모은다).
+        ③ 모인 후보 가운데 **가장 덜 해 본 요소**의 것을 고른다.
+           → 맥락에 맞으면서도 한쪽으로 쏠리지 않는다. 이 둘을 같이 잡는 것이 요점이다.
         """
         last_ai = next((m["text"].strip() for m in reversed(convo)
                         if m["role"] == "ai" and m["text"].strip()), "")
@@ -3237,34 +3255,168 @@ async def _handle_session(websocket: WebSocket):
             q = next((x for x in QUEST_LLM if x["id"] == qid), None)
             if q is None:
                 return False
-            # 「많이」에서는 자율 요소도 고를 수 있게 한다 (아래 주석 참조)
+            # 「많이」에서는 자율 요소도 고를 수 있게 한다
             return (idc_state["levels"].get(q["el"], IDC_LEVEL_MODEL) > IDC_LEVEL_SOLO
                     or scaf_level >= 3)
 
-        def first(*ids):
-            return next((i for i in ids if ok(i)), "")
-
-        asked = last_ai.rstrip().endswith(("?", "요?", "까?", "나?"))
+        # ── ① 상황 표지 ──────────────────────────────────────────
+        asked   = last_ai.rstrip().endswith(("?", "요?", "까?", "나?"))
         # 한국어는 글자 하나에 담기는 뜻이 많다. 60자로 잡으니 두 문장짜리 설명도
-        # '길다'에 안 걸렸다(요약 확인을 권할 자리인데 놓쳤다). 45자로 내린다.
-        long_ai = len(last_ai) >= 45
-        short_me = last_me and len(last_me) <= 12
-        # 학습자가 두 차례 이상 계속 짧게만 답하고 있는가
-        keeps_short = len(me) >= 2 and all(len(x) <= 14 for x in me[-2:])
+        # '길다'에 안 걸렸다(v107). 45자로 내렸다.
+        long_ai      = len(last_ai) >= 45
+        very_long_ai = len(last_ai) >= 80          # 한꺼번에 쏟아졌다 → 천천히 부탁할 자리
+        short_me     = bool(last_me) and len(last_me) <= 12
+        keeps_short  = len(me) >= 2 and all(len(x) <= 14 for x in me[-2:])
+        long_me      = len(last_me) >= 40          # 내가 길게 말했다 → 알아들었나 확인할 자리
+        turns        = len(me)
 
+        # 어려운 말이 나왔나 — 뜻은 못 읽어도 **모양**은 읽을 수 있다.
+        #   ㄱ) 네 글자 이상 붙어 있는 낱말은 대개 한자어 합성어다(예: 환불규정, 예약확인서)
+        #   ㄴ) 한자어에 잘 붙는 꼬리(–적·–성·–화·–력·–제도…)가 보인다
+        _HARD_TAIL = ("적으로", "적인", "성이", "성을", "화를", "화가", "력이", "력을",
+                      "제도", "규정", "절차", "조건", "기준", "방침", "사항", "여부")
+        # ★ 「네 글자 이상이면 어려운 말」로 잡았더니 「힘들어요」「그렇군요」「먹었어요」가
+        #   죄다 걸렸다. 한국어는 **용언이 활용하면서 길어진다.** 길이만으로는 못 가른다.
+        #   그래서 조사를 떼고 남은 것이 **용언 어미로 끝나지 않을 때**만 낱말로 본다.
+        #   덜 잡는 쪽으로 기운다 — 잘못 잡으면 엉뚱한 넛지가 나가지만,
+        #   못 잡으면 다른 표지가 대신 받아 준다.
+        _VERB_END = ("요", "다", "까", "죠", "네", "게", "서", "고", "며", "지",
+                     "야", "어", "아", "음", "데", "만", "잖", "군", "걸", "래")
+        def _hard(text: str) -> bool:
+            if any(w in text for w in _HARD_TAIL):
+                return True
+            for tok in re.split(r"[\s,.!?~…]+", text):
+                core = re.sub(r"(은|는|이|가|을|를|에|에서|으로|로|와|과|도|만|의)$", "", tok)
+                if (len(core) >= 4 and not core.endswith(_VERB_END)
+                        and all("\uac00" <= c <= "\ud7a3" for c in core)):
+                    return True
+            return False
+        hard_ai = _hard(last_ai)
+
+        # 감정이 실린 말인가 → 공감할 자리. 이야기인가 → 더 듣고 싶다고 할 자리.
+        _FEEL = ("힘들", "속상", "슬프", "기쁘", "걱정", "화가", "아쉽", "다행",
+                 "고맙", "미안", "무섭", "설레", "뿌듯", "서운", "답답", "뭉클")
+        feel_ai  = any(w in last_ai for w in _FEEL)
+        story_ai = (not asked) and bool(re.search(r"(았|었|였)(어요|습니다|어|다)", last_ai))
+
+        # 되물었나 — 내 말이 안 통했다는 신호. 명료화 응답은 이 자리에서만 말이 된다.
+        re_asked = (last_ai.strip() in ("네?", "예?", "뭐라고요?", "뭐라고?", "응?",
+                                        "무슨 말이에요?", "다시 말해 주세요.", "다시 말해 줄래요?")
+                    or "무슨 뜻" in last_ai or "잘 못 들었" in last_ai
+                    or "잘 못 알아들었" in last_ai)
+        # 무언가를 청해 왔나 — 협상(거절·대안·조건)이 열리는 자리.
+        # 끝의 마침표·느낌표까지 떼고 본다 — 「도와주세요.」가 마침표 하나 때문에 안 걸렸다.
+        _tail = last_ai.rstrip().rstrip(".!~… ")
+        requested = _tail.endswith(("까요?", "실래요?", "시겠어요?", "주세요", "주시겠어요?",
+                                    "어때요?", "어떠세요?", "주실래요?", "주시겠습니까?",
+                                    "해 주세요", "부탁드려요", "부탁드립니다"))
+        # 학습자가 이미 받아들였나 — 그러면 거절을 시킬 자리가 아니다.
+        agreed_me = last_me.strip().rstrip(".!~ ") in (
+            "네", "예", "응", "어", "좋아요", "좋아", "그래요", "그래", "알겠어요", "알겠습니다",
+            "네 좋아요", "그렇게 할게요", "그럴게요", "괜찮아요")
+        # 거절하거나 난색을 보였나 → 물러서지 않고 다시 청하거나, 다른 길을 낼 자리.
+        _NO = ("어렵", "곤란", "안 됩니다", "안 돼요", "안 돼", "힘들 것 같",
+               "죄송하지만", "죄송한데", "미안한데", "어려울 것 같", "곤란한데")
+        refused_ai = any(w in last_ai for w in _NO)
+        # 상대가 거듭 짧게만 말하나 — 한 번 짧은 것은 그냥 대답이다.
+        ais = [m["text"].strip() for m in convo if m["role"] == "ai" and m["text"].strip()]
+        ai_keeps_short = len(ais) >= 2 and all(len(x) <= 12 for x in ais[-2:]) and not asked
+
+        # ── ② 표지마다 어울리는 후보 ─────────────────────────────
+        #   위에 적을수록 그 자리에 더 어울린다. 겹치면 모두 모은다.
+        # ★ 후보를 **두 층**으로 나눈다 (v115).
+        #   예전에는 한 줄로 모아 놓고 「가장 덜 해 본 요소」로 골랐다. 그랬더니
+        #   호아랑이 「죄송하지만 더는 어렵습니다」라고 **거절한 자리**에서
+        #   「그 얘기는 그만하고요」가 나왔다. 다시 청할 자리인데 화제를 접으라니,
+        #   균형이 자리를 이겨 버린 것이다. 학습자가 「엥?」 하는 자리가 여기다.
+        #
+        #   자리 맞음과 균형은 **같은 층에서 다툴 것이 아니다.**
+        #    ㉠ 이 자리에서만 말이 되는 것이 하나라도 있으면 → 그중에서만 고른다
+        #    ㉡ 그런 것이 없을 때에만 → 아무 때나 되는 것에서 고른다
+        #   균형(덜 해 본 요소 먼저)은 **각 층 안에서만** 따진다.
+        tight: list[list[str]] = []    # ㉠ 이 자리에서만 말이 되는 것
+        loose: list[list[str]] = []    # ㉡ 아무 때나 되는 것
+        buckets = tight
+        #  ※ 층 안에서는 차례가 곧 우선순위다 — 먼저 담긴 것이 이긴다.
+
+        # ── ㉠ 이 자리에서만 말이 되는 것 ──
+        if not last_ai and turns == 0:
+            buckets.append(["qInitiate"])                        # 아직 아무 말도 안 했다
+        if feel_ai:
+            buckets.append(["qEmpathy", "qContinuer"])           # 감정이 실렸다
+        if story_ai:
+            buckets.append(["qContinuer", "qEmpathy", "qEcho"])  # 이야기를 하고 멈췄다
+        if re_asked:
+            # 상대가 되물었다 = 내 말이 안 통했다 → 같은 뜻을 쉬운 말로 다시(명료화 응답)
+            buckets.append(["qRephrase", "qCircum", "qSelfFix"])
+        if requested and not agreed_me:
+            # 무언가를 청해 왔다 → 협상이 열리는 자리. 거절·대안·조건은 여기서만 말이 된다.
+            # ★ 다만 학습자가 이미 「네」라고 받았으면 시키지 않는다.
+            #   방금 좋다고 한 사람에게 거절하는 법을 알려 주면 앞뒤가 안 맞는다.
+            #   차례에 뜻이 있다 — **거절이 맨 앞에 오면 안 된다.**
+            #   협상에서 먼저 나오는 것은 대안과 조건이고, 거절은 가장 센 수다.
+            #   앞에 두었더니 「이게 나아요」라고 고른 학습자에게 거절을 시켰다.
+            buckets.append(["qAlt", "qCond", "qRefuse", "qCounter"])
+        if long_me:
+            buckets.append(["qCheckUnd", "qEndTurn"])            # 내가 길게 말했다
+        if refused_ai:
+            # ★ qHold 는 「물러서지 않고 다시 요청하기」다.
+            #   내가 질문한 자리가 아니라 **상대가 거절·난색을 보인 자리**에서만 말이 된다.
+            #   (v114 초안에서 '내가 물었다'에 붙여 놓았다가 바로잡았다)
+            buckets.append(["qHold", "qAlt", "qCond"])
+
+        # ── ㉡ 여기부터는 모양으로 짐작한 것 — 자리를 못 찾았을 때 쓴다 ──
+        buckets = loose
+        if very_long_ai:
+            # 한꺼번에 길게 왔다 → 천천히·다시 부탁하거나 요약해 확인한다
+            buckets.append(["qAskSlow", "qParaphrase", "qAskAgain", "qCheckUnd"])
+        if hard_ai:
+            buckets.append(["qAskEasy", "qAskAgain", "qParaphrase"])
+        if turns >= 8:
+            # 한 이야기가 길어졌다 → 정리하고 넘어가거나 되돌아온다
+            buckets.append(["qCloseTopic", "qShiftTopic", "qReturn", "qNewTopic"])
         if asked and (short_me or keeps_short):
-            # 물어봤는데 짧게만 답한다 → 길게 잇기, 그다음 내 이야기 얹기
-            return first("qKeepTurn", "qExpand")
-        if long_ai:
-            # 상대가 길게 말했다 → 알아들었는지 확인하거나 그 말을 가져다 쓰기
-            return first("qParaphrase", "qEcho")
+            buckets.append(["qKeepTurn", "qExpand", "qFiller"])  # 물어봤는데 짧게만 답한다
+        if keeps_short and turns >= 3:
+            buckets.append(["qCircum", "qNative", "qFiller"])    # 말이 막힌다 → 돌려 말하기
+        if long_ai and not very_long_ai:
+            buckets.append(["qParaphrase", "qEcho", "qAskSlow"])
         if asked:
-            # 물어봤다 → 답하고 되물어 차례를 넘기기
-            return first("qEndTurn", "qExpand")
-        if not asked and last_ai:
-            # 상대가 말을 맺었다(질문이 아니다) → 내가 이어 가거나 새 이야기를 꺼낼 자리
-            return first("qExpand", "qNewTopic", "qEndTurn")
-        return ""
+            buckets.append(["qEndTurn", "qExpand", "qCounter"])
+        if ai_keeps_short:
+            # 상대가 **거듭** 짧게만 답한다 → 이쪽에서 판을 벌려야 한다.
+            # (한 번 짧은 것으로는 안 본다. 「네.」 한마디는 그냥 대답일 뿐이다.)
+            buckets.append(["qNewTopic", "qInitiate", "qExpand"])
+        if last_ai and not asked:
+            buckets.append(["qExpand", "qNewTopic", "qEndTurn", "qTakeTurn"])
+
+        # ※ qAskFast(「좀 더 빨리 말해 주세요」)만 자리를 주지 않았다.
+        #    말이 **느린지**는 글로는 알 수 없다 — 서버가 보는 것은 글자뿐이고
+        #    호아랑의 말 속도는 거기에 안 남는다. 억지로 자리를 만들면 엉뚱한 데서 나간다.
+        #    이것은 빠른 단추(🐇 빨리)로 언제든 할 수 있으므로 못 하게 되는 것은 아니다.
+        #    **모르는 것은 모른다고 두는 편이 낫다.**
+        # 어디에도 안 걸리면 아무 때나 되는 것에서
+        loose.append(list(INTV_ANYTIME))
+
+        # ── ③ 후보 가운데 가장 덜 해 본 요소의 것 ────────────────
+        counts = idc_state.get("counts", {})
+
+        def _pick(layer: list[list[str]]) -> str:
+            cand: list[str] = []
+            for b in layer:
+                for qid in b:
+                    if qid not in cand and ok(qid):
+                        cand.append(qid)
+            if not cand:
+                return ""
+            def _rank(qid: str):
+                q = next((x for x in QUEST_LLM if x["id"] == qid), None)
+                el = q["el"] if q else ""
+                # 이 층 안에서 ㉠ 덜 해 본 요소 먼저 ㉡ 같으면 더 어울리는 자리 먼저
+                return (counts.get(el, 0), cand.index(qid))
+            return min(cand, key=_rank)
+
+        return _pick(tight) or _pick(loose)
 
     def _intv_overdue() -> bool:
         """바닥에 닿았나 — 이만큼의 차례가 지나도록 한 번도 안 나왔는가."""
@@ -3292,26 +3444,13 @@ async def _handle_session(websocket: WebSocket):
         # ★ 맥락을 먼저 본다 (v105).
         #   「가장 덜 실현된 요소」만 보고 고르면 대화 흐름과 상관없는 것이 나온다.
         #   상대가 방금 무엇을 했는지, 학습자가 어떻게 말하고 있는지로 자리를 좁힌다.
-        picked = _fit_intervention()
-        if picked:
-            return picked
-        cand = []
-        for qid in INTV_ANYTIME:
-            if qid in idc_state["intv_ids"] or qid in rp_progress["quests"]:
-                continue
-            q = next((x for x in QUEST_LLM if x["id"] == qid), None)
-            if q is None:
-                continue
-            el = q["el"]
-            # 「많이」에서는 자율에 이른 요소도 후보로 둔다(위 send_teach_intervention 과 같은 규칙).
-            # 그러지 않으면 여덟 요소가 다 자율일 때 고를 것이 하나도 남지 않는다.
-            if idc_state["levels"].get(el, IDC_LEVEL_MODEL) <= IDC_LEVEL_SOLO and scaf_level < 3:
-                continue
-            cand.append((idc_state["counts"].get(el, 0), qid))
-        if not cand:
-            return ""
-        cand.sort()
-        return cand[0][1]
+        # ★ 예전에는 여기 아래에 「그래도 못 골랐으면 INTV_ANYTIME 에서 하나」라는
+        #   뒷길이 있었다. v114에서 _fit_intervention 이 **마지막 후보로 INTV_ANYTIME 을
+        #   통째로 담게** 되면서, 그 뒷길은 앞과 똑같은 것을 똑같은 잣대로 다시 훑는 일이 됐다.
+        #   무작위 4000번을 돌려 확인했다 — _fit 이 빈손인 908번 가운데
+        #   뒷길이 무언가 찾아낸 적은 **0번**이다. 죽은 코드라 치웠다.
+        #   (남겨 두면 다음 사람이 「여기서도 고르는구나」로 잘못 읽는다)
+        return _fit_intervention()
 
     async def run_analysis(final: bool = False):
         """대화 로그를 보고 어떤 기능단계가 충족됐는지 판정 → 진행률 갱신·전송.

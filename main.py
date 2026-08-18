@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v126"
+APP_VERSION = "v129"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -2329,6 +2329,399 @@ async def _next_tts_model(bad: str) -> str | None:
     return None
 
 
+# ============================================================
+# 「한국어 상호작용 대화 능력」 학습 화면 (v128~)
+# ------------------------------------------------------------
+# ★ 하향식 모형(Top-down Processing)을 채택한다.
+#   학습자는 이미 대화를 할 줄 안다 — 모국어로 수없이 해 왔다.
+#   없는 것은 **한국어로 그것을 하는 방법**이다. 그러니 설명부터 주면
+#   아는 것을 다시 가르치는 셈이 된다.
+#
+#   ⓪ 들어가기 — 상황 한 줄로 배경지식을 깨운다 (스키마 활성화)
+#   ① 듣 기   — 표시 없이 대화를 통째로 듣는다
+#   ② 추 측   — 「이 사람은 왜 이렇게 말했을까?」 두 갈래 중 하나
+#   ③ 의 미   — 맞히고 나서 뜻을 듣는다. 그때 대화문에 불이 켜진다
+#   ④ 형 태   — 그제야 표현 문형 (v129)
+#   ⑤ 사 용   — 발화 연습 (v129)
+#
+#   ⓪이 없으면 하향식이 성립하지 않는다. 배경지식이 활성화되어 있어야
+#   위에서 아래로 내려오는 처리가 작동하고, 그렇지 않으면 상향식으로 떨어진다.
+#   (스키마 이론 · 듣기 지도의 듣기 전–듣기–듣기 후 3단계)
+#
+#   ★ 표시(강조)는 **추측이 끝난 뒤에** 켠다. 먼저 켜면 답을 주는 것이고,
+#     그러면 추측할 거리가 없어진다. 표시는 상(賞)이다.
+# ============================================================
+# 기능 단계(stage)는 대화 **전체의 흐름**이라 발화 하나로 가르칠 수 없고,
+# 비언어적 행위(nonverbal)는 음성 대화에서 관찰할 수 없다. 둘을 뺀 일곱이다.
+IDC_LESSON = [
+    {"key": "move",     "emoji": "🔁", "easy": "말 주고받기",
+     "acad": "대화이동 관리",
+     "gist": "묻고 답하고, 청하고 받아들이거나 거절하고, 다른 방법을 내놓는 것"},
+    {"key": "topic",    "emoji": "🧭", "easy": "이야깃거리 다루기",
+     "acad": "화제 관리",
+     "gist": "이야기를 새로 꺼내고, 넓히고, 옮기고, 접는 것"},
+    {"key": "turn",     "emoji": "🎙️", "easy": "말할 차례 주고받기",
+     "acad": "차례 관리",
+     "gist": "내 차례를 지키고, 다 말했으면 넘기고, 넘겨받는 것"},
+    {"key": "repair",   "emoji": "🔧", "easy": "막혔을 때 풀기",
+     "acad": "의사소통 단절 수정",
+     "gist": "못 알아들었을 때 되묻고, 내 말이 안 통했을 때 다시 말하는 것"},
+    {"key": "strategy", "emoji": "💡", "easy": "모르는 말 넘어가기",
+     "acad": "의사소통 전략",
+     "gist": "낱말이 안 떠올라도 대화를 멈추지 않고 이어 가는 것"},
+    {"key": "listen",   "emoji": "👂", "easy": "듣고 있다고 알려 주기",
+     "acad": "상호작용적 듣기",
+     "gist": "맞장구를 치고, 공감하고, 알아들었는지 확인하는 것"},
+    {"key": "context",  "emoji": "🙇", "easy": "상대에 맞춰 말하기",
+     "acad": "맥락·정체성 인식",
+     "gist": "상대가 누구인지에 따라 말투를 고르는 것"},
+]
+IDC_LESSON_KEYS = [e["key"] for e in IDC_LESSON]
+
+# 뜻풀이는 요소마다 하나면 된다 — **정의는 고정, 사례는 변화**가 이 화면의 원칙이다.
+# 매번 다르게 설명하면 배우는 사람이 헷갈린다. (언어·화계별로만 따로 둔다)
+_idc_desc_cache: dict = {}
+_idc_dx = {"ok": 0, "fail": 0, "last": "", "learn": 0}
+
+# 학습 기록 — 논문 자료가 된다. 기기마다 익명 딱지 하나뿐, 개인정보는 받지 않는다.
+IDC_LOG_FILE = os.environ.get("IDC_LOG_FILE", "").strip() or "idc_learn.jsonl"
+_idc_log: list = []          # 이번 판이 뜬 뒤 쌓인 것 (드라이브 백업 대기분)
+_IDC_FLUSH_EVERY = int(os.environ.get("IDC_FLUSH_EVERY", "").strip() or "20")
+
+
+def _idc_el(key: str) -> dict | None:
+    return next((e for e in IDC_LESSON if e["key"] == key), None)
+
+
+async def _idc_meaning(el: dict, lang: str, tier: str) -> list:
+    """③ 의미 — 세 마디로. 요소마다 한 번만 만들고 재워 둔다."""
+    ck = (el["key"], lang, tier)
+    if ck in _idc_desc_cache:
+        return _idc_desc_cache[ck]
+    native = LANG_NAMES.get(lang, "")
+    prompt = f"""너는 한국어 선생님 '호아랑'이다. 중급 학습자에게 대화하는 힘 하나를 설명한다.
+
+[설명할 것] {el['easy']} — {el['gist']}
+
+세 마디로 말하라. 한 마디는 한두 문장.
+ 1) **언제 그런가** — 학습자가 겪어 봤을 상황부터. "~할 때 있죠?" 처럼 물어서 시작하라.
+ 2) **왜 그래야 하나** — 그것을 안 하면 대화에서 무슨 일이 생기는지.
+ 3) **한국어로는 어떻게** — 한국어에서 그 자리에 무엇을 하는지. 문형을 길게 늘어놓지는 마라.
+
+- 국제 통용 한국어 표준 교육과정 **중급(4급 이하)** 어휘·문법. 짧은 입말로.
+- ★ 다음 말은 절대 쓰지 마라 — 화행, 레지스터, 담화, 대화이동, 기능 단계,
+  의사소통 전략, 명료화, 구인, 발화 순서, 연속체, 화계, 상호작용.
+  학술어를 쓰면 배우는 사람이 못 읽는다. 쉬운 말로 풀어라.
+- 말투는 해요체로 쓴다(설명하는 목소리다).
+{f"- 각 마디의 {native} 번역을 native 에 넣어라." if native else "- native 는 빈 문자열로 둔다."}
+
+JSON만 출력: {{"lines":[{{"ko":"","native":""}},{{"ko":"","native":""}},{{"ko":"","native":""}}]}}"""
+    data = await _gen_json(prompt, timeout_s=20.0, temperature=0.6)
+    out = []
+    if isinstance(data, dict):
+        for it in (data.get("lines") or [])[:3]:
+            if isinstance(it, dict) and _clean_str(it.get("ko"), 200):
+                out.append({"ko": _clean_str(it.get("ko"), 200),
+                            "native": _clean_str(it.get("native"), 240)})
+    if len(out) == 3:
+        _idc_desc_cache[ck] = out
+    return out
+
+
+async def _idc_scene(el: dict, lang: str, tier: str, seen: list) -> dict:
+    """⓪①② 상황 한 줄 · 대화문 · 표시할 줄 · 두 갈래 물음."""
+    native = LANG_NAMES.get(lang, "")
+    lv = {"formal": "합쇼체('-습니다/-습니까?')", "polite": "해요체('-아요/-어요')",
+          "banmal": "해체 반말('-아/-어')"}.get(tier, "해요체('-아요/-어요')")
+    avoid = ("- 지난번에 쓴 자리와 겹치지 마라: " + ", ".join(seen[-6:]) + "\n") if seen else ""
+    # ★ v129 — 학습 대화문이 챗봇의 구어체 규칙을 **안 물려받고 있었다.**
+    #   이미 만들어 둔 규칙을 새 화면만 못 쓰고 있었다. 그대로 얹는다.
+    prompt = f"""너는 한국어 교재를 만드는 대화분석 연구자다.
+학습자가 **스스로 알아채도록** 짧은 일상 대화 하나를 짓는다.
+
+[말은 이렇게 쓴다 — 교재 대화문의 티가 나면 안 된다]
+{SPOKEN_RULES}
+
+[가르칠 것] {el['easy']} — {el['gist']}
+
+1) place — 어디서 누구와 나누는 이야기인지 **한 줄**. 학습자가 겪어 봤을 흔한 자리로.
+   예) "카페에서 친구를 만났어요." / "학교 앞에서 같은 반 친구를 만났어요."
+{avoid}
+2) script — 그 자리에서 오가는 대화 **6~8줄**. 두 사람이 번갈아 말한다.
+   - speaker: "ai"(상대) 또는 "user"(학습자 자리)
+   - 두 사람 모두 {lv} 로 말한다. 중급(4급 이하) 어휘·문법, 실제 입말.
+   - ★ 이 가운데 **user 의 한 줄**에서 위 「가르칠 것」이 또렷하게 실현되어야 한다.
+     그 줄의 번호를 mark 에 넣어라(0부터).
+   - 그 줄은 **설명 없이 보아도 자연스러워야** 한다. 억지로 끼워 넣지 마라.
+
+3) quiz — mark 줄을 두고 묻는다. 학습자는 아직 아무 설명도 못 들었다.
+   - q: "왜 이렇게 말했을까요?" 같은 짧은 물음.
+   - right: 맞는 풀이 한 줄. **학술어 없이** 쉬운 말로.
+   - wrong1, wrong2: 틀린 풀이 **두 줄**.
+     ★★ 둘 다 그럴듯해야 한다. 이 힘을 **모르는 사람이 실제로 하는 오해**여야 한다.
+        "배가 고파서" 같은 엉뚱한 것은 고르는 재미도 배울 것도 없다.
+        나쁜 예) "졸려서"  좋은 예) "대답하고 싶지 않아서" / "질문을 못 알아들어서"
+     ★ 둘은 서로 달라야 한다. 같은 말을 돌려 쓰지 마라.
+   - hint: 틀린 쪽을 고른 학습자에게 할 한 마디. 나무라지 말고
+     "그렇게 볼 수도 있어요. 그런데 ~" 로 이어라.
+   ※ 왜 셋인가 — 둘이면 아무렇게나 눌러도 절반이 맞는다. 그러면 「첫 시도에 맞혔는가」가
+     **알아차렸는가의 지표가 되지 못한다.** 셋이면 기저율이 33%로 내려간다.
+{f"- script 각 줄과 place, quiz 의 q·right·wrong 에 {native} 번역을 native/…_n 으로 넣어라." if native else "- native 관련 필드는 빈 문자열로 둔다."}
+
+JSON만 출력:
+{{"place":"","place_n":"",
+  "script":[{{"speaker":"ai","text":"","native":""}}],
+  "mark":0,
+  "quiz":{{"q":"","q_n":"","right":"","right_n":"","wrong1":"","wrong1_n":"",
+           "wrong2":"","wrong2_n":"","hint":"","hint_n":""}}}}"""
+    data = await _gen_json(prompt, timeout_s=30.0, temperature=0.9)
+    if not isinstance(data, dict):
+        return {}
+    script = []
+    for l in (data.get("script") or [])[:10]:
+        if not isinstance(l, dict):
+            continue
+        t = _clean_str(l.get("text"), 120)
+        if not t:
+            continue
+        script.append({"speaker": "user" if l.get("speaker") == "user" else "ai",
+                       "text": t, "native": _clean_str(l.get("native"), 160)})
+    if len(script) < 4:
+        return {}
+    mark = _clamp_int(data.get("mark"), 0, len(script) - 1, -1)
+    # 표시할 줄은 **학습자의 발화**여야 한다. 아니면 가장 가까운 user 줄로 옮긴다.
+    if mark < 0 or script[mark]["speaker"] != "user":
+        mark = next((i for i, l in enumerate(script) if l["speaker"] == "user"), -1)
+    if mark < 0:
+        return {}
+    q = data.get("quiz") or {}
+    # ★ v129 — 두 갈래에서 **세 갈래**로. 둘이면 아무렇게나 눌러도 절반이 맞아,
+    #   「첫 시도에 맞혔는가」가 알아차림의 지표가 되지 못한다.
+    cand = [(_clean_str(q.get("right"), 120), _clean_str(q.get("right_n"), 160), True)]
+    for k in ("wrong1", "wrong2"):
+        t = _clean_str(q.get(k), 120)
+        if t and t not in [c[0] for c in cand]:
+            cand.append((t, _clean_str(q.get(k + "_n"), 160), False))
+    if not cand[0][0] or len(cand) < 2:
+        return {}
+    # 정답이 늘 ⓐ면 학습자가 눌러 보고 안다 — 자리를 섞는다
+    for i in range(len(cand) - 1, 0, -1):
+        j = os.urandom(1)[0] % (i + 1)
+        cand[i], cand[j] = cand[j], cand[i]
+    out = {"q": _clean_str(q.get("q"), 90) or "왜 이렇게 말했을까요?",
+           "q_n": _clean_str(q.get("q_n"), 120),
+           "hint": _clean_str(q.get("hint"), 160),
+           "hint_n": _clean_str(q.get("hint_n"), 200),
+           "n": len(cand), "ans": ""}
+    for i, (t, n, ok_) in enumerate(cand):
+        k = "abc"[i]
+        out[k], out[k + "_n"] = t, n
+        if ok_:
+            out["ans"] = k
+    return {
+        "place": _clean_str(data.get("place"), 90),
+        "place_n": _clean_str(data.get("place_n"), 120),
+        "script": script, "mark": mark, "quiz": out,
+    }
+
+
+@app.post("/idc-lesson")
+async def idc_lesson(request: Request):
+    """한 요소의 한 판 — 상황·대화문·표시할 줄·두 갈래 물음·뜻풀이."""
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="bad_json")
+    key = _clean_str((body or {}).get("el"), 20)
+    el = _idc_el(key)
+    if el is None:
+        raise HTTPException(status_code=400, detail="unknown_element")
+    lang = _clean_str((body or {}).get("lang"), 5).lower()
+    tier = _clean_str((body or {}).get("tier"), 10) or "polite"
+    if tier not in ("formal", "polite", "banmal"):
+        tier = "polite"
+    seen = [_clean_str(x, 60) for x in ((body or {}).get("seen") or [])][-6:]
+    # 뜻풀이는 재워 둔 것이 있으면 그대로 — 대화문만 새로 만든다
+    scene, meaning = await asyncio.gather(
+        _idc_scene(el, lang, tier, seen),
+        _idc_meaning(el, lang, tier),
+        return_exceptions=True)
+    if isinstance(scene, Exception) or not scene:
+        _idc_dx["fail"] += 1
+        _idc_dx["last"] = f"scene: {scene}"[:160]
+        raise HTTPException(status_code=502, detail="lesson_generation_failed")
+    if isinstance(meaning, Exception) or not meaning:
+        meaning = []
+    _idc_dx["ok"] += 1
+    _idc_dx["last"] = f"{key}/{tier} · {len(scene['script'])}줄 · 표시 {scene['mark']}"
+    print(f"[학습] {key} · {tier} · {_idc_dx['last']}")
+    return {"el": key, "easy": el["easy"], "acad": el["acad"], "emoji": el["emoji"],
+            "meaning": meaning, **scene}
+
+
+@app.post("/idc-drill")
+async def idc_drill(request: Request):
+    """⑤ 사용 — 그 요소를 실현하는 발화 연습거리. 주제 대화의 발화 연습과 같은 모양이다.
+
+    ★ 대화문(scene)을 그대로 물려 준다. 방금 관찰한 자리에서 이어져야
+      「관찰–가설–실험」이 한 흐름이 된다. 새 상황을 또 만들면 흐름이 끊긴다.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="bad_json")
+    b = body or {}
+    el = _idc_el(_clean_str(b.get("el"), 20))
+    if el is None:
+        raise HTTPException(status_code=400, detail="unknown_element")
+    lang = _clean_str(b.get("lang"), 5).lower()
+    tier = _clean_str(b.get("tier"), 10)
+    if tier not in ("formal", "polite", "banmal"):
+        tier = "polite"
+    lv = {"formal": "합쇼체('-습니다/-습니까?')", "polite": "해요체('-아요/-어요')",
+          "banmal": "해체 반말('-아/-어')"}[tier]
+    native = LANG_NAMES.get(lang, "")
+    lines = [f"{'나' if l.get('speaker') == 'user' else '상대'}: {_clean_str(l.get('text'), 120)}"
+             for l in (b.get("script") or [])[:10] if _clean_str(l.get("text"), 120)]
+    place = _clean_str(b.get("place"), 90)
+    prompt = f"""한국어 학습자가 방금 아래 대화를 듣고 「{el['easy']}」({el['gist']})를 알아챘다.
+이제 **스스로 말해 보게** 한다.
+
+[방금 들은 자리] {place}
+[방금 들은 대화]
+{chr(10).join(lines) or "(없음)"}
+
+같은 자리에서 이어지는 **말차례 연쇄 두 개**를 만들어라. 학습자가 가운데 자리에 선다.
+각각 객체로: {{"cue":"","text":"","follow":"","native":""}}
+  · cue    — 학습자 바로 앞에 올 상대의 말. **학습자가 먼저 여는 자리면 빈 문자열.**
+  · text   — 학습자가 말할 발화. ★ 여기에 「{el['easy']}」가 또렷하게 실현되어야 한다.
+  · follow — 학습자 발화 뒤 상대의 반응. 두 마디로 끝나면 빈 문자열.
+  · 두 연쇄는 **서로 다른 자리**로 만들어라(하나는 cue 있음, 하나는 없거나 follow 있음).
+
+- 두 사람 모두 {lv} 로 말한다. 중급(4급 이하) 어휘·문법.
+- 방금 들은 대화의 사람·자리를 그대로 쓴다. 새 상황을 만들지 마라.
+- 「네」「알겠습니다」처럼 **대답으로만 쓰이는 말**에는 cue 를 반드시 채워라.
+{f"- 각 text 의 {native} 번역을 native 에 넣어라." if native else "- native 는 빈 문자열."}
+
+JSON만 출력: {{"drills":[{{"cue":"","text":"","follow":"","native":""}}]}}"""
+    data = await _gen_json(prompt, timeout_s=25.0, temperature=0.8)
+    out = []
+    if isinstance(data, dict):
+        for it in (data.get("drills") or [])[:2]:
+            if not isinstance(it, dict):
+                continue
+            t = _clean_str(it.get("text"), 120)
+            if not t:
+                continue
+            out.append({"cue": _clean_str(it.get("cue"), 120), "text": t,
+                        "follow": _clean_str(it.get("follow"), 120),
+                        "native": _clean_str(it.get("native"), 160)})
+    if not out:
+        _idc_dx["fail"] += 1
+        _idc_dx["last"] = "drill: 빈손"
+        raise HTTPException(status_code=502, detail="drill_generation_failed")
+    print(f"[학습] 연습거리 {len(out)}개 — {el['key']}")
+    return {"drills": out}
+
+
+@app.post("/idc-learn")
+async def idc_learn(request: Request):
+    """학습 기록 — 무엇을 언제 배웠고 첫 시도에 맞혔는가.
+
+    ★ 논문 자료가 되는 곳이다. 이것이 있어야
+      「배운 뒤 대화에서 그 요소의 실현이 느는가」를 잴 수 있다.
+      기기마다 익명 딱지 하나뿐이고 이름·연락처는 받지 않는다.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="bad_json")
+    b = body or {}
+    rec = {
+        "t": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "dev": _clean_str(b.get("dev"), 32),
+        "lang": _clean_str(b.get("lang"), 5).lower(),
+        "el": _clean_str(b.get("el"), 20),
+        "step": _clean_str(b.get("step"), 12),       # warm|listen|quiz|meaning|done
+        "correct": bool(b.get("correct")),
+        "tries": _clamp_int(b.get("tries"), 0, 9, 0),
+        "ms": _clamp_int(b.get("ms"), 0, 600000, 0),
+        "d": _clamp_int(b.get("d"), 0, 100, 50),
+        "p": _clamp_int(b.get("p"), 0, 100, 50),
+        "tier": _clean_str(b.get("tier"), 10),
+    }
+    if not rec["dev"] or rec["el"] not in IDC_LESSON_KEYS:
+        raise HTTPException(status_code=400, detail="bad_record")
+    _idc_log.append(rec)
+    _idc_dx["learn"] += 1
+    try:
+        with open(IDC_LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"[학습] 기록 저장 실패(무시): {e}")
+    # ★ Render 의 디스크는 판을 올릴 때마다 지워진다. 논문 자료를 거기 두면 안 된다.
+    #   스무 줄마다 구글 드라이브로 올려 둔다(기존 녹음 업로더를 그대로 쓴다).
+    if len(_idc_log) >= _IDC_FLUSH_EVERY:
+        asyncio.create_task(_idc_flush())
+    return {"ok": True, "n": _idc_dx["learn"]}
+
+
+async def _idc_flush() -> None:
+    """쌓인 기록을 구글 드라이브에 올린다."""
+    if not _idc_log:
+        return
+    part, _idc_log[:] = list(_idc_log), []
+    body = "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in part)
+    name = f"idc_learn_{time.strftime('%Y%m%d_%H%M%S')}.jsonl"
+    try:
+        await asyncio.to_thread(_gdrive_upload_sync, name,
+                                body.encode("utf-8"), "application/x-ndjson")
+        print(f"[학습] 드라이브에 {len(part)}줄 올림 — {name}")
+    except Exception as e:
+        _idc_log[:0] = part          # 실패하면 도로 넣어 둔다 — 다음에 다시 시도
+        print(f"[학습] 드라이브 올리기 실패(다음에 다시): {e}")
+
+
+@app.get("/idc-stats")
+async def idc_stats(csv: int = 0):
+    """연구자용 — 요소별로 몇 번 배웠고 첫 시도 정답률이 얼마인가."""
+    rows = []
+    try:
+        with open(IDC_LOG_FILE, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    rows.append(json.loads(line))
+                except Exception:
+                    pass
+    except FileNotFoundError:
+        pass
+    rows += [r for r in _idc_log if r not in rows]
+    if csv:
+        from fastapi.responses import Response
+        cols = ["t", "dev", "lang", "el", "step", "correct", "tries", "ms", "d", "p", "tier"]
+        out = ",".join(cols) + "\n" + "\n".join(
+            ",".join(str(r.get(c, "")).replace(",", " ") for c in cols) for r in rows)
+        return Response(content="﻿" + out, media_type="text/csv; charset=utf-8",
+                        headers={"Content-Disposition": "attachment; filename=idc_learn.csv"})
+    per = {}
+    for r in rows:
+        k = r.get("el", "")
+        d = per.setdefault(k, {"배움": 0, "첫판정답": 0, "첫판시도": 0, "사람": set()})
+        if r.get("step") == "done":
+            d["배움"] += 1
+        if r.get("step") == "quiz" and r.get("tries") == 1:
+            d["첫판시도"] += 1
+            d["첫판정답"] += 1 if r.get("correct") else 0
+        if r.get("dev"):
+            d["사람"].add(r["dev"])
+    for k, d in per.items():
+        d["사람"] = len(d["사람"])
+        d["첫판정답률"] = (round(100 * d["첫판정답"] / d["첫판시도"]) if d["첫판시도"] else None)
+    return {"줄수": len(rows), "요소별": per,
+            "내려받기": "/idc-stats?csv=1",
+            "설명": "첫판정답률 = 배우기 전에 이미 알고 있었는가의 지표"}
+
+
 @app.get("/voicepick")
 async def voicepick_page():
     """호아랑의 기본 목소리를 **귀로 듣고** 고르는 자리.
@@ -2972,6 +3365,12 @@ async def version_check():
         # 🪜 도움말이 왜 안 나오는지 — 여기서 본다
         #   ok 가 0인데 fail 이 쌓이면 코드가 잘못된 것이다(v122~v123이 그랬다).
         #   ok 는 도는데 empty 만 늘면 모델이 빈손으로 돌아오는 것이다.
+        # 「상호작용 대화 능력」 학습 화면
+        "idc": {
+            "ok": _idc_dx["ok"], "fail": _idc_dx["fail"],
+            "learn": _idc_dx["learn"], "wait": len(_idc_log),
+            "last": _idc_dx["last"][:160],
+        },
         "hint": {
             "ok": _hint_dx["ok"],
             "fail": _hint_dx["fail"],

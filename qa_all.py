@@ -539,6 +539,41 @@ ok("고르기", "여섯 짝이 서버 열쇠와 맞는다",
 ok("고르기", "자동이면 나이를 묻지 않는다", 'if (sex === "auto") return;' in HT)
 ok("페이지", "/voicepick 으로 귀로 듣고 고른다", '@app.get("/voicepick")' in PY and "TTS_VOICE" in PY)
 
+print("\n════════ ㉓ 상호작용 대화 능력 학습 화면 (v128) ════════")
+# ★ 하향식(Top-down) — 학습자는 이미 대화를 할 줄 안다. 없는 것은 한국어로 하는 방법이다.
+#   그래서 **설명이 맨 뒤**에 온다. 순서가 뒤집히면 이 화면은 뜻이 없다.
+ok("학습", "일곱 요소 (기능 단계·비언어 제외)",
+   len(re.findall(r'"key": "\w+"', re.search(r"^IDC_LESSON = \[[\s\S]*?^\]", PY, re.M).group(0))) == 7)
+ok("학습", "쉬운 이름과 학술어가 따로 있다", '"easy":' in PY and '"acad":' in PY)
+ok("학습", "⓪ 들어가기가 있다 (배경지식 활성화)", "place" in PY and "idl-warm" in HT)
+ok("학습", "뜻풀이는 재워 둔다 — 정의는 고정, 사례는 변화", "_idc_desc_cache" in PY)
+ok("학습", "뜻풀이에 학술어를 못 쓰게 막는다", "화계, 상호작용" in PY)
+ok("학습", "표시할 줄은 학습자 발화여야 한다",
+   'if mark < 0 or script[mark]["speaker"] != "user"' in PY)
+# ★ v129 — 두 갈래에서 **세 갈래**로. 둘이면 아무렇게나 눌러도 절반이 맞아,
+# 「첫 시도에 맞혔는가」가 알아차림의 지표가 되지 못한다(기저율 50% → 33%).
+ok("학습", "선택지가 셋이다", '"wrong1"' in PY and '"wrong2"' in PY)
+ok("학습", "정답 자리를 섞는다", "cand[i], cand[j] = cand[j], cand[i]" in PY)
+ok("학습", "④ 형태 — 문형이 화계를 따른다", "QUEST_BY_EL" in HT and "f[tier] || f[1]" in HT)
+ok("학습", "⑤ 사용 — 방금 들은 대화에서 이어진다",
+   '@app.post("/idc-drill")' in PY and "새 상황을 만들지 마라" in PY)
+ok("학습", "발화 연습과 같은 길(/stt)·같은 잣대(simScore)",
+   'fd.append("hint", dr.text)' in HT and "simScore(said, dr.text)" in HT)
+ok("학습", "학습 대화문이 챗봇의 구어체 규칙을 물려받는다", "{SPOKEN_RULES}" in PY)
+ok("학습", "오답은 그럴듯한 오해여야 한다", "모르는 사람이 실제로 하는 오해" in PY)
+ok("학습", "★ 불은 추측이 끝난 뒤에 켠다", "idlScript(true)" in HT and "idlScript(false)" in HT)
+ok("학습", "맞혀야 넘어간다", "next.disabled = (idl.picked !== q.ans)" in HT)
+
+print("\n──── 학습 기록 (논문 자료) ────")
+ok("기록", "서버에 남긴다", '@app.post("/idc-learn")' in PY)
+ok("기록", "기기 딱지는 익명이다", 'localStorage.getItem("devId")' in HT and "이름·연락처는 받지 않는다" in PY)
+ok("기록", "첫 시도 정답 여부를 센다", '"tries"' in PY and "첫판정답률" in PY)
+ok("기록", "★ 드라이브로 백업한다 (Render 디스크는 판마다 지워진다)",
+   "_idc_flush" in PY and "_gdrive_upload_sync" in PY)
+ok("기록", "올리기 실패하면 도로 넣어 둔다", "_idc_log[:0] = part" in PY)
+ok("기록", "연구자용 표와 CSV", '@app.get("/idc-stats")' in PY and "idc_learn.csv" in PY)
+ok("기록", "/version 에서 상태가 보인다", '"idc": {' in PY)
+
 print("\n════════ ㉑ 없는 이름이 있는가 (v124) ════════")
 # ★★ v122에서 send_hints 안에 `native` 를 썼는데 그 스코프에는 그런 이름이 없었다.
 #   그 자리는 예외를 삼키는 try 안이라, **두 판 내내 도움말이 한 번도 안 만들어졌는데도**

@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v129"
+APP_VERSION = "v132"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -2381,7 +2381,7 @@ IDC_LESSON_KEYS = [e["key"] for e in IDC_LESSON]
 # 뜻풀이는 요소마다 하나면 된다 — **정의는 고정, 사례는 변화**가 이 화면의 원칙이다.
 # 매번 다르게 설명하면 배우는 사람이 헷갈린다. (언어·화계별로만 따로 둔다)
 _idc_desc_cache: dict = {}
-_idc_dx = {"ok": 0, "fail": 0, "last": "", "learn": 0}
+_idc_dx = {"ok": 0, "fail": 0, "last": "", "learn": 0, "mine": 0, "mine_miss": 0}
 
 # 학습 기록 — 논문 자료가 된다. 기기마다 익명 딱지 하나뿐, 개인정보는 받지 않는다.
 IDC_LOG_FILE = os.environ.get("IDC_LOG_FILE", "").strip() or "idc_learn.jsonl"
@@ -2428,12 +2428,42 @@ JSON만 출력: {{"lines":[{{"ko":"","native":""}},{{"ko":"","native":""}},{{"ko
     return out
 
 
-async def _idc_scene(el: dict, lang: str, tier: str, seen: list) -> dict:
-    """⓪①② 상황 한 줄 · 대화문 · 표시할 줄 · 두 갈래 물음."""
+async def _idc_scene(el: dict, lang: str, tier: str, seen: list, mine: list) -> dict:
+    """⓪①② 상황 한 줄 · 대화문 · 표시할 줄 · 세 갈래 물음.
+
+    ★ v130 — 학습자가 **실제로 나눈 대화**가 있으면 거기서 끌어온다.
+      지어낸 교재 대화문보다 이쪽이 낫다. 자기가 한 말이라 「저게 나였구나」가 되고,
+      그 학습자의 어휘·말투·자주 가는 자리가 그대로 재료가 된다.
+      기록이 아예 없을 때만 새로 짓는다 — 있으면 반드시 거기서 끌어온다.
+    """
     native = LANG_NAMES.get(lang, "")
     lv = {"formal": "합쇼체('-습니다/-습니까?')", "polite": "해요체('-아요/-어요')",
           "banmal": "해체 반말('-아/-어')"}.get(tier, "해요체('-아요/-어요')")
     avoid = ("- 지난번에 쓴 자리와 겹치지 마라: " + ", ".join(seen[-6:]) + "\n") if seen else ""
+    # 학습자가 실제로 나눈 대화 — 길면 뒤쪽(최근)만 남긴다
+    mine_lines = []
+    for m in (mine or [])[:60]:
+        if not isinstance(m, dict):
+            continue
+        t = _clean_str(m.get("text"), 120)
+        if t:
+            mine_lines.append(f"{'나' if m.get('speaker') == 'user' else '상대'}: {t}")
+    mine_txt = "\n".join(mine_lines[-40:])
+    mine_block = ("" if not mine_txt else f"""
+[★★ 이 학습자가 **실제로 나눈 대화** — 여기서 끌어와라 ★★]
+{mine_txt}
+
+  · 위에서 「가르칠 것」이 드러나는, 또는 **드러날 뻔한** 대목을 하나 골라라.
+  · 그 대목을 앞뒤로 늘려 6~8줄로 다듬는다. **말은 되도록 그대로 살려라.**
+    맞춤법이나 어색한 곳만 손보고, 학습자가 쓴 낱말과 자리는 바꾸지 마라.
+  · 학습자가 그 자리에서 **하지 못한** 것을 가르칠 것이라면,
+    그 자리에 그것을 넣어 「이렇게 했으면 좋았을 대화」로 만들어라.
+  ★★ 위 대화가 주어졌으면 **반드시 거기에서 골라라.** 새로 짓는 것은
+     기록이 **아예 없을 때뿐**이다. 「딱 맞는 대목이 없다」는 이유로 새로 짓지 마라 —
+     맞는 대목이 없으면 **가장 가까운 대목을 골라 그 자리에 넣어** 만들면 된다.
+     그것이 이 화면의 요점이다. 학습자가 **자기가 한 말**에서 배워야 한다.
+  · 골랐으면 from 을 "mine" 으로 하고, place 는 **그 대화가 있었던 자리**로 적어라.
+""")
     # ★ v129 — 학습 대화문이 챗봇의 구어체 규칙을 **안 물려받고 있었다.**
     #   이미 만들어 둔 규칙을 새 화면만 못 쓰고 있었다. 그대로 얹는다.
     prompt = f"""너는 한국어 교재를 만드는 대화분석 연구자다.
@@ -2444,6 +2474,7 @@ async def _idc_scene(el: dict, lang: str, tier: str, seen: list) -> dict:
 
 [가르칠 것] {el['easy']} — {el['gist']}
 
+{mine_block}
 1) place — 어디서 누구와 나누는 이야기인지 **한 줄**. 학습자가 겪어 봤을 흔한 자리로.
    예) "카페에서 친구를 만났어요." / "학교 앞에서 같은 반 친구를 만났어요."
 {avoid}
@@ -2469,7 +2500,7 @@ async def _idc_scene(el: dict, lang: str, tier: str, seen: list) -> dict:
 {f"- script 각 줄과 place, quiz 의 q·right·wrong 에 {native} 번역을 native/…_n 으로 넣어라." if native else "- native 관련 필드는 빈 문자열로 둔다."}
 
 JSON만 출력:
-{{"place":"","place_n":"",
+{{"from":"mine 또는 new","place":"","place_n":"",
   "script":[{{"speaker":"ai","text":"","native":""}}],
   "mark":0,
   "quiz":{{"q":"","q_n":"","right":"","right_n":"","wrong1":"","wrong1_n":"",
@@ -2518,7 +2549,13 @@ JSON만 출력:
         out[k], out[k + "_n"] = t, n
         if ok_:
             out["ans"] = k
+    frm = "mine" if (_clean_str(data.get("from"), 8) == "mine" and mine_txt) else "new"
+    if mine_txt and frm == "new":
+        # 기록을 주었는데도 새로 지었다 — 프롬프트가 안 먹은 것이다. 밖에서 보이게 센다.
+        _idc_dx["mine_miss"] += 1
+        print("[학습] ⚠ 지난 대화를 주었는데 새로 지었다 — 프롬프트 확인 필요")
     return {
+        "from": frm,
         "place": _clean_str(data.get("place"), 90),
         "place_n": _clean_str(data.get("place_n"), 120),
         "script": script, "mark": mark, "quiz": out,
@@ -2541,9 +2578,10 @@ async def idc_lesson(request: Request):
     if tier not in ("formal", "polite", "banmal"):
         tier = "polite"
     seen = [_clean_str(x, 60) for x in ((body or {}).get("seen") or [])][-6:]
+    mine = (body or {}).get("mine") or []          # 학습자가 실제로 나눈 대화
     # 뜻풀이는 재워 둔 것이 있으면 그대로 — 대화문만 새로 만든다
     scene, meaning = await asyncio.gather(
-        _idc_scene(el, lang, tier, seen),
+        _idc_scene(el, lang, tier, seen, mine),
         _idc_meaning(el, lang, tier),
         return_exceptions=True)
     if isinstance(scene, Exception) or not scene:
@@ -2553,7 +2591,10 @@ async def idc_lesson(request: Request):
     if isinstance(meaning, Exception) or not meaning:
         meaning = []
     _idc_dx["ok"] += 1
-    _idc_dx["last"] = f"{key}/{tier} · {len(scene['script'])}줄 · 표시 {scene['mark']}"
+    if scene.get("from") == "mine":
+        _idc_dx["mine"] += 1
+    _idc_dx["last"] = (f"{key}/{tier} · {len(scene['script'])}줄 · 표시 {scene['mark']}"
+                       f" · {'내 대화' if scene.get('from') == 'mine' else '새로 지음'}")
     print(f"[학습] {key} · {tier} · {_idc_dx['last']}")
     return {"el": key, "easy": el["easy"], "acad": el["acad"], "emoji": el["emoji"],
             "meaning": meaning, **scene}
@@ -3369,6 +3410,8 @@ async def version_check():
         "idc": {
             "ok": _idc_dx["ok"], "fail": _idc_dx["fail"],
             "learn": _idc_dx["learn"], "wait": len(_idc_log),
+            # mine = 지난 주제 대화에서 끌어온 판 · miss = 기록을 줬는데도 새로 지은 판
+            "mine": _idc_dx["mine"], "miss": _idc_dx["mine_miss"],
             "last": _idc_dx["last"][:160],
         },
         "hint": {

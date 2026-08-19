@@ -542,8 +542,22 @@ ok("페이지", "/voicepick 으로 귀로 듣고 고른다", '@app.get("/voicepi
 print("\n════════ ㉓ 상호작용 대화 능력 학습 화면 (v128) ════════")
 # ★ 하향식(Top-down) — 학습자는 이미 대화를 할 줄 안다. 없는 것은 한국어로 하는 방법이다.
 #   그래서 **설명이 맨 뒤**에 온다. 순서가 뒤집히면 이 화면은 뜻이 없다.
-ok("학습", "일곱 요소 (기능 단계·비언어 제외)",
+ok("학습", "서버 학습표는 일곱 (기능 단계·비언어 제외)",
    len(re.findall(r'"key": "\w+"', re.search(r"^IDC_LESSON = \[[\s\S]*?^\]", PY, re.M).group(0))) == 7)
+# ★ v131 — 화면에는 **아홉을 모두** 보인다. 못 배우는 둘을 감추면 「없는 것」이 되어
+#   학습자가 상호작용 대화 능력의 전체 모습을 알 수 없다(〈표 34〉 매체 배분이 화면에 드러난다).
+ok("학습", "화면에는 아홉을 모두 보인다",
+   'key: "stage"' in HT and 'key: "nonverbal"' in HT
+   and HT.count('where: "here"') == 7 and HT.count('where: "class"') == 2)
+ok("학습", "교실에서 배우는 둘은 눌리지 않는다", "else b.disabled = true;" in HT)
+ok("학습", "★ 이모지를 쓰지 않는다 (그림으로)",
+   'emoji: "' not in HT.split("const IDC_LES = [")[1].split("];")[0]
+   and '"#ic-idc-" + e.key' in HT)
+ok("학습", "홈 카드가 주제·자유 대화와 같은 꼴", ".home-card.hc-idc" in HT
+   and "linear-gradient(135deg, #22356B" in HT and "ic-ladder" in HT)
+ok("학습", "홈 카드 문구 표가 쓰는 곳보다 앞에 있다",
+   HT.index("const HOME_IDC = {") < HT.index('hcIdcTitleEl").textContent'))
+ok("학습", "홈 카드 이름은 「한국어 대화 상호작용 능력」", "한국어 대화 상호작용 능력" in HT)
 ok("학습", "쉬운 이름과 학술어가 따로 있다", '"easy":' in PY and '"acad":' in PY)
 ok("학습", "⓪ 들어가기가 있다 (배경지식 활성화)", "place" in PY and "idl-warm" in HT)
 ok("학습", "뜻풀이는 재워 둔다 — 정의는 고정, 사례는 변화", "_idc_desc_cache" in PY)
@@ -559,6 +573,23 @@ ok("학습", "⑤ 사용 — 방금 들은 대화에서 이어진다",
    '@app.post("/idc-drill")' in PY and "새 상황을 만들지 마라" in PY)
 ok("학습", "발화 연습과 같은 길(/stt)·같은 잣대(simScore)",
    'fd.append("hint", dr.text)' in HT and "simScore(said, dr.text)" in HT)
+# ★ v130 — 대화문 재생을 주제 대화 「들어보기」와 같은 방식으로 바꿨다.
+#   한 목소리로 이어 붙이고 간격을 220ms 로 고정했더니 누가 말하는지도 모르고 겹쳤다.
+ok("학습", "대화문 재생이 들어보기와 같다 (역할 목소리·글자 수 기다림·미리 받기)",
+   'lines[i].speaker === "user" ? scMyVoice()' in HT
+   and "900 + lines[i].text.length * 165" in HT and "ttsPrefetch" in HT)
+ok("학습", "이전 단추를 감추지 않는다", "prev.style.visibility" not in HT
+   and "prev.disabled = (idl.step === 0)" in HT)
+ok("학습", "★ 대화문을 학습자의 지난 대화에서 끌어온다",
+   "function idcMineLines" in HT and "mine: idcMineLines(60)" in HT
+   and "실제로 나눈 대화** — 여기서 끌어와라" in PY)
+ok("학습", "학습자가 쓴 말을 그대로 살린다", "말은 되도록 그대로 살려라" in PY)
+ok("학습", "★ 주제 대화 기록만 쓴다", 'loadHistory().filter(h => h && h.mode === "rp")' in HT)
+ok("학습", "기록이 있으면 반드시 거기서 (없을 때만 새로)",
+   "반드시 거기에서 골라라" in PY and "기록이 **아예 없을 때뿐**" in PY)
+ok("학습", "기록을 줬는데 새로 지으면 /version 에 보인다",
+   '_idc_dx["mine_miss"] += 1' in PY and '"miss": _idc_dx["mine_miss"]' in PY)
+ok("학습", "어디서 왔는지 알려 준다", 'd.from === "mine"' in HT and "fromMine" in HT)
 ok("학습", "학습 대화문이 챗봇의 구어체 규칙을 물려받는다", "{SPOKEN_RULES}" in PY)
 ok("학습", "오답은 그럴듯한 오해여야 한다", "모르는 사람이 실제로 하는 오해" in PY)
 ok("학습", "★ 불은 추측이 끝난 뒤에 켠다", "idlScript(true)" in HT and "idlScript(false)" in HT)

@@ -662,15 +662,30 @@
         .lang-box h2 { margin: 0 0 4px; font-size: 17px; }
         .lang-box p { margin: 0 0 16px; font-size: 12px; color: var(--muted); }
         /* ── 「상호작용 대화 능력」 학습 (v128) ── */
+        /* ★ v131 — 주제·자유 대화와 같은 꼴로. 예전에는 옅은 베이지라
+           흰 글씨(.home-card 는 color:#fff)가 배경에 묻혀 **이름이 안 보였다.**
+           오방색의 청(靑) — 동방·봄·시작이라 배움의 첫 자리에 맞고,
+           주제(청록)·자유(갈색)와도 확실히 갈린다.
+           빗장 무늬는 그대로 두고 **아자무늬(亞字, 한옥 창살)** 를 한 겹 얹었다. */
         .home-card.hc-idc, .home-card.hc-idc:hover {
-            background: linear-gradient(135deg, #EFE7D6 0%, #E4D9C2 100%); }
+            background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2234%22%20height%3D%2234%22%20viewBox%3D%220%200%2034%2034%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C255%2C255%2C0.13%29%22%20stroke-width%3D%221.2%22%3E%3Crect%20x%3D%2212%22%20y%3D%2212%22%20width%3D%2210%22%20height%3D%2210%22%2F%3E%3Cpath%20d%3D%22M17%202v10M17%2022v10M2%2017h10M22%2017h10%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E"),
+                              url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2226%22%20height%3D%2226%22%20viewBox%3D%220%200%2026%2026%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C255%2C255%2C0.16%29%22%20stroke-width%3D%221.1%22%20stroke-linecap%3D%22square%22%3E%3Cpath%20d%3D%22M0%200%20L26%2026%20M0%2026%20L26%200%20M13.0%200%20V26%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E"),
+                              linear-gradient(135deg, #22356B 0%, #3A5AA0 100%);
+        }
         .idc-cards { display: flex; flex-direction: column; gap: 9px; max-height: 62vh; overflow-y: auto; }
         .idc-card { display: flex; align-items: center; gap: 12px; padding: 13px 14px; cursor: pointer;
             border: 1.5px solid var(--sand); border-radius: 16px; background: #fff;
             font-family: inherit; text-align: left; width: 100%; }
         .idc-card:hover { border-color: var(--accent-ink); transform: translateY(-1px); }
         .idc-card.done { background: #FFFCF3; border-color: var(--gold, #C9A227); }
-        .idc-ce { font-size: 25px; line-height: 1; flex: none; }
+        .idc-ce { flex: none; display: flex; align-items: center; justify-content: center;
+                  width: 40px; height: 40px; border-radius: 12px;
+                  background: var(--accent-soft, #EEF2F8); color: var(--accent-ink, #22356B); }
+        .idc-card.off { background: #F5F3EF; border-style: dashed; cursor: default; }
+        .idc-card.off:hover { border-color: var(--sand); transform: none; }
+        .idc-card.off .idc-ce { background: #EAE6DE; color: #9A9182; }
+        .idc-card.off .idc-c1 { color: #8A8175; }
+        .idc-card.off .idc-stamp { color: #A69C8C; font-weight: 700; letter-spacing: 0; }
         .idc-ct { flex: 1; min-width: 0; }
         /* 쉬운 이름은 크게, 학술어는 아주 작게 — 학습자와 연구자가 같은 카드를 본다 */
         .idc-c1 { display: block; font-size: 15.5px; font-weight: 800; color: var(--ink); }
@@ -679,24 +694,34 @@
         .idc-card.done .idc-stamp { color: var(--gold, #C9A227); }
 
         .idl-head { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; }
-        .idl-emo { font-size: 26px; }
+        .idl-emo { display: flex; align-items: center; justify-content: center;
+                   width: 40px; height: 40px; border-radius: 12px; flex: none;
+                   background: var(--accent-soft, #EEF2F8); color: var(--accent-ink, #22356B); }
         .idl-nm b { display: block; font-size: 16px; font-weight: 800; color: var(--ink); }
         .idl-nm i { display: block; font-size: 9.5px; font-style: normal; color: #A69C8C; font-weight: 600; }
         .idl-dots { display: flex; gap: 5px; justify-content: center; margin: 0 0 14px; }
         .idl-dots i { width: 7px; height: 7px; border-radius: 99px; background: #DED6C6; display: block; }
         .idl-dots i.on { background: var(--accent-ink); width: 18px; }
-        .idl-body { min-height: 232px; }
-        .idl-act { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+        /* 몸통만 구르고 단추는 늘 손 닿는 자리에 남는다 (v130) */
+        .idl-body { min-height: 232px; max-height: 56vh; overflow-y: auto; }
+        .idl-act { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px;
+                   position: sticky; bottom: 0; background: var(--paper, #FDFBF6);
+                   padding-top: 8px; }
+        .idl-act button:disabled { cursor: default; }
         .idl-warm { text-align: center; padding: 26px 10px; }
         .idl-warm .we { font-size: 42px; display: block; margin-bottom: 12px; }
         .idl-warm .wt { font-size: 15.5px; font-weight: 700; color: var(--ink); line-height: 1.55; }
         .idl-warm .wn { font-size: 12px; color: var(--muted); margin-top: 7px; }
+        .idl-from { text-align: center; font-size: 11.5px; font-weight: 700; color: var(--gold, #C9A227);
+                    background: #FFF6DE; border-radius: 99px; padding: 5px 10px; margin: 0 auto;
+                    width: fit-content; }
         .idl-line { display: flex; gap: 7px; padding: 7px 9px; border-radius: 11px; margin-bottom: 5px;
                     background: #F7F4EC; font-size: 13.5px; line-height: 1.5; }
         .idl-line.me { background: #EAF3EA; flex-direction: row-reverse; text-align: right; }
         .idl-line .who { flex: none; font-size: 10.5px; font-weight: 800; color: var(--muted); padding-top: 3px; }
         /* ★ 불은 추측이 끝난 뒤에만 켠다 — 먼저 켜면 답을 주는 것이다 */
         .idl-line.lit { background: #FFF6DE; border: 1.5px solid var(--gold, #C9A227); font-weight: 700; }
+        .idl-line.on { outline: 2px solid var(--accent-ink); outline-offset: 1px; }
         .idl-q { font-size: 15px; font-weight: 800; color: var(--ink); text-align: center; margin: 4px 0 12px; }
         .idl-opt { display: block; width: 100%; text-align: left; padding: 13px 14px; margin-bottom: 8px;
             border: 1.5px solid var(--sand); border-radius: 14px; background: #fff; cursor: pointer;
@@ -1537,7 +1562,7 @@
     </style>
 </head>
 <body data-screen="home"><!-- 화면 상태: home | chat | feedback (방안 A: 홈+대화 분리) -->
-<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><!-- 아이콘: Lucide (ISC) — 선 굵기·모서리는 앱 팔레트에 맞춰 CSS에서 지정 --><symbol id="ic-topic" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" /></symbol><symbol id="ic-free" viewBox="0 0 24 24"><path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /> <path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1" /></symbol><symbol id="ic-mic" viewBox="0 0 24 24"><path d="M12 19v3" /> <path d="M19 10v2a7 7 0 0 1-14 0v-2" /> <rect x="9" y="2" width="6" height="13" rx="3" /></symbol><symbol id="ic-hint" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" /> <path d="M9 18h6" /> <path d="M10 22h4" /></symbol><symbol id="ic-video" viewBox="0 0 24 24"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" /> <rect x="2" y="6" width="14" height="12" rx="2" /></symbol><symbol id="ic-chat" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></symbol><symbol id="ic-sound" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /> <path d="M16 9a5 5 0 0 1 0 6" /> <path d="M19.364 18.364a9 9 0 0 0 0-12.728" /></symbol><symbol id="ic-mute" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /> <line x1="22" x2="16" y1="9" y2="15" /> <line x1="16" x2="22" y1="9" y2="15" /></symbol><symbol id="ic-lang" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /> <path d="M2 12h20" /></symbol><symbol id="ic-name" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /> <path d="m15 5 4 4" /></symbol><symbol id="ic-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /> <path d="M3 3v5h5" /> <path d="M12 7v5l4 2" /></symbol><symbol id="ic-voice" viewBox="0 0 24 24"><path d="M2 10v3" /> <path d="M6 6v11" /> <path d="M10 3v18" /> <path d="M14 8v7" /> <path d="M18 5v13" /> <path d="M22 10v3" /></symbol><symbol id="ic-ear" viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" /></symbol><symbol id="ic-phone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /> <path d="M12 18h.01" /></symbol><symbol id="ic-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /> <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></symbol><symbol id="ic-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol><symbol id="ic-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z"/><circle cx="12" cy="13" r="3"/></symbol>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><!-- 아이콘: Lucide (ISC) — 선 굵기·모서리는 앱 팔레트에 맞춰 CSS에서 지정 --><symbol id="ic-ladder" viewBox="0 0 24 24"><path d="M7 3v18M17 3v18M7 8h10M7 13h10M7 18h10"/></symbol><symbol id="ic-idc-move" viewBox="0 0 24 24"><path d="M3 5h9v7H7l-4 3z"/><path d="M21 11h-6v7h4l2 2z"/></symbol><symbol id="ic-idc-topic" viewBox="0 0 24 24"><path d="M21 6a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h2l4 4v-4h6a3 3 0 0 0 3-3z"/><circle cx="8.5" cy="9.5" r=".6"/><circle cx="12" cy="9.5" r=".6"/><circle cx="15.5" cy="9.5" r=".6"/></symbol><symbol id="ic-idc-turn" viewBox="0 0 24 24"><path d="M4 9h13l-3-3M20 15H7l3 3"/></symbol><symbol id="ic-idc-repair" viewBox="0 0 24 24"><path d="M3 12h5M16 12h5"/><path d="M10 8l4 8M14 8l-4 8"/></symbol><symbol id="ic-idc-strategy" viewBox="0 0 24 24"><path d="M4 18c0-6 4-9 8-9h6l-3-3M18 9l-3 3"/><path d="M10 20h-6"/></symbol><symbol id="ic-idc-listen" viewBox="0 0 24 24"><path d="M4 5h10v7H8l-4 3z"/><path d="M17 7c1.5 1.5 1.5 4 0 5.5M20 5c2.5 2.5 2.5 7 0 9.5"/></symbol><symbol id="ic-idc-context" viewBox="0 0 24 24"><path d="M3 4h8v6H6l-3 2z"/><path d="M21 11h-11v8h7l4 3z"/></symbol><symbol id="ic-idc-stage" viewBox="0 0 24 24"><path d="M3 20h4v-4h5v-4h5V8h4"/></symbol><symbol id="ic-idc-nonverbal" viewBox="0 0 24 24"><path d="M4 6h4M12 6h4M20 6v3M20 13v1M4 6v8l3 3M11 17h6" stroke-dasharray="3 2.6"/></symbol><symbol id="ic-topic" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" /></symbol><symbol id="ic-free" viewBox="0 0 24 24"><path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /> <path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1" /></symbol><symbol id="ic-mic" viewBox="0 0 24 24"><path d="M12 19v3" /> <path d="M19 10v2a7 7 0 0 1-14 0v-2" /> <rect x="9" y="2" width="6" height="13" rx="3" /></symbol><symbol id="ic-hint" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" /> <path d="M9 18h6" /> <path d="M10 22h4" /></symbol><symbol id="ic-video" viewBox="0 0 24 24"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" /> <rect x="2" y="6" width="14" height="12" rx="2" /></symbol><symbol id="ic-chat" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></symbol><symbol id="ic-sound" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /> <path d="M16 9a5 5 0 0 1 0 6" /> <path d="M19.364 18.364a9 9 0 0 0 0-12.728" /></symbol><symbol id="ic-mute" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /> <line x1="22" x2="16" y1="9" y2="15" /> <line x1="16" x2="22" y1="9" y2="15" /></symbol><symbol id="ic-lang" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /> <path d="M2 12h20" /></symbol><symbol id="ic-name" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /> <path d="m15 5 4 4" /></symbol><symbol id="ic-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /> <path d="M3 3v5h5" /> <path d="M12 7v5l4 2" /></symbol><symbol id="ic-voice" viewBox="0 0 24 24"><path d="M2 10v3" /> <path d="M6 6v11" /> <path d="M10 3v18" /> <path d="M14 8v7" /> <path d="M18 5v13" /> <path d="M22 10v3" /></symbol><symbol id="ic-ear" viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" /></symbol><symbol id="ic-phone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /> <path d="M12 18h.01" /></symbol><symbol id="ic-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /> <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></symbol><symbol id="ic-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol><symbol id="ic-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z"/><circle cx="12" cy="13" r="3"/></symbol>
 <symbol id="ic-dice" viewBox="0 0 24 24"><rect width="12" height="12" x="2" y="10" rx="2" ry="2" /> <path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" /> <path d="M6 18h.01" /> <path d="M10 14h.01" /> <path d="M15 6h.01" /> <path d="M18 9h.01" /></symbol><symbol id="ic-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <circle cx="12" cy="12" r="6" /> <circle cx="12" cy="12" r="2" /></symbol><symbol id="ic-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /> <circle cx="12" cy="7" r="4" /></symbol><symbol id="ic-tone" viewBox="0 0 24 24"><path d="m12 14 4-4" /> <path d="M3.34 19a10 10 0 1 1 17.32 0" /></symbol><symbol id="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol><symbol id="ic-plan" viewBox="0 0 24 24"><path d="M13 5h8" /> <path d="M13 12h8" /> <path d="M13 19h8" /> <path d="m3 17 2 2 4-4" /> <path d="m3 7 2 2 4-4" /></symbol><symbol id="ic-trophy" viewBox="0 0 24 24"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2" /> <path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2" /> <path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3" /> <path d="M4 22h16" /> <path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z" /> <path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3" /></symbol><symbol id="ic-share" viewBox="0 0 24 24"><path d="M12 3v13M12 3l-4 4M12 3l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
         <symbol id="ic-addhome" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v8M8 12h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
         <symbol id="ic-dots" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></symbol>
@@ -1920,7 +1945,7 @@
     <!-- ★ v128 — 제시·연습·적용 가운데 「제시」와 「연습」을 챗봇으로 끌어온 자리.
          주제 대화(적용)보다 위에 둔다. 순서가 곧 안내다. -->
     <button type="button" class="home-card hc-idc" id="homeIdcCard">
-        <span class="hc-emoji" aria-hidden="true">🪜</span>
+        <span class="hc-emoji"><svg class="ic ic-xl"><use href="#ic-ladder"></use></svg></span>
         <span class="hc-txt"><span class="hc-title" id="hcIdcTitleEl"></span><span class="hc-desc" id="hcIdcDescEl"></span></span>
     </button>
     <button type="button" class="home-card hc-rp" id="homeRpCard">
@@ -2036,7 +2061,7 @@
     <div class="lang-box" style="max-width:470px;">
         <button type="button" class="ov-x" id="idlX">✕</button>
         <div class="idl-head">
-            <span class="idl-emo" id="idlEmoji"></span>
+            <span class="idl-emo"><svg class="ic ic-xl"><use id="idlIcon" href="#ic-idc-move"></use></svg></span>
             <span class="idl-nm"><b id="idlName"></b><i id="idlAcad"></i></span>
         </div>
         <div class="idl-dots" id="idlDots" aria-hidden="true"></div>
@@ -2281,7 +2306,7 @@
      대화가 시작될 때 미리 받아 둔다. -->
 <div class="outro-ov" id="outroOv" aria-hidden="true">
     <video id="outroVid" playsinline preload="none"
-           poster="/static/outro.jpg?v=129" src="/static/outro.mp4?v=129"></video>
+           poster="/static/outro.jpg?v=132" src="/static/outro.mp4?v=132"></video>
     <button type="button" class="outro-skip" id="outroSkip"></button>
 </div>
 
@@ -2306,7 +2331,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v129 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v132 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -3786,6 +3811,29 @@
         if (bd) fxAfter(420 + list.length * 480 + 120, () => boardRender(bd, earned));
     }
 
+    /* 홈 카드 두 줄 — 이 함수가 파일 앞쪽에서 돌므로 표도 여기 둔다(v131).
+       뒤쪽 IDC_TXT 를 부르면 아직 만들어지지 않아 ReferenceError 가 난다. */
+    const HOME_IDC = {
+        ko: ["한국어 대화 상호작용 능력", "대화하는 힘을 하나씩 배워요"],
+        en: ["Korean Interaction Skills", "Learn one conversation skill at a time"],
+        zh: ["韩语对话互动能力", "一次学一个对话技能"],
+        ja: ["韓国語 会話の相互作用能力", "会話の力を一つずつ学びます"],
+        vi: ["Năng lực tương tác hội thoại tiếng Hàn", "Học từng kỹ năng hội thoại một"],
+        th: ["ทักษะการโต้ตอบในภาษาเกาหลี", "เรียนทีละทักษะ"],
+        id: ["Kemampuan Interaksi Bahasa Korea", "Pelajari satu keterampilan per kali"],
+        mn: ["Солонгос харилцан ярианы чадвар", "Нэг нэгээр нь сурцгаая"],
+        uz: ["Koreys suhbat mahorati", "Har safar bitta ko‘nikma"],
+        ru: ["Навыки корейского диалога", "Изучайте по одному умению"],
+        es: ["Competencia interaccional en coreano", "Aprende una habilidad a la vez"],
+        fr: ["Compétence d'interaction en coréen", "Une compétence à la fois"],
+        ne: ["कोरियन कुराकानी अन्तर्क्रिया क्षमता", "एक पटकमा एउटा सीप"],
+        lo: ["ທັກສະການໂຕ້ຕອບພາສາເກົາຫຼີ", "ຮຽນເທື່ອລະທັກສະ"],
+        my: ["ကိုရီးယား စကားပြော အပြန်အလှန် စွမ်းရည်", "တစ်ခုချင်း လေ့လာပါ"],
+        km: ["សមត្ថភាពអន្តរកម្មសន្ទនាកូរ៉េ", "រៀនម្តងមួយ"],
+        uk: ["Навички корейського діалогу", "Вивчайте по одному вмінню"],
+        ky: ["Корей маек чеберчилиги", "Бир-бирден үйрөнөбүз"],
+    };
+
     function applyLang() {
         document.documentElement.lang = uiLang || "ko";
         document.getElementById("appTitle").textContent = t("title");
@@ -3837,11 +3885,17 @@
         const _hs = document.getElementById("hvScfLbl");     // 영상통화 🪜 버튼 라벨
         if (_hs) _hs.textContent = stripLeadEmoji(t("scfTitle"));
         document.getElementById("homeSubEl").textContent = t("homeSub");
-        // ★ v128 — 새 칸. 표에 없이 IDC_TXT 에 모아 두었다(없는 언어는 영어로 떨어진다)
+        /* ★★ v131 — 이름이 빈 칸으로 나오던 까닭.
+           IDC_TXT 는 파일 **뒤쪽**에 const 로 있는데 이 함수는 앞쪽에서 돈다.
+           아직 만들어지지 않은 것을 부르니 ReferenceError 가 났고,
+           내가 감싸 둔 try/catch 가 그것을 삼켜 **빈 칸**이 됐다.
+           v124의 native 와 **똑같은 종류**다 — 삼키는 자리를 또 만들었다.
+           표를 앞으로 옮기는 대신, 여기서 쓸 두 줄만 여기에 둔다. */
         try {
-            document.getElementById("hcIdcTitleEl").textContent = idcT("home");
-            document.getElementById("hcIdcDescEl").textContent = idcT("homeD");
-        } catch (e) {}
+            const _h = (HOME_IDC[uiLang] || HOME_IDC.en);
+            document.getElementById("hcIdcTitleEl").textContent = _h[0];
+            document.getElementById("hcIdcDescEl").textContent = _h[1];
+        } catch (e) { console.warn("홈 카드 문구 실패:", e); }
         document.getElementById("hcRpTitleEl").textContent = t("hcRpTitle");
         document.getElementById("hcRpDescEl").textContent = t("hcRpDesc");
         document.getElementById("hcFreeTitleEl").textContent = t("hcFreeTitle");
@@ -4519,10 +4573,10 @@
        맞춰 두었으므로(1.5dB 안쪽) 어느 곡이 걸려도 음량이 튀지 않는다.
        ?v= 는 파일이 바뀌었을 때 기기에 남은 옛 파일을 흘려보내기 위한 것. */
     const HOME_BGM = [
-        "/static/bgm_hanok.mp3?v=129",    // 한옥 (원래 쓰던 곡)
-        "/static/bgm_danhwa.mp3?v=129",   // 단화
-        "/static/bgm_bird.mp3?v=129",     // 휘파람새
-        "/static/bgm_spring.mp3?v=129",   // 싱그러운 봄 아침
+        "/static/bgm_hanok.mp3?v=132",    // 한옥 (원래 쓰던 곡)
+        "/static/bgm_danhwa.mp3?v=132",   // 단화
+        "/static/bgm_bird.mp3?v=132",     // 휘파람새
+        "/static/bgm_spring.mp3?v=132",   // 싱그러운 봄 아침
     ];
     if (bgm && !bgm.getAttribute("src")) {
         bgm.setAttribute("src", HOME_BGM[Math.floor(Math.random() * HOME_BGM.length)]);
@@ -7447,14 +7501,26 @@
         context:    [],
     };
 
+    /* ★★ v131 — **아홉 요소를 모두** 보인다. 챗봇에서 못 배우는 둘도 함께.
+       학습자가 상호작용 대화 능력의 **전체 모습**을 알아야 하기 때문이다.
+       못 배우는 것을 아예 안 보이면 「없는 것」이 되어 버린다.
+       화면에 〈표 34〉의 매체 배분이 그대로 드러나는 셈이기도 하다.
+         · here  — 여기서 배운다 (AI 전담)
+         · class — 교실에서 배운다 (여기서는 보여 주기만) */
     const IDC_LES = [
-        { key: "move",     emoji: "🔁", easy: "말 주고받기",        acad: "대화이동 관리" },
-        { key: "topic",    emoji: "🧭", easy: "이야깃거리 다루기",   acad: "화제 관리" },
-        { key: "turn",     emoji: "🎙️", easy: "말할 차례 주고받기",  acad: "차례 관리" },
-        { key: "repair",   emoji: "🔧", easy: "막혔을 때 풀기",      acad: "의사소통 단절 수정" },
-        { key: "strategy", emoji: "💡", easy: "모르는 말 넘어가기",   acad: "의사소통 전략" },
-        { key: "listen",   emoji: "👂", easy: "듣고 있다고 알려 주기", acad: "상호작용적 듣기" },
-        { key: "context",  emoji: "🙇", easy: "상대에 맞춰 말하기",   acad: "맥락·정체성 인식" },
+        { key: "move",      easy: "말 주고받기",         acad: "대화이동 관리",      where: "here" },
+        { key: "topic",     easy: "이야깃거리 다루기",    acad: "화제 관리",          where: "here" },
+        { key: "turn",      easy: "말할 차례 주고받기",   acad: "차례 관리",          where: "here" },
+        { key: "repair",    easy: "막혔을 때 풀기",       acad: "의사소통 단절 수정",  where: "here" },
+        { key: "strategy",  easy: "모르는 말 넘어가기",   acad: "의사소통 전략",       where: "here" },
+        { key: "listen",    easy: "듣고 있다고 알려 주기", acad: "상호작용적 듣기",     where: "here" },
+        { key: "context",   easy: "상대에 맞춰 말하기",   acad: "맥락·정체성 인식",    where: "here" },
+        // 아래 둘은 여기서 배울 수 없다. 그래도 **보여야** 한다.
+        //   기능 단계 — 대화 **전체의 흐름**이라 발화 하나로 가르칠 수 없다
+        //               (주제 대화의 진행률이 이것을 맡는다)
+        //   비언어    — 시선·표정·몸짓이라 음성 대화에서 관찰할 수 없다
+        { key: "stage",     easy: "대화의 흐름 짜기",     acad: "기능 단계의 조직과 흐름", where: "class" },
+        { key: "nonverbal", easy: "몸으로 말하기",        acad: "비언어적 행위",       where: "class" },
     ];
     /* 표 열쇠를 열여덟 언어에 다 심는 대신 여기 모아 둔다(없으면 영어로 떨어진다) */
     const IDC_TXT = {
@@ -7470,7 +7536,8 @@
               talking: "🔴 말하는 중 — 떼면 보냅니다", checking: "🧠 듣고 있어요…",
               nice: "좋아요! 👏", again: "조금 달랐어요 — 한 번 더!",
               noHear: "잘 안 들렸어요. 다시 해 볼까요?", tooShort: "너무 짧아요",
-              noMic: "마이크를 쓸 수 없어요" },
+              noMic: "마이크를 쓸 수 없어요",
+              fromMine: "지난번 내 주제 대화에서 가져왔어요", inClass: "교실에서" },
         en: { home: "Korean Interaction Skills", homeD: "Learn one conversation skill at a time",
               title: "🪜 Conversation skills", sub: "Pick one. Listen first, guess for yourself, then learn.",
               none: "not yet", times: "x", warmGo: "Let's listen", next: "Next →", prev: "← Back",
@@ -7483,9 +7550,43 @@
               talking: "🔴 Talking — release to send", checking: "🧠 Listening…",
               nice: "Nice! 👏", again: "Not quite — one more try!",
               noHear: "Couldn't hear you. Try again?", tooShort: "Too short",
-              noMic: "Microphone is not available" },
+              noMic: "Microphone is not available",
+              fromMine: "From one of your past Topic Practice sessions", inClass: "in class" },
     };
     function idcT(k) { const o = IDC_TXT[uiLang] || IDC_TXT.en; return o[k]; }
+
+    /* ★★ v130 — 학습 대화문을 **학습자가 실제로 나눈 대화**에서 끌어온다.
+       LLM이 새로 짓는 것보다 이쪽이 낫다.
+        ㄱ) 자기가 한 말이라 「저게 나였구나」가 된다 — 남의 이야기가 아니다
+        ㄴ) 그 학습자의 실제 어휘·말투·자주 가는 자리가 그대로 재료가 된다
+        ㄷ) 자료의 진정성 — 지어낸 교재 대화문이 아니라 실제로 오간 말이다
+       지난 대화는 이미 기기에 남아 있다(masamasaHistory). 그 글에서 발화 줄만 뽑는다.
+       처음 온 학습자는 기록이 없으므로, 없으면 서버가 새로 짓는다. */
+    function idcMineLines(maxLines) {
+        const out = [];
+        try {
+            /* ★ v132 — **주제 대화 기록만** 쓴다.
+               자유 대화는 자리도 상대도 그때그때 달라 「어디서 있었던 일인가」가 흐리다.
+               주제 대화는 장소·역할·목적이 정해져 있어 그 대목을 떼어 와도
+               ⓪ 들어가기 한 줄이 그대로 선다. 학습 자료가 되려면 자리가 있어야 한다. */
+            const hist = loadHistory().filter(h => h && h.mode === "rp");
+            for (const h of hist.slice(0, 4)) {          // 최근 네 판까지
+                const body = String(h.text || "");
+                // "[00:00:00] 나:" / "[00:00:00] 호아랑:" 다음 줄이 발화다
+                const re = /^\[[^\]]*\]\s*(나|호아랑)[^:]*:\s*$/;
+                const rows = body.split(/\r?\n/);
+                for (let i = 0; i < rows.length - 1; i++) {
+                    const m = re.exec(rows[i].trim());
+                    if (!m) continue;
+                    const txt = (rows[i + 1] || "").trim();
+                    if (!txt || txt.length > 120) continue;
+                    out.push({ speaker: m[1] === "나" ? "user" : "ai", text: txt });
+                    if (out.length >= (maxLines || 60)) return out;
+                }
+            }
+        } catch (e) {}
+        return out;
+    }
 
     /* 기기마다 익명 딱지 하나 — 이름도 연락처도 받지 않는다. 학습 기록을 잇는 데만 쓴다. */
     function idcDev() {
@@ -7527,19 +7628,21 @@
         box.innerHTML = "";
         IDC_LES.forEach((e) => {
             const n = learned[e.key] || 0;
+            const here = e.where !== "class";
             const b = document.createElement("button");
             b.type = "button";
-            b.className = "idc-card" + (n > 0 ? " done" : "");
-            b.innerHTML = '<span class="idc-ce"></span>'
+            b.className = "idc-card" + (here && n > 0 ? " done" : "") + (here ? "" : " off");
+            b.innerHTML = '<span class="idc-ce"><svg class="ic ic-xl"><use/></svg></span>'
                 + '<span class="idc-ct"><span class="idc-c1"></span><span class="idc-c2"></span></span>'
                 + '<span class="idc-stamp"></span>';
-            b.querySelector(".idc-ce").textContent = e.emoji;
+            b.querySelector("use").setAttribute("href", "#ic-idc-" + e.key);
             b.querySelector(".idc-c1").textContent = e.easy;
             b.querySelector(".idc-c2").textContent = e.acad;      // 학술어는 아주 작게
-            b.querySelector(".idc-stamp").textContent =
-                n > 0 ? ("●".repeat(Math.min(n, 5)) + "○".repeat(Math.max(0, 5 - n)))
-                      : idcT("none");
-            b.addEventListener("click", () => idlOpen(e));
+            b.querySelector(".idc-stamp").textContent = here
+                ? (n > 0 ? ("●".repeat(Math.min(n, 5)) + "○".repeat(Math.max(0, 5 - n))) : idcT("none"))
+                : idcT("inClass");
+            if (here) b.addEventListener("click", () => idlOpen(e));
+            else b.disabled = true;
             box.appendChild(b);
         });
     }
@@ -7556,7 +7659,7 @@
     async function idlOpen(e) {
         idl = { el: e, data: null, step: 0, tries: 0, t0: Date.now(), picked: "",
                 drills: null, di: 0 };
-        document.getElementById("idlEmoji").textContent = e.emoji;
+        document.getElementById("idlIcon").setAttribute("href", "#ic-idc-" + e.key);
         document.getElementById("idlName").textContent = e.easy;
         document.getElementById("idlAcad").textContent = e.acad;
         document.getElementById("idlOverlay").classList.remove("hidden");
@@ -7567,7 +7670,8 @@
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     el: e.key, lang: uiLang || "ko", seen: idlSeen,
-                    tier: ["formal", "polite", "banmal"][speechTier()] || "polite" }) });
+                    tier: ["formal", "polite", "banmal"][speechTier()] || "polite",
+                    mine: idcMineLines(60) }) });      // ★ 내가 실제로 한 대화를 재료로
             if (!r.ok) throw new Error("HTTP " + r.status);
             const d = await r.json();
             if (!idl || idl.el.key !== e.key) return;      // 그새 닫혔거나 다른 걸 골랐다
@@ -7581,6 +7685,7 @@
         idlPaint();
     }
     function idlClose() {
+        idlHalt();
         document.getElementById("idlOverlay").classList.add("hidden");
         idl = null;
         renderIdcCards();
@@ -7607,18 +7712,52 @@
             const tx = document.createElement("span");
             tx.textContent = l.text;
             row.appendChild(who); row.appendChild(tx);
-            row.addEventListener("click", () => ttsPlay(l.text));   // 줄을 누르면 그 줄만
+            row.addEventListener("click", () =>
+                ttsPlay(l.text, l.speaker === "user" ? scMyVoice() : ""));   // 줄을 누르면 그 줄만
             wrap.appendChild(row);
         });
         return wrap;
     }
+    /* ★★ v130 — 주제 대화 「들어보기」와 같은 방식으로 바꿨다.
+       예전에는 모든 줄을 ttsPlay(text) 한 가지 목소리로 이어 붙였다. 그래서
+        ㄱ) 두 사람이 **같은 목소리**로 말해 누가 말하는지 알 수 없었고,
+        ㄴ) 줄 사이 간격이 220ms 로 고정이라 긴 줄에서 겹치고 짧은 줄에서 늘어졌다.
+       들어보기(scPlayAll)가 이미 셋을 다 하고 있었다 —
+       역할별 목소리 · 글자 수로 어림잡은 기다림 · 다음 줄 미리 받기. 그대로 쓴다. */
+    let idlPlaying = false, idlStopFlag = false, idlTimer = null;
+    function idlHi(i) {
+        document.querySelectorAll("#idlBody .idl-line").forEach((el, k) => {
+            el.classList.toggle("on", k === i);
+        });
+    }
+    function idlHalt() {
+        idlStopFlag = true;
+        clearTimeout(idlTimer);
+        try { if (prLastSrc) prLastSrc.stop(); } catch (e) {}
+        try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+        idlPlaying = false;
+        idlHi(-1);
+    }
     async function idlPlayAll() {
         if (!idl || !idl.data) return;
-        for (const l of idl.data.script) {
-            if (!idl) return;
-            await ttsPlay(l.text);
-            await new Promise(r => setTimeout(r, 220));
+        if (idlPlaying) { idlHalt(); return; }
+        const lines = idl.data.script;
+        idlStopFlag = false; idlPlaying = true;
+        for (let i = 0; i < lines.length; i++) {
+            if (idlStopFlag || !idl) break;
+            idlHi(i);
+            let wait = 2200;
+            try {
+                // 학습자 자리는 다른 목소리로 — 들어보기와 같은 규칙
+                await ttsPlay(lines[i].text, lines[i].speaker === "user" ? scMyVoice() : "");
+                wait = Math.min(7000, 900 + lines[i].text.length * 165);
+            } catch (e) { console.warn("학습 대화문 재생 실패:", e); }
+            if (idlStopFlag) break;
+            if (lines[i + 1] && lines[i + 1].speaker !== "user") ttsPrefetch(lines[i + 1].text);
+            await new Promise(r => { idlTimer = setTimeout(r, wait); });
         }
+        idlHi(-1);
+        idlPlaying = false;
     }
     function idlPaint() {
         if (!idl) return;
@@ -7628,7 +7767,10 @@
         idlDots();
         body.innerHTML = "";
         prev.textContent = idcT("prev");
-        prev.style.visibility = idl.step > 0 ? "" : "hidden";
+        /* ★ v130 — 첫 걸음에서 visibility:hidden 으로 감췄더니 「이전이 없다」고 하셨다.
+           감추면 있는지 없는지 알 수 없다. **자리에 두되 흐리게** 한다. */
+        prev.disabled = (idl.step === 0);
+        prev.style.opacity = idl.step === 0 ? ".35" : "";
         next.textContent = idcT("next");
         next.disabled = false;
 
@@ -7653,6 +7795,12 @@
             w.querySelector(".wt").textContent = d.place || "";
             w.querySelector(".wn").textContent = d.place_n || "";
             body.appendChild(w);
+            if (d.from === "mine") {                   // 자기 대화에서 왔으면 알려 준다
+                const tag = document.createElement("div");
+                tag.className = "idl-from";
+                tag.textContent = idcT("fromMine");
+                body.appendChild(tag);
+            }
             next.textContent = idcT("warmGo");
             return;
         }

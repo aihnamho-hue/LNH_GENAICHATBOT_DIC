@@ -37,7 +37,16 @@ ok("틀리면 다시 고를 수 있다", /idl\.picked = ""; idlPaint\(\)/.test(h
 console.log("── ④ 이름 ──");
 const KEYS = ["move", "topic", "turn", "repair", "strategy", "listen", "context"];
 ok("일곱 요소", KEYS.every(k => new RegExp('key: "' + k + '"').test(html)));
-ok("기능 단계·비언어는 뺐다", !/key: "stage"/.test(html) && !/key: "nonverbal"/.test(html));
+/* ★ v131 — 방침이 바뀌었다. 아홉을 **모두 보이되** 둘은 「교실에서」로 표시한다.
+   못 배우는 것을 아예 안 보이면 「없는 것」이 되어, 학습자가 상호작용 대화 능력의
+   전체 모습을 알 수 없다. 여기서 배우는 것은 일곱이다. */
+ok("아홉을 모두 보인다", /key: "stage"/.test(html) && /key: "nonverbal"/.test(html));
+ok("배우는 것은 일곱", (html.match(/where: "here"/g) || []).length === 7,
+   (html.match(/where: "here"/g) || []).length);
+ok("교실에서 배우는 둘은 눌리지 않는다", /else b\.disabled = true;/.test(html));
+const LESSON_BLOCK = (/^IDC_LESSON = \[[\s\S]*?^\]/m.exec(py) || [""])[0];
+ok("서버 학습표는 일곱만", KEYS.every(k => LESSON_BLOCK.indexOf('"key": "' + k + '"') >= 0)
+   && LESSON_BLOCK.indexOf('"key": "stage"') < 0 && LESSON_BLOCK.indexOf('"key": "nonverbal"') < 0);
 ok("쉬운 이름이 크고 학술어는 작다",
    /\.idc-c1 \{[^}]*font-size: 15\.5px/.test(html) && /\.idc-c2 \{[^}]*font-size: 9\.5px/.test(html));
 ok("화면과 서버의 요소가 같다", KEYS.every(k => new RegExp('"key": "' + k + '"').test(py)));
@@ -72,7 +81,37 @@ ok("발화 연습과 같은 길(\/stt)을 쓴다", /fd\.append\("hint", dr\.text
 ok("판정도 같은 잣대(simScore)", /simScore\(said, dr\.text\)/.test(html));
 ok("학습 대화문이 구어체 규칙을 물려받는다", /\{SPOKEN_RULES\}/.test(py));
 
-console.log("── ⑨ 화면이 실제로 뜨는가 ──");
+console.log("── ⑨ 재생·이전 단추·내 대화 (v130) ──");
+/* ★ 예전에는 모든 줄을 한 목소리로 이어 붙이고 간격도 220ms 로 고정이었다.
+   들어보기(scPlayAll)가 이미 셋을 다 하고 있었다 — 그대로 쓴다. */
+ok("역할마다 다른 목소리", /scMyVoice\(\)/.test(html) && /lines\[i\]\.speaker === "user" \? scMyVoice\(\)/.test(html));
+ok("글자 수로 기다린다 (고정 간격 아님)", /900 \+ lines\[i\]\.text\.length \* 165/.test(html));
+ok("다음 줄을 미리 받는다", /idlPlayAll[\s\S]{0,1400}ttsPrefetch/.test(html));
+ok("재생 중인 줄이 보인다", /\.idl-line\.on \{/.test(html) && /function idlHi/.test(html));
+ok("창을 닫으면 소리도 멈춘다", /function idlClose\(\) \{\s*idlHalt\(\);/.test(html));
+
+/* 감추면 있는지 없는지 알 수 없다 — 자리에 두되 흐리게 */
+ok("이전 단추를 감추지 않는다", !/prev\.style\.visibility/.test(html)
+   && /prev\.disabled = \(idl\.step === 0\)/.test(html));
+ok("단추 줄은 늘 손 닿는 자리에", /\.idl-act \{[^}]*position: sticky/.test(html));
+
+/* ★ 학습 대화문을 학습자가 실제로 나눈 대화에서 끌어온다 */
+ok("지난 대화에서 발화를 뽑는다", /function idcMineLines/.test(html) && /loadHistory\(\)/.test(html));
+/* ★ v132 — 주제 대화 기록만 쓴다. 자유 대화는 자리·상대가 그때그때 달라
+   ⓪ 들어가기 한 줄이 서지 않는다. */
+ok("주제 대화 기록만 쓴다", /loadHistory\(\)\.filter\(h => h && h\.mode === "rp"\)/.test(html));
+ok("기록이 있으면 반드시 거기서", /반드시 거기에서 골라라/.test(py)
+   && /기록이 \*\*아예 없을 때뿐\*\*/.test(py));
+ok("맞는 대목이 없어도 가장 가까운 것을 쓴다", /가장 가까운 대목을 골라 그 자리에 넣어/.test(py));
+ok("그래도 새로 지으면 밖에서 보이게 센다", /_idc_dx\["mine_miss"\] \+= 1/.test(py) && /"miss": _idc_dx\["mine_miss"\]/.test(py));
+ok("서버에 함께 보낸다", /mine: idcMineLines\(60\)/.test(html));
+ok("서버가 그것을 재료로 쓴다", /실제로 나눈 대화\*\* — 여기서 끌어와라/.test(py));
+ok("말은 되도록 그대로 살린다", /말은 되도록 그대로 살려라/.test(py));
+ok("기록이 아예 없을 때만 새로 짓는다", /기록이 \*\*아예 없을 때뿐\*\*이다/.test(py));
+ok("어디서 왔는지 화면에 알린다", /d\.from === "mine"/.test(html) && /fromMine/.test(html));
+ok("서버가 출처를 못 박는다", /frm = "mine" if \(_clean_str\(data\.get\("from"\), 8\) == "mine" and mine_txt\)/.test(py));
+
+console.log("── ⑩ 화면이 실제로 뜨는가 ──");
 const dom = new JSDOM(html, { runScripts: "outside-only" });
 const D = dom.window.document;
 ["homeIdcCard", "idcOverlay", "idcCards", "idlOverlay", "idlBody", "idlDots", "idlPrev", "idlNext"]

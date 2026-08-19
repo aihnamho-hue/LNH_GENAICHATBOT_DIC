@@ -1,9 +1,9 @@
 // v85 — 결과 2쪽 분할·용어 쉬움·지난 대화·퀘스트 토글
 const fs=require("fs"), {JSDOM}=require("jsdom");
-const html=fs.readFileSync("i.html","utf8");
+const html=fs.readFileSync("app.html","utf8");
 // 지원 언어 수는 늘어난다 — 숫자를 박아 두지 말고 언어 고르기 단추에서 센다
 const LANGS=(html.match(/data-lang="[a-z]+"/g)||[]).length;
-const py=fs.readFileSync("/sessions/gifted-youthful-edison/mnt/음성 대화형 챗봇/main.py","utf8");
+const py=fs.readFileSync("main.py","utf8");
 let fail=0; const ok=(n,c)=>{console.log((c?"  ✅ ":"  ❌ ")+n); if(!c)fail++;};
 const dom=new JSDOM(html,{runScripts:"dangerously",url:"https://korean-dic.onrender.com/",pretendToBeVisual:true,
  beforeParse(w){w.matchMedia=()=>({matches:false,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){}});
@@ -28,7 +28,17 @@ setTimeout(()=>{
   console.log("── 용어 쉬움 ──");
   ok("어려운 말 금지 지시", /다음 말은 절대 쓰지 마라/.test(py) && /화행, 레지스터, 담화/.test(py));
   ok("'~해 보세요' 로 쓰라고 지시", /'~하지 못했습니다'보다 '~해 보세요'/.test(py));
-  ok("'화계' 표기가 사라졌다", !/화계/.test(html) && !/화계/.test(py));
+  /* ★ v119 — 이 검사는 「학습자가 어려운 학술어를 보지 않게 한다」는 뜻이었다.
+     그런데 파일 전체를 훑는 바람에, **모델에게 주는 프롬프트와 주석**까지 걸렸다.
+     모델에게는 「화계」가 정확한 말이라 오히려 써야 한다 — 두루뭉술하게 쓰면
+     해요체와 합쇼체를 구별하지 못한다(v118의 원인이 바로 그것이었다).
+     그래서 학습자가 보는 곳(화면 문구)만 엄히 보고,
+     서버에는 「총평에 그 말을 쓰지 마라」는 금지가 있는지를 본다. */
+  /* ★ v120 — 주석까지 훑는 바람에 「이 코드가 화계를 어떻게 다루는지」를
+     적어 둔 설명글이 걸렸다. 주석은 학습자가 보지 않는다. 떼고 본다. */
+  const shown = html.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  ok("'화계' 가 화면 문구에 없다", !/화계/.test(shown));
+  ok("총평이 어려운 학술어를 금지한다", /화계, 합쇼체, 해요체, 해체/.test(py));
   console.log("── 자유 수다 ──");
   ok("말풍선 이모지 제거", !/freeFbTitle:"💬/.test(html));
   ok("'곧 추가될 예정' 줄 제거", !d.getElementById("freeFbBodyEl"));

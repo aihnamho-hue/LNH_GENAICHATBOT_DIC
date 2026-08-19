@@ -35,7 +35,9 @@ ok("읽다 만 것이 없다", not ns["_idc_corpus_dx"]["err"], ns["_idc_corpus_
 print("\n── ② 요소 이름이 서버 목록과 맞는가")
 keys = set(re.findall(r'\{"key": "(\w+)"', re.search(r"IDC_LESSON = \[(.*?)\n\]", PY, re.S).group(1)))
 ok(f"코퍼스 요소가 다 서버에 있다 {sorted(C)}", set(C) <= keys, set(C) - keys)
-ok("검수본이 없는 요소도 안다", keys - set(C) == {"stage"}, keys - set(C))
+# v136 — stage 까지 만들어 여덟 요소가 다 찼다. (v135 때는 stage 만 비어 있었다)
+ok("여덟 요소가 다 있다", set(C) == keys, keys - set(C))
+ok("모두 5편씩", all(len(v) == 5 for v in C.values()), {k: len(v) for k, v in C.items()})
 
 print("\n── ③ 고르기")
 for k, v in sorted(C.items()):
@@ -63,6 +65,30 @@ ok("ans 가 실제 정답을 가리킨다", sc["quiz"][sc["quiz"]["ans"]] == it[
 ok("정답 자리가 섞인다",
    len({ns["_idc_corpus_scene"](it, {})["quiz"]["ans"] for _ in range(40)}) == 3)
 ok("문형·연습거리를 함께 넘긴다", sc["forms"] and sc["drills"])
+
+print("\n── ④-2 차례 맞히기 갈래 (기능 단계)")
+# ★ v136 — stage 만 물음 꼴이 다르다(조각을 순서대로 쌓기).
+#   서버가 chips·order 를 제대로 내는지, 섞어서 보내는지 본다.
+_ord = [x for x in C.get("stage", []) if x.get("quiz_type") == "order"]
+ok(f"stage 가 모두 차례 맞히기 ({len(_ord)}편)", len(_ord) == len(C.get("stage", [])))
+ok("다른 요소는 세 갈래 그대로",
+   all(x.get("quiz_type") != "order" for k, v in C.items() if k != "stage" for x in v))
+for it in _ord:
+    sc = ns["_idc_corpus_scene"](it, {})
+    q = sc["quiz"]
+    ok(f"{it['id']} type=order", q.get("type") == "order", q.get("type"))
+    ok(f"{it['id']} 조각과 차례 개수가 같다",
+       len(q.get("chips", [])) == q.get("n") == len(q.get("order", [])),
+       (len(q.get("chips", [])), q.get("n"), len(q.get("order", []))))
+    ok(f"{it['id']} 맞는 차례가 0..n-1", q.get("order") == list(range(q.get("n", 0))), q.get("order"))
+    ok(f"{it['id']} 조각 이름이 다 있다", all(c.get("name") for c in q.get("chips", [])))
+    # 늘어놓는 차례를 섞는가 — 20번 뽑아 한 번이라도 달라야 한다
+    shuffled = {tuple(c["i"] for c in ns["_idc_corpus_scene"](it, {})["quiz"]["chips"])
+                for _ in range(20)}
+    ok(f"{it['id']} 늘어놓는 차례를 섞는다", len(shuffled) > 1, len(shuffled))
+    ok(f"{it['id']} 세 갈래 열쇠가 없다", not any(k in q for k in ("a", "b", "c", "ans")))
+    ok(f"{it['id']} 논문 단계 이름은 화면에 안 나간다",
+       not any("acad" in c for c in q.get("chips", [])))
 
 print("\n── ⑤ 서버가 검수본을 **먼저** 쓰는가")
 ok("/idc-lesson 이 _idc_pick 을 먼저 부른다",

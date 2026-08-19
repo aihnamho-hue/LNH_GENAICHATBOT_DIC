@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v135"
+APP_VERSION = "v137"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -2482,13 +2482,14 @@ async def _idc_translate(item: dict, lang: str) -> dict:
            "lines": [l.get("text", "") for l in item["script"]],
            "q": q.get("q", ""), "right": q.get("right", ""),
            "wrong1": q.get("wrong1", ""), "wrong2": q.get("wrong2", ""),
-           "hint": q.get("hint", ""), "meaning": item.get("meaning", [])}
+           "hint": q.get("hint", ""), "meaning": item.get("meaning", []),
+           "stages": [x.get("name", "") for x in (item.get("stages") or [])]}
     prompt = f"""아래 한국어를 {native}로 옮겨라. **뜻만** 옮기고 덧붙이지 마라.
 같은 자리에 같은 개수로 돌려준다. JSON만 출력.
 
 {json.dumps(src, ensure_ascii=False)}
 
-형식: {{"place":"","lines":[],"q":"","right":"","wrong1":"","wrong2":"","hint":"","meaning":[]}}"""
+형식: {{"place":"","lines":[],"q":"","right":"","wrong1":"","wrong2":"","hint":"","meaning":[],"stages":[]}}"""
     out = await _gen_json(prompt, timeout_s=25.0, temperature=0.2)
     tr = out if isinstance(out, dict) else {}
     _idc_tr_cache[ck] = tr
@@ -2503,6 +2504,30 @@ def _idc_corpus_scene(item: dict, tr: dict) -> dict:
                "native": _clean_str(tl[i] if i < len(tl) else "", 160)}
               for i, l in enumerate(item["script"])]
     q = item["quiz"]
+
+    # ★ 「기능 단계의 조직」만 물음이 다르다 — 세 갈래 고르기가 아니라 **차례 맞히기**.
+    #   한 발화가 아니라 **대화 한 판의 흐름**을 보는 것이라 꼴이 다를 수밖에 없다.
+    #   조각을 섞어 보내고, 맞는 차례는 order 로 알려 준다.
+    if item.get("quiz_type") == "order":
+        st = item.get("stages") or []
+        tn = tr.get("stages") or []
+        chips = [{"i": i, "name": x.get("name", ""),
+                  "name_n": _clean_str(tn[i] if i < len(tn) else "", 80),
+                  "at": x.get("at", 0)} for i, x in enumerate(st)]
+        shown = list(chips)
+        for i in range(len(shown) - 1, 0, -1):     # 늘어놓는 차례는 섞는다
+            j = os.urandom(1)[0] % (i + 1)
+            shown[i], shown[j] = shown[j], shown[i]
+        quiz = {"type": "order",
+                "q": q.get("q", ""), "q_n": _clean_str(tr.get("q"), 120),
+                "hint": q.get("hint", ""), "hint_n": _clean_str(tr.get("hint"), 200),
+                "chips": shown, "order": [c["i"] for c in chips], "n": len(chips)}
+        return {"from": "corpus", "id": item.get("id", ""),
+                "place": item.get("place", ""), "place_n": _clean_str(tr.get("place"), 120),
+                "script": script, "mark": item.get("mark", 0), "quiz": quiz,
+                "forms": item.get("forms") or [], "drills": item.get("drills") or [],
+                "sub": item.get("sub", ""), "topic_lv": item.get("topic_lv", "")}
+
     # 자리를 섞는다 — 정답이 늘 ⓐ면 학습자가 눌러 보고 안다
     cand = [(q.get("right", ""), tr.get("right", ""), True),
             (q.get("wrong1", ""), tr.get("wrong1", ""), False),

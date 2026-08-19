@@ -742,6 +742,23 @@
         .idl-opt.ok { border-color: #58CC02; background: #F1FBEA; }
         .idl-opt.no { border-color: #D98C7A; background: #FBF0ED; opacity: .75; }
         .idl-opt small { display: block; font-weight: 600; color: var(--muted); margin-top: 3px; font-size: 11px; }
+        /* ── 차례 맞히기 (v136) — 조각을 눌러 위에서 아래로 쌓는다 ── */
+        .idl-stack { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 12px; min-height: 4px; }
+        .idl-tray { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 6px; }
+        .idl-chip { border: 1.5px solid var(--sand); border-radius: 13px; background: #fff;
+            padding: 10px 13px; cursor: pointer; font-family: inherit; font-size: 13px;
+            font-weight: 700; color: var(--ink); line-height: 1.35; text-align: left; }
+        .idl-chip:hover { border-color: var(--accent-ink); }
+        .idl-chip small { display: block; font-weight: 600; color: var(--muted);
+            margin-top: 2px; font-size: 10.5px; }
+        /* 쌓인 것 — 번호가 앞에 붙고 가로로 꽉 찬다 */
+        .idl-chip.put { display: flex; align-items: baseline; gap: 8px; width: 100%;
+            background: #F8F5F1; border-style: dashed; }
+        .idl-chip.put b { font-weight: 800; color: var(--muted); font-size: 12px; flex-shrink: 0; }
+        .idl-chip.put span { flex: 1; }
+        .idl-chip.put small { display: inline; margin: 0 0 0 6px; }
+        .idl-chip.put.ok { border-style: solid; border-color: #58CC02; background: #F1FBEA; }
+        .idl-chip.put.no { border-style: solid; border-color: #D98C7A; background: #FBF0ED; }
         .idl-say { font-size: 13.5px; line-height: 1.6; margin-bottom: 11px; }
         .idl-say b { display: block; font-weight: 700; color: var(--ink); }
         .idl-say i { display: block; font-style: normal; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
@@ -2343,7 +2360,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v135 (2026-08-19)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v137 (2026-08-19)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -7679,6 +7696,7 @@
     let idlSeen = [];               // 최근에 나온 자리 — 겹치지 않게 서버에 함께 보낸다
     async function idlOpen(e) {
         idl = { el: e, data: null, step: 0, tries: 0, t0: Date.now(), picked: "",
+                ord: [],            // 차례 맞히기에서 쌓은 순서 (v136)
                 drills: null, di: 0 };
         document.getElementById("idlIcon").setAttribute("href", "#ic-idc-" + e.key);
         document.getElementById("idlName").textContent = e.easy;
@@ -7833,6 +7851,89 @@
             b.textContent = idcT("listenAgain");
             b.addEventListener("click", idlPlayAll);
             body.appendChild(b);
+            return;
+        }
+        if (idl.step === 2 && d.quiz && d.quiz.type === "order") {
+            /* ══ ② 추측 — **차례 맞히기** (v136) ══
+               「기능 단계의 조직」만 이 꼴이다. 한 발화가 아니라 **대화 한 판의 흐름**을
+               보는 것이라, 세 갈래 고르기로는 배울 것이 남지 않는다.
+               (「ⓐ 인사-용건-마무리 ⓑ …」는 손으로 쌓는 것이 아니라 글을 읽는 문제가 된다)
+               조각을 섞어 늘어놓고 **차례대로 눌러 쌓게** 한다. */
+            const q = d.quiz;
+            idl.ord = idl.ord || [];                   // 학습자가 쌓은 차례
+            const qq = document.createElement("div");
+            qq.className = "idl-q"; qq.textContent = q.q;
+            body.appendChild(qq);
+            if (q.q_n) {
+                const qn = document.createElement("div");
+                qn.className = "idl-say"; qn.style.cssText = "font-size:12px;opacity:.7;margin:-4px 0 8px";
+                qn.textContent = q.q_n; body.appendChild(qn);
+            }
+            const done = idl.ord.length === q.n;
+            const right = done && idl.ord.every((v, i) => v === q.order[i]);
+
+            // 쌓은 것 — 위에서 아래로 차곡차곡
+            const stack = document.createElement("div");
+            stack.className = "idl-stack";
+            idl.ord.forEach((ci, pos) => {
+                const c = q.chips.find((x) => x.i === ci) || {};
+                const row = document.createElement("div");
+                row.className = "idl-chip put" + (done ? (q.order[pos] === ci ? " ok" : " no") : "");
+                row.innerHTML = '<b></b><span></span><small></small>';
+                row.querySelector("b").textContent = (pos + 1) + ".";
+                row.querySelector("span").textContent = c.name || "";
+                row.querySelector("small").textContent = c.name_n || "";
+                if (!done) row.addEventListener("click", () => {   // 잘못 놨으면 도로 뺀다
+                    idl.ord.splice(pos, 1); idlPaint();
+                });
+                stack.appendChild(row);
+            });
+            body.appendChild(stack);
+
+            // 아직 안 쓴 조각
+            if (!done) {
+                const tray = document.createElement("div");
+                tray.className = "idl-tray";
+                q.chips.filter((c) => idl.ord.indexOf(c.i) < 0).forEach((c) => {
+                    const b = document.createElement("button");
+                    b.type = "button"; b.className = "idl-chip";
+                    b.innerHTML = '<span></span><small></small>';
+                    b.querySelector("span").textContent = c.name;
+                    b.querySelector("small").textContent = c.name_n || "";
+                    b.addEventListener("click", () => {
+                        idl.ord.push(c.i);
+                        if (idl.ord.length === q.n) {
+                            idl.tries += 1;
+                            const okAll = idl.ord.every((v, i) => v === q.order[i]);
+                            idcLog(idl.el.key, "quiz",
+                                   { correct: okAll, tries: idl.tries, ms: Date.now() - idl.t0 });
+                            if (okAll) {
+                                try { hamPeekHtml(idcT("right"), "", 2600, "nz"); } catch (e2) {}
+                                setTimeout(() => { if (idl) { idl.step = 3; idlPaint(); } }, 1400);
+                            }
+                        }
+                        idlPaint();
+                    });
+                    tray.appendChild(b);
+                });
+                body.appendChild(tray);
+            }
+            if (done) {
+                const m = document.createElement("div");
+                m.className = "idl-q";
+                m.style.cssText = "margin-top:10px;font-size:13px;font-weight:700";
+                m.textContent = right ? idcT("right") : (q.hint || idcT("wrong"));
+                body.appendChild(m);
+                if (!right) {                          // 틀렸으면 다시
+                    const again = document.createElement("button");
+                    again.type = "button"; again.className = "idl-btn";
+                    again.style.cssText = "width:100%;margin-top:8px";
+                    again.textContent = idcT("listenAgain");
+                    again.addEventListener("click", () => { idl.ord = []; idlPaint(); });
+                    body.appendChild(again);
+                }
+            }
+            next.disabled = !right;                    // 맞혀야 넘어간다
             return;
         }
         if (idl.step === 2) {                          // ② 추측 — 두 갈래

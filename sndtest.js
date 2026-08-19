@@ -1,6 +1,6 @@
 /* sndtest.js — 소리와 '접힌 페이더 한 줄' (v113)
    ① 음량 15% · 나머지도 같은 비율
-   ② 홈 배경음 무작위 다섯 곡 — 파일이 다 있고 크기가 고르며 무겁지 않은가
+   ② 홈 배경음 무작위 — 파일이 다 있고 크기가 고르며 무겁지 않은가
    ③ 접힌 페이더 대신 남는 한 줄 */
 const fs = require("fs"), path = require("path");
 const html = fs.readFileSync("app.html", "utf8");
@@ -21,7 +21,7 @@ ok("더킹 비율은 그대로(0.15)", /const DUCK_RATIO = 0\.15;/.test(html));
 console.log("── ② 홈 배경음 무작위 ──");
 const L = /const HOME_BGM = \[([\s\S]*?)\];/.exec(html);
 const files = L ? [...L[1].matchAll(/"\/static\/([^"?]+)/g)].map(m => m[1]) : [];
-ok("다섯 곡이 목록에 있다", files.length === 5, files.join(" "));
+ok("여러 곡이 목록에 있다", files.length >= 3, files.join(" "));
 ok("무작위로 고른다", /HOME_BGM\[Math\.floor\(Math\.random\(\) \* HOME_BGM\.length\)\]/.test(html));
 /* ★ v114 — v113에서 preload="none" 으로 뒀다가 **배경음이 아예 안 났다.**
    아직 아무것도 안 받아 온 요소를 createMediaElementSource 로 물리면
@@ -31,18 +31,34 @@ ok("src 를 비워 두고 고른 하나만 꽂는다", /<audio id="bgm" loop pre
                                         && !/id="bgm"[^>]*src=/.test(html));
 ok("꽂은 뒤 load() 로 밀어 준다", /bgm\.setAttribute\("src"[\s\S]{0,900}bgm\.load\(\)/.test(html));
 ok("그래프에 물리기 전에도 밀어 준다", /el\.readyState === 0\) \{ try \{ el\.load\(\)/.test(html));
+/* ★ v126 — static/ 이 통째로 없는 자리(임시 폴더 등)에서 돌리면 이 검사는 뜻이 없다.
+   예전에는 그런 자리에서도 조용히 통과했다 — 그래서 목록에는 있는데 파일이 없는
+   것을 못 잡았다(bgm_spring). 건너뛰는 것은 좋으나 **건너뛴다고 말은 해야 한다.** */
+const HAVE_STATIC = fs.existsSync("static") && fs.readdirSync("static").some(f => f.endsWith(".mp3"));
+if (!HAVE_STATIC) console.log("     ⚠ static/ 에 mp3 가 없어 파일 검사는 건너뜁니다 (전체 체크아웃에서 돌리세요)");
 let tot = 0, sizes = [];
 files.forEach((f) => {
   const p = path.join("static", f);
   const e = fs.existsSync(p);
+  if (!HAVE_STATIC) return;
   ok("파일 있음 · " + f, e);
   if (e) { const kb = Math.round(fs.statSync(p).size / 1024); tot += kb; sizes.push(kb); }
 });
 ok("한 곡이 2.5MB 안쪽 (20명 동시 접속)", sizes.every(k => k < 2560), Math.max(...sizes) + "KB");
 ok("옛 320kbps 원본을 그대로 안 쓴다", !files.includes("bgm.mp3"));
+/* ★ v136 — 반대 방향도 본다. static/ 에 bgm_*.mp3 가 있는데 목록에 없으면
+   **아무도 안 트는 파일**이 깃헙에 얹혀 다닌다. 반대로 목록에만 있으면
+   그 곡이 걸릴 때 소리가 안 난다(v136에서 bgm_spring 이 그랬다 — 4곡 중 1곡, 25%).
+   목록과 파일은 **한 벌**이어야 한다. */
+if (HAVE_STATIC) {
+  const onDisk = fs.readdirSync("static").filter(f => /^bgm_.*\.mp3$/.test(f)).sort();
+  const listed = files.slice().sort();
+  ok("목록과 파일이 한 벌이다", JSON.stringify(onDisk) === JSON.stringify(listed),
+     `파일 ${onDisk.join(",")} / 목록 ${listed.join(",")}`);
+}
 // 판올림마다 숫자가 바뀐다 — 특정 숫자를 박아 두면 올릴 때마다 깨진다.
-ok("?v= 로 옛 파일을 흘려보낸다", (L[1].match(/\?v=\d+/g) || []).length === 5);
-console.log("     (다섯 곡 합계 " + tot + "KB · 한 사람은 그중 한 곡만 받는다)");
+ok("?v= 로 옛 파일을 흘려보낸다", (L[1].match(/\?v=\d+/g) || []).length === files.length);
+console.log("     (" + files.length + "곡 합계 " + tot + "KB · 한 사람은 그중 한 곡만 받는다)");
 
 console.log("── ③ 접힌 페이더 대신 남는 한 줄 ──");
 ok("자리가 있다", /<div class="style-line" id="styleLine" hidden>/.test(html));

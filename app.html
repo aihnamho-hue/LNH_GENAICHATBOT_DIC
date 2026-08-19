@@ -2343,7 +2343,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v134 (2026-08-19)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v135 (2026-08-19)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -7926,17 +7926,24 @@
                     "아, 마지막으로 하나만 더",
                     "그래, 알겠어. 고마워. 잘 가"],
             };
-            const forms = (idl.el.key === "stage")
-                ? (STAGE_FORMS[speechTier()] || STAGE_FORMS[1]).slice()
-                : [];
-            (QUEST_BY_EL[idl.el.key] || []).forEach((qid) => {
-                const f = QUEST_FORM[qid];
-                if (!f) return;
-                (f[tier] || f[1] || "").split(" · ").forEach((x) => {
-                    x = x.trim();
-                    if (x && forms.indexOf(x) < 0) forms.push(x);
+            /* ★ 검수한 대화문으로 낸 판이면, 그 편에 **딱 맞는 문형**이 이미 붙어 있다 (v135).
+               QUEST_FORM 은 요소 전체에 두루 쓰는 것이라 이 대화문과 어긋날 수 있다.
+               (실제로 그랬다 — topic-5 의 문형이 표시 안 한 줄의 말이었다) */
+            const forms = (d.forms && d.forms.length) ? d.forms.slice()
+                : (idl.el.key === "stage")
+                    ? (STAGE_FORMS[speechTier()] || STAGE_FORMS[1]).slice()
+                    : [];
+            // 검수본 문형이 없을 때만 QUEST_FORM 에서 끌어온다
+            if (!(d.forms && d.forms.length)) {
+                (QUEST_BY_EL[idl.el.key] || []).forEach((qid) => {
+                    const f = QUEST_FORM[qid];
+                    if (!f) return;
+                    (f[tier] || f[1] || "").split(" · ").forEach((x) => {
+                        x = x.trim();
+                        if (x && forms.indexOf(x) < 0) forms.push(x);
+                    });
                 });
-            });
+            }
             const cap = document.createElement("div");
             cap.className = "idl-q";
             cap.textContent = idcT("formCap");
@@ -8023,7 +8030,10 @@
         try {
             const r = await fetch("/idc-drill", {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ el: el.key, lang: uiLang || "ko",
+                /* ★ id 를 같이 보낸다 (v135) — 검수한 대화문으로 낸 판이면
+                   연습거리도 이미 검수돼 있다. 서버가 그걸 찾아 쓰면
+                   모델을 안 불러도 되고, 대화문과 연습이 어긋날 일도 없다. */
+                body: JSON.stringify({ el: el.key, lang: uiLang || "ko", id: d.id || "",
                     tier: ["formal", "polite", "banmal"][speechTier()] || "polite",
                     place: d.place, script: d.script }) });
             if (!r.ok) throw new Error("HTTP " + r.status);

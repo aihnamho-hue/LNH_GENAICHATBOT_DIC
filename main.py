@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v134"
+APP_VERSION = "v135"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -2406,6 +2406,126 @@ def _idc_el(key: str) -> dict | None:
     return next((e for e in IDC_LESSON if e["key"] == key), None)
 
 
+# ══════════════════════════════════════════════════════════════
+# 검수한 대화문 묶음 — 이제 LLM이 매번 새로 짓지 않는다 (v135)
+#
+#   지금까지는 학습 화면을 열 때마다 모델이 대화문을 새로 지었다. 그래서
+#     · 20~30초를 기다려야 했고, 그마저 자주 실패했으며
+#     · 무엇이 나올지 아무도 몰랐고(요소가 흐려지거나 화계가 섞였다)
+#     · 논문에서는 「LLM이 지은 대화문」이라는 지적을 그대로 받는다.
+#
+#   이제 연구자가 검수한 35편(7요소 × 5편)에서 고른다.
+#   **원형(〈표 33〉)은 연구자가 정하고, 사례도 연구자가 검수한 것**이 된다.
+#   ※ static/ 이 아니라 여기 두는 까닭 — static 은 웹으로 열리므로
+#     학습자가 주소만 치면 **정답이 다 보인다.**
+IDC_CORPUS_DIR = os.environ.get("IDC_CORPUS_DIR", "").strip() or "idc_corpus"
+_idc_corpus: dict = {}          # el key → [편…]
+_idc_corpus_dx = {"files": 0, "items": 0, "err": ""}
+
+
+def _load_idc_corpus() -> None:
+    d = Path(IDC_CORPUS_DIR)
+    if not d.is_dir():
+        _idc_corpus_dx["err"] = f"{IDC_CORPUS_DIR} 없음"
+        return
+    for f in sorted(d.glob("*.json")):
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+        except Exception as e:
+            _idc_corpus_dx["err"] = f"{f.name}: {e}"[:120]
+            continue
+        key, items = data.get("el"), data.get("items")
+        if not key or not isinstance(items, list):
+            continue
+        good = [x for x in items if isinstance(x, dict) and x.get("script") and x.get("quiz")]
+        if not good:
+            continue
+        _idc_corpus.setdefault(key, []).extend(good)
+        _idc_corpus_dx["files"] += 1
+        _idc_corpus_dx["items"] += len(good)
+    print(f"[학습] 검수 대화문 {_idc_corpus_dx['items']}편 / {_idc_corpus_dx['files']}묶음"
+          + (f" (⚠ {_idc_corpus_dx['err']})" if _idc_corpus_dx["err"] else ""))
+
+
+_load_idc_corpus()
+
+# 모국어 번역은 **편마다 한 번만** 만들고 재워 둔다.
+#   한국어로 보는 학습자는 아예 안 부른다. 다른 언어도 그 편의 첫 사람만 기다린다.
+_idc_tr_cache: dict = {}
+
+
+def _idc_pick(key: str, tier: str, seen: list) -> dict | None:
+    """그 요소의 편 하나. 화계가 맞는 것을 먼저, 본 것은 뒤로."""
+    pool = _idc_corpus.get(key) or []
+    if not pool:
+        return None
+    seen_set = {s for s in (seen or [])}
+    fresh = [x for x in pool if x.get("id") not in seen_set]
+    if not fresh:
+        fresh = list(pool)                      # 다 봤으면 다시 처음부터
+    same = [x for x in fresh if x.get("tier") == tier]
+    cand = same or fresh                        # 화계가 맞는 것이 없으면 아무거나
+    return cand[os.urandom(1)[0] % len(cand)]
+
+
+async def _idc_translate(item: dict, lang: str) -> dict:
+    """편 하나를 모국어로. 실패해도 대화문은 그대로 나간다(번역만 빈다)."""
+    ck = (item.get("id"), lang)
+    if ck in _idc_tr_cache:
+        return _idc_tr_cache[ck]
+    native = LANG_NAMES.get(lang, "")
+    if not native:
+        _idc_tr_cache[ck] = {}
+        return {}
+    q = item["quiz"]
+    src = {"place": item.get("place", ""),
+           "lines": [l.get("text", "") for l in item["script"]],
+           "q": q.get("q", ""), "right": q.get("right", ""),
+           "wrong1": q.get("wrong1", ""), "wrong2": q.get("wrong2", ""),
+           "hint": q.get("hint", ""), "meaning": item.get("meaning", [])}
+    prompt = f"""아래 한국어를 {native}로 옮겨라. **뜻만** 옮기고 덧붙이지 마라.
+같은 자리에 같은 개수로 돌려준다. JSON만 출력.
+
+{json.dumps(src, ensure_ascii=False)}
+
+형식: {{"place":"","lines":[],"q":"","right":"","wrong1":"","wrong2":"","hint":"","meaning":[]}}"""
+    out = await _gen_json(prompt, timeout_s=25.0, temperature=0.2)
+    tr = out if isinstance(out, dict) else {}
+    _idc_tr_cache[ck] = tr
+    return tr
+
+
+def _idc_corpus_scene(item: dict, tr: dict) -> dict:
+    """검수 대화문 → /idc-lesson 이 내보내던 것과 **같은 모양**으로."""
+    tl = tr.get("lines") or []
+    script = [{"speaker": "user" if l.get("speaker") == "user" else "ai",
+               "text": _clean_str(l.get("text"), 120),
+               "native": _clean_str(tl[i] if i < len(tl) else "", 160)}
+              for i, l in enumerate(item["script"])]
+    q = item["quiz"]
+    # 자리를 섞는다 — 정답이 늘 ⓐ면 학습자가 눌러 보고 안다
+    cand = [(q.get("right", ""), tr.get("right", ""), True),
+            (q.get("wrong1", ""), tr.get("wrong1", ""), False),
+            (q.get("wrong2", ""), tr.get("wrong2", ""), False)]
+    cand = [c for c in cand if c[0]]
+    for i in range(len(cand) - 1, 0, -1):
+        j = os.urandom(1)[0] % (i + 1)
+        cand[i], cand[j] = cand[j], cand[i]
+    out = {"q": q.get("q", ""), "q_n": _clean_str(tr.get("q"), 120),
+           "hint": q.get("hint", ""), "hint_n": _clean_str(tr.get("hint"), 200),
+           "n": len(cand), "ans": ""}
+    for i, (t, n, ok_) in enumerate(cand):
+        k = "abc"[i]
+        out[k], out[k + "_n"] = t, _clean_str(n, 160)
+        if ok_:
+            out["ans"] = k
+    return {"from": "corpus", "id": item.get("id", ""),
+            "place": item.get("place", ""), "place_n": _clean_str(tr.get("place"), 120),
+            "script": script, "mark": item.get("mark", 0), "quiz": out,
+            "forms": item.get("forms") or [], "drills": item.get("drills") or [],
+            "sub": item.get("sub", ""), "topic_lv": item.get("topic_lv", "")}
+
+
 async def _idc_meaning(el: dict, lang: str, tier: str) -> list:
     """③ 의미 — 세 마디로. 요소마다 한 번만 만들고 재워 둔다."""
     ck = (el["key"], lang, tier)
@@ -2595,6 +2715,27 @@ async def idc_lesson(request: Request):
         tier = "polite"
     seen = [_clean_str(x, 60) for x in ((body or {}).get("seen") or [])][-6:]
     mine = (body or {}).get("mine") or []          # 학습자가 실제로 나눈 대화
+
+    # ★★ 검수한 대화문이 있으면 **그것을 먼저 쓴다** (v135).
+    #   모델을 부르지 않으므로 기다림이 없고, 실패할 일도 없고,
+    #   무엇이 나올지 미리 안다. 한국어로 보면 LLM 호출이 **0회**다.
+    picked = _idc_pick(key, tier, seen)
+    if picked is not None:
+        tr = await _idc_translate(picked, lang)          # 한국어면 곧바로 빈손
+        scene = _idc_corpus_scene(picked, tr)
+        # ※ 열쇠 이름은 LLM 경로가 내던 것과 **같아야** 한다 — 화면이 그걸 본다.
+        _tm = tr.get("meaning") or []
+        meaning = [{"ko": t, "native": _clean_str(_tm[i] if i < len(_tm) else "", 240)}
+                   for i, t in enumerate(picked.get("meaning") or [])]
+        _idc_dx["ok"] += 1
+        _idc_dx["corpus"] = _idc_dx.get("corpus", 0) + 1
+        _idc_dx["last"] = (f"{key}/{tier} · {scene['id']} · {len(scene['script'])}줄"
+                           f" · 표시 {scene['mark']} · 검수본")
+        print(f"[학습] {key} · {tier} · {_idc_dx['last']}")
+        return {"el": key, "easy": el["easy"], "acad": el["acad"], "emoji": el["emoji"],
+                "meaning": meaning, **scene}
+
+    # 검수본이 없는 요소(stage 등)는 예전처럼 모델이 짓는다
     # 뜻풀이는 재워 둔 것이 있으면 그대로 — 대화문만 새로 만든다
     scene, meaning = await asyncio.gather(
         _idc_scene(el, lang, tier, seen, mine),
@@ -2641,6 +2782,22 @@ async def idc_drill(request: Request):
     lines = [f"{'나' if l.get('speaker') == 'user' else '상대'}: {_clean_str(l.get('text'), 120)}"
              for l in (b.get("script") or [])[:10] if _clean_str(l.get("text"), 120)]
     place = _clean_str(b.get("place"), 90)
+
+    # ★ 검수본으로 낸 판이면 연습거리도 **이미 검수돼 있다** (v135).
+    #   화면이 그 편의 id 를 그대로 돌려주므로 찾아 쓰면 된다.
+    #   모델을 부르지 않으니 기다림이 없고, 대화문과 연습이 어긋날 일도 없다.
+    _cid = _clean_str(b.get("id"), 24)
+    if _cid:
+        _it = next((x for v in _idc_corpus.values() for x in v if x.get("id") == _cid), None)
+        if _it and _it.get("drills"):
+            _tr = _idc_tr_cache.get((_cid, lang)) or {}
+            _out = [{"cue": d.get("cue", ""), "text": d.get("text", ""),
+                     "follow": d.get("follow", ""), "native": ""}
+                    for d in _it["drills"][:2] if d.get("text")]
+            if _out:
+                print(f"[학습] 연습거리 {len(_out)}개 — {el['key']} · {_cid} · 검수본")
+                return {"drills": _out}
+
     prompt = f"""한국어 학습자가 방금 아래 대화를 듣고 「{el['easy']}」({el['gist']})를 알아챘다.
 이제 **스스로 말해 보게** 한다.
 
@@ -3428,6 +3585,11 @@ async def version_check():
             "learn": _idc_dx["learn"], "wait": len(_idc_log),
             # mine = 지난 주제 대화에서 끌어온 판 · miss = 기록을 줬는데도 새로 지은 판
             "mine": _idc_dx["mine"], "miss": _idc_dx["mine_miss"],
+            # corpus = 검수한 대화문에서 낸 판 · gen = 모델이 새로 지은 판
+            "corpus": _idc_dx.get("corpus", 0),
+            "gen": _idc_dx["ok"] - _idc_dx.get("corpus", 0),
+            "have": {k: len(v) for k, v in sorted(_idc_corpus.items())},
+            "corpus_err": _idc_corpus_dx["err"][:80],
             "last": _idc_dx["last"][:160],
         },
         "hint": {

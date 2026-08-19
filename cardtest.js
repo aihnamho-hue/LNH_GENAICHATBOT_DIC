@@ -57,8 +57,11 @@ setTimeout(() => {
         dom.window.eval("openIdcList()");
         const cards = d.querySelectorAll("#idcCards .idc-card");
         ok("아홉 장", cards.length === 9, cards.length + "장");
-        ok("교실에서 배우는 둘은 눌리지 않는다",
-           [...cards].filter(c => c.disabled).length === 2,
+/* ★ v133 — 「대화의 흐름 짜기」도 여기서 배운다. 교실은 「몸으로 말하기」 하나뿐. */
+        ok("여덟은 배울 수 있다", [...cards].filter(c => !c.disabled).length === 8,
+           [...cards].filter(c => !c.disabled).length + "장");
+        ok("교실에서 배우는 것은 하나 (몸으로 말하기)",
+           [...cards].filter(c => c.disabled).length === 1,
            [...cards].filter(c => c.disabled).length + "장");
         ok("그래도 보이기는 한다(감추지 않는다)",
            [...cards].every(c => !c.classList.contains("hidden")));

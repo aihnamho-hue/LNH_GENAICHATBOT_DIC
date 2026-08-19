@@ -41,12 +41,18 @@ ok("일곱 요소", KEYS.every(k => new RegExp('key: "' + k + '"').test(html)));
    못 배우는 것을 아예 안 보이면 「없는 것」이 되어, 학습자가 상호작용 대화 능력의
    전체 모습을 알 수 없다. 여기서 배우는 것은 일곱이다. */
 ok("아홉을 모두 보인다", /key: "stage"/.test(html) && /key: "nonverbal"/.test(html));
-ok("배우는 것은 일곱", (html.match(/where: "here"/g) || []).length === 7,
+/* ★ v133 — 「대화의 흐름 짜기」가 넘어왔다. 발화 하나로는 못 가르치지만
+   **대화 한 판으로는 가르칠 수 있다** — 지난 주제 대화에 기능단계가 다 들어 있다. */
+ok("배우는 것은 여덟", (html.match(/where: "here"/g) || []).length === 8,
    (html.match(/where: "here"/g) || []).length);
+ok("교실은 몸짓 하나뿐", (html.match(/where: "class"/g) || []).length === 1);
+ok("흐름 짜기는 단계가 바뀌는 줄을 잡는다", /한 단계에서 다음 단계로 넘어가는 그 줄/.test(py));
+ok("흐름 짜기의 형태는 단계 표지", /const STAGE_FORMS = \{/.test(html));
 ok("교실에서 배우는 둘은 눌리지 않는다", /else b\.disabled = true;/.test(html));
 const LESSON_BLOCK = (/^IDC_LESSON = \[[\s\S]*?^\]/m.exec(py) || [""])[0];
-ok("서버 학습표는 일곱만", KEYS.every(k => LESSON_BLOCK.indexOf('"key": "' + k + '"') >= 0)
-   && LESSON_BLOCK.indexOf('"key": "stage"') < 0 && LESSON_BLOCK.indexOf('"key": "nonverbal"') < 0);
+ok("서버 학습표는 여덟", KEYS.every(k => LESSON_BLOCK.indexOf('"key": "' + k + '"') >= 0)
+   && LESSON_BLOCK.indexOf('"key": "stage"') >= 0
+   && LESSON_BLOCK.indexOf('"key": "nonverbal"') < 0);
 ok("쉬운 이름이 크고 학술어는 작다",
    /\.idc-c1 \{[^}]*font-size: 15\.5px/.test(html) && /\.idc-c2 \{[^}]*font-size: 9\.5px/.test(html));
 ok("화면과 서버의 요소가 같다", KEYS.every(k => new RegExp('"key": "' + k + '"').test(py)));
@@ -111,7 +117,28 @@ ok("기록이 아예 없을 때만 새로 짓는다", /기록이 \*\*아예 없�
 ok("어디서 왔는지 화면에 알린다", /d\.from === "mine"/.test(html) && /fromMine/.test(html));
 ok("서버가 출처를 못 박는다", /frm = "mine" if \(_clean_str\(data\.get\("from"\), 8\) == "mine" and mine_txt\)/.test(py));
 
-console.log("── ⑩ 화면이 실제로 뜨는가 ──");
+console.log("── ⑩ 창 안의 살림 (v133) ──");
+/* .export-btn 은 위쪽에 display:none !important 가 **전역으로** 걸려 있다(v84 잔재).
+   그걸 쓰면 단추가 통째로 안 보인다 — 학습 화면은 제 이름표를 쓴다. */
+ok("단추가 .export-btn 을 안 쓴다", !/class="export-btn" id="idlPrev"/.test(html)
+   && /\.idl-btn \{/.test(html));
+ok("퀘스트 단추·배경음이 창을 따라간다",
+   /"idcOverlay", "idlOverlay"\]\.forEach/.test(html) && /sceneIdc = open\("idcOverlay"\)/.test(html));
+ok("여기서는 대화 배경음(chat_bgm)", /wantChat = canPlay && \(isConnected \|\| sceneIdc\)/.test(html));
+/* 다음으로 넘어갔는데 이전 대화가 계속 들리던 문제 */
+ok("걸음이 바뀌면 재생이 멈춘다", /idl\.step !== atStep\) break/.test(html)
+   && /idlHalt\(\);\s*\n\s*idl\.step \+= 1/.test(html));
+ok("맞히면 호아랑이 빼꼼", /hamPeekHtml\(idcT\("right"\)/.test(html));
+/* 마이크 — 주제·자유 대화와 같은 손놀림 */
+ok("손가락을 붙잡는다(setPointerCapture)", /idlBindMic[\s\S]{0,2600}setPointerCapture/.test(html));
+ok("꼬리 250ms 를 남긴다", /idlTail = setTimeout/.test(html));
+ok("뗀 신호를 놓쳐도 끝난다(안전장치)", /idlSafety = setTimeout/.test(html));
+ok("화면 밖에서 떼도 끝난다", /window\.addEventListener\("pointerup", \(\) => \{ if \(idlHeld\) stop\(\); \}\)/.test(html));
+/* ⑤ 는 말해 보는 자리 — 보여 줄 것을 줄였다 */
+const say = /if \(idl\.drills === null\)[\s\S]*?next\.textContent = \(\(idl\.di/.exec(paint)[0];
+ok("⑤ 에서 번역·뒤반응을 안 보여 준다", !/dr\.native/.test(say) && !/dr\.follow/.test(say));
+
+console.log("── ⑪ 화면이 실제로 뜨는가 ──");
 const dom = new JSDOM(html, { runScripts: "outside-only" });
 const D = dom.window.document;
 ["homeIdcCard", "idcOverlay", "idcCards", "idlOverlay", "idlBody", "idlDots", "idlPrev", "idlNext"]

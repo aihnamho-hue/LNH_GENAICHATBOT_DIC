@@ -708,10 +708,22 @@
                    position: sticky; bottom: 0; background: var(--paper, #FDFBF6);
                    padding-top: 8px; }
         .idl-act button:disabled { cursor: default; }
+        /* ★★ v133 — 이전 단추가 안 보이던 까닭.
+           위쪽에 `.export-btn { display: none !important; }` 이 **전역으로** 걸려 있다.
+           v84에서 대화 중에만 감추려던 것이 블록 밖으로 새어 나온 것이다
+           (그래서 #histExportBtn 에만 예외를 뚫어 놓았다).
+           그 규칙을 지금 손대면 무엇이 딸려 나올지 모른다 —
+           학습 화면은 **제 이름표를 쓴다.** */
+        .idl-btn { width: 100%; border: 1.5px solid var(--navy); border-radius: 999px;
+                   padding: 9px 18px; font-size: 12px; font-weight: 800; color: var(--navy);
+                   background: transparent; cursor: pointer; font-family: inherit; }
+        .idl-btn:hover { background: var(--navy-soft); }
+        .idl-btn:disabled { opacity: 0.35; cursor: default; }
         .idl-warm { text-align: center; padding: 26px 10px; }
         .idl-warm .we { font-size: 42px; display: block; margin-bottom: 12px; }
         .idl-warm .wt { font-size: 15.5px; font-weight: 700; color: var(--ink); line-height: 1.55; }
         .idl-warm .wn { font-size: 12px; color: var(--muted); margin-top: 7px; }
+        .idl-act .action-btn.rec, .idl-body .action-btn.rec { filter: brightness(0.86) saturate(1.2); }
         .idl-from { text-align: center; font-size: 11.5px; font-weight: 700; color: var(--gold, #C9A227);
                     background: #FFF6DE; border-radius: 99px; padding: 5px 10px; margin: 0 auto;
                     width: fit-content; }
@@ -2067,7 +2079,7 @@
         <div class="idl-dots" id="idlDots" aria-hidden="true"></div>
         <div class="idl-body" id="idlBody"></div>
         <div class="idl-act">
-            <button type="button" class="export-btn" id="idlPrev"></button>
+            <button type="button" class="idl-btn" id="idlPrev"></button>
             <button type="button" class="action-btn" id="idlNext"></button>
         </div>
     </div>
@@ -2306,7 +2318,7 @@
      대화가 시작될 때 미리 받아 둔다. -->
 <div class="outro-ov" id="outroOv" aria-hidden="true">
     <video id="outroVid" playsinline preload="none"
-           poster="/static/outro.jpg?v=132" src="/static/outro.mp4?v=132"></video>
+           poster="/static/outro.jpg?v=133" src="/static/outro.mp4?v=133"></video>
     <button type="button" class="outro-skip" id="outroSkip"></button>
 </div>
 
@@ -2331,7 +2343,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v132 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v133 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -4573,10 +4585,10 @@
        맞춰 두었으므로(1.5dB 안쪽) 어느 곡이 걸려도 음량이 튀지 않는다.
        ?v= 는 파일이 바뀌었을 때 기기에 남은 옛 파일을 흘려보내기 위한 것. */
     const HOME_BGM = [
-        "/static/bgm_hanok.mp3?v=132",    // 한옥 (원래 쓰던 곡)
-        "/static/bgm_danhwa.mp3?v=132",   // 단화
-        "/static/bgm_bird.mp3?v=132",     // 휘파람새
-        "/static/bgm_spring.mp3?v=132",   // 싱그러운 봄 아침
+        "/static/bgm_hanok.mp3?v=133",    // 한옥 (원래 쓰던 곡)
+        "/static/bgm_danhwa.mp3?v=133",   // 단화
+        "/static/bgm_bird.mp3?v=133",     // 휘파람새
+        "/static/bgm_spring.mp3?v=133",   // 싱그러운 봄 아침
     ];
     if (bgm && !bgm.getAttribute("src")) {
         bgm.setAttribute("src", HOME_BGM[Math.floor(Math.random() * HOME_BGM.length)]);
@@ -4615,6 +4627,7 @@
             ".lang-overlay:not(.hidden), .inapp-gate:not(.hidden), .pr-overlay:not(.hidden)");
         document.body.classList.toggle("ov-open", open);
     }
+    let sceneIdc = false;      // 상호작용 능력 학습 창이 열려 있는가
     function recomputeAudioScene() {
         try { syncOverlayFlag(); } catch (e) {}
         const open = (id) => {
@@ -4625,6 +4638,9 @@
         scenePractice = open("prOverlay") || open("rpBriefOverlay");
         // 🎧 대화문 듣기 = 완전 무음. 모범 대화를 듣는 자리라 배경음이 깔리면 집중이 깨진다.
         sceneQuiet = open("rpScriptOverlay");
+        /* ★ v133 — 「한국어 대화 상호작용 능력」에서는 홈 배경음을 끄고
+           대화 배경음(chat_bgm, 가야금)으로 바꾼다. 여기도 대화를 듣는 자리다. */
+        sceneIdc = open("idcOverlay") || open("idlOverlay");
         updateBgm();
     }
     /* 배경음은 툭 켜지고 툭 꺼지면 거슬린다 → 항상 서서히 오르내리게 한다.
@@ -4708,9 +4724,9 @@
         //   대화 중        → How are you 가야금
         //   대화 단계·연습 → 통통 가야금
         //   그 밖(홈·안내) → 기본 배경음
-        const wantChat = canPlay && isConnected;
-        const wantPr = canPlay && !isConnected && scenePractice;
-        const wantMain = canPlay && !isConnected && !scenePractice && !sceneQuiet;
+        const wantChat = canPlay && (isConnected || sceneIdc);
+        const wantPr = canPlay && !isConnected && !sceneIdc && scenePractice;
+        const wantMain = canPlay && !isConnected && !sceneIdc && !scenePractice && !sceneQuiet;
         if (bgm) { if (wantMain) fadeIn(bgm, "bgm", 500); else fadeOut(bgm, 420, false); }
         if (prBgm) { if (wantPr) fadeIn(prBgm, "prBgm", 500); else fadeOut(prBgm, 420, true); }
         if (chatBgm) { if (wantChat) fadeIn(chatBgm, "chatBgm", 700); else fadeOut(chatBgm, 500, true); }
@@ -4718,7 +4734,9 @@
     // 창이 열리고 닫히는 걸 직접 감시 → 여닫는 코드를 일일이 고치지 않아도 자동 반영
     try {
         const sceneObs = new MutationObserver(recomputeAudioScene);
-        ["prOverlay", "rpSetupOverlay", "rpBriefOverlay", "rpScriptOverlay"].forEach((id) => {
+        // ★ v133 — 새 창 둘을 빠뜨려서 퀘스트 단추가 그대로 떠 있고 배경음도 안 바뀌었다.
+        ["prOverlay", "rpSetupOverlay", "rpBriefOverlay", "rpScriptOverlay",
+         "idcOverlay", "idlOverlay"].forEach((id) => {
             const el = document.getElementById(id);
             if (el) sceneObs.observe(el, { attributes: true, attributeFilter: ["class"] });
         });
@@ -7515,11 +7533,12 @@
         { key: "strategy",  easy: "모르는 말 넘어가기",   acad: "의사소통 전략",       where: "here" },
         { key: "listen",    easy: "듣고 있다고 알려 주기", acad: "상호작용적 듣기",     where: "here" },
         { key: "context",   easy: "상대에 맞춰 말하기",   acad: "맥락·정체성 인식",    where: "here" },
-        // 아래 둘은 여기서 배울 수 없다. 그래도 **보여야** 한다.
-        //   기능 단계 — 대화 **전체의 흐름**이라 발화 하나로 가르칠 수 없다
-        //               (주제 대화의 진행률이 이것을 맡는다)
-        //   비언어    — 시선·표정·몸짓이라 음성 대화에서 관찰할 수 없다
-        { key: "stage",     easy: "대화의 흐름 짜기",     acad: "기능 단계의 조직과 흐름", where: "class" },
+        /* ★ v133 — 「대화의 흐름 짜기」도 여기서 배운다.
+           지난 **주제 대화**에는 기능단계가 처음부터 끝까지 들어 있다.
+           그 대화를 통째로 보여 주면 「어디서 무엇을 했는가」를 알아챌 수 있다 —
+           발화 하나로는 못 가르치지만 **대화 한 판으로는 가르칠 수 있다.** */
+        { key: "stage",     easy: "대화의 흐름 짜기",     acad: "기능 단계의 조직과 흐름", where: "here" },
+        // 몸짓·표정·시선은 음성 대화에서 관찰할 수 없다. 교실에서만 배운다.
         { key: "nonverbal", easy: "몸으로 말하기",        acad: "비언어적 행위",       where: "class" },
     ];
     /* 표 열쇠를 열여덟 언어에 다 심는 대신 여기 모아 둔다(없으면 영어로 떨어진다) */
@@ -7537,7 +7556,8 @@
               nice: "좋아요! 👏", again: "조금 달랐어요 — 한 번 더!",
               noHear: "잘 안 들렸어요. 다시 해 볼까요?", tooShort: "너무 짧아요",
               noMic: "마이크를 쓸 수 없어요",
-              fromMine: "지난번 내 주제 대화에서 가져왔어요", inClass: "교실에서" },
+              fromMine: "지난번 내 주제 대화에서 가져왔어요", inClass: "교실에서",
+              tapToHear: "말풍선을 누르면 다시 들을 수 있어요" },
         en: { home: "Korean Interaction Skills", homeD: "Learn one conversation skill at a time",
               title: "🪜 Conversation skills", sub: "Pick one. Listen first, guess for yourself, then learn.",
               none: "not yet", times: "x", warmGo: "Let's listen", next: "Next →", prev: "← Back",
@@ -7551,7 +7571,8 @@
               nice: "Nice! 👏", again: "Not quite — one more try!",
               noHear: "Couldn't hear you. Try again?", tooShort: "Too short",
               noMic: "Microphone is not available",
-              fromMine: "From one of your past Topic Practice sessions", inClass: "in class" },
+              fromMine: "From one of your past Topic Practice sessions", inClass: "in class",
+              tapToHear: "Tap a bubble to hear it again" },
     };
     function idcT(k) { const o = IDC_TXT[uiLang] || IDC_TXT.en; return o[k]; }
 
@@ -7743,8 +7764,9 @@
         if (idlPlaying) { idlHalt(); return; }
         const lines = idl.data.script;
         idlStopFlag = false; idlPlaying = true;
+        const atStep = idl.step;
         for (let i = 0; i < lines.length; i++) {
-            if (idlStopFlag || !idl) break;
+            if (idlStopFlag || !idl || idl.step !== atStep) break;   // 걸음이 바뀌면 멈춘다
             idlHi(i);
             let wait = 2200;
             try {
@@ -7752,7 +7774,7 @@
                 await ttsPlay(lines[i].text, lines[i].speaker === "user" ? scMyVoice() : "");
                 wait = Math.min(7000, 900 + lines[i].text.length * 165);
             } catch (e) { console.warn("학습 대화문 재생 실패:", e); }
-            if (idlStopFlag) break;
+            if (idlStopFlag || !idl || idl.step !== atStep) break;
             if (lines[i + 1] && lines[i + 1].speaker !== "user") ttsPrefetch(lines[i + 1].text);
             await new Promise(r => { idlTimer = setTimeout(r, wait); });
         }
@@ -7770,7 +7792,6 @@
         /* ★ v130 — 첫 걸음에서 visibility:hidden 으로 감췄더니 「이전이 없다」고 하셨다.
            감추면 있는지 없는지 알 수 없다. **자리에 두되 흐리게** 한다. */
         prev.disabled = (idl.step === 0);
-        prev.style.opacity = idl.step === 0 ? ".35" : "";
         next.textContent = idcT("next");
         next.disabled = false;
 
@@ -7807,7 +7828,7 @@
         if (idl.step === 1) {                          // ① 듣기 — 표시 없이
             body.appendChild(idlScript(false));
             const b = document.createElement("button");
-            b.type = "button"; b.className = "export-btn";
+            b.type = "button"; b.className = "idl-btn";
             b.style.cssText = "width:100%;margin-top:10px";
             b.textContent = idcT("listenAgain");
             b.addEventListener("click", idlPlayAll);
@@ -7842,7 +7863,11 @@
                         idcLog(idl.el.key, "quiz",
                                { correct: ok, tries: idl.tries, ms: Date.now() - idl.t0 });
                         idlPaint();
-                        if (ok) setTimeout(() => { idl.step = 3; idlPaint(); }, 700);   // 맞히면 뜻으로
+                        if (ok) {
+                            // 옆에서 호아랑이 빼꼼 — 맞혔다는 것을 사람이 알려 주는 편이 낫다
+                            try { hamPeekHtml(idcT("right"), "", 2600, "nz"); } catch (e2) {}
+                            setTimeout(() => { if (idl) { idl.step = 3; idlPaint(); } }, 1400);
+                        }
                     });
                 }
                 body.appendChild(o);
@@ -7856,7 +7881,7 @@
                 body.appendChild(m);
                 if (idl.picked !== q.ans) {             // 틀렸으면 다시 고를 수 있게
                     const again = document.createElement("button");
-                    again.type = "button"; again.className = "export-btn";
+                    again.type = "button"; again.className = "idl-btn";
                     again.style.cssText = "width:100%;margin-top:8px";
                     again.textContent = idcT("listenAgain");
                     again.addEventListener("click", () => { idl.picked = ""; idlPaint(); });
@@ -7886,7 +7911,24 @@
            v120에서 QUEST_FORM 을 지우지 않고 남겨 둔 것이 여기서 쓰인다. */
         if (idl.step === 4) {
             const tier = speechTier();
-            const forms = [];
+            /* 「대화의 흐름 짜기」는 퀘스트 문형이 없다 — 단계를 여닫는 표지가 곧 형태다 */
+            const STAGE_FORMS = {
+                0: ["안녕하십니까? 저, 여쭤볼 게 있습니다만",
+                    "그럼 이제 ~에 대해 여쭙겠습니다",
+                    "마지막으로 하나만 더 여쭙겠습니다",
+                    "네, 알겠습니다. 감사합니다. 안녕히 계십시오"],
+                1: ["안녕하세요? 저, 뭐 좀 여쭤볼게요",
+                    "그럼 이제 ~에 대해서요",
+                    "아, 마지막으로 하나만 더요",
+                    "네, 알겠어요. 감사합니다. 안녕히 계세요"],
+                2: ["안녕? 나 뭐 좀 물어볼 게 있는데",
+                    "그럼 이제 ~ 얘기 좀 하자",
+                    "아, 마지막으로 하나만 더",
+                    "그래, 알겠어. 고마워. 잘 가"],
+            };
+            const forms = (idl.el.key === "stage")
+                ? (STAGE_FORMS[speechTier()] || STAGE_FORMS[1]).slice()
+                : [];
             (QUEST_BY_EL[idl.el.key] || []).forEach((qid) => {
                 const f = QUEST_FORM[qid];
                 if (!f) return;
@@ -7931,10 +7973,15 @@
             next.textContent = idcT("done");
             return;
         }
+        /* ★★ v133 — 여기는 **말해 보는** 자리다. 보여 줄 것을 줄였다.
+           ④에서 이미 문형을 보여 주었으므로 또 늘어놓을 까닭이 없다.
+           남긴 것은 둘뿐 — 상대가 방금 한 말(자리)과 내가 할 말.
+           번역·뒤따르는 반응·안내 문구는 뺐다. 말할 것 앞에 글이 많으면 입이 안 떨어진다. */
         const dr = idl.drills[idl.di || 0];
         const cap2 = document.createElement("div");
         cap2.className = "idl-q";
-        cap2.textContent = idcT("sayCap") + "  (" + ((idl.di || 0) + 1) + "/" + idl.drills.length + ")";
+        cap2.style.cssText = "font-size:13px";
+        cap2.textContent = idcT("sayCap") + "  " + ((idl.di || 0) + 1) + "/" + idl.drills.length;
         body.appendChild(cap2);
         const seq = document.createElement("div");
         if (dr.cue) {
@@ -7949,21 +7996,8 @@
         me.className = "idl-line me lit";
         me.innerHTML = '<span class="who">나</span><span></span>';
         me.lastChild.textContent = dr.text;
+        me.addEventListener("click", () => ttsPlay(dr.text, scMyVoice()));
         seq.appendChild(me);
-        if (dr.native) {
-            const n = document.createElement("div");
-            n.style.cssText = "font-size:11.5px;color:var(--muted);text-align:right;margin:-2px 4px 5px";
-            n.textContent = dr.native;
-            seq.appendChild(n);
-        }
-        if (dr.follow) {
-            const f = document.createElement("div");
-            f.className = "idl-line";
-            f.innerHTML = '<span class="who">호아랑</span><span></span>';
-            f.lastChild.textContent = dr.follow;
-            f.addEventListener("click", () => ttsPlay(dr.follow));
-            seq.appendChild(f);
-        }
         body.appendChild(seq);
         const fb = document.createElement("div");
         fb.id = "idlFb";
@@ -7975,16 +8009,10 @@
         mic.textContent = idcT("hold");
         idlBindMic(mic, dr);
         body.appendChild(mic);
-        const listen = document.createElement("button");
-        listen.type = "button"; listen.className = "export-btn";
-        listen.style.cssText = "width:100%;margin-top:7px";
-        listen.textContent = idcT("listenAgain");
-        listen.addEventListener("click", async () => {
-            if (dr.cue) { await ttsPlay(dr.cue); await new Promise(r => setTimeout(r, 200)); }
-            await ttsPlay(dr.text);
-            if (dr.follow) { await new Promise(r => setTimeout(r, 200)); await ttsPlay(dr.follow); }
-        });
-        body.appendChild(listen);
+        const tip = document.createElement("div");
+        tip.style.cssText = "text-align:center;font-size:11px;color:var(--muted);margin-top:8px";
+        tip.textContent = idcT("tapToHear");
+        body.appendChild(tip);
         next.textContent = ((idl.di || 0) + 1 < idl.drills.length) ? idcT("next") : idcT("done");
     }
 
@@ -8010,15 +8038,36 @@
         idlPaint();
     }
 
-    /* 꾹 눌러서 말하기 — 발화 연습과 같은 길(/stt)을 쓴다 */
+    /* 꾹 눌러서 말하기 — 발화 연습과 **같은 길**(/stt)·**같은 손놀림**을 쓴다.
+       ★★ v133 — 예전에는 pointerdown/up 만 달아 두어 켜졌다 꺼졌다 했다.
+         ㄱ) 손가락이 단추 밖으로 나가면 **뗀 신호를 못 받아** 계속 녹음됐고
+         ㄴ) 손을 떼자마자 끊어 **끝음절이 잘렸다**
+         ㄷ) 어쩌다 신호를 놓치면 영영 녹음 상태로 남았다
+       주제·자유 대화의 말하기 단추가 이미 셋을 다 막고 있다 —
+       setPointerCapture · 꼬리 250ms · 안전장치. 그대로 가져온다. */
     let idlRec = null, idlChunks = [], idlBusy = false;
+    let idlHeld = false, idlSafety = null, idlTail = null;
     function idlBindMic(btn, dr) {
-        const stop = async () => {
-            if (!idlRec || idlRec.state !== "recording") return;
-            idlRec.stop();
+        const stop = () => {
+            idlHeld = false;
+            clearTimeout(idlSafety);
+            if (!idlRec || idlRec.state !== "recording" || idlTail) return;
+            btn.classList.remove("rec");
+            btn.textContent = idcT("hold");
+            // 떼는 즉시 끊으면 끝음절이 잘린다 — 250ms 만 더 흘려보낸다
+            idlTail = setTimeout(() => {
+                idlTail = null;
+                try { if (idlRec && idlRec.state === "recording") idlRec.stop(); } catch (e) {}
+            }, 250);
         };
         const start = async () => {
             if (idlBusy) return;
+            if (idlTail) { clearTimeout(idlTail); idlTail = null; }   // 꼬리 중 다시 누름 = 이어 감
+            if (idlRec && idlRec.state === "recording") { idlHeld = true; return; }
+            idlHeld = true;
+            clearTimeout(idlSafety);
+            // 뗀 신호를 놓쳤을 때를 위한 안전장치
+            idlSafety = setTimeout(() => { if (idlHeld) stop(); }, 30000);
             try {
                 const st = await navigator.mediaDevices.getUserMedia({ audio: true });
                 idlChunks = [];
@@ -8026,6 +8075,8 @@
                 idlRec.ondataavailable = (e) => { if (e.data.size) idlChunks.push(e.data); };
                 idlRec.onstop = async () => {
                     st.getTracks().forEach(t => t.stop());
+                    idlHeld = false;
+                    btn.classList.remove("rec");
                     btn.textContent = idcT("hold");
                     const blob = new Blob(idlChunks, { type: idlRec.mimeType || "audio/webm" });
                     if (blob.size < 1200) { idlFb(idcT("tooShort"), false); return; }
@@ -8051,13 +8102,20 @@
                     finally { idlBusy = false; }
                 };
                 idlRec.start();
+                btn.classList.add("rec");
                 btn.textContent = idcT("talking");
-            } catch (e) { idlFb(idcT("noMic"), false); }
+            } catch (e) { idlHeld = false; idlFb(idcT("noMic"), false); }
         };
-        btn.addEventListener("pointerdown", (e) => { e.preventDefault(); start(); });
+        btn.addEventListener("pointerdown", (e) => {
+            e.preventDefault();
+            try { btn.setPointerCapture(e.pointerId); } catch (_) {}
+            start();
+        });
         btn.addEventListener("pointerup", (e) => { e.preventDefault(); stop(); });
         btn.addEventListener("pointercancel", stop);
-        btn.addEventListener("lostpointercapture", stop);
+        btn.addEventListener("lostpointercapture", () => { if (idlHeld) stop(); });
+        // 손을 화면 밖에서 떼거나 앱이 뒤로 밀려도 확실히 끝낸다
+        window.addEventListener("pointerup", () => { if (idlHeld) stop(); });
     }
     function idlFb(msg, ok) {
         const el = document.getElementById("idlFb");
@@ -8078,6 +8136,7 @@
         document.getElementById("idlX").addEventListener("click", idlClose);
         document.getElementById("idlPrev").addEventListener("click", () => {
             if (!idl) return;
+            idlHalt();                      // ★ 걸음을 옮기면 듣던 것부터 멈춘다
             idl.step = Math.max(0, idl.step - 1);
             idlPaint();
         });
@@ -8093,6 +8152,9 @@
                 idlClose();
                 return;
             }
+            /* ★ v133 — 다음으로 넘어갔는데 **이전 대화가 계속 들리고 있었다.**
+               재생 반복문이 자기 걸음을 안 보고 끝까지 돌았기 때문이다. */
+            idlHalt();
             idl.step += 1;
             idlPaint();
             if (idl.step === 1) setTimeout(idlPlayAll, 260);   // 들어가자마자 들려준다

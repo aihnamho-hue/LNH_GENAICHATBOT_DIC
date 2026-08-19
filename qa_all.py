@@ -542,14 +542,14 @@ ok("페이지", "/voicepick 으로 귀로 듣고 고른다", '@app.get("/voicepi
 print("\n════════ ㉓ 상호작용 대화 능력 학습 화면 (v128) ════════")
 # ★ 하향식(Top-down) — 학습자는 이미 대화를 할 줄 안다. 없는 것은 한국어로 하는 방법이다.
 #   그래서 **설명이 맨 뒤**에 온다. 순서가 뒤집히면 이 화면은 뜻이 없다.
-ok("학습", "서버 학습표는 일곱 (기능 단계·비언어 제외)",
-   len(re.findall(r'"key": "\w+"', re.search(r"^IDC_LESSON = \[[\s\S]*?^\]", PY, re.M).group(0))) == 7)
+ok("학습", "서버 학습표는 여덟 (비언어만 제외)",
+   len(re.findall(r'"key": "\w+"', re.search(r"^IDC_LESSON = \[[\s\S]*?^\]", PY, re.M).group(0))) == 8)
 # ★ v131 — 화면에는 **아홉을 모두** 보인다. 못 배우는 둘을 감추면 「없는 것」이 되어
 #   학습자가 상호작용 대화 능력의 전체 모습을 알 수 없다(〈표 34〉 매체 배분이 화면에 드러난다).
 ok("학습", "화면에는 아홉을 모두 보인다",
    'key: "stage"' in HT and 'key: "nonverbal"' in HT
-   and HT.count('where: "here"') == 7 and HT.count('where: "class"') == 2)
-ok("학습", "교실에서 배우는 둘은 눌리지 않는다", "else b.disabled = true;" in HT)
+   and HT.count('where: "here"') == 8 and HT.count('where: "class"') == 1)
+ok("학습", "교실에서 배우는 것(몸짓)은 눌리지 않는다", "else b.disabled = true;" in HT)
 ok("학습", "★ 이모지를 쓰지 않는다 (그림으로)",
    'emoji: "' not in HT.split("const IDC_LES = [")[1].split("];")[0]
    and '"#ic-idc-" + e.key' in HT)

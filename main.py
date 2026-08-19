@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v133"
+APP_VERSION = "v134"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -1127,29 +1127,34 @@ _ONE_WORD = {"네", "예", "응", "어", "아", "음", "그래", "글쎄", "야"
 #     Brown & Gilman(1960)의 두 축은 독립이며, 그 눈금은 app.html 의
 #     speechOf/partnerSpeechOf 와 **같아야 한다.** 다르면 배우는 사람이
 #     화면에서 보는 말과 귀로 듣는 말이 어긋난다.
-SPEECH_CLOSE = 60      # 이보다 가까워야 반말이 나온다
-SPEECH_FAR = 15        # 이보다 멀면 격식체(합쇼체)
-#   ★ v120 — 35에서 15로 내렸다. 화면의 친밀도 눈금은
-#     0~15 낯선 사이 · 16~35 아는 사이 · 36~65 적당한 사이 · … 인데,
-#     35로 잡아 두니 **「아는 사이」인데도 합쇼체**가 나와 과했다.
-#     이제 합쇼체는 「낯선 사이」 칸에서만 나오고, 아는 사이부터는 해요체다.
+SPEECH_FAR = 35        # 이하 = 유대 낮음(낯선·아는) → 합쇼체가 기본
+SPEECH_CLOSE = 65      # 초과 = 유대 확보(친한·절친) → 반말이 나온다
+SPEECH_STRANGER = 15   # 이하 = 낯선 사이
+POWER_LOW = 35
+POWER_HIGH = 65
+#   ★ v134 — 화면 라벨과 같은 경계(35·65)를 쓴다. app.html 의 speechOf 와 한 글자도
+#     다르면 안 된다. 다르면 「먼저 듣기」의 화계와 화면 안내가 어긋난다.
 
 
 def _speech_of(d: int, p: int) -> str:
     """학습자가 쓸 화계."""
-    if d >= SPEECH_CLOSE:
-        return "banmal" if p >= 45 else "polite"
+    if d > SPEECH_CLOSE:
+        return "polite" if p <= POWER_LOW else "banmal"
     if d <= SPEECH_FAR:
-        return "polite" if p >= 70 else "formal"
+        if d > SPEECH_STRANGER and POWER_LOW < p <= POWER_HIGH:
+            return "polite"          # 아는 사이의 「대등」만 해요체
+        return "polite" if p > POWER_HIGH else "formal"
     return "polite"
 
 
 def _partner_speech_of(d: int, p: int) -> str:
     """호아랑(상대)이 쓸 화계 — 지위 축이 뒤집힌다."""
-    if d >= SPEECH_CLOSE:
-        return "banmal" if p <= 55 else "polite"
+    if d > SPEECH_CLOSE:
+        return "polite" if p > POWER_HIGH else "banmal"
     if d <= SPEECH_FAR:
-        return "polite" if p <= 30 else "formal"
+        if d > SPEECH_STRANGER and POWER_LOW < p <= POWER_HIGH:
+            return "polite"
+        return "polite" if p <= POWER_LOW else "formal"
     return "polite"
 
 

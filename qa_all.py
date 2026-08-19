@@ -364,34 +364,65 @@ ok("맥락", "이미 띄운 것은 다시 안 고른다", _g2 and _g2 != _g1, f"
 print("\n════════ ⑯ 화계 — 서버와 화면이 같은 눈금인가 (v119) ════════")
 # 학습자가 화면에서 「~습니다/습니까?로」를 읽는데 호아랑·대화문·도움말이
 # 해요체로 나오면, 보는 말과 듣는 말이 어긋난다(v118까지 그랬다).
-# 두 벌의 식이 **한 칸도** 달라서는 안 된다. 50칸을 전부 대조한다.
-_sv = {"SPEECH_CLOSE": 60, "SPEECH_FAR": 35}
+# 두 벌의 식이 **한 칸도** 달라서는 안 된다.
+# ★ 상수를 여기 손으로 적어 두었다가 v134에서 그대로 깨졌다(SPEECH_STRANGER 를 몰랐다).
+#   검사가 원본의 값을 **베껴 들고 있으면** 원본이 바뀔 때 같이 안 바뀐다.
+#   main.py 에서 그때그때 읽는다.
+_sv = {int(v) if v.lstrip("-").isdigit() else v: v for _, v in []}
+_sv = {}
+for _k, _v in re.findall(r"^(SPEECH_\w+|POWER_\w+)\s*=\s*(\d+)", PY, re.M):
+    _sv[_k] = int(_v)
+if not _sv:
+    ok("화계", "화계 상수를 main.py 에서 읽었다", False, "SPEECH_* 를 못 찾음")
 for _f in ("_speech_of", "_partner_speech_of"):
     exec(re.search(r"def " + _f + r"\(.*?\n(?=\n\n)", PY, re.S).group(0), _sv)
-def _jsrun(fn, d, p):
-    """화면 쪽 함수를 그대로 읽어 돌린다 — 두 줄짜리 조건식이라 옮길 수 있다."""
-    body = re.search(r"function " + fn + r"\(d, p\) \{(.*?)\n    \}", HT, re.S).group(1)
-    out = None
-    for ln in body.split("\n"):
-        ln = ln.split("//")[0].strip()
-        m = re.match(r"if \(d (>=|<=) (SPEECH_CLOSE|SPEECH_FAR)\)\s*return (.+);", ln)
-        if m:
-            lim = 60 if m.group(2) == "SPEECH_CLOSE" else 35
-            if (d >= lim if m.group(1) == ">=" else d <= lim):
-                mm = re.match(r"p (>=|<=) (\d+) \? (\d) : (\d)", m.group(3))
-                hit = (p >= int(mm.group(2))) if mm.group(1) == ">=" else (p <= int(mm.group(2)))
-                return int(mm.group(3)) if hit else int(mm.group(4))
-        m2 = re.match(r"return (\d);", ln)
-        if m2: out = int(m2.group(1))
-    return out
+def _jsrun_all():
+    """화면 쪽 화계 함수를 **노드로 실제로 돌린다.**
+
+    ★ 예전에는 여기서 JS 를 정규식으로 뜯어 파이썬으로 **다시 구현**하고 있었다.
+      두 줄짜리 조건식일 때는 됐지만, v134에서 함수가 조금 자라자 그대로 깨졌다.
+      검사가 원본을 흉내 내면 원본이 바뀔 때마다 검사도 따라 고쳐야 하고,
+      고치는 걸 잊으면 **검사가 거짓말을 한다.** 흉내 내지 말고 그냥 돌린다.
+    """
+    import subprocess, json as _json, tempfile, os as _os
+    m = re.search(r"(const SPEECH_FAR[\s\S]*?\n    \}\n    function partnerSpeechOf[\s\S]*?\n    \})", HT)
+    if not m:
+        return None
+    js = m.group(1) + """
+const out = [];
+for (let d = 0; d <= 100; d++) for (let p = 0; p <= 100; p++)
+    out.push([speechOf(d, p), partnerSpeechOf(d, p)]);
+console.log(JSON.stringify(out));
+"""
+    fd, path = tempfile.mkstemp(suffix=".js")
+    with _os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(js)
+    try:
+        r = subprocess.run(["node", path], capture_output=True, text=True, timeout=30)
+        return _json.loads(r.stdout) if r.returncode == 0 else None
+    except Exception:
+        return None
+    finally:
+        _os.unlink(path)
+
 _TIER = ["formal", "polite", "banmal"]
-_diff = []
-for d in (0, 25, 50, 75, 100):
-    for p in (0, 25, 50, 75, 100):
-        for pyf, jsf in (("_speech_of", "speechOf"), ("_partner_speech_of", "partnerSpeechOf")):
-            a, b = _sv[pyf](d, p), _TIER[_jsrun(jsf, d, p)]
-            if a != b: _diff.append(f"D{d}P{p} {jsf}: 서버 {a} / 화면 {b}")
-ok("화계", "서버와 화면이 50칸 모두 같다", not _diff, _diff[:4])
+_js = _jsrun_all()
+if _js is None:
+    ok("화계", "화면 쪽 화계 함수를 돌릴 수 있다", False, "node 가 없거나 함수를 못 찾음")
+    _diff = ["(못 돌림)"]
+else:
+    # 25칸만 찍어 보는 것이 아니라 **101×101 = 10201칸 전부** 대조한다.
+    # 경계값(35·65 언저리)이야말로 어긋나기 쉬운 곳인데 25칸 표본은 그걸 비켜 간다.
+    _diff = []
+    _i = 0
+    for d in range(101):
+        for p in range(101):
+            w = _js[_i]; _i += 1
+            for k, pyf in ((0, "_speech_of"), (1, "_partner_speech_of")):
+                a, b = _sv[pyf](d, p), _TIER[w[k]]
+                if a != b:
+                    _diff.append(f"D{d}P{p} {pyf}: 서버 {a} / 화면 {b}")
+    ok("화계", f"서버와 화면이 10201칸 모두 같다", not _diff, _diff[:3])
 ok("화계", "합쇼체·해요체·해체 세 단계가 다 나온다",
    {_sv["_speech_of"](d, p) for d in range(0, 101, 5) for p in range(0, 101, 5)}
    == {"formal", "polite", "banmal"})
@@ -660,12 +691,23 @@ ok("스타일", "자유 대화 도와주기 초기값 「많이」",
 ok("넛지", "호아랑이 드나드는 시간을 늘렸다", "transition: transform 1s cubic-bezier" in HT)
 
 print("\n════════ ⑲ 화계 눈금 · 계획 만들기 (v120) ════════")
-ok("화계", "합쇼체는 「낯선 사이」 칸에서만 (눈금 15)",
-   "SPEECH_FAR = 15" in PY and "const SPEECH_FAR = 15;" in HT)
-_sf = {"SPEECH_CLOSE": 60, "SPEECH_FAR": 15}
+# ★★ v134에서 되돌린 결정이다. v120은 SPEECH_FAR 를 35→15로 내려
+#   「아는 사이」를 통째로 해요체로 만들었는데, 그 바람에 **지위 페이더가
+#   그 줄에서 아무 일도 하지 않았다**(다섯 칸이 전부 같은 문구).
+#   화면 라벨은 35까지를 「아는 사이」로 부르는데 화계 계산만 15를 쓰고 있었던 것이다.
+#   → 라벨과 같은 눈금(35·65)으로 되돌리고, 논문 〈표 4-x〉와 10201칸을 맞췄다.
+#   이 검사도 옛 결정을 정답으로 박아 두고 있었으므로 같이 고친다.
+ok("화계", "화면 라벨과 같은 눈금을 쓴다 (35·65)",
+   "SPEECH_FAR = 35" in PY and "const SPEECH_FAR = 35;" in HT
+   and "SPEECH_CLOSE = 65" in PY and "const SPEECH_CLOSE = 65;" in HT)
+_sf = dict(_sv)   # 위 ⑯에서 main.py 에서 읽어 둔 상수를 그대로 쓴다
 exec(re.search(r"def _speech_of\(.*?\n(?=\n\n)", PY, re.S).group(0), _sf)
-ok("화계", "「아는 사이」(25)는 해요체다", _sf["_speech_of"](25, 50) == "polite", _sf["_speech_of"](25, 50))
-ok("화계", "「낯선 사이」(10)는 합쇼체다", _sf["_speech_of"](10, 50) == "formal", _sf["_speech_of"](10, 50))
+ok("화계", "「낯선 사이」(10)·대등은 합쇼체다", _sf["_speech_of"](10, 50) == "formal", _sf["_speech_of"](10, 50))
+ok("화계", "「아는 사이」(25)·대등은 해요체다", _sf["_speech_of"](25, 50) == "polite", _sf["_speech_of"](25, 50))
+# ★ 이것이 v134의 핵심 — 「아는 사이」에서 지위가 실제로 일을 하는가
+ok("화계", "「아는 사이」에서 지위가 화계를 가른다",
+   len({_sf["_speech_of"](25, p) for p in (10, 50, 90)}) >= 2,
+   [_sf["_speech_of"](25, p) for p in (10, 50, 90)])
 ok("계획", "말투 손질과 앞말 채우기를 나란히 돌린다",
    "await asyncio.gather(*jobs, return_exceptions=True)" in PY)
 ok("계획", "만드는 동안 진행률이 보인다",
@@ -742,7 +784,19 @@ _pub = f"{ROOT}/깃헙에 올릴 파일"
 # 배포 폴더가 없어도 검사가 죽지 않게 — 여기서 죽으면 뒤가 통째로 미검증이 된다
 gz = os.path.getsize(f"{_pub}/app.html.gz") if os.path.isfile(f"{_pub}/app.html.gz") else 0
 raw = os.path.getsize(f"{ROOT}/app.html")
-ok("배포", f"app.html.gz 최신 ({gz//1024}KB / 원본 {raw//1024}KB)", gz > 100_000)
+ok("배포", f"app.html.gz 있다 ({gz//1024}KB / 원본 {raw//1024}KB)", gz > 100_000)
+# ★★ v134에서 하마터면 놓칠 뻔한 것 — **크기만 보고 내용은 안 보고 있었다.**
+#   app.html 을 고치고 gz 를 다시 굽지 않으면, 서버는 gz 를 먼저 읽으므로
+#   **고치기 전 코드가 돈다.** 고친 것과 올라가는 것이 다른 상태는
+#   가장 찾기 어려운 종류다. 압축을 풀어 원본과 **한 글자까지** 대조한다.
+try:
+    import gzip as _gzip
+    _same = (_gzip.decompress(open(f"{_pub}/app.html.gz", "rb").read())
+             == open(f"{ROOT}/app.html", "rb").read()) if gz else False
+    ok("배포", "app.html.gz 를 다시 구웠다 (내용까지 같다)", _same,
+       "gz 가 옛것 — 지금 올리면 고친 것이 안 들어간다")
+except Exception as _e:
+    ok("배포", "app.html.gz 를 풀어 볼 수 있다", False, _e)
 
 # ═══════════════════════════════════════════════════════════
 print("\n" + "═" * 60)

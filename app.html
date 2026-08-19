@@ -2343,7 +2343,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v133 (2026-08-18)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v134 (2026-08-19)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -8456,23 +8456,48 @@
             (윗사람은 반말, 아랫사람은 존댓말 — 이것이 학습자가 가장 어려워하는 지점)
        서버의 대화문 생성도 같은 규칙을 쓴다(want_user/want_ai). 두 곳이 어긋나면
        「먼저 듣기는 반말인데 빠른 단추는 존댓말」이 된다 — v115에서 실제로 그랬다. */
-    const SPEECH_CLOSE = 60;    // 이보다 가까워야 반말이 나온다
-    const SPEECH_FAR = 15;      /* 이보다 멀면 격식체(합쇼체)
-       ★ v120 — 35에서 15로 내렸다. 친밀도 눈금은
-         0~15 낯선 사이 · 16~35 아는 사이 · 36~65 적당한 사이 · … 인데
-         35로 잡아 두니 「아는 사이」인데도 합쇼체가 나와 과했다.
-         이제 합쇼체는 「낯선 사이」 칸에서만, 아는 사이부터는 해요체다.
-         ※ 서버(main.py)의 SPEECH_FAR 와 반드시 같아야 한다. */
-    function speechOf(d, p) {
-        // 0 합쇼체 · 1 해요체 · 2 해체(반말) — 학습자가 쓸 말투
-        if (d >= SPEECH_CLOSE) return p >= 45 ? 2 : 1;   // 가까움: 내가 위면 반말, 아래면 해요체
-        if (d <= SPEECH_FAR) return p >= 70 ? 1 : 0;     // 서먹함: 내가 아주 위여야 해요체
-        return 1;                                        // 그 사이: 해요체
+    /* ══════════ 청자경어법 판정 — 여기 한 곳에서만 ══════════
+       ★ v134 — 눈금을 화면 라벨과 같은 자리에 맞췄다.
+
+       예전에는 두 벌이 돌아가고 있었다.
+         화면 라벨 :  0~15 낯선 · 16~35 아는 · 36~65 적당 · 66~85 친한 · 86~ 절친
+         화계 판정 :  SPEECH_FAR=15 · SPEECH_CLOSE=60 · 지위는 45/70/55/30
+       그래서 ㉠ 「아는 사이」 다섯 칸이 지위와 무관하게 모두 해요체가 되어
+       **지위 페이더가 아무 일도 하지 않았고**, ㉡ 같은 「대등」 칸 안에서
+       (p=45를 넘는 순간) 말투가 바뀌어 학습자가 예측할 수 없었다.
+
+       학습자가 **보는 경계**와 코드가 **쓰는 경계**는 같아야 한다.
+       다르면 화면이 거짓말을 한다. 이제 둘 다 35·65를 쓴다.
+
+       근거는 논문 〈표 4-x〉(페이더와 청자경어법의 대응)이며 세 원칙을 따른다.
+         ① 해체(반말)는 유대가 확보된 관계에서만 (친밀도 66 이상)
+         ② 유대가 낮으면 지위와 무관하게 합쇼체가 기본 (친밀도 35 이하)
+         ③ 유대가 확보된 관계에서 지위가 비대칭을 만든다
+       다만 〈표 4-x〉에서 **한 칸만 고쳤다** — 「아는 사이 · 대등」이다.
+       표대로면 둘 다 합쇼체인데, 아는 사이 동급끼리 「알겠습니다」는 어색하다.
+       합쇼체는 친밀도가 아니라 **격식성**에 붙는 말이라, 낯선 사이(창구·접수 같은
+       공적 자리)에서는 맞지만 아는 사이의 사적 대화에서는 과하다. 해요체로 둔다. */
+    const SPEECH_FAR = 35;      // 이하 = 유대 낮음(낯선·아는) → 합쇼체가 기본
+    const SPEECH_CLOSE = 65;    // 초과 = 유대 확보(친한·절친) → 반말이 나온다
+    const SPEECH_STRANGER = 15; // 이하 = 낯선 사이 (아는 사이와 「대등」 칸에서만 갈린다)
+    const POWER_LOW = 35;       // 이하 = 하급자·약간 아래
+    const POWER_HIGH = 65;      // 초과 = 약간 위·상급자
+    // 0 합쇼체 · 1 해요체 · 2 해체(반말)
+    function speechOf(d, p) {           // 학습자가 쓸 말투
+        if (d > SPEECH_CLOSE) return p <= POWER_LOW ? 1 : 2;
+        if (d <= SPEECH_FAR) {
+            // 아는 사이의 「대등」만 해요체 (윗글 참조)
+            if (d > SPEECH_STRANGER && p > POWER_LOW && p <= POWER_HIGH) return 1;
+            return p > POWER_HIGH ? 1 : 0;
+        }
+        return 1;                       // 적당한 사이
     }
-    function partnerSpeechOf(d, p) {
-        // 상대(호아랑)가 쓸 말투 — 지위를 뒤집어 본다
-        if (d >= SPEECH_CLOSE) return p <= 55 ? 2 : 1;
-        if (d <= SPEECH_FAR) return p <= 30 ? 1 : 0;
+    function partnerSpeechOf(d, p) {    // 호아랑이 쓸 말투 — 지위 축이 뒤집힌다
+        if (d > SPEECH_CLOSE) return p > POWER_HIGH ? 1 : 2;
+        if (d <= SPEECH_FAR) {
+            if (d > SPEECH_STRANGER && p > POWER_LOW && p <= POWER_HIGH) return 1;
+            return p <= POWER_LOW ? 1 : 0;
+        }
         return 1;
     }
     function quickLevel() {
@@ -8482,7 +8507,7 @@
         // 빠른 단추의 다섯 문형에 맞춘다.
         //   합쇼체 → 0 / 해요체 → 1~2(가까울수록 편하게) / 반말 → 3~4(지위가 높을수록 낮춤)
         if (lv === 0) return 0;
-        if (lv === 1) return d >= SPEECH_CLOSE ? 2 : 1;
+        if (lv === 1) return d > SPEECH_CLOSE ? 2 : 1;
         return p >= 85 ? 4 : 3;
     }
     function getQuickPhrase(key) {

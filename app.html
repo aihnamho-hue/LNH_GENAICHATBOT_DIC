@@ -83,6 +83,18 @@
         @media (min-width: 1400px) and (min-height: 760px) { :root { --ui-zoom: 1.34; } }
         @media (min-width: 1800px) and (min-height: 900px) { :root { --ui-zoom: 1.5; } }
         * { box-sizing: border-box; }
+        /* ★★ v139 — 글자가 끌려서 단추가 안 눌리던 것.
+           폰에서 단추 위 글자를 조금 길게 누르면 **글자가 선택되면서**
+           안드로이드는 구글 검색 팝업이, 아이폰은 복사·검색 막대가 떠 버린다.
+           그 순간 눌림이 취소되어 「단추가 안 먹는」 것처럼 보인다.
+           이 앱은 말하기 앱이라 글자를 긁어 갈 일이 거의 없다 — 통째로 막고,
+           정말 필요한 곳(입력칸·대화 기록)만 아래에서 다시 열어 준다. */
+        html, body { -webkit-user-select: none; -ms-user-select: none; user-select: none;
+                     -webkit-touch-callout: none;
+                     -webkit-tap-highlight-color: transparent; }
+        input, textarea, [contenteditable="true"], .chat-log, .rev-body, .idl-say {
+            -webkit-user-select: text; -ms-user-select: text; user-select: text;
+            -webkit-touch-callout: default; }
         /* 폼 요소는 기본적으로 body 글꼴을 물려받지 않는다 → 지마켓 산스로 통일 */
         input, button, textarea, select, optgroup { font-family: inherit; }
         body { margin: 0; font-family: var(--font-ui); background: var(--bg); color: var(--ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px;
@@ -771,8 +783,11 @@
         .idl-res.ok { color: #3E9B14; }
         .idl-res.no { color: #C0603F; font-size: 13.5px; font-weight: 600; }
         .idl-res .rb { display: block; font-size: 30px; margin-bottom: 4px; }
+        /* 틀렸을 때 판 전체를 한 번 흔든다 (v139) */
+        .lang-box.idl-wrong { animation: idlShake .42s ease; }
         @media (prefers-reduced-motion: reduce) {
-            .idl-opt.ok, .idl-opt.no, .idl-chip.put.ok, .idl-chip.put.no, .idl-res { animation: none; }
+            .idl-opt.ok, .idl-opt.no, .idl-chip.put.ok, .idl-chip.put.no, .idl-res,
+            .lang-box.idl-wrong { animation: none; }
         }
         .idl-opt small { display: block; font-weight: 600; color: var(--muted); margin-top: 3px; font-size: 11px; }
         /* 문형 — 붉은 뼈대 + 검은 슬롯 (v138) */
@@ -797,7 +812,9 @@
         .idl-chip.put small { display: inline; margin: 0 0 0 6px; }
         .idl-chip.put.ok { border-style: solid; border-color: #58CC02; background: #F1FBEA; }
         .idl-chip.put.no { border-style: solid; border-color: #D98C7A; background: #FBF0ED; }
-        .idl-say { font-size: 13.5px; line-height: 1.6; margin-bottom: 11px; }
+        /* 해설은 **왼쪽 정렬** (v139). 가운데로 두면 줄마다 시작점이 달라
+           눈이 매번 줄 앞을 찾아야 한다 — 여러 줄짜리 글에는 맞지 않는다. */
+        .idl-say { font-size: 13.5px; line-height: 1.6; margin-bottom: 11px; text-align: left; }
         .idl-say b { display: block; font-weight: 700; color: var(--ink); }
         .idl-say i { display: block; font-style: normal; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
         .idl-msg { text-align: center; padding: 40px 10px; color: var(--muted); font-size: 13px; }
@@ -2398,7 +2415,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v138 (2026-08-20)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v139 (2026-08-20)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -2611,6 +2628,23 @@
 
     const actionBtn = document.getElementById("actionBtn");
     const exportBtn = document.getElementById("exportBtn");
+    /* ★★ v139 — 꾹 눌러 말하기의 **손맛**을 한 곳에서 만든다.
+       이 앱에는 말하기 단추가 세 자리에 있다 —
+         ㄱ) 주제·자유 대화   ㄴ) 발화 연습   ㄷ) 학습 ⑤ 걸음
+       셋이 저마다 다르게 굴어서 학습자가 자리를 옮길 때마다 다시 익혀야 했다.
+       (실제로 「혼란스러워하더라」는 말을 들었다 — v112 에서 한 번 겪은 일이다.)
+
+       눌린 것을 **손으로도** 알려 준다. 교실에서는 소리를 못 켜므로,
+       진동이 「지금 듣고 있다」는 유일한 신호가 되는 때가 있다.
+       vibrate 를 안 받는 기기(아이폰 사파리)에서는 아무 일도 안 일어난다 — 그래도 된다.
+       화면 쪽 신호(색·파동·글씨)는 세 자리 모두 같으므로 손해가 없다. */
+    function pttBuzz(kind) {
+        try {
+            if (!navigator.vibrate) return;
+            navigator.vibrate(kind === "start" ? 26 : (kind === "stop" ? 13 : [16, 55, 16]));
+        } catch (e) {}
+    }
+
     const pttBtn = document.getElementById("pttBtn");
     const statusDot = document.getElementById("statusDot");
     const statusText = document.getElementById("statusText");
@@ -6216,6 +6250,7 @@
             prSetLabel(t("pttTalking"));
             prVuStart();
             prMicLabel.textContent = t("prMicRec");
+            pttBuzz("start");
             prFeedback.innerHTML = "";
             prAutoStop = setTimeout(() => { try { prRecd.stop(); } catch (e) {} }, 45000); // 안전 자동 종료 (대화 화면과 같은 45초)
             prStarting = false;
@@ -6284,6 +6319,7 @@
             prMicBtn.classList.add("rec");
             prSetLabel(t("pttTalking"));
             prMicLabel.textContent = t("prMicRec");
+            pttBuzz("start");
             prFeedback.innerHTML = "";
         } catch (e) {
             console.warn("음성 인식 시작 실패:", e);
@@ -6316,6 +6352,7 @@
                 prMicBtn.classList.add("rec", "talking");
                 prSetLabel(t("pttTalking"));
                 prMicLabel.textContent = t("prMicRec");
+                pttBuzz("start");
                 return;
             }
             if (prRecOn || prStarting) { prHeld = true; return; }
@@ -6330,6 +6367,7 @@
                (대화 화면은 250ms, 여기는 한 문장을 통째로 채점하므로 조금 더 넉넉히) */
             prMicBtn.classList.remove("talking");
             prSetLabel(t("pttHold"));
+            pttBuzz("stop");
             prVuStop();
             prVuReset();
             prTailTimer = setTimeout(() => { prTailTimer = null; if (prRecOn) prRecStop(); }, 350);
@@ -7607,7 +7645,8 @@
               step: ["들어가기", "듣기", "생각하기", "알기", "익히기", "말하기"],
               formCap: "이렇게 말해요 (눌러서 들어 보세요)", noForm: "이 요소는 문형이 아직 없어요",
               sayCap: "이어서 말해 보세요", hold: "🎤 꾹 눌러서 말하기",
-              talking: "🔴 말하는 중 — 떼면 보냅니다", checking: "🧠 듣고 있어요…",
+              talking: "🔴 말하는 중 — 떼면 전송", checking: "🧠 알아듣는 중...",
+              micRec: "🔴 듣는 중… 다 말하면 손을 떼세요", hear: "🔊 다시 듣기",
               nice: "좋아요! 👏", again: "조금 달랐어요 — 한 번 더!",
               noHear: "잘 안 들렸어요. 다시 해 볼까요?", tooShort: "너무 짧아요",
               noMic: "마이크를 쓸 수 없어요",
@@ -7622,7 +7661,8 @@
               step: ["Warm-up", "Listen", "Think", "Learn", "Forms", "Say it"],
               formCap: "Say it like this (tap to listen)", noForm: "No set phrases for this one yet",
               sayCap: "Now you take the turn", hold: "🎤 Hold to talk",
-              talking: "🔴 Talking — release to send", checking: "🧠 Listening…",
+              talking: "🔴 Recording — release to send", checking: "🧠 Listening...",
+              micRec: "🔴 Recording… let go when you are done", hear: "🔊 Listen again",
               nice: "Nice! 👏", again: "Not quite — one more try!",
               noHear: "Couldn't hear you. Try again?", tooShort: "Too short",
               noMic: "Microphone is not available",
@@ -7824,7 +7864,7 @@
             } else {
                 who.classList.add("ham");
                 const im = document.createElement("img");
-                im.src = "/static/ham_idle.png?v=138"; im.alt = "";
+                im.src = "/static/ham_idle.png?v=139"; im.alt = "";
                 who.appendChild(im);
             }
             const tx = document.createElement("span");
@@ -7946,7 +7986,7 @@
             idl.ord = idl.ord || [];                   // 학습자가 쌓은 차례
             const ask = document.createElement("div");
             ask.className = "idl-ask";
-            ask.innerHTML = '<img src="/static/ham_idle.png?v=138" alt=""><p></p>';
+            ask.innerHTML = '<img src="/static/ham_idle.png?v=139" alt=""><p></p>';
             ask.querySelector("p").textContent = q.q;
             if (q.q_n) {
                 const qn = document.createElement("span");
@@ -8036,7 +8076,7 @@
                둘 다 굵으면 어디를 먼저 볼지 알 수 없다. */
             const ask = document.createElement("div");
             ask.className = "idl-ask";
-            ask.innerHTML = '<img src="/static/ham_idle.png?v=138" alt=""><p></p>';
+            ask.innerHTML = '<img src="/static/ham_idle.png?v=139" alt=""><p></p>';
             ask.querySelector("p").textContent = q.q;
             body.appendChild(ask);
             ["a", "b", "c"].slice(0, q.n || 2).forEach((k) => {
@@ -8046,7 +8086,15 @@
                 o.firstChild.textContent = ({ a: "ⓐ ", b: "ⓑ ", c: "ⓒ " }[k]) + q[k];
                 o.lastChild.textContent = q[k + "_n"] || "";
                 if (idl.picked) {                       // 이미 골랐다 — 답을 보여 준다
-                    o.classList.add(k === q.ans ? "ok" : (k === idl.picked ? "no" : ""));
+                    /* ★★ v139 — 여기서 **화면이 통째로 멎고 있었다.**
+                       `classList.add("")` 는 빈 글자를 못 받고 SyntaxError 를 던진다.
+                       고른 것도 정답도 아닌 자리에서 빈 글자가 들어가면서
+                       forEach 가 그 자리에서 끊겼고, **남은 선택지가 아예 안 그려졌다.**
+                       정답을 맨 앞에서 골랐으면 첫 바퀴에 터져 **선택지가 하나도 안 남았다.**
+                       (아이폰 화면이 물음만 덩그러니 남던 것이 이것이다.)
+                       아래 결과 줄(🎉/🤔)도 이 예외 때문에 한 번도 안 보였다. */
+                    const mark = (k === q.ans) ? "ok" : (k === idl.picked ? "no" : "");
+                    if (mark) o.classList.add(mark);
                     o.disabled = true;
                 } else {
                     o.addEventListener("click", () => {
@@ -8074,6 +8122,16 @@
                 m.querySelector(".rt").textContent = good ? idcT("right")
                                                          : (q.hint || idcT("wrong"));
                 body.appendChild(m);
+                if (!good) {
+                    /* 판 전체를 한 번 흔든다 — 선택지 한 줄만 흔들리면 눈이 못 따라간다 */
+                    const box = document.querySelector("#idlOverlay .lang-box");
+                    if (box) { box.classList.remove("idl-wrong"); void box.offsetWidth;
+                               box.classList.add("idl-wrong");
+                               setTimeout(() => box.classList.remove("idl-wrong"), 480); }
+                    try { if (navigator.vibrate) navigator.vibrate([18, 60, 18]); } catch (e3) {}
+                } else {
+                    try { if (navigator.vibrate) navigator.vibrate(24); } catch (e3) {}
+                }
                 if (idl.picked !== q.ans) {             // 틀렸으면 다시 고를 수 있게
                     const again = document.createElement("button");
                     again.type = "button"; again.className = "idl-btn";
@@ -8093,15 +8151,21 @@
         const hr = document.createElement("div");
         hr.style.cssText = "height:1px;background:#E8E3DA;margin:13px 0";
         if (idl.step === 3) body.appendChild(hr);
-        (d.meaning || []).forEach((m) => {
-            const p = document.createElement("div");
-            p.className = "idl-say";
-            p.innerHTML = "<b></b><i></i>";
-            p.querySelector("b").textContent = m.ko;
-            p.querySelector("i").textContent = m.native || "";
-            p.addEventListener("click", () => ttsPlay(m.ko));
-            body.appendChild(p);
-        });
+        /* ★★ v139 — 해설을 **③과 ④에서만** 그린다.
+           v138 에서 「⑤는 입을 떼는 자리니 해설을 뺀다」고 적어 놓고
+           정작 이 줄에 조건을 안 걸었다. 그래서 ⑤에도 해설 세 줄이 그대로 떴다.
+           주석은 고쳤는데 코드는 안 고친 것 — 화면을 안 돌려 봤기 때문이다. */
+        if (idl.step < 5) {
+            (d.meaning || []).forEach((m) => {
+                const p = document.createElement("div");
+                p.className = "idl-say";
+                p.innerHTML = "<b></b><i></i>";
+                p.querySelector("b").textContent = m.ko;
+                p.querySelector("i").textContent = m.native || "";
+                p.addEventListener("click", () => ttsPlay(m.ko));
+                body.appendChild(p);
+            });
+        }
         if (idl.step === 3) { next.textContent = idcT("next"); return; }
         // ④문형에서는 해설과 문형 사이를 확실히 가른다
         if (idl.step === 4) {
@@ -8196,42 +8260,49 @@
         /* ★ v138 — 여기는 **입을 떼는** 자리다. 대화문도 해설도 뺀다.
            ③에서 뜻을 듣고 ④에서 문형을 봤다. 지금 필요한 것은
            「상대가 방금 한 말」과 「내가 할 말」 둘뿐이다. */
+        /* ★★ v139 — 여기를 **발화 연습과 같은 꼴**로 맞춘다.
+           같은 「말해 보는 자리」인데 두 화면이 달라서 학습자가 매번 다시 익혔다.
+           발화 연습의 뼈대를 그대로 쓴다 —
+             왼쪽 안내 한 줄 → 상대 말풍선 → 내가 할 말(큰 카드) → 🔊 → 말하기 → 부안내 */
         const dr = idl.drills[idl.di || 0];
-        const cap2 = document.createElement("div");
-        cap2.className = "idl-q";
-        cap2.style.cssText = "font-size:13px";
+        const cap2 = document.createElement("p");
+        cap2.className = "pr-step";
+        cap2.style.cssText = "text-align:left;margin:2px 0 10px";
         cap2.textContent = idcT("sayCap") + "  " + ((idl.di || 0) + 1) + "/" + idl.drills.length;
         body.appendChild(cap2);
-        const seq = document.createElement("div");
         if (dr.cue) {
-            const a = document.createElement("div");
-            a.className = "idl-line";
-            a.innerHTML = '<span class="who ham"><img src="/static/ham_idle.png?v=138" alt=""></span><span></span>';
-            a.lastChild.textContent = dr.cue;
-            a.addEventListener("click", () => ttsPlay(dr.cue));
-            seq.appendChild(a);
+            const row = document.createElement("div");
+            row.className = "pr-cue-row";
+            row.innerHTML = '<div class="profile"><img src="/static/ham_idle.png?v=139" alt=""></div>'
+                          + '<div class="pr-cue-bubble"></div>';
+            row.querySelector(".pr-cue-bubble").textContent = dr.cue;
+            row.addEventListener("click", () => ttsPlay(dr.cue));
+            body.appendChild(row);
         }
-        const me = document.createElement("div");
-        me.className = "idl-line me lit";
-        me.innerHTML = '<span class="who">나</span><span></span>';
-        me.lastChild.textContent = dr.text;
-        me.addEventListener("click", () => ttsPlay(dr.text, scMyVoice()));
-        seq.appendChild(me);
-        body.appendChild(seq);
+        const tgt = document.createElement("div");
+        tgt.className = "pr-target";
+        tgt.style.cssText = "text-align:left";
+        tgt.textContent = dr.text;
+        body.appendChild(tgt);
+        const lb = document.createElement("button");
+        lb.type = "button"; lb.className = "pr-listen-btn";
+        lb.textContent = idcT("hear");
+        lb.addEventListener("click", () => ttsPlay(dr.text, scMyVoice()));
+        body.appendChild(lb);
         const fb = document.createElement("div");
         fb.id = "idlFb";
-        fb.style.cssText = "text-align:center;font-size:13px;font-weight:800;margin:9px 0 4px;min-height:19px";
+        fb.style.cssText = "text-align:center;font-size:13.5px;font-weight:800;margin:10px 0 0;min-height:20px";
         body.appendChild(fb);
+        // 말하기 단추 — 발화 연습과 **같은 옷**(.pr-mic)을 입힌다
         const mic = document.createElement("button");
-        mic.type = "button"; mic.className = "action-btn";
-        mic.style.cssText = "width:100%;margin-top:4px";
+        mic.type = "button"; mic.className = "pr-mic";
         mic.textContent = idcT("hold");
-        idlBindMic(mic, dr);
         body.appendChild(mic);
-        const tip = document.createElement("div");
-        tip.style.cssText = "text-align:center;font-size:11px;color:var(--muted);margin-top:8px";
-        tip.textContent = idcT("tapToHear");
-        body.appendChild(tip);
+        const sub = document.createElement("p");
+        sub.className = "pr-mic-label";
+        sub.textContent = "";
+        body.appendChild(sub);
+        idlBindMic(mic, dr, sub);
         next.textContent = ((idl.di || 0) + 1 < idl.drills.length) ? idcT("next") : idcT("done");
     }
 
@@ -8269,13 +8340,16 @@
        setPointerCapture · 꼬리 250ms · 안전장치. 그대로 가져온다. */
     let idlRec = null, idlChunks = [], idlBusy = false;
     let idlHeld = false, idlSafety = null, idlTail = null;
-    function idlBindMic(btn, dr) {
+    function idlBindMic(btn, dr, sub) {
+        const say = (txt) => { if (sub) sub.textContent = txt || ""; };
         const stop = () => {
             idlHeld = false;
             clearTimeout(idlSafety);
             if (!idlRec || idlRec.state !== "recording" || idlTail) return;
-            btn.classList.remove("rec");
+            btn.classList.remove("rec", "talking");
             btn.textContent = idcT("hold");
+            say("");
+            pttBuzz("stop");
             // 떼는 즉시 끊으면 끝음절이 잘린다 — 250ms 만 더 흘려보낸다
             idlTail = setTimeout(() => {
                 idlTail = null;
@@ -8284,7 +8358,13 @@
         };
         const start = async () => {
             if (idlBusy) return;
-            if (idlTail) { clearTimeout(idlTail); idlTail = null; }   // 꼬리 중 다시 누름 = 이어 감
+            if (idlTail) {                        // 꼬리 중 다시 누름 = 이어 감
+                clearTimeout(idlTail); idlTail = null;
+                btn.classList.add("rec", "talking");
+                btn.textContent = idcT("talking");
+                say(idcT("micRec"));
+                pttBuzz("start");
+            }
             if (idlRec && idlRec.state === "recording") { idlHeld = true; return; }
             idlHeld = true;
             clearTimeout(idlSafety);
@@ -8298,8 +8378,9 @@
                 idlRec.onstop = async () => {
                     st.getTracks().forEach(t => t.stop());
                     idlHeld = false;
-                    btn.classList.remove("rec");
+                    btn.classList.remove("rec", "talking");
                     btn.textContent = idcT("hold");
+                    say("");
                     const blob = new Blob(idlChunks, { type: idlRec.mimeType || "audio/webm" });
                     if (blob.size < 1200) { idlFb(idcT("tooShort"), false); return; }
                     idlBusy = true;
@@ -8324,9 +8405,11 @@
                     finally { idlBusy = false; }
                 };
                 idlRec.start();
-                btn.classList.add("rec");
+                btn.classList.add("rec", "talking");
                 btn.textContent = idcT("talking");
-            } catch (e) { idlHeld = false; idlFb(idcT("noMic"), false); }
+                say(idcT("micRec"));
+                pttBuzz("start");
+            } catch (e) { idlHeld = false; say(""); idlFb(idcT("noMic"), false); }
         };
         btn.addEventListener("pointerdown", (e) => {
             e.preventDefault();
@@ -8786,6 +8869,7 @@
         if (pttEndTimer) {      // 꼬리 대기 중 다시 누름 → 끊지 않고 같은 발화를 이어감
             clearTimeout(pttEndTimer); pttEndTimer = null;
             pttBtn.classList.add("talking"); pttSetLabel(t("pttTalking"));
+            pttBuzz("start");
             return;
         }
         if (isTalking) return;
@@ -8796,6 +8880,7 @@
         try { ws.send(JSON.stringify({ type: "activity_start" })); } catch (e) {}
         pttBtn.classList.add("talking");
         pttSetLabel(t("pttTalking"));
+        pttBuzz("start");
         vuReset();
         setStatus("listening", "stListening");
     }
@@ -8807,6 +8892,7 @@
         //   시각적으로는 바로 '뗀' 상태로 바꾸되, 오디오는 250ms 더 흘려보낸 뒤 종료 신호를 보낸다.
         pttBtn.classList.remove("talking");
         pttSetLabel(t("pttHold"));
+        pttBuzz("stop");
         vuReset();
         if (!isConnected || isPaused) { isTalking = false; return; }
         pttEndTimer = setTimeout(() => {

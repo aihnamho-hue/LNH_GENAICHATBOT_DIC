@@ -57,7 +57,8 @@ setTimeout(()=>{
   ok("문구가 지원 언어 전부에 있다", (html.match(/qRefuse:"/g)||[]).length===LANGS);
 
   console.log("\n── 결과를 자료로 남긴다 ──");
-  ok("지난 대화 기록에 quests 저장", /title, preview, text, quests, stats/.test(html));
+  // v142 — 대목을 잘라 낼 수 있게 turns 가 함께 들어갔다
+  ok("지난 대화 기록에 quests 저장", /title, preview, text, turns, quests, stats/.test(html));
   ok("서버 업로드 정보에 quests 포함", /quests: \(function \(\) \{ try \{ return questResult/.test(html));
   ok("집계값(idcStats)도 함께", /idcStats:/.test(html));
 

@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v141"
+APP_VERSION = "v142"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -3205,6 +3205,205 @@ async def stt_endpoint(audio: UploadFile = File(...), hint: str = Form(default="
     except Exception as e:
         print(f"[STT] 인식 실패: {e}")
         raise HTTPException(status_code=502, detail=(f"stt_failed | {type(e).__name__}: {e}")[:250])
+
+
+# ══════════════════════════════════════════════════════════════
+#  교실 공유 — 학습자가 대목을 올리고, 교사 화면이 코드로 연다 (v142)
+#
+#  왜 파일이 아니라 코드인가
+#    지금까지는 대화 기록을 txt 로 내보내 카톡으로 보내는 길뿐이었다.
+#    그런데 그 txt 는 **연구자용**이다(머리말·점수·판정이 다 붙어 있다).
+#    교실에서 필요한 것은 파일이 아니라 **화면**이다 —
+#    한 대목 서너 줄을 크게 띄워 놓고 다 같이 보는 자리.
+#    그래서 학습자는 네 글자 코드만 만들고, 교사 화면이 그 코드로 연다.
+#
+#  왜 메모리에만 두나
+#    수업 한 시간 안에 쓰고 버리는 것이다. 남길 까닭이 없고,
+#    남기면 학습자 발화가 서버에 흩어진다. 두 시간 뒤 저절로 사라진다.
+#    (서버가 다시 뜨면 없어진다 — 그때는 학습자가 코드를 다시 만들면 된다)
+# ══════════════════════════════════════════════════════════════
+SHARE_TTL = 2 * 3600          # 두 시간
+SHARE_MAX = 300               # 한 서버에 이만큼만 (한 반이 45명이니 넉넉하다)
+# 헷갈리는 글자를 뺀다 — 0/O, 1/I/L 은 대형 화면에서 서로 안 갈린다
+SHARE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"
+_share_box: dict = {}         # code -> {"turns": [...], "title": str, "at": float}
+
+
+def _share_gc() -> None:
+    """지난 것을 치운다. 넣을 때마다 한 번씩 훑으므로 따로 도는 것이 없다."""
+    now = time.time()
+    dead = [k for k, v in _share_box.items() if now - v["at"] > SHARE_TTL]
+    for k in dead:
+        _share_box.pop(k, None)
+    while len(_share_box) > SHARE_MAX:          # 그래도 넘치면 가장 오래된 것부터
+        old = min(_share_box.items(), key=lambda x: x[1]["at"])[0]
+        _share_box.pop(old, None)
+
+
+def _share_code() -> str:
+    for _ in range(40):
+        c = "".join(SHARE_ALPHABET[b % len(SHARE_ALPHABET)] for b in os.urandom(4))
+        if c not in _share_box:
+            return c
+    return "".join(SHARE_ALPHABET[b % len(SHARE_ALPHABET)] for b in os.urandom(6))
+
+
+@app.post("/share")
+async def share_put(request: Request):
+    """학습자가 고른 대목을 올린다 → 네 글자 코드를 돌려준다."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    raw = (body or {}).get("turns")
+    if not isinstance(raw, list) or not raw:
+        raise HTTPException(status_code=400, detail="no_turns")
+    turns = []
+    for x in raw[:12]:                          # 열두 줄이면 대형 화면이 꽉 찬다
+        if not isinstance(x, dict):
+            continue
+        txt = _clean_str(x.get("t"), 400)
+        if not txt:
+            continue
+        turns.append({"r": "me" if x.get("r") == "me" else "ham", "t": txt})
+    if not turns:
+        raise HTTPException(status_code=400, detail="empty")
+    _share_gc()
+    code = _share_code()
+    # ★ 이름은 담지 않는다. 교실 화면에 누구 것인지 띄우면 발표가 부담이 된다.
+    #   무엇을 말했는지가 볼 거리이지 누가 말했는지가 볼 거리가 아니다.
+    _share_box[code] = {"turns": turns, "title": _clean_str(body.get("title"), 60),
+                        "at": time.time()}
+    print(f"[교실공유] {code} · {len(turns)}줄 · 보관 {len(_share_box)}건")
+    return {"ok": True, "code": code, "n": len(turns), "ttl": SHARE_TTL}
+
+
+@app.get("/share/{code}")
+async def share_get(code: str):
+    """교사 화면이 코드로 읽는다."""
+    c = re.sub(r"[^A-Z0-9]", "", (code or "").upper())[:8]
+    _share_gc()
+    it = _share_box.get(c)
+    if not it:
+        raise HTTPException(status_code=404, detail="not_found")
+    return {"ok": True, "code": c, "title": it["title"], "turns": it["turns"],
+            "left": max(0, int(SHARE_TTL - (time.time() - it["at"])))}
+
+
+@app.get("/class", response_class=HTMLResponse)
+async def class_screen():
+    """교실 대형 화면 — 학습자가 만든 네 글자 코드를 넣으면 그 대목이 크게 뜬다.
+
+    ★ 이 화면에는 **대화문만** 둔다.
+      점수도, 호아랑이 권한 것도, 자가 점검도 안 띄운다.
+      판단을 먼저 보이면 반 전체가 그 판단을 따라간다 —
+      「이 자리에서는 이렇게 말했으면 더 자연스러웠겠다」는 말이
+      학습자들 입에서 먼저 나와야 한다. 그것이 이 활동의 목적이다.
+
+    ★ 학생 화면에는 이 주소로 가는 길이 없다(교사만 쓴다).
+    """
+    return HTMLResponse(f"""<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>교실 화면 — 호아랑 {APP_VERSION}</title>
+<style>
+ :root {{ --ink:#3A3022; --muted:#8B8271; --paper:#FDFBF6; --sand:#E8E1D3;
+          --me:#FFF6DE; --meb:#C9A227; --ham:#EFEBE2; --fs:34px; }}
+ * {{ box-sizing:border-box; }}
+ body {{ margin:0; font-family:"Pretendard","Malgun Gothic",-apple-system,sans-serif;
+        background:var(--paper); color:var(--ink); min-height:100vh;
+        word-break:keep-all; overflow-wrap:break-word; }}
+ header {{ display:flex; align-items:center; gap:14px; padding:14px 22px;
+           border-bottom:1px solid var(--sand); position:sticky; top:0; background:var(--paper); z-index:5; }}
+ h1 {{ font-size:17px; margin:0; font-weight:800; letter-spacing:-.2px; }}
+ h1 small {{ font-weight:600; color:var(--muted); font-size:12px; margin-left:8px; }}
+ input {{ font-family:inherit; font-size:26px; font-weight:800; letter-spacing:.24em;
+          text-transform:uppercase; width:190px; padding:8px 12px; border:2px solid var(--sand);
+          border-radius:12px; background:#fff; color:var(--ink); text-align:center; }}
+ input:focus {{ outline:none; border-color:var(--meb); }}
+ button {{ font-family:inherit; font-size:15px; font-weight:800; padding:10px 16px;
+           border:2px solid var(--sand); border-radius:12px; background:#fff;
+           color:var(--ink); cursor:pointer; }}
+ button:hover {{ background:#F2EDE2; }}
+ button.go {{ background:#3D5A52; color:#fff; border-color:#3D5A52; }}
+ .sp {{ flex:1; }}
+ .zoom {{ display:flex; gap:6px; }}
+ .zoom button {{ width:44px; padding:10px 0; font-size:19px; }}
+ main {{ padding:30px 5vw 70px; max-width:1500px; margin:0 auto; }}
+ .msg {{ display:flex; margin:0 0 20px; }}
+ .msg.me {{ justify-content:flex-end; }}
+ .bub {{ max-width:78%; padding:18px 26px; border-radius:22px; line-height:1.55;
+         font-size:var(--fs); font-weight:700; }}
+ .msg.ham .bub {{ background:var(--ham); border-bottom-left-radius:8px; }}
+ .msg.me  .bub {{ background:var(--me); border:2px solid var(--meb); border-bottom-right-radius:8px; }}
+ .who {{ font-size:calc(var(--fs) * .42); font-weight:800; color:var(--muted);
+         align-self:flex-end; margin:0 12px 10px; white-space:nowrap; }}
+ .hint {{ color:var(--muted); font-size:17px; line-height:1.9; text-align:center;
+          margin-top:16vh; }}
+ .hint b {{ color:var(--ink); }}
+ .err {{ color:#B4634F; font-weight:800; }}
+ @media print {{ header {{ display:none; }} }}
+</style></head><body>
+<header>
+  <h1>🏫 교실 화면<small>호아랑 {APP_VERSION}</small></h1>
+  <input id="c" maxlength="8" placeholder="코드" autocomplete="off" autocapitalize="characters">
+  <button class="go" id="go">열기</button>
+  <span class="sp"></span>
+  <span class="zoom"><button id="minus">−</button><button id="plus">+</button></span>
+</header>
+<main id="m">
+  <p class="hint">학습자 화면에서 <b>대화 기록 → 교실에 띄우기</b> 를 누르면<br>
+     네 글자 코드가 나옵니다. 그 코드를 위에 넣어 주세요.<br><br>
+     <span style="font-size:14px">코드는 만든 지 두 시간이 지나면 사라집니다.</span></p>
+</main>
+<script>
+ var m = document.getElementById("m"), inp = document.getElementById("c");
+ function say(t, bad) {{
+   m.innerHTML = "";
+   var p = document.createElement("p");
+   p.className = "hint" + (bad ? " err" : "");
+   p.textContent = t; m.appendChild(p);
+ }}
+ async function open_() {{
+   var c = (inp.value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+   if (!c) return;
+   say("불러오는 중…");
+   try {{
+     var r = await fetch("/share/" + encodeURIComponent(c));
+     if (r.status === 404) {{ say("그런 코드가 없어요. 다시 확인해 주세요.", true); return; }}
+     if (!r.ok) throw new Error(r.status);
+     var d = await r.json();
+     m.innerHTML = "";
+     (d.turns || []).forEach(function (x) {{
+       var row = document.createElement("div");
+       row.className = "msg " + (x.r === "me" ? "me" : "ham");
+       var w = document.createElement("span");
+       w.className = "who"; w.textContent = x.r === "me" ? "학습자" : "호아랑";
+       var b = document.createElement("div");
+       b.className = "bub"; b.textContent = x.t;
+       if (x.r === "me") {{ row.appendChild(b); row.appendChild(w); }}
+       else {{ row.appendChild(w); row.appendChild(b); }}
+       m.appendChild(row);
+     }});
+     history.replaceState(null, "", "/class?c=" + c);
+   }} catch (e) {{ say("불러오지 못했어요. 잠시 뒤 다시 해 주세요.", true); }}
+ }}
+ document.getElementById("go").addEventListener("click", open_);
+ inp.addEventListener("keydown", function (e) {{ if (e.key === "Enter") open_(); }});
+ // 글자 크기 — 교실 뒷자리까지 보이게. 고른 크기는 이 기기에 남는다.
+ var fs = parseInt(localStorage.getItem("classFs") || "34", 10);
+ function zoom(d) {{
+   fs = Math.max(20, Math.min(80, fs + d));
+   document.documentElement.style.setProperty("--fs", fs + "px");
+   try {{ localStorage.setItem("classFs", String(fs)); }} catch (e) {{}}
+ }}
+ zoom(0);
+ document.getElementById("plus").addEventListener("click", function () {{ zoom(4); }});
+ document.getElementById("minus").addEventListener("click", function () {{ zoom(-4); }});
+ // 주소에 코드가 붙어 있으면 바로 연다 (교사가 링크를 눌러 두면 새로 고침만 해도 된다)
+ var q = new URLSearchParams(location.search).get("c");
+ if (q) {{ inp.value = q.toUpperCase(); open_(); }}
+ inp.focus();
+</script></body></html>""")
 
 
 @app.get("/voice-lab", response_class=HTMLResponse)

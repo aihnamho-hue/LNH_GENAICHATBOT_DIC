@@ -40,6 +40,12 @@ for f in sorted(glob.glob("IDC학습_대화문_*.docx")):
         if right is not None and len(opts) == 3:
             wrongs = [o for o in opts if o != right]
             if q.get("right") != right: q["right"] = right; hit += 1
+            # ★ docx 의 ⓐⓑⓒ 는 **섞어서** 찍는다(정답이 늘 ⓐ면 검토자가 안 읽고 안다).
+            #   그래서 읽어 온 차례를 그대로 wrong1·wrong2 에 넣으면, 고친 것이 없어도
+            #   둘이 자리를 바꾸며 「되돌림」이 잡힌다. 돌려도 돌려도 안 끝난다.
+            #   내용이 그대로면 자리도 그대로 둔다.
+            if sorted(wrongs) == sorted([q.get("wrong1", ""), q.get("wrong2", "")]):
+                wrongs = [q.get("wrong1", ""), q.get("wrong2", "")]
             for i, w in enumerate(wrongs, 1):
                 if q.get(f"wrong{i}") != w: q[f"wrong{i}"] = w; hit += 1
     if hit:

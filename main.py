@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v137"
+APP_VERSION = "v138"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -2526,6 +2526,7 @@ def _idc_corpus_scene(item: dict, tr: dict) -> dict:
                 "place": item.get("place", ""), "place_n": _clean_str(tr.get("place"), 120),
                 "script": script, "mark": item.get("mark", 0), "quiz": quiz,
                 "forms": item.get("forms") or [], "drills": item.get("drills") or [],
+                "forms_filled": item.get("forms_filled") or [],
                 "sub": item.get("sub", ""), "topic_lv": item.get("topic_lv", "")}
 
     # 자리를 섞는다 — 정답이 늘 ⓐ면 학습자가 눌러 보고 안다
@@ -2548,6 +2549,7 @@ def _idc_corpus_scene(item: dict, tr: dict) -> dict:
             "place": item.get("place", ""), "place_n": _clean_str(tr.get("place"), 120),
             "script": script, "mark": item.get("mark", 0), "quiz": out,
             "forms": item.get("forms") or [], "drills": item.get("drills") or [],
+            "forms_filled": item.get("forms_filled") or [],
             "sub": item.get("sub", ""), "topic_lv": item.get("topic_lv", "")}
 
 

@@ -149,8 +149,17 @@ for n, it in enumerate(d["items"], 1):
     for i, m in enumerate(it["meaning"], 1):
         para(doc, f"{i})  {m}", 7.0, space=1)
     # ── ④ 문형 ──
-    para(doc, "④  문형  ·  " + "   /   ".join(it["forms"]), 7.0,
-         name="GmarketSansLight", space=3)
+    # ★ 화면에는 「~」인 채로가 아니라 **그 대화문의 말로 채워져** 뜬다 (v138).
+    #   검토도 화면에서 보이는 대로 해야 하므로 채운 꼴을 함께 찍는다.
+    #   〔  〕 안이 갈아 끼우는 자리(화면에서는 검은색), 밖이 외울 뼈대(붉은색).
+    para(doc, "④  문형", 7.5, True, space=1)
+    _ff = it.get("forms_filled") or []
+    for i, x in enumerate(it["forms"]):
+        parts = _ff[i] if i < len(_ff) else [[x, 1]]
+        shown = "".join(("〔" + t + "〕") if not c else t for t, c in parts)
+        para(doc, f"   ·  {x}" + (f"      →   {shown}" if "~" in x else ""),
+             7.0, name="GmarketSansLight", space=0)
+    para(doc, "", 4, space=2)
     # ── ⑤ 연습 ──
     para(doc, "⑤  연습", 7.5, True, space=1)
     for i, dr in enumerate(it["drills"], 1):

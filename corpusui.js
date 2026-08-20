@@ -85,8 +85,25 @@ setTimeout(async () => {
     await step(3);
     ok("③ 뜻풀이가 보인다", t().indexOf(LESSON.meaning[0].ko.slice(0, 12)) >= 0);
     await step(4);
-    ok("④ 문형이 검수본 것이다", LESSON.forms.every((f) => t().indexOf(f.slice(0, 6)) >= 0),
-       LESSON.forms.join(" / "));
+    // ★ v138 — 문형은 「~」인 채로가 아니라 **그 대화문의 말로 채워져** 보인다.
+    //   「나도 ~한 적 있어」가 아니라 「나도 등산한 적 있어」.
+    //   붉은색(core) = 그대로 외울 뼈대 · 검은색(slot) = 갈아 끼우는 자리
+    const fms = [...d.querySelectorAll(".idl-form .fm")].map(
+        (f) => [...f.querySelectorAll("span")].map(
+            (s) => ({ c: s.className, t: s.textContent })));
+    ok("④ 문형이 몇 줄 떴다", fms.length >= LESSON.forms.length, fms.length + "/" + LESSON.forms.length);
+    const shown = fms.map((p) => p.map((x) => x.t).join(""));
+    ok("④ 화면에 「~」가 안 남았다", shown.every((s) => s.indexOf("~") < 0), shown.join(" / "));
+    (LESSON.forms_filled || []).forEach((p, i) => {
+        const want = p.map((x) => x[0]).join("");
+        ok(`④ 「${LESSON.forms[i]}」 → 「${want}」`, shown.indexOf(want) >= 0, shown.join(" / "));
+    });
+    // 채울 것이 있던 문형은 검은 칸이 실제로 갈려 있어야 한다
+    const hadSlot = (LESSON.forms || []).some((f) => f.indexOf("~") >= 0);
+    ok("④ 갈아 끼우는 자리가 검게 갈렸다",
+       !hadSlot || fms.some((p) => p.some((x) => x.c === "slot")),
+       fms.map((p) => p.map((x) => x.c[0] + x.t).join("|")).join(" / "));
+    ok("④ 외울 뼈대가 붉게 갈렸다", fms.every((p) => p.some((x) => x.c === "core")));
 
     console.log("\n── ④ id 가 ⑤연습까지 흘러가는가");
     ok("응답에 id 가 있다", !!LESSON.id, LESSON.id);

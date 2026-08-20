@@ -221,5 +221,29 @@ for it in _pick:
            if len(f) >= 4 and f.rstrip("?~ ") in o]
     ok(f"{it['id']} 표시 줄만 그 문형을 쓴다", not dup, dup[:1])
 
+print("\n── ⑭ 문형이 대화문의 말로 채워졌는가")
+# ★ 「나도 ~한 적 있어」만 보이면 3급 초입 학습자는 무엇을 넣을지 모른다.
+#   그래서 편마다 그 대화문의 말로 **채운 꼴**을 함께 담는다 (forms_filled, v138).
+#     붉은색 = 그대로 외울 뼈대   ·   검은색 = 갈아 끼우는 자리
+#   조각을 이어 붙이면 학습자가 화면에서 보는 한 줄이 된다.
+for it in d["items"]:
+    fs, ff = it.get("forms") or [], it.get("forms_filled") or []
+    ok(f"{it['id']} 채운 꼴의 수가 문형 수와 같다 {len(ff)}/{len(fs)}", len(ff) == len(fs))
+    for i, x in enumerate(fs):
+        if i >= len(ff): break
+        parts = ff[i]
+        joined = "".join(t for t, _ in parts)
+        ok(f"{it['id']} 「{x}」에 ~ 가 안 남았다", "~" not in joined, joined)
+        if "~" in x:
+            # 「~」가 있던 자리는 반드시 **검은 칸**으로 채워져 있어야 한다
+            ok(f"{it['id']} 「{x}」에 갈아 끼우는 칸이 있다",
+               any(c == 0 for _, c in parts), joined)
+        # 뼈대가 하나도 없으면 무엇을 외울지가 안 보인다
+        ok(f"{it['id']} 「{x}」에 외울 뼈대가 있다", any(c == 1 for _, c in parts), joined)
+        # 조각을 자모로 쪼개면 화면에서 「기다리ㄹ게」처럼 깨져 보인다
+        ok(f"{it['id']} 「{x}」가 음절 가운데서 안 잘렸다",
+           not any(("\u1100" <= t[0] <= "\u11FF" or "\u3131" <= t[0] <= "\u318E")
+                   for t, _ in parts if t), joined)
+
 print("\n" + (f"💥 {len(bad)}건" if bad else "🎉 이상 없음"))
 sys.exit(1 if bad else 0)

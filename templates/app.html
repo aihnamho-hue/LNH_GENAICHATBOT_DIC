@@ -720,7 +720,7 @@
         .idl-btn:hover { background: var(--navy-soft); }
         .idl-btn:disabled { opacity: 0.35; cursor: default; }
         .idl-warm { text-align: center; padding: 26px 10px; }
-        .idl-warm .we { font-size: 42px; display: block; margin-bottom: 12px; }
+        .idl-warm .we { font-size: 64px; display: block; margin-bottom: 16px; line-height: 1; }
         .idl-warm .wt { font-size: 15.5px; font-weight: 700; color: var(--ink); line-height: 1.55; }
         .idl-warm .wn { font-size: 12px; color: var(--muted); margin-top: 7px; }
         .idl-act .action-btn.rec, .idl-body .action-btn.rec { filter: brightness(0.86) saturate(1.2); }
@@ -731,17 +731,55 @@
                     background: #F7F4EC; font-size: 13.5px; line-height: 1.5; }
         .idl-line.me { background: #EAF3EA; flex-direction: row-reverse; text-align: right; }
         .idl-line .who { flex: none; font-size: 10.5px; font-weight: 800; color: var(--muted); padding-top: 3px; }
+        /* 호아랑은 얼굴로 (v138) — 줄마다 붙는 글자를 그림 하나로 바꾼다 */
+        .idl-line .who.ham { padding-top: 0; display: flex; align-items: flex-start; }
+        .idl-line .who.ham img { width: 26px; height: 26px; border-radius: 50%;
+            object-fit: cover; background: #F2EDE4; display: block; }
         /* ★ 불은 추측이 끝난 뒤에만 켠다 — 먼저 켜면 답을 주는 것이다 */
         .idl-line.lit { background: #FFF6DE; border: 1.5px solid var(--gold, #C9A227); font-weight: 700; }
         .idl-line.on { outline: 2px solid var(--accent-ink); outline-offset: 1px; }
         .idl-q { font-size: 15px; font-weight: 800; color: var(--ink); text-align: center; margin: 4px 0 12px; }
-        .idl-opt { display: block; width: 100%; text-align: left; padding: 13px 14px; margin-bottom: 8px;
+        /* ★ 호아랑이 묻는다 (v138) — 그림 + 얇은 글씨. 굵게 하지 않는다. */
+        .idl-ask { display: flex; gap: 10px; align-items: flex-start; margin: 18px 2px 16px; }
+        .idl-ask img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover;
+            background: #F2EDE4; flex: none; }
+        .idl-ask p { margin: 0; padding-top: 4px; font-size: 14px; font-weight: 500;
+            line-height: 1.6; color: var(--ink); word-break: keep-all; }
+        .idl-ask p .an { display: block; font-size: 11.5px; font-weight: 400;
+            color: var(--muted); margin-top: 4px; }
+        .idl-opt { display: block; width: 100%; text-align: left; padding: 13px 14px; margin-bottom: 10px;
             border: 1.5px solid var(--sand); border-radius: 14px; background: #fff; cursor: pointer;
             font-family: inherit; font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.45; }
         .idl-opt:hover { border-color: var(--accent-ink); }
         .idl-opt.ok { border-color: #58CC02; background: #F1FBEA; }
         .idl-opt.no { border-color: #D98C7A; background: #FBF0ED; opacity: .75; }
+        /* ★ 맞았다·틀렸다를 **몸으로** 알려 준다 (v138).
+           글자만 바뀌면 눈이 못 따라간다. 맞으면 한 번 커졌다 돌아오고,
+           틀리면 좌우로 짧게 흔들린다. 소리 없이도 알 수 있어야 한다. */
+        @keyframes idlPop  { 0% { transform: scale(1); } 45% { transform: scale(1.045); }
+                             100% { transform: scale(1); } }
+        @keyframes idlShake{ 0%,100% { transform: translateX(0); }
+                             20% { transform: translateX(-6px); } 40% { transform: translateX(5px); }
+                             60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+        .idl-opt.ok   { animation: idlPop .42s ease; }
+        .idl-opt.no   { animation: idlShake .38s ease; }
+        .idl-chip.put.ok { animation: idlPop .42s ease; }
+        .idl-chip.put.no { animation: idlShake .38s ease; }
+        /* 결과 한 줄 — 초록/붉은빛으로 크게 */
+        .idl-res { text-align: center; margin: 14px 0 4px; font-size: 15px; font-weight: 800;
+            line-height: 1.5; word-break: keep-all; animation: idlPop .45s ease; }
+        .idl-res.ok { color: #3E9B14; }
+        .idl-res.no { color: #C0603F; font-size: 13.5px; font-weight: 600; }
+        .idl-res .rb { display: block; font-size: 30px; margin-bottom: 4px; }
+        @media (prefers-reduced-motion: reduce) {
+            .idl-opt.ok, .idl-opt.no, .idl-chip.put.ok, .idl-chip.put.no, .idl-res { animation: none; }
+        }
         .idl-opt small { display: block; font-weight: 600; color: var(--muted); margin-top: 3px; font-size: 11px; }
+        /* 문형 — 붉은 뼈대 + 검은 슬롯 (v138) */
+        .idl-form { padding: 14px 15px; }
+        .idl-form .fm { font-size: 14.5px; line-height: 1.5; }
+        .idl-form .core { color: #C0392B; font-weight: 800; }
+        .idl-form .slot { color: var(--ink); font-weight: 600; }
         /* ── 차례 맞히기 (v136) — 조각을 눌러 위에서 아래로 쌓는다 ── */
         .idl-stack { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 12px; min-height: 4px; }
         .idl-tray { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 6px; }
@@ -2360,7 +2398,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v137 (2026-08-19)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v138 (2026-08-20)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -7739,15 +7777,56 @@
         }
     }
     /* 대화문을 그린다. lit=true 면 배울 줄에 불이 켜진다(③에서만). */
+    /* ★ 표현 문형을 색으로 가른다 (v138).
+       「나도 ~한 적 있어」에서 **바뀌지 않는 뼈대**가 배울 것이고,
+       「~」 자리는 학습자가 갈아 끼우는 칸이다. 둘을 같은 색으로 두면
+       무엇을 외워야 하는지가 안 보인다.
+         붉은색 = 그대로 외울 문형
+         검은색 = 갈아 끼우는 칸 */
+    function formHtml(x, parts) {
+        const w = document.createElement("span");
+        w.className = "fm";
+        /* 검수본에는 그 대화문의 말로 **채워 놓은 것**이 딸려 온다 (v138).
+           「나도 ~한 적 있어」가 아니라 「나도 등산한 적 있어」로 보인다 —
+           빈칸만 있으면 3급 초입 학습자는 무엇을 넣을지 모른다. */
+        if (parts && parts.length) {
+            parts.forEach((p) => {
+                const t = p && p[0];
+                if (!t) return;
+                const sp = document.createElement("span");
+                sp.className = p[1] ? "core" : "slot";
+                sp.textContent = t;
+                w.appendChild(sp);
+            });
+            return w;
+        }
+        String(x).split(/(~[가-힣A-Za-z]*)/).forEach((part) => {
+            if (!part) return;
+            const sp = document.createElement("span");
+            if (part.startsWith("~")) { sp.className = "slot"; sp.textContent = part; }
+            else { sp.className = "core"; sp.textContent = part; }
+            w.appendChild(sp);
+        });
+        return w;
+    }
     function idlScript(lit) {
         const d = idl.data, wrap = document.createElement("div");
         d.script.forEach((l, i) => {
             const row = document.createElement("div");
             row.className = "idl-line" + (l.speaker === "user" ? " me" : "")
                           + (lit && i === d.mark ? " lit" : "");
+            /* ★ v138 — 호아랑은 **얼굴**로 보인다. 글자 「호아랑」이 줄마다 붙으면
+               읽을 것이 늘고, 누가 말하는지는 그림이 훨씬 빨리 알려 준다. */
             const who = document.createElement("span");
             who.className = "who";
-            who.textContent = l.speaker === "user" ? "나" : "호아랑";
+            if (l.speaker === "user") {
+                who.textContent = "나";
+            } else {
+                who.classList.add("ham");
+                const im = document.createElement("img");
+                im.src = "/static/ham_idle.png?v=138"; im.alt = "";
+                who.appendChild(im);
+            }
             const tx = document.createElement("span");
             tx.textContent = l.text;
             row.appendChild(who); row.appendChild(tx);
@@ -7830,7 +7909,11 @@
         if (idl.step === 0) {                          // ⓪ 들어가기 — 배경지식을 깨운다
             const w = document.createElement("div");
             w.className = "idl-warm";
-            w.innerHTML = '<span class="we">💭</span><div class="wt"></div><div class="wn"></div>';
+            /* ★ v138 — 말풍선 하나로 다 때우던 자리에 **그 요소의 이모지**를 크게 넣는다.
+               무엇을 배우러 왔는지가 글보다 먼저 눈에 들어와야 한다. */
+            w.innerHTML = '<span class="we"></span><div class="wt"></div><div class="wn"></div>';
+            // 이모지는 **서버 응답**에 온다(IDC_ELS 에는 없다 — 화면은 SVG 아이콘을 쓴다)
+            w.querySelector(".we").textContent = d.emoji || (idl.el && idl.el.emoji) || "💭";
             w.querySelector(".wt").textContent = d.place || "";
             w.querySelector(".wn").textContent = d.place_n || "";
             body.appendChild(w);
@@ -7861,14 +7944,16 @@
                조각을 섞어 늘어놓고 **차례대로 눌러 쌓게** 한다. */
             const q = d.quiz;
             idl.ord = idl.ord || [];                   // 학습자가 쌓은 차례
-            const qq = document.createElement("div");
-            qq.className = "idl-q"; qq.textContent = q.q;
-            body.appendChild(qq);
+            const ask = document.createElement("div");
+            ask.className = "idl-ask";
+            ask.innerHTML = '<img src="/static/ham_idle.png?v=138" alt=""><p></p>';
+            ask.querySelector("p").textContent = q.q;
             if (q.q_n) {
-                const qn = document.createElement("div");
-                qn.className = "idl-say"; qn.style.cssText = "font-size:12px;opacity:.7;margin:-4px 0 8px";
-                qn.textContent = q.q_n; body.appendChild(qn);
+                const qn = document.createElement("span");
+                qn.className = "an"; qn.textContent = q.q_n;
+                ask.querySelector("p").appendChild(qn);
             }
+            body.appendChild(ask);
             const done = idl.ord.length === q.n;
             const right = done && idl.ord.every((v, i) => v === q.order[i]);
 
@@ -7920,9 +8005,10 @@
             }
             if (done) {
                 const m = document.createElement("div");
-                m.className = "idl-q";
-                m.style.cssText = "margin-top:10px;font-size:13px;font-weight:700";
-                m.textContent = right ? idcT("right") : (q.hint || idcT("wrong"));
+                m.className = "idl-res " + (right ? "ok" : "no");
+                m.innerHTML = '<span class="rb"></span><span class="rt"></span>';
+                m.querySelector(".rb").textContent = right ? "🎉" : "🤔";
+                m.querySelector(".rt").textContent = right ? idcT("right") : (q.hint || idcT("wrong"));
                 body.appendChild(m);
                 if (!right) {                          // 틀렸으면 다시
                     const again = document.createElement("button");
@@ -7936,7 +8022,7 @@
             next.disabled = !right;                    // 맞혀야 넘어간다
             return;
         }
-        if (idl.step === 2) {                          // ② 추측 — 두 갈래
+        if (idl.step === 2) {                          // ② 추측
             const q = d.quiz;
             const one = document.createElement("div");
             one.className = "idl-line me lit";
@@ -7944,9 +8030,15 @@
             one.lastChild.textContent = d.script[d.mark].text;
             one.addEventListener("click", () => ttsPlay(d.script[d.mark].text));
             body.appendChild(one);
-            const qq = document.createElement("div");
-            qq.className = "idl-q"; qq.textContent = q.q;
-            body.appendChild(qq);
+            /* ★ v138 — 물음을 **호아랑이 묻는 것**으로 바꾼다.
+               글자만 덩그러니 있으면 화면이 빽빽하고 누가 묻는지도 없다.
+               그리고 물음은 굵게 하지 않는다 — 아래 선택지가 굵으니
+               둘 다 굵으면 어디를 먼저 볼지 알 수 없다. */
+            const ask = document.createElement("div");
+            ask.className = "idl-ask";
+            ask.innerHTML = '<img src="/static/ham_idle.png?v=138" alt=""><p></p>';
+            ask.querySelector("p").textContent = q.q;
+            body.appendChild(ask);
             ["a", "b", "c"].slice(0, q.n || 2).forEach((k) => {
                 const o = document.createElement("button");
                 o.type = "button"; o.className = "idl-opt";
@@ -7974,11 +8066,13 @@
                 body.appendChild(o);
             });
             if (idl.picked) {
+                const good = idl.picked === q.ans;
                 const m = document.createElement("div");
-                m.className = "idl-q";
-                m.style.cssText = "margin-top:10px;font-size:13px;font-weight:700";
-                m.textContent = (idl.picked === q.ans) ? idcT("right")
-                              : (q.hint || idcT("wrong"));
+                m.className = "idl-res " + (good ? "ok" : "no");
+                m.innerHTML = '<span class="rb"></span><span class="rt"></span>';
+                m.querySelector(".rb").textContent = good ? "🎉" : "🤔";
+                m.querySelector(".rt").textContent = good ? idcT("right")
+                                                         : (q.hint || idcT("wrong"));
                 body.appendChild(m);
                 if (idl.picked !== q.ans) {             // 틀렸으면 다시 고를 수 있게
                     const again = document.createElement("button");
@@ -7992,11 +8086,13 @@
             next.disabled = (idl.picked !== q.ans);     // 맞혀야 넘어간다
             return;
         }
-        // ③ 의미 — 이제야 뜻을 듣는다. 대화문에 불이 켜진다.
-        body.appendChild(idlScript(true));
+        /* ③ 해설 — 이제야 뜻을 듣는다. 대화문에 불이 켜진다.
+           ★ v138 — ④문형에서는 **대화문을 빼고 해설만** 둔다.
+             ③에서 이미 대화문을 보았고, 문형을 볼 때는 문형에만 눈이 가야 한다. */
+        if (idl.step === 3) body.appendChild(idlScript(true));
         const hr = document.createElement("div");
         hr.style.cssText = "height:1px;background:#E8E3DA;margin:13px 0";
-        body.appendChild(hr);
+        if (idl.step === 3) body.appendChild(hr);
         (d.meaning || []).forEach((m) => {
             const p = document.createElement("div");
             p.className = "idl-say";
@@ -8007,6 +8103,12 @@
             body.appendChild(p);
         });
         if (idl.step === 3) { next.textContent = idcT("next"); return; }
+        // ④문형에서는 해설과 문형 사이를 확실히 가른다
+        if (idl.step === 4) {
+            const sep = document.createElement("div");
+            sep.style.cssText = "height:1px;background:#E8E3DA;margin:18px 0 4px";
+            body.appendChild(sep);
+        }
 
         /* ④ 형 태 — 그제야 문형. 화계는 지금 페이더를 따른다.
            v120에서 QUEST_FORM 을 지우지 않고 남겨 둔 것이 여기서 쓰인다. */
@@ -8054,12 +8156,18 @@
                 m.className = "idl-msg"; m.textContent = idcT("noForm");
                 body.appendChild(m);
             }
-            forms.slice(0, 6).forEach((x) => {
+            /* 검수본 문형일 때만 채운 것이 있다 — QUEST_FORM 은 요소 전체에 두루 쓰는 것이라
+               이 대화문의 말로 채울 수가 없다. 그때는 예전처럼 「~」를 그대로 보인다. */
+            const filled = (d.forms && d.forms.length && d.forms_filled) ? d.forms_filled : null;
+            forms.slice(0, 6).forEach((x, i) => {
+                const parts = filled && filled[i];
                 const c = document.createElement("button");
-                c.type = "button"; c.className = "idl-opt";
-                c.style.cssText = "font-weight:700";
-                c.textContent = "💬 " + x;
-                c.addEventListener("click", () => ttsPlay(x));
+                c.type = "button"; c.className = "idl-opt idl-form";
+                c.appendChild(formHtml(x, parts));
+                // 읽어 줄 때도 채운 것을 읽는다 — 「~」를 지운 토막을 읽으면 말이 안 된다
+                const say = (parts && parts.length)
+                    ? parts.map((p) => p[0]).join("") : x.replace(/[~]/g, "");
+                c.addEventListener("click", () => ttsPlay(say));
                 body.appendChild(c);
             });
             next.textContent = idcT("next");
@@ -8085,6 +8193,9 @@
            ④에서 이미 문형을 보여 주었으므로 또 늘어놓을 까닭이 없다.
            남긴 것은 둘뿐 — 상대가 방금 한 말(자리)과 내가 할 말.
            번역·뒤따르는 반응·안내 문구는 뺐다. 말할 것 앞에 글이 많으면 입이 안 떨어진다. */
+        /* ★ v138 — 여기는 **입을 떼는** 자리다. 대화문도 해설도 뺀다.
+           ③에서 뜻을 듣고 ④에서 문형을 봤다. 지금 필요한 것은
+           「상대가 방금 한 말」과 「내가 할 말」 둘뿐이다. */
         const dr = idl.drills[idl.di || 0];
         const cap2 = document.createElement("div");
         cap2.className = "idl-q";
@@ -8095,7 +8206,7 @@
         if (dr.cue) {
             const a = document.createElement("div");
             a.className = "idl-line";
-            a.innerHTML = '<span class="who">호아랑</span><span></span>';
+            a.innerHTML = '<span class="who ham"><img src="/static/ham_idle.png?v=138" alt=""></span><span></span>';
             a.lastChild.textContent = dr.cue;
             a.addEventListener("click", () => ttsPlay(dr.cue));
             seq.appendChild(a);

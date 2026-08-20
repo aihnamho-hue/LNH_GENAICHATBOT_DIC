@@ -13,16 +13,20 @@ const dom=new JSDOM(html,{runScripts:"dangerously",url:"https://korean-dic.onren
 const w=dom.window, d=w.document;
 setTimeout(()=>{
   console.log("── 결과 두 장 ──");
-  // v88 — 결과는 네 장: ⓪ 자기 성찰 ① 대화 흐름 ② 상호작용 대화 능력 ③ 총평
-  ok("네 장이 다 있다", [0,1,2,3].every(i => !!d.getElementById("resPage" + i)));
+  /* v141 — 결과는 여섯 장.
+     ⓪ 자기 성찰(별점) ① 요소 자가 점검 ② 후기 ③ 대화 흐름 ④ 상호작용 대화 능력 ⑤ 총평
+     ★ ①②가 ④보다 앞이어야 한다 — AI 판정을 보고 나서 자기를 매기면 자기 평가가 오염된다. */
+  ok("여섯 장이 다 있다", [0,1,2,3,4,5].every(i => !!d.getElementById("resPage" + i)));
   ok("⓪ 스스로 매기는 별 다섯", d.querySelectorAll("#resPage0 .self-star").length === 5);
-  ok("① 점수·발화·시간", !!d.querySelector("#resPage1 #rcScoreVal") && !!d.querySelector("#resPage1 #rcTimeVal"));
-  ok("① 기능 단계·유형", !!d.querySelector("#resPage1 #rpResultStages") && !!d.querySelector("#resPage1 #rpAbcRow"));
-  ok("② 상호작용 대화 능력", !!d.querySelector("#resPage2 #rpIdcList"));
-  ok("③ 총평은 줄글", !!d.querySelector("#resPage3 #rpReviewEl"));
-  ok("쪽 표시 점 4개", d.querySelectorAll("#rpResultOverlay .res-dot").length === 4);
-  ok("자유 대화는 세 장", d.querySelectorAll("#freeDots .res-dot").length === 3
-     && [0,1,2].every(i => !!d.getElementById("freePage" + i)));
+  ok("③ 점수·발화·시간", !!d.querySelector("#resPage3 #rcScoreVal") && !!d.querySelector("#resPage3 #rcTimeVal"));
+  ok("③ 기능 단계·유형", !!d.querySelector("#resPage3 #rpResultStages") && !!d.querySelector("#resPage3 #rpAbcRow"));
+  ok("④ 상호작용 대화 능력", !!d.querySelector("#resPage4 #rpIdcList"));
+  ok("① 요소 자가 점검이 AI 판정보다 앞", !!d.querySelector("#resPage1 #selfChkList"));
+  ok("② 후기", !!d.querySelector("#resPage2 #selfNoteEl"));
+  ok("⑤ 총평은 줄글", !!d.querySelector("#resPage5 #rpReviewEl"));
+  ok("쪽 표시 점 6개", d.querySelectorAll("#rpResultOverlay .res-dot").length === 6);
+  ok("자유 대화는 다섯 장", d.querySelectorAll("#freeDots .res-dot").length === 5
+     && [0,1,2,3,4].every(i => !!d.getElementById("freePage" + i)));
   ok("이전·다음이 한 줄 두 칸", /\.res-actions \{[^}]*grid-template-columns: 1fr 1fr/.test(html));
   ok("쪽 문구 지원 언어 전부에", (html.match(/resNext:"/g)||[]).length===LANGS);
   console.log("── 용어 쉬움 ──");

@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v140"
+APP_VERSION = "v141"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -5350,6 +5350,24 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                                 if v:
                                     idc_state["self"] = v
                                     print(f"[자기평가] 별 {v}/5")
+                            elif event.get("type") == "self_check":
+                                # ★ v141 — 요소 자가 점검 + 후기.
+                                #   〈표 33〉의 요소를 **학습자가 스스로** 매긴 것이다.
+                                #   같은 요소를 AI 도 매기므로(결과 화면 ④), 두 값의 **어긋남**이
+                                #   5장의 자료가 된다. 점수에는 넣지 않는다 —
+                                #   점수에 넣으면 솔직하게 매길 까닭이 사라진다.
+                                _chk = event.get("check")
+                                if isinstance(_chk, dict):
+                                    idc_state["self_check"] = {
+                                        _clean_str(k, 20): bool(x)
+                                        for k, x in list(_chk.items())[:12]}
+                                _els = event.get("els")
+                                if isinstance(_els, list):
+                                    idc_state["self_els"] = [_clean_str(x, 20) for x in _els[:6]]
+                                idc_state["self_note"] = _clean_str(event.get("note"), 600)
+                                _n = idc_state.get("self_check") or {}
+                                print(f"[자기점검] {sum(1 for x in _n.values() if x)}/{len(_n)}"
+                                      f" · 후기 {len(idc_state.get('self_note') or '')}자")
                             elif event.get("type") == "hint_request":
                                 # 🪜 비계 요청 — 백그라운드 생성 (오디오 릴레이를 막지 않음)
                                 # 재워 둔 것이 아직 이 자리의 것이면 곧바로 보낸다

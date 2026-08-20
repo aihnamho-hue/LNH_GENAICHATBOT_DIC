@@ -44,16 +44,23 @@ boot(1400, (d, w, dom1) => {
             ok("① 자기 성찰 — 별 다섯", d3.querySelectorAll("#freePage0 .self-star").length === 5);
             ok("첫 장엔 '이전'이 없고 '다음'이 한 줄", !vis("freePrevBtn")
                && d3.getElementById("freeNextBtn").classList.contains("wide"));
+            // v141 — 자유 대화도 [별점 → 요소 자가 점검 → 후기 → AI 판정 → 총평]
             d3.getElementById("freeNextBtn").click();
-            ok("② 상호작용 대화 능력", !d3.getElementById("freePage1").classList.contains("hidden")
-               && !!d3.querySelector("#freePage1 #freeIdcList"));
+            ok("② 요소 자가 점검", !d3.getElementById("freePage1").classList.contains("hidden")
+               && !!d3.querySelector("#freePage1 #fSelfChkList"));
             d3.getElementById("freeNextBtn").click();
-            ok("③ 총평", !d3.getElementById("freePage2").classList.contains("hidden")
-               && !!d3.querySelector("#freePage2 #freeReviewEl"));
+            ok("③ 후기", !d3.getElementById("freePage2").classList.contains("hidden")
+               && !!d3.querySelector("#freePage2 #fSelfNoteEl"));
+            d3.getElementById("freeNextBtn").click();
+            ok("④ 상호작용 대화 능력", !d3.getElementById("freePage3").classList.contains("hidden")
+               && !!d3.querySelector("#freePage3 #freeIdcList"));
+            d3.getElementById("freeNextBtn").click();
+            ok("⑤ 총평", !d3.getElementById("freePage4").classList.contains("hidden")
+               && !!d3.querySelector("#freePage4 #freeReviewEl"));
             ok("마지막 장은 '다음' 없이 '홈으로'", !vis("freeNextBtn") && vis("freeFbCloseBtn"));
             d3.getElementById("freePrevBtn").click();
-            ok("← 되돌아온다", !d3.getElementById("freePage1").classList.contains("hidden"));
-            ok("점은 세 개", d3.querySelectorAll("#freeDots .res-dot").length === 3);
+            ok("← 되돌아온다", !d3.getElementById("freePage3").classList.contains("hidden"));
+            ok("점은 다섯 개", d3.querySelectorAll("#freeDots .res-dot").length === 5);
 
             console.log("── ④ 별점을 기록에 남긴다 ──");
             ok("기록 머리말에 별점이 들어간다", /스스로 매긴 별점/.test(html));

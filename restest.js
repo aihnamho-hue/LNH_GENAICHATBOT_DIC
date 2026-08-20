@@ -2,7 +2,7 @@
 const { JSDOM } = require("jsdom");
 const fs = require("fs");
 const html = fs.readFileSync(process.argv[2] || "app.html", "utf8");
-const py = fs.readFileSync(process.argv[3] || "/sessions/gifted-youthful-edison/mnt/음성 대화형 챗봇/main.py", "utf8");
+const py = fs.readFileSync(process.argv[3] || "main.py", "utf8");
 let fail = 0;
 const ok = (m, c) => { console.log("  " + (c ? "✅" : "❌") + " " + m); if (!c) fail++; };
 
@@ -11,10 +11,20 @@ ok("setup 이 페이더 좌표를 받는다", /d_val = _clamp_int\(body\.get\("d
 ok("클라이언트가 D·P 를 보낸다", /d: Number\(distSlider\.value\)/.test(html));
 ok("말투 지시가 프롬프트에 실린다", /\[★ 말투 — 이것을 어기면/.test(py) && /\{style_line\}/.test(py));
 ok("존댓말·반말·auto 세 갈래", /style == "polite"/.test(py) && /style == "banmal"/.test(py));
-ok("화자별 말투를 코드가 정한다", /want_user = "banmal" if \(close and p_val >= 45\)/.test(py));
+/* ★ v119 — 화계가 세 단계(합쇼체·해요체·해체)가 되면서 식이 함수로 옮겨 갔다.
+   글자를 그대로 찾던 검사를 **뜻을 재는 검사**로 바꾼다 —
+   ㄱ) 두 화자의 화계를 코드가 각각 정하는가
+   ㄴ) 두 축(친밀도·지위)이 **독립**인가. 평균 내면 다른 관계가 같아진다. */
+ok("화자별 화계를 코드가 정한다",
+   /want_user = _speech_of\(d_val, p_val\)/.test(py) && /want_ai = _partner_speech_of\(d_val, p_val\)/.test(py));
+ok("두 축을 평균 내지 않는다", !/\(d_val \+ p_val\)\s*\/\s*2/.test(py) && !/\(d \+ p\)\s*\/\s*2/.test(py));
+ok("화계가 세 단계다", /"formal"/.test(py) && /"polite"/.test(py) && /"banmal"/.test(py));
 ok("정한 말투를 어긴 줄을 찾는다", /def _style_offenders/.test(py));
+/* ★ v120 — 말투 손질과 앞말 채우기를 asyncio.gather 로 나란히 돌리면서
+   `await _fix_style(...)` 가 `jobs.append(_fix_style(...))` 가 됐다.
+   불리는지를 재는 검사였으므로 두 꼴을 다 받는다. */
 ok("어긴 줄만 골라 고쳐 쓴다", /async def _fix_style/.test(py)
-   && /await _fix_style\(plan, want_user, want_ai\)/.test(py));
+   && /_fix_style\(plan, want_user, want_ai\)/.test(py));
 ok("고친 뒤 발화 연습도 다시 잇는다", /_fix_style[\s\S]{0,2200}?_link_expr_to_script/.test(py));
 ok("발화 연습을 대화문에 잇는다", /def _link_expr_to_script/.test(py)
    && /_link_expr_to_script\(stages, script\)/.test(py));
@@ -60,18 +70,23 @@ setTimeout(() => {
     console.log("── 쪽 넘기기 ──");
     d.getElementById("rpResultOverlay").classList.remove("hidden");
     dom.window.eval("resGo(0)");
-    ok("첫 장은 자기 성찰", on(0) && !on(1) && !on(2) && !on(3));
+    ok("첫 장은 자기 성찰", on(0) && !on(1) && !on(2) && !on(3) && !on(4) && !on(5));
     ok("첫 장엔 '이전'이 없다", pv.classList.contains("hidden"));
     ok("첫 장의 '다음'은 한 칸을 다 쓴다", nx.classList.contains("wide"));
 
     nx.click();
-    ok("→ 대화 흐름", on(1) && !pv.classList.contains("hidden") && !nx.classList.contains("wide"));
+    // v141 — 자가 점검·후기가 AI 판정보다 **앞**에 온다. 그래야 자기 평가가 안 오염된다.
+    ok("→ 요소 자가 점검", on(1) && !pv.classList.contains("hidden") && !nx.classList.contains("wide"));
     nx.click();
-    ok("→ 상호작용 대화 능력", on(2));
+    ok("→ 후기", on(2));
     nx.click();
-    ok("→ 총평", on(3) && nx.classList.contains("hidden") && !cl.classList.contains("hidden"));
+    ok("→ 대화 흐름", on(3));
+    nx.click();
+    ok("→ 상호작용 대화 능력", on(4));
+    nx.click();
+    ok("→ 총평", on(5) && nx.classList.contains("hidden") && !cl.classList.contains("hidden"));
     pv.click();
-    ok("← 되돌아온다", on(2) && cl.classList.contains("hidden"));
+    ok("← 되돌아온다", on(4) && cl.classList.contains("hidden"));
 
     console.log("── 자기 성찰 별점 ──");
     dom.window.eval("resGo(0)");

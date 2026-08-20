@@ -528,6 +528,27 @@
         .res-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
         .res-actions .action-btn { width: 100%; margin: 0; }
         .res-actions .action-btn.wide { grid-column: 1 / -1; }
+        /* ── 요소 자가 점검 · 후기 (v141) ── */
+        .self-chk { display: flex; flex-direction: column; gap: 9px; margin: 14px 0 4px; text-align: left; }
+        .self-chk-row { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--accent-soft);
+            background: #F9F7F1; border-radius: 14px; padding: 11px 12px; }
+        .self-chk-row .sc-ic { width: 30px; height: 30px; flex: none; border-radius: 9px;
+            background: #EDE8DC; display: flex; align-items: center; justify-content: center; }
+        .self-chk-row .sc-ic svg { width: 19px; height: 19px; }
+        .self-chk-row .sc-nm { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 800;
+            color: var(--ink); line-height: 1.35; }
+        .self-chk-row .sc-nm i { display: block; font-style: normal; font-size: 10px;
+            font-weight: 600; color: #A69C8C; margin-top: 2px; }
+        .sc-yn { display: flex; gap: 5px; flex: none; }
+        .sc-yn button { border: 1.5px solid var(--accent-soft); background: #fff; color: var(--muted);
+            border-radius: 10px; padding: 7px 10px; font-size: 11.5px; font-weight: 800;
+            cursor: pointer; white-space: nowrap; transition: background .15s, border-color .15s, color .15s; }
+        .sc-yn button.on.yes { background: #EAF6E2; border-color: #7FBF5A; color: #3E7D22; }
+        .sc-yn button.on.no  { background: #F6EEEA; border-color: #D4A08D; color: #A05A3C; }
+        .self-note { width: 100%; min-height: 108px; border: 1.5px solid var(--accent-soft);
+            background: #FDFCF8; border-radius: 14px; padding: 12px 13px; font-family: var(--font-ui);
+            font-size: 14px; line-height: 1.6; color: var(--ink); resize: vertical; }
+        .self-note:focus { outline: none; border-color: var(--accent-ink); background: #fff; }
         .res-dots { display: flex; justify-content: center; gap: 6px; margin: 10px 0 4px; }
         .res-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-soft); }
         .res-dot.on { background: var(--accent); }
@@ -1893,7 +1914,26 @@
             </div>
             <p class="self-word" id="selfWordEl"></p>
         </div>
+        <!-- ② 요소 자가 점검 (v141) — 〈표 33〉의 요소를 학습자가 **스스로** 체크한다.
+             ★ 왜 AI 판정보다 앞에 두나
+               뒤에 두면 AI가 매긴 등급을 보고 나서 답하게 되어 자기 평가가 오염된다(닻 내림).
+               자가 평가와 자동 판정의 **어긋남 자체가 자료**이므로, 둘은 서로를 못 보게 놓아야 한다.
+             ★ 왜 3~4개만 묻나
+               논문 3.4.3의 취지가 점검의 간소화다. 대화를 마친 학습자에게 여덟 개는 피로다.
+               호아랑이 그 대화에서 실제로 권한 것만 묻는다 — 방금 겪은 것이라 답이 정확해진다. -->
         <div class="res-page hidden" id="resPage1">
+            <p class="self-ask" id="selfChkAskEl"></p>
+            <p class="self-word" id="selfChkSubEl"></p>
+            <div class="self-chk" id="selfChkList"></div>
+        </div>
+        <!-- ③ 후기 — 등급표가 못 담는 것을 학습자의 말로.
+             모국어로 써도 된다(3급 초입에게 한국어 서술은 벽이다). 안 써도 넘어간다. -->
+        <div class="res-page hidden" id="resPage2">
+            <p class="self-ask" id="selfNoteAskEl"></p>
+            <p class="self-word" id="selfNoteSubEl"></p>
+            <textarea class="self-note" id="selfNoteEl" rows="5" maxlength="600"></textarea>
+        </div>
+        <div class="res-page hidden" id="resPage3">
         <div class="result-cards">
             <div class="r-card score"><div class="r-label" id="rcScoreLbl"></div><div class="r-inner" id="rcScoreVal">0</div></div>
             <div class="r-card turns"><div class="r-label" id="rcTurnsLbl"></div><div class="r-inner" id="rcTurnsVal">0</div></div>
@@ -1902,7 +1942,7 @@
         <div class="rp-abc" id="rpAbcRow" hidden><span id="rpAbcBadge"></span><span id="rpAbcText"></span></div>
         <div class="result-stages" id="rpResultStages"></div>
         </div><!-- /카드1 -->
-        <div class="res-page hidden" id="resPage2">
+        <div class="res-page hidden" id="resPage4">
         <!-- 상호작용 대화 능력(IDC) 점검 — 모형의 '점검·성찰' 국면.
              〈표 42〉의 중급 평가 기준으로 요소별 상·중·하를 보인다.
              비언어적 행위는 교실에서 배우는 요소라 회색으로만 두고 총점에서 뺀다. -->
@@ -1913,12 +1953,12 @@
         <div class="idc-list" id="rpIdcList"></div>
         </div><!-- /카드2 -->
         <!-- ④ 총평 — 등급표가 못 담는 것을 선생님의 말로 -->
-        <div class="res-page hidden" id="resPage3">
+        <div class="res-page hidden" id="resPage5">
             <p class="rev-head" id="revHeadEl"></p>
             <div class="rev-body" id="rpReviewEl"></div>
         </div><!-- /카드4 -->
         <p class="rp-note" id="rpSavedNoteEl" style="text-align:center;"></p>
-        <div class="res-dots"><span class="res-dot on"></span><span class="res-dot"></span><span class="res-dot"></span><span class="res-dot"></span></div>
+        <div class="res-dots"><span class="res-dot on"></span><span class="res-dot"></span><span class="res-dot"></span><span class="res-dot"></span><span class="res-dot"></span><span class="res-dot"></span></div>
         <!-- 이전·다음을 한 줄에 두 칸으로 — 세로로 쌓으면 화면이 길어진다 -->
         <div class="res-actions">
             <button class="action-btn ghost hidden" id="resPrevBtn"></button>
@@ -1979,18 +2019,30 @@
             </div>
             <p class="self-word" id="fSelfWordEl"></p>
         </div>
+        <!-- 자유 대화도 같은 차례다 (v141). 주제 대화에만 두면
+             〈표 40〉의 변형 운용(개별 연습을 교실 밖으로)에서 자유 대화 쪽 성찰이 통째로 빈다. -->
         <div class="res-page hidden" id="freePage1">
+            <p class="self-ask" id="fSelfChkAskEl"></p>
+            <p class="self-word" id="fSelfChkSubEl"></p>
+            <div class="self-chk" id="fSelfChkList"></div>
+        </div>
+        <div class="res-page hidden" id="freePage2">
+            <p class="self-ask" id="fSelfNoteAskEl"></p>
+            <p class="self-word" id="fSelfNoteSubEl"></p>
+            <textarea class="self-note" id="fSelfNoteEl" rows="5" maxlength="600"></textarea>
+        </div>
+        <div class="res-page hidden" id="freePage3">
             <div class="idc-head" id="freeIdcHead" style="display:none;">
                 <span class="idc-h-title" id="freeIdcTitle"></span>
                 <span class="idc-h-sub" id="freeIdcSub"></span>
             </div>
             <div class="idc-list" id="freeIdcList"></div>
         </div>
-        <div class="res-page hidden" id="freePage2">
+        <div class="res-page hidden" id="freePage4">
             <p class="rev-head" id="fRevHeadEl"></p>
             <div class="rev-body" id="freeReviewEl"></div>
         </div>
-        <div class="res-dots" id="freeDots"><span class="res-dot on"></span><span class="res-dot"></span><span class="res-dot"></span></div>
+        <div class="res-dots" id="freeDots"><span class="res-dot on"></span><span class="res-dot"></span><span class="res-dot"></span><span class="res-dot"></span><span class="res-dot"></span></div>
         <div class="res-actions">
             <button class="action-btn ghost hidden" id="freePrevBtn"></button>
             <button class="action-btn" id="freeNextBtn"></button>
@@ -2425,7 +2477,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v140 (2026-08-20)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v141 (2026-08-20)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -2740,6 +2792,29 @@
         es: { hvOpen:"Vídeo", hvClose:"Chat" }, fr: { hvOpen:"Vidéo", hvClose:"Chat" },
     };
     for (const _l in I18N_HV) { if (I18N[_l]) Object.assign(I18N[_l], I18N_HV[_l]); }
+    /* 요소 자가 점검 · 후기 (v141) — 학습자가 스스로 매기는 자리.
+       요소 이름 자체는 IDC_LES 의 한국어 이름을 쓴다(학습 화면과 같아야 알아본다). */
+    const I18N_SELF = {
+        ko: { selfChkAsk:"이번 대화에서 이걸 해 봤어요?", selfChkSub:"솔직하게 고르세요. 점수에 안 들어가요.", selfChkYes:"했어요", selfChkNo:"안 했어요", selfNoteAsk:"오늘 대화, 어땠어요?", selfNoteSub:"편한 말로 써도 좋아요. 안 써도 넘어가요.", selfNotePh:"예) 값을 깎는 말이 잘 안 나왔어요" },
+        en: { selfChkAsk:"Did you try this in today's chat?", selfChkSub:"Answer honestly — this is not graded.", selfChkYes:"I did", selfChkNo:"Not this time", selfNoteAsk:"How was today's chat?", selfNoteSub:"Write in any language you like. You can skip this.", selfNotePh:"e.g. I couldn't find the words to ask for a discount" },
+        zh: { selfChkAsk:"这次对话中，你尝试了这个吗？", selfChkSub:"请如实选择，不计入分数。", selfChkYes:"做到了", selfChkNo:"这次没有", selfNoteAsk:"今天的对话怎么样？", selfNoteSub:"可以用你熟悉的语言写，也可以跳过。", selfNotePh:"例）想讲价，但话说不出来" },
+        ja: { selfChkAsk:"今回の会話でこれをやってみましたか？", selfChkSub:"正直に選んでください。点数には入りません。", selfChkYes:"やった", selfChkNo:"今回はやらなかった", selfNoteAsk:"今日の会話はどうでしたか？", selfNoteSub:"使いやすい言語で書いてもいいです。書かなくても進めます。", selfNotePh:"例）値切る言い方が出てこなかった" },
+        vi: { selfChkAsk:"Bạn đã thử điều này trong cuộc trò chuyện hôm nay chưa?", selfChkSub:"Hãy chọn thật lòng — phần này không tính điểm.", selfChkYes:"Có làm", selfChkNo:"Lần này chưa", selfNoteAsk:"Cuộc trò chuyện hôm nay thế nào?", selfNoteSub:"Bạn có thể viết bằng ngôn ngữ nào cũng được. Không viết cũng được.", selfNotePh:"VD) Tôi không nghĩ ra câu để mặc cả" },
+        th: { selfChkAsk:"ในบทสนทนาครั้งนี้ คุณได้ลองทำสิ่งนี้ไหม", selfChkSub:"เลือกตามความจริง ไม่มีผลต่อคะแนน", selfChkYes:"ทำแล้ว", selfChkNo:"ครั้งนี้ยังไม่ได้ทำ", selfNoteAsk:"วันนี้คุยเป็นอย่างไรบ้าง", selfNoteSub:"เขียนภาษาที่ถนัดได้เลย ข้ามก็ได้", selfNotePh:"เช่น) นึกประโยคต่อรองราคาไม่ออก" },
+        id: { selfChkAsk:"Apakah kamu mencoba ini dalam percakapan tadi?", selfChkSub:"Pilih dengan jujur — ini tidak dinilai.", selfChkYes:"Sudah", selfChkNo:"Belum kali ini", selfNoteAsk:"Bagaimana percakapan hari ini?", selfNoteSub:"Boleh ditulis dalam bahasa apa pun. Boleh dilewati.", selfNotePh:"Contoh) Saya tidak menemukan kalimat untuk menawar" },
+        mn: { selfChkAsk:"Энэ ярианд үүнийг оролдож үзсэн үү?", selfChkSub:"Үнэнээр сонгоорой — оноонд ордоггүй.", selfChkYes:"Хийсэн", selfChkNo:"Энэ удаа үгүй", selfNoteAsk:"Өнөөдрийн яриа ямар байсан бэ?", selfNoteSub:"Тохиромжтой хэлээрээ бичиж болно. Бичихгүй ч болно.", selfNotePh:"Жишээ) Үнэ хямдруулах үг олдсонгүй" },
+        uz: { selfChkAsk:"Bugungi suhbatda buni sinab ko'rdingizmi?", selfChkSub:"Rostini tanlang — bu baholanmaydi.", selfChkYes:"Qildim", selfChkNo:"Bu safar yo'q", selfNoteAsk:"Bugungi suhbat qanday o'tdi?", selfNoteSub:"Qulay tilda yozsangiz ham bo'ladi. Yozmasangiz ham bo'ladi.", selfNotePh:"Masalan) Narxni tushirishni so'ray olmadim" },
+        ru: { selfChkAsk:"Вы попробовали это в сегодняшнем разговоре?", selfChkSub:"Отвечайте честно — это не влияет на баллы.", selfChkYes:"Сделал(а)", selfChkNo:"В этот раз нет", selfNoteAsk:"Как прошёл сегодняшний разговор?", selfNoteSub:"Можно писать на удобном языке. Можно и пропустить.", selfNotePh:"Напр.) Не смог(ла) подобрать слова, чтобы поторговаться" },
+        es: { selfChkAsk:"¿Lo intentaste en la conversación de hoy?", selfChkSub:"Responde con sinceridad; no cuenta para la nota.", selfChkYes:"Sí lo hice", selfChkNo:"Esta vez no", selfNoteAsk:"¿Qué tal la conversación de hoy?", selfNoteSub:"Puedes escribir en el idioma que prefieras. También puedes saltarlo.", selfNotePh:"Ej.) No me salieron las palabras para regatear" },
+        fr: { selfChkAsk:"Avez-vous essayé cela dans la conversation d'aujourd'hui ?", selfChkSub:"Répondez honnêtement — cela ne compte pas dans la note.", selfChkYes:"Je l'ai fait", selfChkNo:"Pas cette fois", selfNoteAsk:"Comment s'est passée la conversation ?", selfNoteSub:"Vous pouvez écrire dans la langue de votre choix. Vous pouvez aussi passer.", selfNotePh:"Ex.) Je n'ai pas trouvé les mots pour négocier" },
+        ne: { selfChkAsk:"आजको कुराकानीमा यो प्रयास गर्नुभयो?", selfChkSub:"इमानदारीपूर्वक छान्नुहोस् — यो अंकमा गनिँदैन।", selfChkYes:"गरें", selfChkNo:"यसपटक गरिनँ", selfNoteAsk:"आजको कुराकानी कस्तो लाग्यो?", selfNoteSub:"आफूलाई सजिलो हुने भाषामा लेख्न सक्नुहुन्छ। नलेखे पनि हुन्छ।", selfNotePh:"उदाहरण) मोलमोलाइ गर्ने वाक्य फुरेन" },
+        lo: { selfChkAsk:"ໃນການສົນທະນາຄັ້ງນີ້ ທ່ານໄດ້ລອງເຮັດສິ່ງນີ້ບໍ?", selfChkSub:"ເລືອກຕາມຄວາມຈິງ — ບໍ່ນັບເປັນຄະແນນ.", selfChkYes:"ເຮັດແລ້ວ", selfChkNo:"ເທື່ອນີ້ຍັງບໍ່ໄດ້ເຮັດ", selfNoteAsk:"ການສົນທະນາມື້ນີ້ເປັນແນວໃດ?", selfNoteSub:"ຂຽນເປັນພາສາທີ່ຖະນັດກໍໄດ້ ຈະບໍ່ຂຽນກໍໄດ້.", selfNotePh:"ຕົວຢ່າງ) ຄິດປະໂຫຍກຕໍ່ລອງລາຄາບໍ່ອອກ" },
+        my: { selfChkAsk:"ဒီစကားပြောမှာ ဒါကို စမ်းကြည့်ခဲ့လား?", selfChkSub:"ရိုးရိုးသားသား ရွေးပါ — အမှတ်မတွက်ပါ။", selfChkYes:"လုပ်ခဲ့တယ်", selfChkNo:"ဒီတစ်ခါ မလုပ်ခဲ့ဘူး", selfNoteAsk:"ဒီနေ့ စကားပြောတာ ဘယ်လိုလဲ?", selfNoteSub:"အဆင်ပြေတဲ့ ဘာသာစကားနဲ့ ရေးလို့ရပါတယ်။ မရေးလည်း ရပါတယ်။", selfNotePh:"ဥပမာ) ဈေးဆစ်တဲ့ စကား မထွက်ခဲ့ဘူး" },
+        km: { selfChkAsk:"នៅក្នុងការសន្ទនានេះ តើអ្នកបានសាកល្បងធ្វើវាទេ?", selfChkSub:"សូមជ្រើសរើសដោយស្មោះត្រង់ — មិនគិតជាពិន្ទុទេ។", selfChkYes:"បានធ្វើ", selfChkNo:"លើកនេះមិនបានធ្វើ", selfNoteAsk:"ការសន្ទនាថ្ងៃនេះយ៉ាងម៉េចដែរ?", selfNoteSub:"អាចសរសេរជាភាសាណាក៏បាន។ មិនសរសេរក៏បាន។", selfNotePh:"ឧ.) មិនចេះនិយាយតថ្លៃ" },
+        uk: { selfChkAsk:"Ви спробували це в сьогоднішній розмові?", selfChkSub:"Обирайте чесно — це не впливає на бали.", selfChkYes:"Зробив(ла)", selfChkNo:"Цього разу ні", selfNoteAsk:"Як пройшла сьогоднішня розмова?", selfNoteSub:"Можна писати зручною мовою. Можна й пропустити.", selfNotePh:"Напр.) Не зміг(ла) підібрати слова, щоб поторгуватися" },
+        ky: { selfChkAsk:"Бүгүнкү маекте муну байкап көрдүңүзбү?", selfChkSub:"Чынын тандаңыз — балл эсептелбейт.", selfChkYes:"Кылдым", selfChkNo:"Бул жолу жок", selfNoteAsk:"Бүгүнкү маек кандай өттү?", selfNoteSub:"Ыңгайлуу тилде жазсаңыз болот. Жазбасаңыз да болот.", selfNotePh:"Мисалы) Баа түшүрүүнү сурай албадым" },
+    };
+    for (const _l in I18N_SELF) { if (I18N[_l]) Object.assign(I18N[_l], I18N_SELF[_l]); }
     /* 캐릭터 이름 — 홈 좌상단 제목(앱 아이콘 + 이름)과 영상통화 이름표에 쓰인다 */
     const I18N_NAME = { ko:"호아랑", ja:"ホアラン" };
     for (const _l in I18N) { I18N[_l].charName = I18N_NAME[_l] || "Hoarang"; }
@@ -3747,11 +3822,18 @@
     let LAST_PROMPTED = null;   // 요소별 '지시받고 해낸' 횟수 (기록·업로드용)
     let LAST_INTV = 0;          // 이번 대화의 교육적 개입 횟수
     let questStats = null;
+    /* ★★ 이 대화에서 호아랑이 권한 요소 (나온 차례대로) — v141 자가 점검의 밑천.
+       ★ 선언이 여기 있는 까닭: 바로 아래 questReset() 이 **파일을 읽는 즉시** 한 번 돈다.
+         let 은 끌어올려지지 않으므로, 선언을 결과 화면 쪽(7000줄대)에 두면
+         「Cannot access 'idcTouched' before initialization」로 앱이 통째로 죽는다.
+         v110·v113 에서 같은 함정에 두 번 빠졌다. 쓰는 자리가 아니라 **처음 닿는 자리** 앞에 둔다. */
+    let idcTouched = [];
     function questReset() {
         questStats = { userTurns:0, words:0, clarify:0, slow:0, wordAsk:0,
                        backch:0, questions:0, casual:0, firstIsUser:false,
                        maxPct:0, allStages:false, seenAny:false,
                        llm: new Set() };   // 서버가 판정해 보내 주는 퀘스트
+        idcTouched = [];        // 이 대화에서 호아랑이 권한 요소 (v141)
     }
     questReset();
 
@@ -4964,6 +5046,9 @@
                 // 스스로 매긴 별점(0=안 매김). 총점에는 넣지 않는다 —
                 // 자기 평가와 실제 수행의 차이 자체가 볼 만한 자료다.
                 selfRating: selfRating || 0,
+                // ★ v141 — 요소 자가 점검·후기. 회차마다 쌓이면 그대로 포트폴리오가 된다.
+                selfCheck: selfCheck || {}, selfNote: selfNote || "",
+                selfEls: (selfChkEls || []).slice(),
                 idcTotal: (rpFinal && rpFinal.idcTotal) || 0,
             };
         } catch (e) {}
@@ -5194,7 +5279,7 @@
     })();
     /* 자유 대화 결과도 세 장 — ⓪ 자기 성찰 ① 상호작용 대화 능력 ② 총평 */
     let freePage = 0;
-    const FREE_LAST = 2;
+    const FREE_LAST = 4;
     function freeGo(p) {
         freePage = Math.max(0, Math.min(FREE_LAST, p));
         for (let i = 0; i <= FREE_LAST; i++) {
@@ -7023,12 +7108,128 @@
        ② 상호작용 대화 능력    ③ 선생님의 총평(줄글)
        남이 매기기 전에 스스로 돌아보게 하는 순서다. */
     let resPage = 0;
-    const RES_LAST = 3;
+    const RES_LAST = 5;
+    /* ══════ 요소 자가 점검 · 후기 (v141) ══════
+       논문 3.4.3 — 「점검의 상당 부분은 챗봇의 자동 점검과 대화 기록으로 대체될 수 있다」.
+       〈표 40〉의 변형 운용에서 개별 연습을 교실 밖 과제로 돌리면 **종이 성찰지는 안 돈다.**
+       그 자리를 화면이 대신한다.
+
+       ★ 자동 점검(AI)과 자가 점검(학습자)은 다른 물건이고, **나란히 있을 때 값이 생긴다.**
+         어긋남 자체가 자료다. 그래서 자가 점검을 AI 판정보다 **앞에** 둔다. */
+    let selfCheck = {};         // { 요소키: true|false }
+    let selfNote = "";          // 후기 (모국어 허용)
+    let selfChkEls = [];        // 이번에 묻는 요소들
+
+    function pickSelfEls() {
+        /* 무엇을 물을지 고른다 — 셋에서 넷.
+           ㄱ) 호아랑이 이 대화에서 실제로 권한 요소 (방금 겪은 것이라 답이 정확하다)
+           ㄴ) 모자라면 오늘의 퀘스트가 걸린 요소 (대화 전에 이미 보여 준 것)
+           ㄷ) 그래도 모자라면 기본 넷 — 어느 대화에나 있는 것부터 */
+        const here = new Set(IDC_LES.filter((e) => e.where !== "class").map((e) => e.key));
+        const out = [];
+        const add = (k) => { if (k && here.has(k) && out.indexOf(k) < 0 && out.length < 4) out.push(k); };
+        idcTouched.forEach(add);
+        try { (questToday() || []).forEach((q) => add(q.ek)); } catch (e) {}
+        ["listen", "turn", "topic", "repair"].forEach(add);
+        return out.slice(0, 4);
+    }
+
+    /* 주제 대화와 자유 대화가 **같은 물건**을 쓴다 — 두 벌로 두면 한쪽만 고치게 된다 */
+    function selfChkPaint() {
+        ["selfChkAskEl", "fSelfChkAskEl"].forEach((id) => {
+            const e = document.getElementById(id); if (e) e.textContent = t("selfChkAsk"); });
+        ["selfChkSubEl", "fSelfChkSubEl"].forEach((id) => {
+            const e = document.getElementById(id); if (e) e.textContent = t("selfChkSub"); });
+        ["selfChkList", "fSelfChkList"].forEach((id) => selfChkPaintOne(document.getElementById(id)));
+        selfChkSync();
+    }
+    function selfChkPaintOne(box) {
+        if (!box) return;
+        box.innerHTML = "";
+        selfChkEls.forEach((key) => {
+            const el = IDC_LES.find((x) => x.key === key);
+            if (!el) return;
+            const row = document.createElement("div");
+            row.className = "self-chk-row";
+            row.dataset.el = key;
+            row.innerHTML = '<span class="sc-ic"><svg><use/></svg></span>'
+                + '<span class="sc-nm"></span>'
+                + '<span class="sc-yn"><button type="button" class="yes"></button>'
+                + '<button type="button" class="no"></button></span>';
+            row.querySelector("use").setAttribute("href", "#ic-idc-" + key);
+            const nm = row.querySelector(".sc-nm");
+            nm.textContent = el.easy;
+            const sub = document.createElement("i");
+            sub.textContent = el.acad;            // 학술어는 아주 작게 — 교실에서 이어 붙일 때 쓴다
+            nm.appendChild(sub);
+            const [yes, no] = row.querySelectorAll(".sc-yn button");
+            yes.textContent = t("selfChkYes");
+            no.textContent = t("selfChkNo");
+            /* ★ 누를 때 판을 다시 그리지 않는다 — 불만 갈아 끼운다.
+               다시 그리면 방금 누른 단추가 **다른 물건으로 바뀌어** 눌린 티가 안 나고,
+               움직임도 끊긴다. 두 화면(주제·자유)의 같은 줄만 찾아 불을 맞춘다. */
+            yes.addEventListener("click", () => { selfCheck[key] = true;  selfChkSync(); selfSave(); });
+            no.addEventListener("click",  () => { selfCheck[key] = false; selfChkSync(); selfSave(); });
+            box.appendChild(row);
+        });
+    }
+
+    function selfChkSync() {
+        document.querySelectorAll(".self-chk-row").forEach((row) => {
+            const k = row.dataset.el;
+            const [y, n] = row.querySelectorAll(".sc-yn button");
+            if (y) y.classList.toggle("on", selfCheck[k] === true);
+            if (n) n.classList.toggle("on", selfCheck[k] === false);
+        });
+    }
+    function selfNotePaint() {
+        ["selfNoteAskEl", "fSelfNoteAskEl"].forEach((id) => {
+            const e = document.getElementById(id); if (e) e.textContent = t("selfNoteAsk"); });
+        ["selfNoteSubEl", "fSelfNoteSubEl"].forEach((id) => {
+            const e = document.getElementById(id); if (e) e.textContent = t("selfNoteSub"); });
+        ["selfNoteEl", "fSelfNoteEl"].forEach((id) => {
+            const ta = document.getElementById(id);
+            if (!ta) return;
+            ta.placeholder = t("selfNotePh");
+            ta.value = selfNote;
+        });
+    }
+
+    /* 기기 기록과 서버에 함께 남긴다 —
+       기기 기록은 뒷날 「내 변화」(포트폴리오)의 재료가 되고, 서버는 연구 자료가 된다. */
+    let selfSaveTimer = 0;
+    function selfSave() {
+        clearTimeout(selfSaveTimer);
+        selfSaveTimer = setTimeout(() => {
+            const payload = { check: selfCheck, note: selfNote, rating: selfRating,
+                              els: selfChkEls.slice() };
+            try {
+                const list = loadHistory();
+                if (list.length) {
+                    list[0].stats = list[0].stats || {};
+                    list[0].stats.selfCheck = payload.check;
+                    list[0].stats.selfNote = payload.note;
+                    list[0].stats.selfEls = payload.els;
+                    localStorage.setItem(HIST_KEY, JSON.stringify(list));
+                }
+            } catch (e) {}
+            try {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: "self_check", ...payload }));
+                }
+            } catch (e) {}
+        }, 400);
+    }
     /* 자기 성찰 — 남이 매기기 전에 스스로 매긴다.
        점수에는 넣지 않는다. 자기 평가와 실제 수행의 차이 자체가 볼 만한 자료다. */
     let selfRating = 0;
     function selfReset() {
         selfRating = 0;
+        selfCheck = {};
+        selfNote = "";
+        selfChkEls = pickSelfEls();
+        selfChkPaint();
+        selfNotePaint();
         ["selfAskEl", "fSelfAskEl"].forEach(id => {
             const el = document.getElementById(id); if (el) el.textContent = t("selfAsk");
         });
@@ -7052,6 +7253,7 @@
             if (list.length) {
                 list[0].stats = list[0].stats || {};
                 list[0].stats.selfRating = v;
+                list[0].stats.selfEls = selfChkEls.slice();   // 뒷날 「내 변화」의 재료 (v141)
                 list[0].text = buildTranscriptText() || list[0].text;
                 localStorage.setItem(HIST_KEY, JSON.stringify(list));
             }
@@ -7065,6 +7267,16 @@
     document.querySelectorAll(".self-star").forEach(b => {
         b.addEventListener("click", () => selfSet(Number(b.dataset.v)));
     });
+    (function bindSelfNote() {
+        ["selfNoteEl", "fSelfNoteEl"].forEach((id) => {
+            const ta = document.getElementById(id);
+            if (!ta) return;
+            // 치는 동안 계속 보내지 않는다 — selfSave 가 0.4초 모아서 한 번 보낸다
+            const take = () => { selfNote = ta.value; selfSave(); };
+            ta.addEventListener("input", take);
+            ta.addEventListener("blur", take);
+        });
+    })();
 
     function resGo(p) {
         resPage = Math.max(0, Math.min(RES_LAST, p));
@@ -7922,7 +8134,7 @@
             } else {
                 who.classList.add("ham");
                 const im = document.createElement("img");
-                im.src = "/static/ham_idle.png?v=140"; im.alt = "";
+                im.src = "/static/ham_idle.png?v=141"; im.alt = "";
                 who.appendChild(im);
             }
             const tx = document.createElement("span");
@@ -8044,7 +8256,7 @@
             idl.ord = idl.ord || [];                   // 학습자가 쌓은 차례
             const ask = document.createElement("div");
             ask.className = "idl-ask";
-            ask.innerHTML = '<img src="/static/ham_idle.png?v=140" alt=""><p></p>';
+            ask.innerHTML = '<img src="/static/ham_idle.png?v=141" alt=""><p></p>';
             ask.querySelector("p").textContent = q.q;
             if (q.q_n) {
                 const qn = document.createElement("span");
@@ -8134,7 +8346,7 @@
                둘 다 굵으면 어디를 먼저 볼지 알 수 없다. */
             const ask = document.createElement("div");
             ask.className = "idl-ask";
-            ask.innerHTML = '<img src="/static/ham_idle.png?v=140" alt=""><p></p>';
+            ask.innerHTML = '<img src="/static/ham_idle.png?v=141" alt=""><p></p>';
             ask.querySelector("p").textContent = q.q;
             body.appendChild(ask);
             /* 한 번 틀린 뒤 되돌아왔다 — 짚어 준 말을 곁에 남겨 둔다 (v140) */
@@ -8349,7 +8561,7 @@
         if (dr.cue) {
             const row = document.createElement("div");
             row.className = "pr-cue-row";
-            row.innerHTML = '<div class="profile"><img src="/static/ham_idle.png?v=140" alt=""></div>'
+            row.innerHTML = '<div class="profile"><img src="/static/ham_idle.png?v=141" alt=""></div>'
                           + '<div class="pr-cue-bubble"></div>';
             row.querySelector(".pr-cue-bubble").textContent = dr.cue;
             row.addEventListener("click", () => ttsPlay(dr.cue));
@@ -9315,6 +9527,10 @@
                    배역의 발화가 아니라 화면 층이므로 극은 깨지지 않는다.
                    ★ 기능만 알린다. 표현이 필요하면 학습자가 🪜 도움말을 눌러 요청한다. */
                 try {
+                    /* ★ v141 — 어떤 요소를 권했는지 적어 둔다.
+                       끝난 뒤 자가 점검에서 **방금 겪은 것**만 묻기 위한 밑천이다.
+                       서버가 el 을 이미 실어 보내고 있었는데 화면이 버리고 있었다. */
+                    if (msg.el) { idcTouched.push(msg.el); }
                     const label = questLabel(msg.qid);
                     if (msg.qid) scfLastQid = msg.qid;   // 빈손일 때 이 문형으로 메운다
                     /* ★ v119 — 앞머리 「지금이에요!」를 뺐다.
@@ -9579,6 +9795,19 @@
         if (selfRating > 0) {
             lines.push(" 스스로 매긴 별점: " + "★".repeat(selfRating) + "☆".repeat(5 - selfRating)
                        + " (" + selfRating + "/5)");
+        }
+        /* ★ v141 — 요소 자가 점검과 후기.
+           같은 요소를 AI 도 매기므로(아래 「상호작용 대화 능력」), 두 값을 한 파일에
+           나란히 두면 **어긋남**을 바로 읽을 수 있다. 그것이 이 줄을 넣는 까닭이다. */
+        const _scKeys = Object.keys(selfCheck || {});
+        if (_scKeys.length) {
+            lines.push(" 스스로 점검: " + _scKeys.map((k) => {
+                const e = IDC_LES.find((x) => x.key === k);
+                return (selfCheck[k] ? "✓" : "✗") + (e ? e.acad : k);
+            }).join(", "));
+        }
+        if ((selfNote || "").trim()) {
+            lines.push(" 학습자 후기: " + selfNote.trim().replace(/\s+/g, " "));
         }
         if (rpFinal && (rpFinal.idcTotal || 0) > 0) {
             lines.push(" 상호작용 대화 능력: " + rpFinal.idcTotal + "점");

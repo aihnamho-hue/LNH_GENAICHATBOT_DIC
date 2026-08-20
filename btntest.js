@@ -27,11 +27,14 @@ setTimeout(() => {
 
     console.log("── 쪽마다 보이는 단추 ──");
     d.getElementById("rpResultOverlay").classList.remove("hidden");
+    // v141 — 별점과 AI 판정 사이에 「요소 자가 점검」과 「후기」가 들어왔다
     const want = [
-        [0, { prev: false, next: true,  home: false }, "자기 성찰"],
-        [1, { prev: true,  next: true,  home: false }, "대화 흐름"],
-        [2, { prev: true,  next: true,  home: false }, "상호작용 능력"],
-        [3, { prev: true,  next: false, home: true  }, "총평(마지막)"],
+        [0, { prev: false, next: true,  home: false }, "자기 성찰(별점)"],
+        [1, { prev: true,  next: true,  home: false }, "요소 자가 점검"],
+        [2, { prev: true,  next: true,  home: false }, "후기"],
+        [3, { prev: true,  next: true,  home: false }, "대화 흐름"],
+        [4, { prev: true,  next: true,  home: false }, "상호작용 능력"],
+        [5, { prev: true,  next: false, home: true  }, "총평(마지막)"],
     ];
     want.forEach(([p, exp, name]) => {
         w.eval(`resGo(${p})`);
@@ -40,7 +43,7 @@ setTimeout(() => {
         ok(`${p}쪽 ${name} — 이전 ${got.prev ? "○" : "×"} / 다음 ${got.next ? "○" : "×"} / 홈으로 ${got.home ? "○" : "×"}`, okAll);
     });
     console.log("── 마지막 쪽 ──");
-    w.eval("resGo(3)");
+    w.eval("resGo(5)");
     ok("더 갈 데가 없으니 '다음'이 없다", !vis("resNextBtn"));
     ok("대신 '홈으로'가 나온다", vis("rpCloseBtn"));
     ok("첫 쪽의 '다음'은 한 줄을 다 쓴다",

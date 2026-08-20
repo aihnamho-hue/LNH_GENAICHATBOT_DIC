@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v139"
+APP_VERSION = "v140"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -2455,16 +2455,28 @@ _idc_tr_cache: dict = {}
 
 
 def _idc_pick(key: str, tier: str, seen: list) -> dict | None:
-    """그 요소의 편 하나. 화계가 맞는 것을 먼저, 본 것은 뒤로."""
+    """그 요소의 편 하나.
+
+    ★ 차례가 있다 (v140)
+       ㄱ) **안 본 것**이 먼저다. 이게 첫째 규칙이다 —
+           다섯 편을 만들어 놓고 한 편만 계속 보여 주면 만든 뜻이 없다.
+       ㄴ) 안 본 것 가운데 **화계가 맞는 것**을 고른다.
+           화계는 고르는 기준이 아니라 **같은 값일 때의 저울**이다.
+           예전에는 이 둘이 뒤바뀌어 있어서, 그 화계의 한두 편만 돌았다.
+       ㄷ) 다 봤으면 처음부터. 화면이 「본 것」 목록을 pool-1 개만 쥐므로
+           보통은 여기까지 안 온다.
+
+    seen 은 **편 id** 다 (「topic-3」). place 를 넣으면 하나도 안 맞는다.
+    """
     pool = _idc_corpus.get(key) or []
     if not pool:
         return None
-    seen_set = {s for s in (seen or [])}
+    seen_set = {s for s in (seen or []) if s}
     fresh = [x for x in pool if x.get("id") not in seen_set]
     if not fresh:
         fresh = list(pool)                      # 다 봤으면 다시 처음부터
     same = [x for x in fresh if x.get("tier") == tier]
-    cand = same or fresh                        # 화계가 맞는 것이 없으면 아무거나
+    cand = same or fresh                        # 화계가 맞는 것이 없으면 안 본 것 중에서
     return cand[os.urandom(1)[0] % len(cand)]
 
 
@@ -2740,7 +2752,17 @@ async def idc_lesson(request: Request):
     tier = _clean_str((body or {}).get("tier"), 10) or "polite"
     if tier not in ("formal", "polite", "banmal"):
         tier = "polite"
-    seen = [_clean_str(x, 60) for x in ((body or {}).get("seen") or [])][-6:]
+    # ★★ v140 — 여기서 **단위가 어긋나 있었다.**
+    #   화면은 seen 에 place(「옷 가게에서 …」 같은 자리 설명)를 담아 보냈고,
+    #   _idc_pick 은 그걸 편 id("topic-3")와 견줬다. **한 번도 안 맞았다.**
+    #   그래서 늘 다섯 편 전부가 「안 본 것」이 됐고, 거기에 화계까지 걸리니
+    #   그 화계의 한두 편만 계속 뽑혔다. 도장은 쌓이는데 대화문은 그대로였다.
+    #
+    #   이제 둘을 갈라 받는다 —
+    #     seen  : 본 편의 id     → 코퍼스에서 고를 때 (돌려 뽑기)
+    #     avoid : 본 자리 설명    → 모델이 지을 때 (겹치지 말라고)
+    seen = [_clean_str(x, 40) for x in ((body or {}).get("seen") or [])][-12:]
+    avoid = [_clean_str(x, 60) for x in ((body or {}).get("avoid") or [])][-6:]
     mine = (body or {}).get("mine") or []          # 학습자가 실제로 나눈 대화
 
     # ★★ 검수한 대화문이 있으면 **그것을 먼저 쓴다** (v135).
@@ -2760,12 +2782,16 @@ async def idc_lesson(request: Request):
                            f" · 표시 {scene['mark']} · 검수본")
         print(f"[학습] {key} · {tier} · {_idc_dx['last']}")
         return {"el": key, "easy": el["easy"], "acad": el["acad"], "emoji": el["emoji"],
-                "meaning": meaning, **scene}
+                "meaning": meaning,
+                # 그 요소에 편이 몇 개인지 알려 준다 — 화면이 「본 것」 목록을 이만큼만 쥔다.
+                # 늘 하나는 안 본 것으로 남으므로 다섯 편이 깔끔하게 한 바퀴 돈다.
+                "pool": len(_idc_corpus.get(key) or []),
+                **scene}
 
     # 검수본이 없는 요소(stage 등)는 예전처럼 모델이 짓는다
     # 뜻풀이는 재워 둔 것이 있으면 그대로 — 대화문만 새로 만든다
     scene, meaning = await asyncio.gather(
-        _idc_scene(el, lang, tier, seen, mine),
+        _idc_scene(el, lang, tier, avoid, mine),
         _idc_meaning(el, lang, tier),
         return_exceptions=True)
     if isinstance(scene, Exception) or not scene:

@@ -23,6 +23,27 @@ TAIL = ["으셨습니다","었습니다","았습니다","겠습니다","습니�
         "으로","에서","에게","한테","까지","부터","보다","처럼","마다","밖에",
         "들","은","는","이","가","을","를","에","도","만","의","와","과","고","며",
         "하다","되다","하는","하고","해서","한","할","함","해","했","하","되","된","될"]
+# -(으)ㄹ 이 앞말에 받침 ㄹ 을 남기는 어미들
+L_TAIL = ["게요", "게", "까요", "까", "래요", "래", "걸요", "걸", "텐데",
+          "수가", "수는", "수도", "지도", "지언정", "뿐", "테니까", "테니"]
+
+def unl(w):
+    """「볼」처럼 **-(으)ㄹ 이 붙어 생긴 받침 ㄹ** 을 떼어 어간을 되살린다 → 「보」
+
+    ★ 왜 필요했나
+      「가 볼게요」의 「볼게요」를 어미만 벗기면 「볼」이 남는다.
+      그런데 목록의 「볼」은 **뺨(4급)** 이다. 그래서 1급 낱말 「보다」가
+      4급으로 잡혔다. 「-(으)ㄹ게요」는 어미이지 낱말이 아니다.
+      받침 ㄹ 을 떼면 「보」가 되고 「보다」를 찾을 수 있다.
+    """
+    if not w: return None
+    ch = w[-1]
+    if not ("가" <= ch <= "힣"): return None
+    code = ord(ch) - 0xAC00
+    if code % 28 != 8:                 # 받침이 ㄹ 이 아니면 건드리지 않는다
+        return None
+    return w[:-1] + chr(0xAC00 + code - 8)
+
 def stems(w):
     out = {w}
     for t in TAIL:
@@ -32,6 +53,14 @@ def stems(w):
     if len(w) > 1:
         for i in (1, 2):
             if len(w) > i: out.add(w[:-i] + "다"); out.add(w[:-i] + "하다"); out.add(w[:-i])
+    # 받침 ㄹ 이 **-(으)ㄹ 어미에서 온 것**일 때만 떼어 본다.
+    # ★ 아무 데나 떼면 「볼(뺨)」「출산」「솔직히」 같은 4급 낱말이 1~2급으로 새 버린다.
+    #   (한 번 그렇게 해 봤더니 4급 22개를 놓쳤다 — 오탐 하나 잡으려다 스물둘을 흘린 셈이다)
+    #   그래서 「-(으)ㄹ게/-(으)ㄹ까/-(으)ㄹ래…」가 실제로 붙은 자리에만 쓴다.
+    for t in L_TAIL:
+        if w.endswith(t) and len(w) > len(t):
+            b = unl(w[:-len(t)])
+            if b: out.add(b); out.add(b + "다")
     return out
 
 def grade(w):
@@ -103,6 +132,12 @@ def scan(only_ids=None):
 GRAM = LV["gram"]
 G4 = sorted([g for g, n in GRAM.items() if n > MAX and len(g) >= 3],
             key=len, reverse=True)
+# 문형 글자가 그대로 들어 있지만 **그 문형이 아닌** 자리
+FALSE = {
+    "-는 한":   ("때는 한 ", "에는 한 ", "로는 한 ", "는 한 번", "는 한 개", "는 한 사람"),
+    "-고 해서": ("려고 해서", "라고 해서", "다고 해서"),
+}
+
 def gram_scan():
     hit = defaultdict(list)
     for f in sorted(glob.glob("*.json")):
@@ -119,10 +154,14 @@ def gram_scan():
                 for g in G4:
                     gg = g.replace("-", "").replace("(으)", "").replace("으", "")
                     if len(gg) < 3 or gg not in tt: continue
-                    # ★ 짧은 문형은 딴 낱말에 잘못 걸린다.
-                    #   「는 한」 ← 「한 번」, 「고 해서」 ← 「하려고 해서」.
-                    #   문형 앞뒤가 낱말 경계인지 보고 거른다.
+                    # ★★ 짧은 문형은 **딴 말 속에 그대로 들어 있다.**
+                    #   글자만 찾으면 검사가 거짓말을 한다 —
+                    #     「-는 한」  ← 「때는 한 번」의 「한」(관형사)
+                    #     「-고 해서」 ← 「-려고 해서」(-려고 하다 + -아서)
+                    #   앞뒤를 함께 보고 거른다. 실제로 걸린 것만 짚어 둔다.
                     j = tt.index(gg)
+                    around = tt[max(0, j - 3): j + len(gg) + 2]
+                    if any(x in around for x in FALSE.get(g, ())): continue
                     nxt = tt[j + len(gg): j + len(gg) + 1]
                     if gg.endswith(" 한") and nxt and nxt != " ": continue
                     hit[g].append((it["id"], k, t[:56]))

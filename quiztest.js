@@ -23,6 +23,7 @@ const dom = new JSDOM(html, {
         w.scrollTo = () => {};
         w.HTMLElement.prototype.scrollIntoView = () => {};
         w.HTMLMediaElement.prototype.play = () => Promise.resolve();
+        w.HTMLMediaElement.prototype.pause = () => {};
         w.HTMLMediaElement.prototype.load = () => {};
         w.AudioContext = w.webkitAudioContext = function () {
             const g = { gain: { value: 0, cancelScheduledValues() {}, setValueAtTime() {}, linearRampToValueAtTime() {} }, connect: (x) => x, disconnect() {} };
@@ -37,6 +38,12 @@ const w = dom.window;
 
 setTimeout(async () => {
     const d = w.document;
+    /* ★ jsdom 의 el.click() 은 자리에 따라 **아무 일도 안 한다** (v140에서 겪음).
+       손잡이는 멀쩡히 달려 있는데 이벤트가 아예 안 흘러서, 앱이 고장 난 것처럼 보인다.
+       ordertest.js 때와 같은 함정의 뒷면이다 — 그때는 Node 쪽 MouseEvent 를 만들어
+       jsdom 이 안 받았다. **창(window)의 MouseEvent** 로 만들면 진짜 눌림과 가장 가깝다. */
+    const tap = (el) => el.dispatchEvent(
+        new w.MouseEvent("click", { bubbles: true, cancelable: true }));
     try { await w.eval('idlOpen({key:"listen", easy:"듣고 있다고 알려 주기", acad:"상호작용적 듣기", emoji:"💬", gist:""})'); }
     catch (e) { ok("학습 창을 연다", false, e.message); }
     await new Promise((r) => setTimeout(r, 350));
@@ -53,7 +60,7 @@ setTimeout(async () => {
     ok("고르기 전에 선택지가 다 있다", opts().length === n, opts().length + "/" + n);
     const wrongK = ["a", "b", "c"].slice(0, n).find((k) => k !== ans);
     const wi = ["a", "b", "c"].slice(0, n).indexOf(wrongK);
-    opts()[wi].click();
+    tap(opts()[wi]);
     await new Promise((r) => setTimeout(r, 250));
     ok("선택지가 그대로 다 남아 있다", opts().length === n, opts().length + "/" + n);
     ok("정답 자리에 ok 가 붙었다",
@@ -63,16 +70,28 @@ setTimeout(async () => {
     ok("틀렸다는 줄이 보인다", !!res() && res().classList.contains("no"),
        res() ? res().textContent : "(없음)");
     ok("틀렸을 때 힌트가 들어 있다", !!res() && res().textContent.replace(/\s/g, "").length > 3);
-    ok("다시 고를 수 있는 단추가 있다",
-       [...d.querySelectorAll("#idlBody .idl-btn")].length >= 1);
     ok("아직 다음으로 못 넘어간다", d.getElementById("idlNext").disabled);
 
+    // ★ v140 — 1초 뒤 **저절로** 첫 화면으로. 단추를 또 누르게 하면 거기서 그만둔다.
+    console.log("\n── ①-2 1초 뒤 저절로 되돌아가는가");
+    await new Promise((r) => setTimeout(r, 1300));
+    ok("선택지가 다시 눌린다", opts().length === n && !opts()[0].disabled,
+       opts().map((o) => o.className + (o.disabled ? "(잠김)" : "")).join(" | "));
+    ok("색 표시가 지워졌다", opts().every((o) => !o.classList.contains("ok") && !o.classList.contains("no")));
+    ok("결과 줄이 사라졌다", !res());
+    ok("짚어 준 말은 곁에 남았다", !!d.querySelector("#idlBody .idl-miss"),
+       (d.querySelector("#idlBody .idl-miss") || {}).textContent);
+    // 몇 번이든 — 두 번째로 틀려도 다시 돌아온다
+    tap(opts()[wi]);
+    await new Promise((r) => setTimeout(r, 1300));
+    ok("두 번째로 틀려도 또 돌아온다", opts().length === n && !opts()[0].disabled);
+
     // ── ② 맞는 것을 눌렀을 때 ──
-    console.log("\n── ② 맞는 것을 누른다");
-    await w.eval("idl.picked=''; idl.step=2; idlPaint();");
-    await new Promise((r) => setTimeout(r, 200));
+    // ★ 상태를 손으로 주무르지 않는다 — 사람이 하듯 **이어서** 맞는 것을 누른다.
+    //   (틀린 뒤 저절로 돌아온 화면에서 그대로 다시 고르는 것이 실제 흐름이다)
+    console.log("\n── ② 되돌아온 화면에서 맞는 것을 누른다");
     const ai = ["a", "b", "c"].slice(0, n).indexOf(ans);
-    opts()[ai].click();
+    tap(opts()[ai]);
     await new Promise((r) => setTimeout(r, 250));
     ok("선택지가 그대로 다 남아 있다", opts().length === n, opts().length + "/" + n);
     ok("맞았다는 줄이 보인다", !!res() && res().classList.contains("ok"),
@@ -81,7 +100,14 @@ setTimeout(async () => {
     ok("다음으로 넘어갈 수 있다", !d.getElementById("idlNext").disabled);
 
     // ── ③ 그리다 터진 곳 ──
-    console.log("\n── ③ 그리다 터진 곳");
+    console.log("\n── ③ 시작 영상이 진짜 눌림을 삼키지 않는가");
+    // 손가락으로 건너뛸 때만 삼켜야 한다. 시간 초과로 걷힐 때 삼키면
+    // 그 뒤 0.8초 안에 누른 것이 통째로 사라진다.
+    ok("건너뛸 때만 삼킨다", /if \(byTap === true\) swallowNextClick\(\)/.test(html));
+    ok("손가락 쪽만 byTap 을 준다", /pointerdown", \(\) => endSplash\(true\)/.test(html));
+    ok("시간 초과 쪽은 안 준다", !/setTimeout\(\(\) => endSplash\(true\)/.test(html));
+
+    console.log("\n── ④ 그리다 터진 곳");
     ok("오류 없음", errs.length === 0, errs.slice(0, 2).join(" / "));
 
     console.log(bad ? `\n💥 ${bad}건` : "\n🎉 채점 화면 이상 없음");

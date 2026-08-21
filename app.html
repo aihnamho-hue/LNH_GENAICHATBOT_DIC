@@ -549,19 +549,6 @@
             background: #FDFCF8; border-radius: 14px; padding: 12px 13px; font-family: var(--font-ui);
             font-size: 14px; line-height: 1.6; color: var(--ink); resize: vertical; }
         .self-note:focus { outline: none; border-color: var(--accent-ink); background: #fff; }
-        /* ── 교실에 띄우기 (v142) ── */
-        .sh-list { max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column;
-            gap: 6px; margin-bottom: 10px; text-align: left; }
-        .sh-turn { border: 1.5px solid var(--accent-soft); background: #FBF9F4; border-radius: 12px;
-            padding: 9px 12px; font-size: 13px; line-height: 1.5; color: var(--ink);
-            cursor: pointer; display: flex; gap: 8px; align-items: flex-start;
-            transition: background .12s, border-color .12s; }
-        .sh-turn b { flex: none; font-size: 11px; font-weight: 800; color: var(--muted); padding-top: 2px; }
-        .sh-turn.me { background: #FFFDF6; }
-        .sh-turn.pick { border-color: var(--gold, #C9A227); background: #FFF6DE; font-weight: 700; }
-        .sh-turn.edge { border-width: 2.5px; }
-        .sh-code { font-size: 46px; font-weight: 900; letter-spacing: .22em; text-align: center;
-            color: var(--accent-ink); margin: 18px 0 6px; }
         .res-dots { display: flex; justify-content: center; gap: 6px; margin: 10px 0 4px; }
         .res-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-soft); }
         .res-dot.on { background: var(--accent); }
@@ -1370,10 +1357,20 @@
            대화가 끝나면 다시 나타나 그대로 내려받을 수 있다. */
         /* 대화 화면의 내보내기는 뺐지만, '지난 대화'에서는 TXT로 받을 수 있어야 한다
            (수업 B에서 활동물을 공유하는 교실 연계 통로) */
-        .export-btn { display: none !important; }
-        /* v84에서 내보내기 단추를 살리려 !important 를 걸었는데,
-           그 바람에 .hidden 이 영영 먹지 않았다 — 숨겨야 할 때는 비켜 준다. */
-        #histExportBtn:not(.hidden) { display: inline-block !important; }
+        /* ★★ v143 — 클래스로 죽이던 것을 **아이디 목록**으로 바꿨다.
+           예전에는 이랬다 —
+               .export-btn { display: none !important; }              ← 전역으로 다 죽임
+               #histExportBtn:not(.hidden) { display: … !important; }  ← 이것만 예외
+           그래서 .export-btn 을 단 **새 단추는 처음부터 안 보이는 물건**이 됐다.
+           v142 의 「교실에 띄우기」가 그렇게 사라졌다 — 코드는 멀쩡했고 검사도 초록불이었다.
+
+           안 보이는 단추가 어느 것인지는 그대로다(딱 이 열 개).
+           달라진 것은 **클래스가 아니라 이름으로** 죽인다는 것뿐이다.
+           이제 .export-btn 은 그냥 생김새 클래스이므로, 새 단추는 달아도 보인다. */
+        #exportBtn, #inappCopyBtn, #consentCancelBtn, #rpCancelBtn, #rpEditBtn,
+        #prSkipBtn, #prCloseBtn, #notifNoBtn, #voiceCloseBtn, #appDlCloseBtn {
+            display: none !important;
+        }
 
         /* ══════════ 방안 A: 화면 상태 (home | chat | feedback) ══════════
            최상위 컨테이너 클래스 하나(body[data-screen])로 해당 블록만 보이게 토글. */
@@ -2209,8 +2206,12 @@
 <div class="lang-overlay hidden" id="idcOverlay">
     <div class="lang-box" style="max-width:470px;">
         <button type="button" class="ov-x" id="idcX">✕</button>
-        <h2 id="idcTitleEl"></h2>
-        <p id="idcSubEl" style="margin-bottom:14px;"></p>
+        <!-- ★★ v143 — 아이디가 결과 화면(#idcHead)의 것과 **같아서**
+             getElementById 가 늘 그쪽을 집었다. 그래서 이 화면의 제목과 부제가
+             **한 번도 채워진 적이 없다** — ✕ 아래로 카드만 덩그러니 떠 있었다.
+             아이디는 문서에 하나뿐이어야 한다. 이름을 갈랐다. -->
+        <h2 id="idcListTitleEl"></h2>
+        <p id="idcListSubEl" style="margin-bottom:14px;"></p>
         <div class="idc-cards" id="idcCards"></div>
     </div>
 </div>
@@ -2264,32 +2265,11 @@
         <div class="hist-detail hidden" id="histDetail"></div>
         <div class="consent-actions">
             <button class="action-btn" id="histCloseBtn"></button>
-            <button class="export-btn hidden" id="histShareBtn"></button>
             <button class="export-btn hidden" id="histExportBtn"></button>
         </div>
     </div>
 </div>
 
-<!-- ═══ 교실에 띄우기 — 대목을 골라 네 글자 코드를 받는다 (v142) ═══
-     ★ txt 를 카톡으로 보내는 길은 학습자에게 맞지 않았다.
-       그 파일은 머리말·점수·판정이 다 붙은 **연구자용**이다.
-       교실에서 필요한 것은 파일이 아니라 화면 — 서너 줄을 크게 띄우는 자리다. -->
-<div class="lang-overlay hidden" id="shareOverlay">
-    <div class="lang-box" style="max-width:480px;">
-        <button type="button" class="ov-x" id="shareX">✕</button>
-        <h2 id="shareTitleEl" style="margin-bottom:6px;">🏫</h2>
-        <p class="rp-note" id="shareGuideEl" style="text-align:left;margin:0 0 12px;"></p>
-        <div class="sh-list" id="shareList"></div>
-        <div class="sh-done hidden" id="shareDone">
-            <p class="sh-code" id="shareCodeEl"></p>
-            <p class="rp-note" id="shareCodeSubEl" style="text-align:center;"></p>
-        </div>
-        <div class="consent-actions">
-            <button class="action-btn" id="shareGoBtn"></button>
-            <button class="export-btn" id="shareCloseBtn"></button>
-        </div>
-    </div>
-</div>
 <div class="app">
     <div class="character-panel">
         <!-- ← 뒤로: 대화 중이면 종료 확인 후 홈으로 -->
@@ -2512,7 +2492,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v142 (2026-08-20)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v143 (2026-08-20)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -2850,28 +2830,6 @@
         ky: { selfChkAsk:"Бүгүнкү маекте муну байкап көрдүңүзбү?", selfChkSub:"Чынын тандаңыз — балл эсептелбейт.", selfChkYes:"Кылдым", selfChkNo:"Бул жолу жок", selfNoteAsk:"Бүгүнкү маек кандай өттү?", selfNoteSub:"Ыңгайлуу тилде жазсаңыз болот. Жазбасаңыз да болот.", selfNotePh:"Мисалы) Баа түшүрүүнү сурай албадым" },
     };
     for (const _l in I18N_SELF) { if (I18N[_l]) Object.assign(I18N[_l], I18N_SELF[_l]); }
-    /* 교실에 띄우기 (v142) — 대목을 골라 네 글자 코드를 받는다 */
-    const I18N_SHARE = {
-        ko: { shBtn:"교실에 띄우기", shTitle:"🏫 교실에 띄우기", shGuide:"재미있었던 대목을 골라 보세요. 처음 줄을 누르고, 끝 줄을 누르면 됩니다.", shMe:"나", shMake:"코드 만들기", shMaking:"만드는 중…", shFail:"다시 해 볼까요?", shCodeSub:"이 코드를 선생님께 알려 주세요. 두 시간 뒤에는 사라져요.", shOld:"이 대화는 예전 것이라 대목을 고를 수 없어요. 다음 대화부터 됩니다." },
-        en: { shBtn:"Show in class", shTitle:"🏫 Show in class", shGuide:"Pick an interesting part. Tap the first line, then the last line.", shMe:"Me", shMake:"Get a code", shMaking:"Making…", shFail:"Try again?", shCodeSub:"Give this code to your teacher. It disappears in two hours.", shOld:"This chat is from an older version, so you can't pick a part. It works from your next chat." },
-        zh: { shBtn:"投到课堂屏幕", shTitle:"🏫 投到课堂屏幕", shGuide:"挑一段有意思的地方。先点第一行，再点最后一行。", shMe:"我", shMake:"生成代码", shMaking:"生成中…", shFail:"再试一次？", shCodeSub:"把这个代码告诉老师。两小时后会消失。", shOld:"这是旧版本保存的对话，无法选取片段。下次对话开始就可以了。" },
-        ja: { shBtn:"教室の画面に出す", shTitle:"🏫 教室の画面に出す", shGuide:"おもしろかったところを選んでください。最初の行を押し、最後の行を押します。", shMe:"わたし", shMake:"コードを作る", shMaking:"作成中…", shFail:"もう一度やってみますか？", shCodeSub:"このコードを先生に伝えてください。2時間で消えます。", shOld:"以前のバージョンの会話なので部分を選べません。次の会話から使えます。" },
-        vi: { shBtn:"Chiếu lên lớp", shTitle:"🏫 Chiếu lên lớp", shGuide:"Chọn một đoạn thú vị. Chạm dòng đầu, rồi chạm dòng cuối.", shMe:"Tôi", shMake:"Tạo mã", shMaking:"Đang tạo…", shFail:"Thử lại nhé?", shCodeSub:"Hãy đọc mã này cho giáo viên. Mã sẽ mất sau hai giờ.", shOld:"Đây là hội thoại từ bản cũ nên không chọn đoạn được. Từ lần sau sẽ dùng được." },
-        th: { shBtn:"ฉายขึ้นจอในห้องเรียน", shTitle:"🏫 ฉายขึ้นจอในห้องเรียน", shGuide:"เลือกช่วงที่น่าสนใจ แตะบรรทัดแรก แล้วแตะบรรทัดสุดท้าย", shMe:"ฉัน", shMake:"สร้างรหัส", shMaking:"กำลังสร้าง…", shFail:"ลองอีกครั้งไหม", shCodeSub:"บอกรหัสนี้กับคุณครู รหัสจะหายไปใน 2 ชั่วโมง", shOld:"บทสนทนานี้มาจากเวอร์ชันเก่า จึงเลือกช่วงไม่ได้ ใช้ได้ตั้งแต่บทสนทนาครั้งหน้า" },
-        id: { shBtn:"Tampilkan di kelas", shTitle:"🏫 Tampilkan di kelas", shGuide:"Pilih bagian yang menarik. Ketuk baris pertama, lalu baris terakhir.", shMe:"Saya", shMake:"Buat kode", shMaking:"Membuat…", shFail:"Coba lagi?", shCodeSub:"Beri tahu kode ini kepada guru. Kode hilang dalam dua jam.", shOld:"Percakapan ini dari versi lama, jadi bagian tidak bisa dipilih. Bisa mulai percakapan berikutnya." },
-        mn: { shBtn:"Ангийн дэлгэцэд гаргах", shTitle:"🏫 Ангийн дэлгэцэд гаргах", shGuide:"Сонирхолтой хэсгийг сонго. Эхний мөрийг дарж, дараа нь сүүлийн мөрийг дар.", shMe:"Би", shMake:"Код авах", shMaking:"Үүсгэж байна…", shFail:"Дахин оролдох уу?", shCodeSub:"Энэ кодыг багшдаа хэл. Хоёр цагийн дараа устана.", shOld:"Энэ яриа хуучин хувилбарынх тул хэсгийг сонгох боломжгүй. Дараагийн ярианаас ажиллана." },
-        uz: { shBtn:"Sinf ekraniga chiqarish", shTitle:"🏫 Sinf ekraniga chiqarish", shGuide:"Qiziq joyni tanlang. Birinchi qatorni, so'ng oxirgi qatorni bosing.", shMe:"Men", shMake:"Kod olish", shMaking:"Yaratilmoqda…", shFail:"Yana urinib ko'rasizmi?", shCodeSub:"Bu kodni o'qituvchingizga ayting. Ikki soatdan keyin yo'qoladi.", shOld:"Bu suhbat eski versiyadan, shuning uchun qismini tanlab bo'lmaydi. Keyingi suhbatdan ishlaydi." },
-        ru: { shBtn:"Показать на экране класса", shTitle:"🏫 Показать на экране класса", shGuide:"Выберите интересный отрывок. Нажмите первую строку, затем последнюю.", shMe:"Я", shMake:"Получить код", shMaking:"Создаём…", shFail:"Попробовать ещё раз?", shCodeSub:"Назовите этот код учителю. Он исчезнет через два часа.", shOld:"Этот разговор из старой версии, отрывок выбрать нельзя. Со следующего разговора получится." },
-        es: { shBtn:"Mostrar en clase", shTitle:"🏫 Mostrar en clase", shGuide:"Elige una parte interesante. Toca la primera línea y luego la última.", shMe:"Yo", shMake:"Crear código", shMaking:"Creando…", shFail:"¿Lo intentamos otra vez?", shCodeSub:"Dile este código a tu profesor. Desaparece en dos horas.", shOld:"Esta conversación es de una versión anterior y no se puede elegir una parte. Funcionará desde la próxima." },
-        fr: { shBtn:"Afficher en classe", shTitle:"🏫 Afficher en classe", shGuide:"Choisissez un passage intéressant. Touchez la première ligne, puis la dernière.", shMe:"Moi", shMake:"Créer un code", shMaking:"Création…", shFail:"On réessaie ?", shCodeSub:"Donnez ce code à votre enseignant. Il disparaît au bout de deux heures.", shOld:"Cette conversation vient d'une ancienne version : impossible de choisir un passage. Ce sera possible dès la prochaine." },
-        ne: { shBtn:"कक्षाको पर्दामा देखाउने", shTitle:"🏫 कक्षाको पर्दामा देखाउने", shGuide:"रमाइलो लागेको भाग छान्नुहोस्। पहिलो लाइन थिच्नुहोस्, अनि अन्तिम लाइन।", shMe:"म", shMake:"कोड बनाउने", shMaking:"बनाउँदै…", shFail:"फेरि प्रयास गर्ने?", shCodeSub:"यो कोड शिक्षकलाई भन्नुहोस्। दुई घण्टापछि हराउँछ।", shOld:"यो कुराकानी पुरानो संस्करणको हो, त्यसैले भाग छान्न मिल्दैन। अर्को कुराकानीदेखि मिल्छ।" },
-        lo: { shBtn:"ສາຍຂຶ້ນຈໍໃນຫ້ອງຮຽນ", shTitle:"🏫 ສາຍຂຶ້ນຈໍໃນຫ້ອງຮຽນ", shGuide:"ເລືອກຊ່ວງທີ່ໜ້າສົນໃຈ. ກົດແຖວທຳອິດ ແລ້ວກົດແຖວສຸດທ້າຍ.", shMe:"ຂ້ອຍ", shMake:"ສ້າງລະຫັດ", shMaking:"ກຳລັງສ້າງ…", shFail:"ລອງໃໝ່ບໍ?", shCodeSub:"ບອກລະຫັດນີ້ໃຫ້ອາຈານ. ສອງຊົ່ວໂມງແລ້ວຈະຫາຍໄປ.", shOld:"ການສົນທະນານີ້ແມ່ນຮຸ່ນເກົ່າ ຈຶ່ງເລືອກຊ່ວງບໍ່ໄດ້. ໃຊ້ໄດ້ແຕ່ຄັ້ງຕໍ່ໄປ." },
-        my: { shBtn:"စာသင်ခန်း မျက်နှာပြင်မှာ ပြရန်", shTitle:"🏫 စာသင်ခန်း မျက်နှာပြင်မှာ ပြရန်", shGuide:"စိတ်ဝင်စားဖွယ် အပိုင်းကို ရွေးပါ။ ပထမစာကြောင်းကို နှိပ်ပြီး နောက်ဆုံးစာကြောင်းကို နှိပ်ပါ။", shMe:"ကျွန်တော်", shMake:"ကုဒ် ဖန်တီးရန်", shMaking:"ဖန်တီးနေသည်…", shFail:"ထပ်စမ်းကြည့်မလား?", shCodeSub:"ဒီကုဒ်ကို ဆရာ့ကို ပြောပါ။ နှစ်နာရီအကြာမှာ ပျောက်သွားပါမယ်။", shOld:"ဒီစကားပြောက ဗားရှင်းဟောင်းဖြစ်လို့ အပိုင်း မရွေးနိုင်ပါ။ နောက်တစ်ခါကစပြီး ရပါမယ်။" },
-        km: { shBtn:"បង្ហាញលើអេក្រង់ថ្នាក់", shTitle:"🏫 បង្ហាញលើអេក្រង់ថ្នាក់", shGuide:"ជ្រើសរើសផ្នែកគួរឱ្យចាប់អារម្មណ៍។ ចុចជួរដំបូង រួចចុចជួរចុងក្រោយ។", shMe:"ខ្ញុំ", shMake:"បង្កើតលេខកូដ", shMaking:"កំពុងបង្កើត…", shFail:"សាកម្ដងទៀតទេ?", shCodeSub:"ប្រាប់លេខកូដនេះទៅគ្រូ។ វានឹងបាត់ក្នុងរយៈពេលពីរម៉ោង។", shOld:"ការសន្ទនានេះជាកំណែចាស់ ដូច្នេះមិនអាចជ្រើសផ្នែកបានទេ។ ចាប់ពីលើកក្រោយបាន។" },
-        uk: { shBtn:"Показати на екрані класу", shTitle:"🏫 Показати на екрані класу", shGuide:"Виберіть цікавий уривок. Натисніть перший рядок, потім останній.", shMe:"Я", shMake:"Створити код", shMaking:"Створюємо…", shFail:"Спробувати ще раз?", shCodeSub:"Скажіть цей код учителю. Він зникне через дві години.", shOld:"Ця розмова зі старої версії, уривок вибрати не можна. Працюватиме з наступної розмови." },
-        ky: { shBtn:"Класс экранына чыгаруу", shTitle:"🏫 Класс экранына чыгаруу", shGuide:"Кызыктуу жерин тандаңыз. Биринчи сапты, анан акыркы сапты басыңыз.", shMe:"Мен", shMake:"Код түзүү", shMaking:"Түзүлүүдө…", shFail:"Дагы аракет кылабызбы?", shCodeSub:"Бул кодду мугалимиңизге айтыңыз. Эки сааттан кийин жоголот.", shOld:"Бул маек эски версиядан, ошондуктан бөлүгүн тандоого болбойт. Кийинки маектен иштейт." },
-    };
-    for (const _l in I18N_SHARE) { if (I18N[_l]) Object.assign(I18N[_l], I18N_SHARE[_l]); }
     /* 캐릭터 이름 — 홈 좌상단 제목(앱 아이콘 + 이름)과 영상통화 이름표에 쓰인다 */
     const I18N_NAME = { ko:"호아랑", ja:"ホアラン" };
     for (const _l in I18N) { I18N[_l].charName = I18N_NAME[_l] || "Hoarang"; }
@@ -3450,8 +3408,12 @@
     for (const _l in I18N_QZ3) { if (I18N[_l]) Object.assign(I18N[_l], I18N_QZ3[_l]); }
     /* IDC 도장판(v76) — 논문 〈표 32〉 구성 요소 이름(짧게) */
     const I18N_ST = {
-        ko: { idcBoard:"🏅 상호작용 도장판", st_stage:"기능 단계", st_topic:"화제 관리", st_move:"대화이동",
-              st_turn:"차례 관리", st_repair:"단절 수정", st_strategy:"의사소통 전략", st_listen:"듣기 반응", st_context:"맥락·존대" },
+        /* ★★ v143 — 학술 용어를 화면에서 걷었다.
+           지도교수 지적: 「'상호작용'이라는 건 굉장히 학술적 용어야. 이걸 그대로 노출시켜도 되냐?」
+           맞는 말이다. 학습자는 「상호작용」을 배우러 온 것이 아니라 **말을 배우러** 왔다.
+           논문 용어는 교사 화면(/class)과 전사 파일에만 남긴다. */
+        ko: { idcBoard:"🏅 대화 도장판", st_stage:"대화 단계", st_topic:"이야깃거리", st_move:"주고받기",
+              st_turn:"말 차례", st_repair:"막힐 때", st_strategy:"돌려 말하기", st_listen:"맞장구", st_context:"상대에 맞춰" },
         en: { idcBoard:"🏅 Interaction stamps", st_stage:"Stages", st_topic:"Topics", st_move:"Moves",
               st_turn:"Turns", st_repair:"Repair", st_strategy:"Strategies", st_listen:"Listening", st_context:"Register" },
         zh: { idcBoard:"🏅 互动集章", st_stage:"阶段", st_topic:"话题", st_move:"对话行为",
@@ -3586,8 +3548,8 @@
        요소 이름은 논문 〈표 33〉의 9요소. 키 규칙: idc_<서버가 보내는 key>.
        비언어적 행위(idc_nonverbal)는 교실에서 배우므로 등급 없이 이름만 보인다. */
     const I18N_IDC = {
-        ko: { idcTitle:"상호작용 대화 능력", idcHi:"잘함", idcMid:"보통", idcLo:"연습",
-              idcNote:"※ 비언어적 행위(시선·표정·고개 끄덕임)는 교실에서 선생님과 연습하는 요소예요. 점수에는 넣지 않아요.",
+        ko: { idcTitle:"대화를 잘했나 보기", idcHi:"잘함", idcMid:"보통", idcLo:"연습",
+              idcNote:"※ 몸짓·표정·눈 맞추기는 교실에서 선생님과 연습해요. 점수에는 넣지 않아요.",
               idc_stage:"대화 단계 만들기", idc_topic:"이야깃거리 이끌기", idc_move:"주고받기 조절",
               idc_turn:"말차례 나누기", idc_repair:"막혔을 때 되살리기", idc_strategy:"모를 때 돌려 말하기",
               idc_listen:"맞장구치며 듣기", idc_nonverbal:"몸짓·표정으로 반응하기", idc_context:"상대에 맞춰 말하기" },
@@ -4197,8 +4159,6 @@
         document.getElementById("histTitleEl").textContent = t("histTitle");
         document.getElementById("histCloseBtn").textContent = t("histClose");
         document.getElementById("histExportBtn").textContent = t("btnExport");
-        const _shb = document.getElementById("histShareBtn");
-        if (_shb) _shb.textContent = t("shBtn");
         /* 주제 대화 UI */
         modeFreeBtn.textContent = t("modeFree");
         modeRpBtn.textContent = t("modeRp");
@@ -5123,6 +5083,22 @@
         })).filter((x) => x.t);
         list.unshift({ ts: new Date().toISOString(), mode: rpSessionActive ? "rp" : "free",
                        title, preview, text, turns, quests, stats });
+        /* ★★ v143 — 교실 화면으로 **저절로** 보낸다.
+           v142 는 학습자가 대목을 골라 네 글자 코드를 만들고, 교사가 그 코드를 넣는 방식이었다.
+           교실에서는 그렇게 안 돌아간다 — 코드를 하나하나 받아 적고 하나하나 넣어야 하고,
+           학습자가 눌러 줘야만 볼 수 있다.
+           교사가 필요한 것은 **그날 반 전체가 한 화면에 뜨는 것**이다. 거기서 골라 보면 된다.
+           그러니 학습자는 아무것도 안 눌러도 되어야 한다.
+           ※ 실패해도 조용히 넘어간다 — 대화 기록은 이미 기기와 드라이브에 따로 남는다. */
+        try {
+            fetch("/class-log", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    sid: (typeof sessionSid === "string" ? sessionSid : ""), name: userName || "",
+                    title, mode: rpSessionActive ? "rp" : "free", turns }),
+                keepalive: true,          // 창을 닫는 중이어도 보내진다
+            }).catch(() => {});
+        } catch (e) {}
         if (list.length > 30) list.length = 30;
         try { localStorage.setItem(HIST_KEY, JSON.stringify(list)); } catch (e) {}
     }
@@ -5130,8 +5106,6 @@
         histCurrent = null;
         histDetail.classList.add("hidden");
         histExportBtn.classList.add("hidden");
-        const _sb = document.getElementById("histShareBtn");
-        if (_sb) _sb.classList.add("hidden");
         histList.classList.remove("hidden");
         renderHistList();
         histOverlay.classList.remove("hidden");
@@ -5163,132 +5137,16 @@
         const wasOpen = div.classList.contains("open");
         // 한 번에 하나만 펼친다 — 여러 개가 열리면 어느 대화를 내보내는지 모호해진다
         histList.querySelectorAll(".hist-item.open").forEach(el => el.classList.remove("open"));
-        const shBtn = document.getElementById("histShareBtn");
         if (wasOpen) {                       // 다시 누르면 접힌다
             histCurrent = null;
             histExportBtn.classList.add("hidden");
-            if (shBtn) shBtn.classList.add("hidden");
             return;
         }
         div.classList.add("open");
         histCurrent = loadHistory()[i] || null;
         histExportBtn.classList.toggle("hidden", !histCurrent);
-        // 턴이 남아 있는 기록만 대목을 잘라 낼 수 있다 (v141 이전 것에는 없다)
-        if (shBtn) shBtn.classList.toggle("hidden",
-            !(histCurrent && Array.isArray(histCurrent.turns) && histCurrent.turns.length));
         try { div.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) {}
     }
-    /* ══════════ 교실에 띄우기 (v142) ══════════
-       흥미로운 대목 서너 줄을 골라 **네 글자 코드**를 받는다.
-       교사는 교실 노트북에서 /class 에 그 코드를 넣는다.
-
-       ★ 왜 파일이 아니라 코드인가
-         지금까지는 txt 로 내보내 카톡으로 보내는 길뿐이었다. 그 파일은
-         머리말·점수·판정이 다 붙은 **연구자용**이라 학습자가 주고받을 물건이 아니다.
-         교실에서 필요한 것은 파일이 아니라 화면이다.
-
-       ★ 왜 대화문만 보내나
-         판단(점수·호아랑이 권한 것·자가 점검)을 함께 띄우면 반 전체가 그 판단을 따라간다.
-         「이 자리에서는 이렇게 말했으면 더 자연스러웠겠다」는 말이
-         학습자들 입에서 **먼저** 나와야 한다. 그것이 이 활동의 목적이다.
-
-       ★ 이름도 안 보낸다 — 누구 것인지 띄우면 발표가 부담이 된다. */
-    const SHARE_MIN = 2, SHARE_MAX_TURNS = 12;
-    let shTurns = [], shA = -1, shB = -1;      // 고른 대목의 처음·끝 (줄 번호)
-
-    function openShare() {
-        const it = histCurrent;
-        if (!it) return;
-        shTurns = Array.isArray(it.turns) ? it.turns : [];
-        shA = shB = -1;
-        document.getElementById("shareTitleEl").textContent = t("shTitle");
-        document.getElementById("shareGuideEl").textContent = t("shGuide");
-        document.getElementById("shareCloseBtn").textContent = t("rpClose");
-        document.getElementById("shareDone").classList.add("hidden");
-        const box = document.getElementById("shareList");
-        box.innerHTML = "";
-        if (!shTurns.length) {
-            // v141 이전에 저장된 기록에는 턴이 없다 — 글 덩어리만 있었다
-            const e = document.createElement("div");
-            e.className = "idl-msg"; e.textContent = t("shOld");
-            box.appendChild(e);
-        }
-        shTurns.forEach((x, i) => {
-            const r = document.createElement("button");
-            r.type = "button";
-            r.className = "sh-turn" + (x.r === "me" ? " me" : "");
-            r.dataset.i = String(i);
-            const b = document.createElement("b");
-            b.textContent = x.r === "me" ? t("shMe") : t("charName");
-            const sp = document.createElement("span");
-            sp.textContent = x.t;
-            r.appendChild(b); r.appendChild(sp);
-            r.addEventListener("click", () => sharePick(i));
-            box.appendChild(r);
-        });
-        sharePaint();
-        document.getElementById("shareOverlay").classList.remove("hidden");
-    }
-    function sharePick(i) {
-        /* 처음 줄을 누르고 끝 줄을 누른다. 세 번째로 누르면 다시 처음부터.
-           줄마다 켜고 끄게 하면 **띄엄띄엄 고르게** 되는데, 대화는 이어져야 뜻이 산다. */
-        if (shA < 0 || shB >= 0) { shA = i; shB = -1; }
-        else { shB = i; if (shB < shA) { const k = shA; shA = shB; shB = k; } }
-        sharePaint();
-    }
-    function shareRange() {
-        if (shA < 0) return [];
-        const a = shA, b = shB < 0 ? shA : shB;
-        return shTurns.slice(a, Math.min(b + 1, a + SHARE_MAX_TURNS));
-    }
-    function sharePaint() {
-        const a = shA, b = shB < 0 ? shA : shB;
-        document.querySelectorAll("#shareList .sh-turn").forEach((el) => {
-            const i = Number(el.dataset.i);
-            el.classList.toggle("pick", shA >= 0 && i >= a && i <= b);
-            el.classList.toggle("edge", i === shA || i === shB);
-        });
-        const n = shareRange().length;
-        const go = document.getElementById("shareGoBtn");
-        go.textContent = n ? (t("shMake") + "  (" + n + ")") : t("shMake");
-        go.disabled = n < SHARE_MIN;
-    }
-    async function shareMake() {
-        const turns = shareRange();
-        if (turns.length < SHARE_MIN) return;
-        const go = document.getElementById("shareGoBtn");
-        go.disabled = true; go.textContent = t("shMaking");
-        try {
-            const r = await fetch("/share", {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ turns, title: (histCurrent && histCurrent.title) || "" }) });
-            if (!r.ok) throw new Error("HTTP " + r.status);
-            const d = await r.json();
-            document.getElementById("shareCodeEl").textContent = d.code || "";
-            document.getElementById("shareCodeSubEl").textContent = t("shCodeSub");
-            document.getElementById("shareDone").classList.remove("hidden");
-            document.getElementById("shareList").classList.add("hidden");
-            go.classList.add("hidden");
-        } catch (e) {
-            go.textContent = t("shFail"); go.disabled = false;
-        }
-    }
-    (function bindShare() {
-        const ov = document.getElementById("shareOverlay");
-        if (!ov) return;
-        const close = () => {
-            ov.classList.add("hidden");
-            document.getElementById("shareList").classList.remove("hidden");
-            document.getElementById("shareGoBtn").classList.remove("hidden");
-        };
-        document.getElementById("shareX").addEventListener("click", close);
-        document.getElementById("shareCloseBtn").addEventListener("click", close);
-        ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
-        document.getElementById("shareGoBtn").addEventListener("click", shareMake);
-        const hb = document.getElementById("histShareBtn");
-        if (hb) hb.addEventListener("click", openShare);
-    })();
-
     histExportBtn.addEventListener("click", () => {
         if (!histCurrent) return;
         if (isKakao) { alert(t("kakaoExportMsg")); return; }
@@ -7346,9 +7204,8 @@
             row.querySelector("use").setAttribute("href", "#ic-idc-" + key);
             const nm = row.querySelector(".sc-nm");
             nm.textContent = el.easy;
-            const sub = document.createElement("i");
-            sub.textContent = el.acad;            // 학술어는 아주 작게 — 교실에서 이어 붙일 때 쓴다
-            nm.appendChild(sub);
+            // v141에서 논문 용어를 작게 붙였는데, v143에서 뺐다 — 화면에는 학습자 말만 둔다.
+            // (전사 파일에는 그대로 논문 용어로 적힌다 — 거기가 연구 자료다)
             const [yes, no] = row.querySelectorAll(".sc-yn button");
             yes.textContent = t("selfChkYes");
             no.textContent = t("selfChkNo");
@@ -8059,7 +7916,7 @@
     ];
     /* 표 열쇠를 열여덟 언어에 다 심는 대신 여기 모아 둔다(없으면 영어로 떨어진다) */
     const IDC_TXT = {
-        ko: { home: "한국어 상호작용 대화 능력", homeD: "대화하는 힘을 하나씩 배워요",
+        ko: { home: "한국어 대화를 잘 하는 방법", homeD: "대화하는 힘을 하나씩 배워요",
               title: "🪜 대화하는 힘", sub: "하나를 골라 보세요. 먼저 듣고, 스스로 알아맞히고, 그다음에 배워요.",
               none: "아직", times: "번", warmGo: "들어 볼래요", next: "다음 →", prev: "← 이전",
               listenAgain: "🔊 다시 듣기", playing: "듣는 중…", done: "다 배웠어요!",
@@ -8075,7 +7932,7 @@
               noMic: "마이크를 쓸 수 없어요",
               fromMine: "지난번 내 주제 대화에서 가져왔어요", inClass: "교실에서",
               tapToHear: "말풍선을 누르면 다시 들을 수 있어요" },
-        en: { home: "Korean Interaction Skills", homeD: "Learn one conversation skill at a time",
+        en: { home: "How to talk well in Korean", homeD: "Learn one conversation skill at a time",
               title: "🪜 Conversation skills", sub: "Pick one. Listen first, guess for yourself, then learn.",
               none: "not yet", times: "x", warmGo: "Let's listen", next: "Next →", prev: "← Back",
               listenAgain: "🔊 Listen again", playing: "Playing…", done: "All done!",
@@ -8176,7 +8033,11 @@
                 + '<span class="idc-stamp"></span>';
             b.querySelector("use").setAttribute("href", "#ic-idc-" + e.key);
             b.querySelector(".idc-c1").textContent = e.easy;
-            b.querySelector(".idc-c2").textContent = e.acad;      // 학술어는 아주 작게
+            /* ★ v143 — 논문 용어(「대화이동 관리」…)를 카드에서 뺐다.
+               카드마다 작게 붙여 두었는데, 작아도 **읽힌다.** 읽히면 물어보게 되고,
+               물어보면 그때부터 그 말을 설명해야 한다 — 학습자가 배울 것이 하나 늘어난다.
+               연구자·교사가 대응을 봐야 할 자리는 교사 화면과 전사 파일이지 여기가 아니다. */
+            b.querySelector(".idc-c2").textContent = "";
             b.querySelector(".idc-stamp").textContent = here
                 ? (n > 0 ? ("●".repeat(Math.min(n, 5)) + "○".repeat(Math.max(0, 5 - n))) : idcT("none"))
                 : idcT("inClass");
@@ -8186,8 +8047,8 @@
         });
     }
     function openIdcList() {
-        document.getElementById("idcTitleEl").textContent = idcT("title");
-        document.getElementById("idcSubEl").textContent = idcT("sub");
+        document.getElementById("idcListTitleEl").textContent = idcT("title");
+        document.getElementById("idcListSubEl").textContent = idcT("sub");
         renderIdcCards();
         document.getElementById("idcOverlay").classList.remove("hidden");
     }
@@ -8231,7 +8092,7 @@
                 drills: null, di: 0 };
         document.getElementById("idlIcon").setAttribute("href", "#ic-idc-" + e.key);
         document.getElementById("idlName").textContent = e.easy;
-        document.getElementById("idlAcad").textContent = e.acad;
+        document.getElementById("idlAcad").textContent = "";   // 논문 용어는 화면에 안 쓴다 (v143)
         document.getElementById("idlOverlay").classList.remove("hidden");
         idlPaint();
         idcLog(e.key, "warm");
@@ -8321,7 +8182,7 @@
             } else {
                 who.classList.add("ham");
                 const im = document.createElement("img");
-                im.src = "/static/ham_idle.png?v=142"; im.alt = "";
+                im.src = "/static/ham_idle.png?v=143"; im.alt = "";
                 who.appendChild(im);
             }
             const tx = document.createElement("span");
@@ -8443,7 +8304,7 @@
             idl.ord = idl.ord || [];                   // 학습자가 쌓은 차례
             const ask = document.createElement("div");
             ask.className = "idl-ask";
-            ask.innerHTML = '<img src="/static/ham_idle.png?v=142" alt=""><p></p>';
+            ask.innerHTML = '<img src="/static/ham_idle.png?v=143" alt=""><p></p>';
             ask.querySelector("p").textContent = q.q;
             if (q.q_n) {
                 const qn = document.createElement("span");
@@ -8533,7 +8394,7 @@
                둘 다 굵으면 어디를 먼저 볼지 알 수 없다. */
             const ask = document.createElement("div");
             ask.className = "idl-ask";
-            ask.innerHTML = '<img src="/static/ham_idle.png?v=142" alt=""><p></p>';
+            ask.innerHTML = '<img src="/static/ham_idle.png?v=143" alt=""><p></p>';
             ask.querySelector("p").textContent = q.q;
             body.appendChild(ask);
             /* 한 번 틀린 뒤 되돌아왔다 — 짚어 준 말을 곁에 남겨 둔다 (v140) */
@@ -8748,7 +8609,7 @@
         if (dr.cue) {
             const row = document.createElement("div");
             row.className = "pr-cue-row";
-            row.innerHTML = '<div class="profile"><img src="/static/ham_idle.png?v=142" alt=""></div>'
+            row.innerHTML = '<div class="profile"><img src="/static/ham_idle.png?v=143" alt=""></div>'
                           + '<div class="pr-cue-bubble"></div>';
             row.querySelector(".pr-cue-bubble").textContent = dr.cue;
             row.addEventListener("click", () => ttsPlay(dr.cue));

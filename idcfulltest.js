@@ -34,7 +34,13 @@ ok("채움말 권하기", /'음…', '그러니까…'/.test(py));
 ok("표현마다 idc 태그 요청", /idc — 이 표현이 주로 기르는 상호작용 요소/.test(py));
 ok("연습 화면에 요소 배지", /id="prIdcBadge"/.test(html));
 console.log("── TXT·홈 ──");
-ok("지난 대화 TXT 살아 있다", /#histExportBtn:not\(\.hidden\) \{ display: inline-block !important; \}/.test(html));
+/* ★ v143 — CSS 한 줄을 **글자 그대로** 찾고 있었다. 그 줄이 없어지자 빨간불이 떴는데
+   정작 단추는 멀쩡했다. 규칙이 어떻게 생겼느냐가 아니라 **죽었느냐**를 봐야 한다.
+   (예전에는 .export-btn 을 통째로 죽이고 이것만 예외로 뚫었다.
+    이제는 숨길 것을 아이디로 하나하나 적으므로 예외를 뚫을 일이 없다.) */
+ok("지난 대화 TXT 살아 있다",
+   !/#histExportBtn[^{]*\{[^}]*display:\s*none/.test(html)
+   && /id="histExportBtn"/.test(html));
 ok("홈 영상 줌 완화(좌우 안 자름)", /좌우를 자르지 않는다/.test(html) && !/object-position: 50% 18%/.test(html));
 ok("카드·버튼 축소", /width: 46px; height: 46px;/.test(html) && /padding: 10px 18px; gap: 12px;/.test(html));
 console.log(fail? `\n💥 실패 ${fail}건` : "\n🎉 모두 통과");

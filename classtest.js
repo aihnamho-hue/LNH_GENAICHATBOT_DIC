@@ -72,8 +72,13 @@ setTimeout(async () => {
     console.log("\n── ② 학술 용어가 학습자 화면에 안 뜨는가");
     const HARD = ["상호작용", "대화이동 관리", "화제 관리", "차례 관리",
                   "의사소통 단절", "맥락·정체성", "기능 단계", "비언어적 행위"];
-    const I = w.eval("I18N"), D = w.eval("IDC_TXT");
+    /* ★ v144 — HOME_IDC 를 빠뜨려서 홈 카드에 「상호작용」이 그대로 남아 있었다.
+       화면 말이 담긴 표는 세 개다. 셋을 다 훑는다. */
+    const I = w.eval("I18N"), D = w.eval("IDC_TXT"), H = w.eval("HOME_IDC");
     const leak = [];
+    Object.keys(H).forEach((lg) => (H[lg] || []).forEach((v, i) => {
+        if (HARD.some((x) => String(v).indexOf(x) >= 0)) leak.push("HOME." + lg + "[" + i + "] = " + String(v).slice(0, 30));
+    }));
     Object.keys(I).forEach((lg) => Object.keys(I[lg]).forEach((k) => {
         const v = String(I[lg][k] || "");
         if (HARD.some((x) => v.indexOf(x) >= 0)) leak.push(lg + "." + k + " = " + v.slice(0, 30));
@@ -97,6 +102,26 @@ setTimeout(async () => {
        cards[0].querySelector(".idc-c1").textContent);
     ok("홈 카드도 학습자 말", (w.eval('idcT("home")') || "").indexOf("상호작용") < 0,
        w.eval('idcT("home")'));
+
+    console.log("\n── ②-2 온보딩이 두 번까지만 뜨는가");
+    /* 처음 쓸 때는 안내가 있어야 하지만, 세 번째부터는 길을 막는 벽이 된다.
+       기기에 세어 두므로 새로 고쳐도 그대로다. */
+    try { w.localStorage.removeItem("obSeen"); } catch (e) {}
+    w.eval("introShown = false;");
+    ok("아직 안 봤으면 뜬다", w.eval("obSeenCount()") === 0);
+    w.eval("showIntroPopup();");
+    await new Promise((r) => setTimeout(r, 60));
+    ok("첫 번째 — 떴다", !d.getElementById("introOverlay").classList.contains("hidden"));
+    ok("한 번 셌다", w.eval("obSeenCount()") === 1, w.eval("obSeenCount()"));
+    w.eval("closeIntro(); introShown = false; showIntroPopup();");
+    await new Promise((r) => setTimeout(r, 60));
+    ok("두 번째 — 또 뜬다", !d.getElementById("introOverlay").classList.contains("hidden"));
+    ok("두 번 셌다", w.eval("obSeenCount()") === 2, w.eval("obSeenCount()"));
+    w.eval("closeIntro(); introShown = false; showIntroPopup();");
+    await new Promise((r) => setTimeout(r, 60));
+    ok("세 번째 — 안 뜬다", d.getElementById("introOverlay").classList.contains("hidden"));
+    ok("더 안 센다", w.eval("obSeenCount()") === 2, w.eval("obSeenCount()"));
+    ok("여섯 장짜리다", w.eval("OB_ART.length") === 6, w.eval("OB_ART.length"));
 
     // ── ③ 아이디가 겹치지 않는가 ──
     console.log("\n── ③ 아이디가 문서에 하나뿐인가");
@@ -145,6 +170,13 @@ setTimeout(async () => {
         ok("고르면 대화문이 크게 뜬다", msgs.length === 3, msgs.length);
         ok("학습자 줄이 오른쪽에 선다", msgs.length === 3 && msgs[1].className.indexOf("me") >= 0);
         ok("학습자 이름으로 부른다", cd.getElementById("m").textContent.indexOf("바트") >= 0);
+        // v144 — 호아랑은 「호아랑」 석 자가 아니라 **얼굴**로 선다
+        const faces = [...cd.querySelectorAll("#m .face")];
+        ok("호아랑이 얼굴로 나온다", faces.length === 2, faces.length);
+        ok("얼굴 그림이 있는 파일이다", faces.every((f) => /ham_idle\.png/.test(f.getAttribute("src"))),
+           faces.map((f) => f.getAttribute("src")).join(" "));
+        ok("호아랑 글자는 안 붙는다", cd.getElementById("m").textContent.indexOf("호아랑") < 0);
+        ok("머리에 호아랑 아이콘", !!cd.querySelector("header .logo"));
         ok("점수·판정은 안 뜬다", cd.getElementById("m").textContent.indexOf("점") < 0);
         ok("교사 화면에서 터진 곳 없음", cerr.length === 0, cerr.slice(0, 2).join(" / "));
     }

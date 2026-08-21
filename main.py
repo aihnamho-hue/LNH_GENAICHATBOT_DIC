@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v143"
+APP_VERSION = "v144"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -3319,6 +3319,11 @@ async def class_screen():
  header {{ display:flex; align-items:center; gap:14px; padding:12px 20px;
            border-bottom:1px solid var(--sand); flex:none; }}
  h1 {{ font-size:17px; margin:0; font-weight:800; }}
+ .logo {{ width:34px; height:34px; border-radius:10px; object-fit:cover; flex:none; }}
+ .big {{ width:150px; height:150px; border-radius:50%; object-fit:cover; display:block;
+         margin:0 auto 16px; background:#F2EDE4; }}
+ .small-ham {{ width:88px; height:88px; border-radius:50%; object-fit:cover; display:block;
+               margin:24px auto 10px; background:#F2EDE4; opacity:.85; }}
  h1 small {{ font-weight:600; color:var(--muted); font-size:12px; margin-left:8px; }}
  .sp {{ flex:1; }}
  button {{ font-family:inherit; font-size:15px; font-weight:800; padding:9px 15px;
@@ -3338,7 +3343,11 @@ async def class_screen():
                color:var(--muted); margin-top:3px; }}
  .who-btn.on i {{ color:#D8E4DF; }}
  main {{ flex:1; overflow-y:auto; padding:26px 4vw 60px; }}
- .msg {{ display:flex; margin:0 0 18px; }}
+ .msg {{ display:flex; align-items:flex-end; margin:0 0 18px; }}
+ /* ★ v144 — 호아랑을 얼굴로. 「호아랑」 석 자가 줄마다 붙으면 읽을 것이 늘고,
+    누가 말하는지는 그림이 훨씬 빨리 알려 준다(학습 화면과 같은 방식). */
+ .face {{ width:56px; height:56px; border-radius:50%; object-fit:cover; flex:none;
+          background:#F2EDE4; margin:0 12px 6px 0; border:2px solid var(--sand); }}
  .msg.me {{ justify-content:flex-end; }}
  .bub {{ max-width:82%; padding:16px 24px; border-radius:22px; line-height:1.55;
          font-size:var(--fs); font-weight:700; }}
@@ -3351,7 +3360,8 @@ async def class_screen():
  @media print {{ header, aside {{ display:none; }} }}
 </style></head><body>
 <header>
-  <h1>🏫 교실 화면<small>호아랑 {APP_VERSION}</small></h1>
+  <img class="logo" src="/static/hamster.png?v=144" alt="">
+  <h1>교실 화면<small>호아랑 {APP_VERSION}</small></h1>
   <span id="cnt" style="color:var(--muted);font-size:13px;font-weight:700"></span>
   <span class="sp"></span>
   <button id="reload">새로 고침</button>
@@ -3359,7 +3369,10 @@ async def class_screen():
 </header>
 <div class="wrap">
   <aside id="side"></aside>
-  <main id="m"><p class="hint">왼쪽에서 학습자를 골라 주세요.</p></main>
+  <main id="m">
+    <img class="big" src="/static/qz_hello.png?v=144" alt="">
+    <p class="hint" style="margin-top:0">왼쪽에서 학습자를 골라 주세요.</p>
+  </main>
 </div>
 <script>
  var side = document.getElementById("side"), m = document.getElementById("m");
@@ -3373,8 +3386,11 @@ async def class_screen():
      document.getElementById("cnt").textContent = (d.n || 0) + "명분";
      side.innerHTML = "";
      if (!(d.items || []).length) {{
+       var im = document.createElement("img");
+       im.className = "small-ham"; im.src = "/static/ham_shy.png?v=144"; im.alt = "";
+       side.appendChild(im);
        var e = document.createElement("p");
-       e.className = "hint"; e.style.marginTop = "20px"; e.style.fontSize = "14px";
+       e.className = "hint"; e.style.marginTop = "0"; e.style.fontSize = "14px";
        e.textContent = "아직 끝난 대화가 없어요.";
        side.appendChild(e); return;
      }}
@@ -3402,12 +3418,17 @@ async def class_screen():
      (d.turns || []).forEach(function (x) {{
        var row = document.createElement("div");
        row.className = "msg " + (x.r === "me" ? "me" : "ham");
-       var w = document.createElement("span");
-       w.className = "who"; w.textContent = x.r === "me" ? d.name : "호아랑";
        var b = document.createElement("div");
        b.className = "bub"; b.textContent = x.t;
-       if (x.r === "me") {{ row.appendChild(b); row.appendChild(w); }}
-       else {{ row.appendChild(w); row.appendChild(b); }}
+       if (x.r === "me") {{
+         var w = document.createElement("span");
+         w.className = "who"; w.textContent = d.name;
+         row.appendChild(b); row.appendChild(w);
+       }} else {{
+         var f = document.createElement("img");
+         f.className = "face"; f.src = "/static/ham_idle.png?v=144"; f.alt = "호아랑";
+         row.appendChild(f); row.appendChild(b);
+       }}
        m.appendChild(row);
      }});
      loadList();

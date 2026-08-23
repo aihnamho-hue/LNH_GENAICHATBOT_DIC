@@ -31,6 +31,7 @@ const dom = new JSDOM(html, {
         w.scrollTo = () => {};
         w.HTMLElement.prototype.scrollIntoView = () => {};
         w.HTMLMediaElement.prototype.play = () => Promise.resolve();
+        w.HTMLMediaElement.prototype.pause = () => {};
         w.HTMLMediaElement.prototype.load = () => {};
         w.AudioContext = w.webkitAudioContext = function () {
             const g = { gain: { value: 0, cancelScheduledValues() {}, setValueAtTime() {}, linearRampToValueAtTime() {} }, connect: (x) => x, disconnect() {} };

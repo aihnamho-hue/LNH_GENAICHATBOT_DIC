@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v144"
+APP_VERSION = "v145"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -2053,6 +2053,63 @@ _review_dx = {"ok": 0, "fail": 0, "last": "", "chars": 0}
 # 예외를 삼키는 자리가 있으면 반드시 밖에서 보이게 세어 둔다.
 _hint_dx = {"ok": 0, "fail": 0, "empty": 0, "last": ""}
 
+# ── 전사에 섞여 오는 잡음 표식 (v145) ───────────────────────────────────
+# Live API 는 소리를 말로 못 알아들었을 때 `<noise>` 같은 표식을 그대로 내보낸다.
+# 교실 대형 화면에 그게 크게 뜨면 학습자가 자기 실패를 영어 태그로 보게 된다.
+# 「(안 들림)」으로 바꿔 준다.
+#
+# ★ 어려운 점 — 전사는 **조각으로 흘러온다.** `<noise>` 가 `<no` + `ise>` 로
+#   쪼개져 도착하면 조각마다 정규식을 걸어서는 영영 못 잡는다.
+#   그래서 표식이 될 수도 있는 꼬리(`<`, `<no`, `<nois`…)는 **붙들어 두었다가**
+#   다음 조각과 이어 붙여서 다시 본다.
+STT_UNHEARD = "(안 들림)"
+_STT_JUNK = re.compile(
+    r"""[<\[(]\s*
+        (?: noise | inaudible | unintelligible | unclear | unk
+          | silence | no[ _-]?speech | music | laugh\w* | cough\w*
+          | background\w* | sound )
+        \s*[>\])]""",
+    re.IGNORECASE | re.VERBOSE)
+# 표식의 **앞토막**일 수 있는 꼬리. 여는 괄호 뒤에 글자가 20자 안쪽으로만 붙어 있고
+# 아직 닫히지 않았으면 다음 조각을 기다린다.
+_STT_TAIL = re.compile(r"[<\[(][A-Za-z _\-]{0,20}$")
+# 「(안 들림)(안 들림)」처럼 잇달아 붙는 것은 하나로 줄인다
+_STT_DUP = re.compile(r"(?:\(안 들림\)\s*){2,}")
+
+_stt_dx = {"junk": 0, "blank": 0, "last": ""}
+
+
+def _stt_clean(text: str) -> str:
+    """다 모인 글에서 잡음 표식을 「(안 들림)」으로 바꾼다."""
+    if not text:
+        return text
+    out, n = _STT_JUNK.subn(STT_UNHEARD, text)
+    if n:
+        _stt_dx["junk"] += n
+        _stt_dx["last"] = text.strip()[:60]
+    out = _STT_DUP.sub(STT_UNHEARD + " ", out)
+    return out
+
+
+def _stt_feed(hold: str, frag: str):
+    """흘러오는 조각을 받아 (내보낼 글, 붙들어 둘 꼬리) 를 준다.
+
+    hold 는 지난번에 붙들어 둔 토막. 이번 조각과 이어 붙여 판단한다.
+    """
+    buf = (hold or "") + (frag or "")
+    m = _STT_TAIL.search(buf)
+    if m:
+        keep, buf = buf[m.start():], buf[:m.start()]
+    else:
+        keep = ""
+    return _stt_clean(buf), keep
+
+
+def _stt_blank(text: str) -> bool:
+    """이 발화가 「안 들림」과 문장부호뿐인가 — 그렇다면 말한 것이 없다."""
+    t = (text or "").replace(STT_UNHEARD, "")
+    return not re.sub(r"[\s.,!?~…·\-]+", "", t)
+
 # ── 목소리 (Chirp 3 HD 프리빌트 보이스 — Live API·TTS 공용) ──────────────
 # 호아랑은 '갓 쓴 아기 호랑이'라 기본은 밝은 남자아이 목소리(Puck)로 잡는다.
 # 주제 대화에서는 호아랑이 배역을 맡으므로, 그 배역에 맞는 목소리로 자동 전환한다.
@@ -3248,7 +3305,10 @@ async def class_log(request: Request):
     for x in raw[:60]:
         if not isinstance(x, dict):
             continue
-        txt = _clean_str(x.get("t"), 400)
+        # ★ v145 — 교실 대형 화면에 `<noise>` 가 크게 뜨면 학습자가 자기 실패를
+        #   영어 태그로 보게 된다. 웹소켓에서 이미 걸렀지만, 화면이 들고 있던
+        #   지난 판의 글을 뒤늦게 보낼 수도 있으므로 여기서 한 번 더 훑는다.
+        txt = _stt_clean(_clean_str(x.get("t"), 400))
         if txt:
             turns.append({"r": "me" if x.get("r") == "me" else "ham", "t": txt})
     if not turns:
@@ -3875,6 +3935,14 @@ async def version_check():
         # 🪜 도움말이 왜 안 나오는지 — 여기서 본다
         #   ok 가 0인데 fail 이 쌓이면 코드가 잘못된 것이다(v122~v123이 그랬다).
         #   ok 는 도는데 empty 만 늘면 모델이 빈손으로 돌아오는 것이다.
+        # 소리를 말로 못 알아들은 자리 (v145)
+        #   junk  = `<noise>` 따위를 「(안 들림)」으로 바꾼 횟수
+        #   blank = 그 발화가 통째로 「안 들림」뿐이었던 횟수
+        #   이 둘이 계속 오르면 마이크·환경 쪽을 봐야 한다. 조용히 지우지 않는다.
+        "stt": {
+            "junk": _stt_dx["junk"], "blank": _stt_dx["blank"],
+            "last": _stt_dx["last"],
+        },
         # 「상호작용 대화 능력」 학습 화면
         "idc": {
             "ok": _idc_dx["ok"], "fail": _idc_dx["fail"],
@@ -5644,6 +5712,10 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
 
             async def gemini_to_client():
                 turn_num = 0
+                # 잡음 표식이 두 조각으로 쪼개져 올 때 앞토막을 붙들어 두는 자리.
+                # ★ 이 이름이 없으면 NameError 가 나고 try 가 삼킨다 (v124 사고).
+                #   namecheck.py 가 이 자리를 지킨다.
+                stt_hold = ""
                 while True:
                     turn_num += 1
                     async for response in gemini_session.receive():
@@ -5657,11 +5729,16 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                                     # (볼륨은 이제 클라이언트가 재생 직전에 직접 계산)
                                     await websocket.send_bytes(part.inline_data.data)
                         if sc.input_transcription and sc.input_transcription.text:
-                            add_frag("user", sc.input_transcription.text)
-                            await websocket.send_text(json.dumps({
-                                "type": "user_text",
-                                "text": sc.input_transcription.text,
-                            }))
+                            # ★ v145 — 잡음 표식은 한 자리에서 거른다.
+                            #   여기서 걸러 두면 말풍선·전사·교실 화면·총평이
+                            #   저절로 같은 글을 본다. 화면마다 따로 고치면 또 어긋난다.
+                            shown, stt_hold = _stt_feed(
+                                stt_hold, sc.input_transcription.text)
+                            if shown:
+                                add_frag("user", shown)
+                                await websocket.send_text(json.dumps({
+                                    "type": "user_text", "text": shown,
+                                }))
                         if sc.output_transcription and sc.output_transcription.text:
                             add_frag("ai", sc.output_transcription.text)
                             await websocket.send_text(json.dumps({
@@ -5673,6 +5750,21 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
                             await websocket.send_text(json.dumps({"type": "interrupted"}))
                         if sc.turn_complete:
                             print(f"[서버] 턴 {turn_num} 완료")
+                            # 붙들어 둔 꼬리를 흘려보낸다. 표식이 될 뻔했지만
+                            # 끝내 안 닫힌 토막(예: 부등호 하나)은 진짜 글자였다는 뜻.
+                            if stt_hold:
+                                tail = _stt_clean(stt_hold)
+                                stt_hold = ""
+                                if tail:
+                                    add_frag("user", tail)
+                                    await websocket.send_text(json.dumps({
+                                        "type": "user_text", "text": tail,
+                                    }))
+                            # 「안 들림」뿐인 발화는 말한 것이 없다 —
+                            # 분석·점수가 이것을 발화 하나로 세면 진행률이 헛돈다.
+                            if convo and convo[-1]["role"] == "user" \
+                                    and _stt_blank(convo[-1]["text"]):
+                                _stt_dx["blank"] += 1
                             await websocket.send_text(json.dumps({"type": "turn_complete"}))
                             # ★★ 자유 대화에서도 분석을 돌린다 (v105) ★★
                             #   예전에는 `if rp_plan is not None` 으로 막아 두어

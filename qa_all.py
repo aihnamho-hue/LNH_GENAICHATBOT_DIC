@@ -491,8 +491,11 @@ print("\n──── 말풍선이 태그를 뱉지 않는가 (v121) ───�
 #   (다른 곳의 '<span class= 는 innerHTML 로 쓰이므로 정상이다)
 _shown = re.sub(r"/\*[\s\S]*?\*/", "", HT)          # 주석은 화면에 안 나온다
 ok("말풍선", "넛지가 태그를 문자열로 넘기지 않는다", "nz-now" not in _shown)
+# ★ v145 — 예전에는 함수 서명을 글자 그대로 대조했다. 표정 인자를 하나 더 받자
+#   옳은 변경인데도 깨졌다. **네 번째 자리가 cls 인가**라는 성질만 잰다.
 ok("말풍선", "꾸밈은 네 번째 인자로 준다",
-   'hamPeekHtml(title, items, ms, cls)' in HT and 'hamPeekHtml(NZ_NOW[uiLang] || NZ_NOW.en, label, 5600, "nz")' in HT)
+   re.search(r"function hamPeekHtml\(title,\s*items,\s*ms,\s*cls\b", HT) is not None
+   and re.search(r"hamPeekHtml\(NZ_NOW\[uiLang\] \|\| NZ_NOW\.en,\s*label,\s*5600,\s*\"nz\"", HT) is not None)
 ok("말풍선", "두 줄 모양이 CSS 에 있다", ".ham-peek.nz .hp-bubble .qz-items" in HT)
 
 print("\n════════ ⑳ 넛지와 도움말이 한 순간에 (v122) ════════")

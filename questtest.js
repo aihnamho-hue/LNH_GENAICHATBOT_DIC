@@ -54,7 +54,28 @@ setTimeout(()=>{
   ok("여덟 요소를 모두 덮는다(기능단계·맥락은 로그 판정)",
      new Set(srvIds.map(id=>(py.match(new RegExp('"'+id+'",\\s*"el":\\s*"(\\w+)"'))||[])[1])).size>=6);
   ok("서버가 보낸 quests 를 흡수한다", /\(msg\.quests \|\| \[\]\)\.forEach/.test(html));
-  ok("문구가 지원 언어 전부에 있다", (html.match(/qRefuse:"/g)||[]).length===LANGS);
+  /* ★ v145 — 예전에는 파일 전체에서 `qRefuse:"` 를 세었다. 그런데 넛지 표정 표
+     (NZ_FACE)가 같은 열쇠를 쓰자 19가 되어, 옳은 변경인데도 검사가 깨졌다.
+     **문구 표 안에서만** 센다. 어디서 세는지가 무엇을 세는지만큼 중요하다. */
+  const nzTbl = ((html.match(/const I18N_QZ2 = \{[\s\S]*?\n    \};/)||[""])[0]
+               + (html.match(/const I18N_X6 = \{[\s\S]*?\n    \};/)||[""])[0]);
+  ok("문구가 지원 언어 전부에 있다", (nzTbl.match(/qRefuse:"/g)||[]).length===LANGS);
+
+  /* ── 넛지마다 부르는 표정 (v145) ── */
+  console.log("\n── 넛지 표정 ──");
+  const faceTbl = (html.match(/const NZ_FACE = \{[\s\S]*?\n    \};/)||[""])[0];
+  const faceSrc = (html.match(/const NZ_FACE_SRC = \{[\s\S]*?\n    \};/)||[""])[0];
+  const usedFaces = [...new Set([...faceTbl.matchAll(/:\s*"(\w+)"/g)].map(m=>m[1]))];
+  ok("표정 표가 있다", usedFaces.length > 0);
+  ok("쓰는 표정마다 그림 자리가 있다",
+     usedFaces.every(f => new RegExp("\\b"+f+":").test(faceSrc)));
+  // 없는 퀘스트에 표정을 달아 두면 영영 안 뜬다 — 서버 목록과 대조한다
+  const faceIds = [...faceTbl.matchAll(/(q\w+):/g)].map(m=>m[1]);
+  ok("표정을 단 넛지가 모두 서버에 있다", faceIds.every(id => srvIds.includes(id)));
+  // 그림 파일이 실제로 있는가 (없으면 깨진 그림이 뜬다)
+  const need = [...faceSrc.matchAll(/"\/static\/(ham_\w+\.png)/g)].map(m=>m[1]);
+  ok("표정 그림 파일이 다 있다 (" + need.length + "장)",
+     need.every(f => fs.existsSync("static/" + f)));
 
   console.log("\n── 결과를 자료로 남긴다 ──");
   // v142 — 대목을 잘라 낼 수 있게 turns 가 함께 들어갔다

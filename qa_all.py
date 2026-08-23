@@ -609,9 +609,16 @@ ok("학습", "발화 연습과 같은 길(/stt)·같은 잣대(simScore)",
    'fd.append("hint", dr.text)' in HT and "simScore(said, dr.text)" in HT)
 # ★ v130 — 대화문 재생을 주제 대화 「들어보기」와 같은 방식으로 바꿨다.
 #   한 목소리로 이어 붙이고 간격을 220ms 로 고정했더니 누가 말하는지도 모르고 겹쳤다.
-ok("학습", "대화문 재생이 들어보기와 같다 (역할 목소리·글자 수 기다림·미리 받기)",
+# ★ v146 — 기다리는 값을 글자 그대로 대조하고 있었다. 틈을 SC_GAP 으로 모으자
+#   옳은 변경인데도 깨졌다. **두 화면이 같은 값을 쓰는가**라는 성질만 잰다.
+#   (재생을 기다린 뒤 글자 수로 또 기다리면 두 번 쉬는 셈이다 — v146 참고)
+ok("학습", "대화문 재생이 들어보기와 같다 (역할 목소리·같은 틈·미리 받기)",
    'lines[i].speaker === "user" ? scMyVoice()' in HT
-   and "900 + lines[i].text.length * 165" in HT and "ttsPrefetch" in HT)
+   and re.search(r"const SC_GAP\s*=\s*\d+", HT) is not None
+   and "wait = SC_GAP;" in HT and "return SC_GAP;" in HT
+   and "ttsPrefetch" in HT)
+ok("학습", "재생을 기다린 뒤 또 기다리지 않는다",
+   re.search(r"900 \+ (?:line|lines\[i\])\.text\.length \* 165", HT) is None)
 ok("학습", "이전 단추를 감추지 않는다", "prev.style.visibility" not in HT
    and "prev.disabled = (idl.step === 0)" in HT)
 ok("학습", "★ 대화문을 학습자의 지난 대화에서 끌어온다",

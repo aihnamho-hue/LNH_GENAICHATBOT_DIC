@@ -728,7 +728,11 @@
         .idc-ct { flex: 1; min-width: 0; }
         /* 쉬운 이름은 크게, 학술어는 아주 작게 — 학습자와 연구자가 같은 카드를 본다 */
         .idc-c1 { display: block; font-size: 15.5px; font-weight: 800; color: var(--ink); }
-        .idc-c2 { display: block; font-size: 9.5px; font-weight: 600; color: #A69C8C; margin-top: 2px; }
+        /* ★ v146 — 이 자리는 이제 **학습자 모국어 병기**다(논문 용어가 아니다).
+           읽으라고 두는 것이지 훑으라고 두는 것이 아니므로, 얇게 하되 너무 작지 않게. */
+        .idc-c2 { display: block; font-size: 11.5px; font-weight: 400; color: #8C8375;
+            margin-top: 3px; line-height: 1.3; }
+        .idc-c2:empty { display: none; }
         .idc-stamp { flex: none; font-size: 11px; font-weight: 800; color: var(--muted); letter-spacing: 1px; }
         .idc-card.done .idc-stamp { color: var(--gold, #C9A227); }
 
@@ -766,16 +770,18 @@
         .idl-from { text-align: center; font-size: 11.5px; font-weight: 700; color: var(--gold, #C9A227);
                     background: #FFF6DE; border-radius: 99px; padding: 5px 10px; margin: 0 auto;
                     width: fit-content; }
-        .idl-line { display: flex; gap: 7px; padding: 7px 9px; border-radius: 11px; margin-bottom: 5px;
+        /* ★ v146 — 대화문 줄은 이제 .sc-line 꼴을 쓴다(주제 대화와 같은 물건).
+           아래 옛 규칙은 .sc-line 이 없는 줄에만 걸리게 좁힌다 — 안 그러면 두 판짜기가 싸운다. */
+        .idl-line:not(.sc-line) { display: flex; gap: 7px; padding: 7px 9px; border-radius: 11px; margin-bottom: 5px;
                     background: #F7F4EC; font-size: 13.5px; line-height: 1.5; }
-        .idl-line.me { background: #EAF3EA; flex-direction: row-reverse; text-align: right; }
-        .idl-line .who { flex: none; font-size: 10.5px; font-weight: 800; color: var(--muted); padding-top: 3px; }
+        .idl-line:not(.sc-line).me { background: #EAF3EA; flex-direction: row-reverse; text-align: right; }
+        .idl-line:not(.sc-line) .who { flex: none; font-size: 10.5px; font-weight: 800; color: var(--muted); padding-top: 3px; }
         /* 호아랑은 얼굴로 (v138) — 줄마다 붙는 글자를 그림 하나로 바꾼다 */
-        .idl-line .who.ham { padding-top: 0; display: flex; align-items: flex-start; }
-        .idl-line .who.ham img { width: 26px; height: 26px; border-radius: 50%;
+        .idl-line:not(.sc-line) .who.ham { padding-top: 0; display: flex; align-items: flex-start; }
+        .idl-line:not(.sc-line) .who.ham img { width: 26px; height: 26px; border-radius: 50%;
             object-fit: cover; background: #F2EDE4; display: block; }
         /* ★ 불은 추측이 끝난 뒤에만 켠다 — 먼저 켜면 답을 주는 것이다 */
-        .idl-line.lit { background: #FFF6DE; border: 1.5px solid var(--gold, #C9A227); font-weight: 700; }
+        .idl-line:not(.sc-line).lit { background: #FFF6DE; border: 1.5px solid var(--gold, #C9A227); font-weight: 700; }
         .idl-line.on { outline: 2px solid var(--accent-ink); outline-offset: 1px; }
         .idl-q { font-size: 15px; font-weight: 800; color: var(--ink); text-align: center; margin: 4px 0 12px; }
         /* ★ 호아랑이 묻는다 (v138) — 그림 + 얇은 글씨. 굵게 하지 않는다. */
@@ -929,6 +935,9 @@
         /* 기능 단계 구분선 — 어디서 단계가 바뀌는지 보인다 */
         .sc-stage { display: flex; align-items: center; gap: 7px; margin: 6px 0 2px; }
         .sc-stage:first-child { margin-top: 0; }
+        /* ★ v146 — 단계 이름 옆에 모국어를 얇게 (한국어로 보면 안 나온다) */
+        .sc-st-native { font-weight: 400; color: var(--muted); margin-left: 5px; }
+        .sc-st-native::before { content: "· "; }
         .sc-stage .sc-st-name { font-size: 10.5px; font-weight: 900; color: var(--accent-ink);
             background: var(--accent-soft); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
         .sc-stage .sc-st-line { flex: 1; height: 1px; background: #E0D9C8; }
@@ -944,6 +953,12 @@
         .sc-native { font-size: 11.5px; font-weight: 600; color: var(--muted); line-height: 1.4;
             margin-top: 4px; display: none; }
         .sc-line.open .sc-native { display: block; }
+        /* ★ v146 — 학습 화면 대화문도 이 꼴을 쓴다. 같은 물건이 화면마다 다르게 생기면
+           학습자는 다른 물건으로 배운다. 학습 화면에만 필요한 두 가지만 덧댄다. */
+        .sc-line.lit { border-color: var(--gold, #C9A227); background: #FFF6DE; }
+        .sc-who .sc-face { width: 22px; height: 22px; border-radius: 50%; vertical-align: -6px;
+            margin-right: 4px; background: #F0EADF; }
+        .sc-native:empty { display: none; }
         .sc-tap { font-size: 10px; font-weight: 700; color: var(--muted); text-align: center; margin: 0 0 8px; }
 
         /* ── 상호작용 대화 능력(IDC) 점검 — 결과 화면의 요소별 프로파일 ── */
@@ -2492,7 +2507,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v145 (2026-08-23)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v146 (2026-08-23)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -5748,11 +5763,20 @@
         scSetPlaying(false);
         scLineEls().forEach(el => el.classList.remove("on"));
     }
-    // 한 줄 재생 — 역할에 맞는 목소리로. 재생 길이를 알 수 없으므로 글자 수로 어림잡아 기다린다.
+    /* ★★ v146 — 줄 사이가 4초씩 벌어지던 까닭: **두 번 기다리고 있었다.**
+       `ttsPlay` 는 소리가 **다 끝날 때까지** 기다린다(playPcm24 가 onended 로 알려 준다).
+       그런데 그 뒤에 다시 `900 + 글자수 × 165`(= 대략 그 소리의 길이만큼)를 또 기다렸다.
+       한 줄을 두 번 재생할 만큼 쉰 셈이다. 선생님들이 「너무 느리다」고 한 것이 이것이다.
+
+       사람의 말차례 사이 틈은 보통 0.2~0.5초다. 배우는 자리라 조금 여유를 두어
+       0.65초로 잡는다. (「절반으로」보다 더 줄었지만, 절반도 여전히 두 번 기다리는 값이다) */
+    const SC_GAP = 650;            // 줄과 줄 사이 (ms)
+    const SC_GAP_NOSOUND = 1600;   // 소리가 실패해 재생 자체가 없었을 때만
+    // 한 줄 재생 — 역할에 맞는 목소리로. 소리가 다 끝나면 곧바로 돌아온다.
     async function scSpeak(line) {
         const voice = line.speaker === "user" ? scMyVoice() : "";
         await ttsPlay(line.text, voice);
-        return Math.min(7000, 900 + line.text.length * 165);
+        return SC_GAP;
     }
     async function scPlayAll() {
         const lines = (rpPlan && rpPlan.script) || [];
@@ -5762,7 +5786,7 @@
         for (let i = 0; i < lines.length; i++) {
             if (scStop) break;
             scHighlight(i);
-            let wait = 2200;
+            let wait = SC_GAP_NOSOUND;   // 소리가 아예 안 났을 때만 쓰는 값
             try { wait = await scSpeak(lines[i]); } catch (e) { console.warn("대화문 재생 실패:", e); }
             if (scStop) break;
             // 다음 줄 음성을 미리 받아 둔다 — 줄 사이가 끊기지 않게
@@ -5792,6 +5816,15 @@
                     const nm = document.createElement("span");
                     nm.className = "sc-st-name";
                     nm.textContent = (ln.stage + 1) + ". " + st.name;
+                    /* ★ v146 — 단계 이름을 모국어로도 병기한다.
+                       서버는 stages[].native 를 이미 만들어 보내고 있었는데
+                       화면이 안 쓰고 있었다. 언어를 바꿔도 여기만 한국어로 남던 까닭이다. */
+                    if (st.native && uiLang && uiLang !== "ko") {
+                        const nv = document.createElement("span");
+                        nv.className = "sc-st-native";
+                        nv.textContent = st.native;
+                        nm.appendChild(nv);
+                    }
                     const bar = document.createElement("span");
                     bar.className = "sc-st-line";
                     head.appendChild(nm); head.appendChild(bar);
@@ -8085,8 +8118,15 @@
             /* ★ v143 — 논문 용어(「대화이동 관리」…)를 카드에서 뺐다.
                카드마다 작게 붙여 두었는데, 작아도 **읽힌다.** 읽히면 물어보게 되고,
                물어보면 그때부터 그 말을 설명해야 한다 — 학습자가 배울 것이 하나 늘어난다.
-               연구자·교사가 대응을 봐야 할 자리는 교사 화면과 전사 파일이지 여기가 아니다. */
-            b.querySelector(".idc-c2").textContent = "";
+               연구자·교사가 대응을 봐야 할 자리는 교사 화면과 전사 파일이지 여기가 아니다.
+
+               ★★ v146 — 그 빈 자리에 **학습자 모국어**를 병기한다.
+               언어를 바꿔도 요소 이름이 한국어로만 남아 있어서, 무엇을 배우는 자리인지
+               고르기 전에는 알 수 없었다. 한국어 이름은 그대로 두고(그것도 배울 말이다)
+               아래에 얇은 글씨로 모국어를 붙인다.
+               ※ 한국어로 보는 학습자에게는 안 붙인다 — 같은 말이 두 줄이 된다. */
+            b.querySelector(".idc-c2").textContent =
+                (uiLang && uiLang !== "ko") ? (t("idc_" + e.key) || "") : "";
             b.querySelector(".idc-stamp").textContent = here
                 ? (n > 0 ? ("●".repeat(Math.min(n, 5)) + "○".repeat(Math.max(0, 5 - n))) : idcT("none"))
                 : idcT("inClass");
@@ -8216,29 +8256,52 @@
         });
         return w;
     }
+    /* ★★ v146 — 주제 대화의 「들어보기」와 **같은 꼴**로 바꿨다.
+       같은 물건(대화문)이 화면마다 다르게 생기면 학습자는 다른 물건으로 배운다.
+       무엇보다 여기에는 **모국어 번역이 없었다** — 주제 대화에서는 줄을 누르면
+       번역이 펼쳐지는데, 학습 화면에서는 소리만 다시 났다.
+       언어를 바꿔도 대화문이 한국어로만 남던 것이 이 때문이다.
+
+       가져오는 것   .sc-line / .sc-who / .sc-text / .sc-native · 눌러서 번역 펼치기
+       안 가져오는 것 기능단계 구분선 · 장소·목적 머리줄 — 학습 화면에는 과업이 없다
+       그대로 두는 것 호아랑 얼굴(v138) · 정답 줄 강조(lit) */
     function idlScript(lit) {
         const d = idl.data, wrap = document.createElement("div");
         d.script.forEach((l, i) => {
             const row = document.createElement("div");
-            row.className = "idl-line" + (l.speaker === "user" ? " me" : "")
+            row.className = "sc-line idl-line" + (l.speaker === "user" ? " mine" : "")
                           + (lit && i === d.mark ? " lit" : "");
-            /* ★ v138 — 호아랑은 **얼굴**로 보인다. 글자 「호아랑」이 줄마다 붙으면
-               읽을 것이 늘고, 누가 말하는지는 그림이 훨씬 빨리 알려 준다. */
-            const who = document.createElement("span");
-            who.className = "who";
+            const who = document.createElement("div");
+            who.className = "sc-who";
             if (l.speaker === "user") {
-                who.textContent = "나";
+                who.textContent = userName || "나";
             } else {
-                who.classList.add("ham");
+                /* ★ v138 — 호아랑은 **얼굴**로 보인다. 글자가 줄마다 붙으면 읽을 것이 늘고,
+                   누가 말하는지는 그림이 훨씬 빨리 알려 준다. */
                 const im = document.createElement("img");
-                im.src = "/static/ham_idle.png?v=144"; im.alt = "";
+                im.className = "sc-face";
+                im.src = "/static/ham_idle.png?v=146"; im.alt = "";
                 who.appendChild(im);
+                who.appendChild(document.createTextNode("호아랑"));
             }
-            const tx = document.createElement("span");
+            const tx = document.createElement("div");
+            tx.className = "sc-text";
             tx.textContent = l.text;
             row.appendChild(who); row.appendChild(tx);
-            row.addEventListener("click", () =>
-                ttsPlay(l.text, l.speaker === "user" ? scMyVoice() : ""));   // 줄을 누르면 그 줄만
+            if (l.native) {
+                const nv = document.createElement("div");
+                nv.className = "sc-native";
+                nv.textContent = l.native;
+                row.appendChild(nv);
+            }
+            // 줄을 누르면 ① 전체 재생을 멈추고 ② 그 줄만 다시 들려주고 ③ 모국어를 펼친다
+            row.addEventListener("click", () => {
+                if (idlPlaying) idlHalt();
+                row.classList.toggle("open");
+                idlHi(i);
+                ttsPlay(l.text, l.speaker === "user" ? scMyVoice() : "")
+                    .catch((e) => console.warn("줄 재생 실패:", e));
+            });
             wrap.appendChild(row);
         });
         return wrap;
@@ -8272,11 +8335,13 @@
         for (let i = 0; i < lines.length; i++) {
             if (idlStopFlag || !idl || idl.step !== atStep) break;   // 걸음이 바뀌면 멈춘다
             idlHi(i);
-            let wait = 2200;
+            // ★ v146 — 들어보기와 **같은 값**을 쓴다. 두 화면이 따로 놀면
+            //   같은 대화문인데 한쪽만 느리다.
+            let wait = SC_GAP_NOSOUND;
             try {
                 // 학습자 자리는 다른 목소리로 — 들어보기와 같은 규칙
                 await ttsPlay(lines[i].text, lines[i].speaker === "user" ? scMyVoice() : "");
-                wait = Math.min(7000, 900 + lines[i].text.length * 165);
+                wait = SC_GAP;
             } catch (e) { console.warn("학습 대화문 재생 실패:", e); }
             if (idlStopFlag || !idl || idl.step !== atStep) break;
             if (lines[i + 1] && lines[i + 1].speaker !== "user") ttsPrefetch(lines[i + 1].text);
@@ -8432,10 +8497,23 @@
         if (idl.step === 2) {                          // ② 추측
             const q = d.quiz;
             const one = document.createElement("div");
-            one.className = "idl-line me lit";
-            one.innerHTML = '<span class="who">나</span><span></span>';
-            one.lastChild.textContent = d.script[d.mark].text;
-            one.addEventListener("click", () => ttsPlay(d.script[d.mark].text));
+            // ★ v146 — 대화문과 같은 꼴로. 여기만 다르면 「방금 그 줄」로 안 읽힌다.
+            one.className = "sc-line idl-line mine lit";
+            const oW = document.createElement("div");
+            oW.className = "sc-who"; oW.textContent = userName || "나";
+            const oT = document.createElement("div");
+            oT.className = "sc-text"; oT.textContent = d.script[d.mark].text;
+            one.appendChild(oW); one.appendChild(oT);
+            const oN = (d.script[d.mark] || {}).native || "";
+            if (oN) {
+                const oNv = document.createElement("div");
+                oNv.className = "sc-native"; oNv.textContent = oN;
+                one.appendChild(oNv);
+            }
+            one.addEventListener("click", () => {
+                one.classList.toggle("open");
+                ttsPlay(d.script[d.mark].text, scMyVoice()).catch(() => {});
+            });
             body.appendChild(one);
             /* ★ v138 — 물음을 **호아랑이 묻는 것**으로 바꾼다.
                글자만 덩그러니 있으면 화면이 빽빽하고 누가 묻는지도 없다.

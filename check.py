@@ -245,5 +245,40 @@ for it in d["items"]:
            not any(("\u1100" <= t[0] <= "\u11FF" or "\u3131" <= t[0] <= "\u318E")
                    for t, _ in parts if t), joined)
 
+# ⑮ 설명 글(meaning)이 한 항목 안에서 화계를 안 섞는가 (v147)
+#   ★ 마흔 편 중 **열다섯 편**이 「~해요」로 시작해 「~합니다」로 끝나고 있었다.
+#     화계를 가르치는 화면이 정작 자기 화계를 안 지킨 것이다.
+#   설명 글의 화계는 그 편의 tier 를 따른다 — 학습자가 곧 쓸 말투로 듣게 하려고.
+#   그러니 한 항목 안에서는 끝까지 한 화계여야 한다.
+_TIER_NAME = {"formal": "합쇼", "polite": "해요", "banmal": "해체"}
+
+
+def _tier_of(sent):
+    s = sent.strip().rstrip(".?!… 」』\"')")
+    if not s:
+        return None
+    if re.search(r"(습니다|습니까|십시오|십니까|ㅂ시다)$", s) or s.endswith(("니다", "니까")):
+        return "합쇼"
+    if re.search(r"(어요|아요|에요|예요|해요|세요|져요|죠|요)$", s):
+        return "해요"
+    if re.search(r"(있지|있어|없어|돼|봐|해|야|자|거야|거든|는데|을까|ㄹ까|어|아)$", s):
+        return "해체"
+    return None
+
+
+for it in d["items"]:
+    seen = set()
+    for line in (it.get("meaning") or []):
+        for sent in re.split(r"(?<=[.?!])\s+", line):
+            t = _tier_of(sent)
+            if t:
+                seen.add(t)
+    ok(f"{it['id']} 설명 글의 화계가 하나다", len(seen) <= 1,
+       f"섞임 {sorted(seen)} — tier={it.get('tier')}")
+    want = _TIER_NAME.get(it.get("tier"))
+    if want and seen:
+        ok(f"{it['id']} 설명 글이 그 편의 화계({want})를 따른다", seen == {want},
+           f"쓴 것 {sorted(seen)}")
+
 print("\n" + (f"💥 {len(bad)}건" if bad else "🎉 이상 없음"))
 sys.exit(1 if bad else 0)

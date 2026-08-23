@@ -80,6 +80,47 @@ ok("글자수로 또 기다리지 않는다",
    !/900 \+ (?:line|lines\[i\])\.text\.length \* 165/.test(html),
    "재생을 기다린 뒤 글자수만큼 또 기다리는 자리가 남았습니다");
 
+console.log("\n── ⑥ 학습 화면 문구가 지원 언어 전부에 (v147) ──");
+
+// ★ IDC_TXT 에 ko·en 둘뿐이어서 스페인어로 봐도 「Hold to talk」가 영어로 뜬다.
+//   표 하나만 빠져도 화면 전체가 영어가 된다 — 개수가 아니라 **빠진 언어가 있는가**를 잰다.
+const codes = [...new Set([...html.matchAll(/data-lang="([a-z]{2})"/g)].map(m => m[1]))];
+function tableLangs(name) {
+  const m = html.match(new RegExp("const " + name + "\\s*=\\s*\\{"));
+  if (!m) return null;
+  const start = m.index + m[0].length;
+  const end = html.indexOf("\n    };", start);
+  const seg = html.slice(start, end);
+  return new Set([...seg.matchAll(/[\{\s,]([a-z]{2}):\s*[\"\{\[]/g)].map(x => x[1]));
+}
+["IDC_TXT", "VP_TXT", "STT_MSG", "NZ_NOW", "HOME_IDC", "MK_MSG"].forEach(name => {
+  const got = tableLangs(name);
+  if (!got) { ok(name + " 표가 있다", false); return; }
+  const miss = codes.filter(c => !got.has(c));
+  ok(`${name} (${got.size}/${codes.length})`, miss.length === 0, "빠진 언어: " + JSON.stringify(miss));
+});
+// t() 가 없는 열쇠를 영어로 떨어뜨리므로, 열쇠 수도 한국어와 같아야 한다
+const idcSeg = (() => {
+  const m = html.match(/const IDC_TXT\s*=\s*\{/);
+  return html.slice(m.index, html.indexOf("\n    };", m.index));
+})();
+const perLang = [...idcSeg.matchAll(/\n\s{8}([a-z]{2}):\s*\{/g)];
+const counts = perLang.map((m, i) => {
+  const seg = idcSeg.slice(m.index, i + 1 < perLang.length ? perLang[i + 1].index : undefined);
+  return [m[1], new Set([...seg.matchAll(/(\w+):\s*[\"\[]/g)].map(x => x[1])).size];
+});
+const koN = (counts.find(c => c[0] === "ko") || [])[1];
+const short = counts.filter(c => c[1] < koN);
+ok(`IDC_TXT 열쇠 수가 한국어(${koN})와 같다`, short.length === 0,
+   "모자란 언어: " + JSON.stringify(short));
+
+console.log("\n── ⑦ 대화문 줄이 좌우로 나뉩니다 ──────────────");
+
+ok("호아랑은 왼쪽", /\.sc-line\s*\{[^}]*margin-right:\s*auto/.test(html));
+ok("학습자는 오른쪽", /\.sc-line\.mine\s*\{[^}]*margin-left:\s*auto/.test(html)
+   && /\.sc-line\.mine\s*\{[^}]*text-align:\s*right/.test(html));
+ok("한쪽이 비어 보인다 (너비 100% 아님)", /\.sc-line\s*\{[^}]*width:\s*8\d%/.test(html));
+
 console.log();
 if (fail) { console.log(`💥 실패 ${fail}건`); process.exit(1); }
 console.log("🎉 모국어가 끝까지 따라갑니다");

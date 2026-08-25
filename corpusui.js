@@ -82,6 +82,56 @@ setTimeout(async () => {
     });
     ok("물음이 보인다", t().indexOf(q.q.slice(0, 12)) >= 0, q.q.slice(0, 24));
 
+    /* ★ v149 — 물음에도 모국어가 붙는가.
+       선택지 셋에는 붙는데 **정작 물음에만 안 붙어 있었다.**
+       무엇을 묻는지 모르면 선택지를 아무리 읽어도 고를 수가 없다.
+       한국어로 보면 q_n 이 비어 있으므로, 검사에서 채워 넣고 다시 그린다. */
+    const QN = "この短い言葉はなぜ必要でしょうか?";
+    try { await w.eval(`idl.data.quiz.q_n = ${JSON.stringify(QN)}; idlPaint();`); }
+    catch (e) { errs.push("q_n: " + e.message); }
+    await new Promise((r) => setTimeout(r, 200));
+    body = d.querySelector(".idl-body, #idlBody");
+    const askEl = d.querySelector("#idlBody .idl-ask p");
+    ok("물음에 모국어가 붙는다", !!(askEl && askEl.textContent.indexOf(QN) >= 0),
+       askEl ? askEl.textContent.replace(/\s+/g, " ").slice(0, 70) : "(.idl-ask 없음)");
+    ok("모국어가 딴 줄로 붙는다 (.an)",
+       !!(askEl && askEl.querySelector(".an")
+          && askEl.querySelector(".an").textContent === QN));
+    // 비어 있으면 빈 줄이 생기면 안 된다
+    try { await w.eval('idl.data.quiz.q_n = ""; idlPaint();'); } catch (e) {}
+    await new Promise((r) => setTimeout(r, 200));
+    ok("모국어가 없으면 안 붙는다",
+       !d.querySelector("#idlBody .idl-ask p .an"));
+
+    console.log("\n── ★ 퀴즈로 넘어갈 때 호아랑이 알리는가 (v149)");
+    /* 듣기에서 맞히기로 **성격이 바뀌는 자리**인데 화면이 조용히 넘어가면
+       학습자는 아직 듣는 중인 줄 안다. */
+    try { await w.eval("idl.step = 1; idlPaint();"); } catch (e) {}
+    await new Promise((r) => setTimeout(r, 150));
+    const peek = d.getElementById("hamPeek");
+    if (peek) peek.classList.remove("show");
+    try { d.getElementById("idlNext").click(); } catch (e) { errs.push("next: " + e.message); }
+    await new Promise((r) => setTimeout(r, 250));
+    ok("빼꼼이 떴다", !!(peek && peek.classList.contains("show")));
+    const peekTx = d.getElementById("hamPeekText");
+    ok("「QUIZ!」라고 알린다",
+       !!(peekTx && peekTx.textContent.indexOf("QUIZ") >= 0),
+       peekTx ? peekTx.textContent.replace(/\s+/g, " ").slice(0, 40) : "(없음)");
+    ok("넛지와 같은 자리에 뜬다 (nz)", !!(peek && peek.classList.contains("nz")));
+    const peekImg = d.getElementById("hamPeekImg");
+    ok("얼굴이 갈려 있다",
+       !!(peekImg && /ham_\w+\.png/.test(peekImg.getAttribute("src") || "")),
+       peekImg ? peekImg.getAttribute("src") : "(없음)");
+    ok("퀴즈 걸음으로 넘어갔다", (() => { try { return w.eval("idl.step") === 2; } catch (e) { return false; } })());
+    // 듣기(①)로 갈 때는 안 떠야 한다 — 아무 데서나 뜨면 알림이 아니라 소음이다
+    if (peek) peek.classList.remove("show");
+    try { await w.eval("idl.step = 0; idlPaint();"); d.getElementById("idlNext").click(); } catch (e) {}
+    await new Promise((r) => setTimeout(r, 250));
+    ok("듣기로 넘어갈 때는 안 뜬다", !!(peek && !peek.classList.contains("show")));
+    try { await w.eval("idl.step = 2; idlPaint();"); } catch (e) {}
+    await new Promise((r) => setTimeout(r, 200));
+    body = d.querySelector(".idl-body, #idlBody");
+
     console.log("\n── ③ 뜻풀이·문형이 검수본 것인가");
     await step(3);
     ok("③ 뜻풀이가 보인다", t().indexOf(LESSON.meaning[0].ko.slice(0, 12)) >= 0);

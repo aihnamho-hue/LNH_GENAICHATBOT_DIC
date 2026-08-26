@@ -1263,6 +1263,14 @@
         }
         @media (prefers-reduced-motion: reduce) { .progress-bar.over { animation: none; } }
         .rp-input:focus, .name-input:focus { outline: none; border-color: var(--accent-ink); box-shadow: 0 0 0 3px rgba(96,181,194,0.22); background: #fff; }
+        /* v149 — 이름을 안 쓰면 못 넘어간다 (학습자를 가려내야 한다).
+           글자로 나무라지 않는다 — 18개 언어를 다 번역해야 하기 때문이다.
+           대신 단추를 흐리게 두고, 빈 채로 누르면 칸이 흔들린다. */
+        .name-input.needs { border-color: #C86A5E; animation: nameShake 0.36s ease-in-out; }
+        @keyframes nameShake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); }
+                               50% { transform: translateX(6px); } 80% { transform: translateX(-3px); } }
+        #nameOkBtn:disabled { opacity: 0.38; cursor: default; }
+        @media (prefers-reduced-motion: reduce) { .name-input.needs { animation: none; } }
         .rp-field label { font-size: 12px; }
         .rp-input { padding: 10px 11px; font-size: 13px; }
         .dice-btn { font-size: 18px; width: 46px; }
@@ -4468,17 +4476,49 @@
         earphoneShown = true;
         earphoneOverlay.classList.remove("hidden");
     }
+    /* ── 이름은 반드시 받는다 (v149) ──────────────────────────────
+       예전에는 빈 칸으로 확인을 누르거나 ✕로 닫아도 홈으로 갔다.
+       그러면 대화 기록·교실 화면·전사 파일이 죄다 「(이름 없음)」이 되어
+       누가 누구인지 가려낼 수가 없다.
+
+       ㄱ) 이름이 비면 확인 단추를 못 누르게 한다
+       ㄴ) 아직 한 번도 이름을 안 정했으면 ✕ 를 아예 안 보인다
+       ㄷ) 이미 이름이 있으면 ✕ 로 닫을 수 있다 (바꾸러 들어온 경우다)
+       ★ 글자로 나무라지 않는다 — 그러려면 18개 언어를 다 번역해야 한다. */
+    const nameOkBtn = document.getElementById("nameOkBtn");
+    const nameXBtn  = document.getElementById("nameX");
+    function nameOk() { return nameInput.value.trim().length > 0; }
+    function syncNameBtn() {
+        nameOkBtn.disabled = !nameOk();
+        if (nameOk()) nameInput.classList.remove("needs");
+    }
+    nameInput.addEventListener("input", syncNameBtn);
+    nameInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && nameOk()) nameOkBtn.click();
+    });
+
     function showNamePopup() {
         if (nameShown) return;
         nameShown = true;
         nameInput.value = userName; // 지난번 이름 미리 채움 (수정 가능)
+        nameInput.classList.remove("needs");
+        nameXBtn.hidden = !userName;   // 처음 오는 사람에게는 빠져나갈 길이 없다
+        syncNameBtn();
         nameOverlay.classList.remove("hidden");
+        setTimeout(() => { try { nameInput.focus(); } catch (e) {} }, 120);
     }
     document.getElementById("earOkBtn").addEventListener("click", () => {
         earphoneOverlay.classList.add("hidden");
         showNamePopup();
     });
-    document.getElementById("nameOkBtn").addEventListener("click", () => {
+    nameOkBtn.addEventListener("click", () => {
+        if (!nameOk()) {                    // 단추가 꺼져 있어도 혹시 모르니 한 번 더
+            nameInput.classList.remove("needs");
+            void nameInput.offsetWidth;     // 애니메이션을 다시 태우려면 한 번 끊어야 한다
+            nameInput.classList.add("needs");
+            try { nameInput.focus(); } catch (e) {}
+            return;
+        }
         userName = nameInput.value.trim().slice(0, 20);
         localStorage.setItem("userName", userName);
         nameOverlay.classList.add("hidden");
@@ -4488,7 +4528,14 @@
 
     /* ── 팝업 닫기(✕) — 진입 안내·동의 팝업도 X로 끌 수 있게 ── */
     document.getElementById("earX").addEventListener("click", () => { earphoneOverlay.classList.add("hidden"); showNamePopup(); });
-    document.getElementById("nameX").addEventListener("click", () => { nameOverlay.classList.add("hidden"); markEntryDone(); goHome(); });
+    /* ✕ 는 **이미 이름이 있을 때만** 듣는다. 처음 오는 사람에게는 hidden 이라 눌리지도 않지만,
+       화면을 건드려 억지로 살려 내도 여기서 한 번 더 막힌다. */
+    nameXBtn.addEventListener("click", () => {
+        if (!userName) { nameInput.focus(); return; }
+        nameInput.value = userName;          // 고치다 말았으면 되돌린다
+        nameOverlay.classList.add("hidden");
+        markEntryDone(); goHome();
+    });
     document.getElementById("consentX").addEventListener("click", cancelConsent);
     document.getElementById("freeFbX").addEventListener("click", goHome);
     document.getElementById("langX").addEventListener("click", () => {
@@ -4789,7 +4836,11 @@
 
     /* ── 홈 우상단: 이름 바꾸기 · 지난 대화 ── */
     document.getElementById("homeNameBtn").addEventListener("click", () => {
-        nameInput.value = userName; nameShown = true; nameOverlay.classList.remove("hidden");
+        nameInput.value = userName; nameShown = true;
+        nameInput.classList.remove("needs");
+        nameXBtn.hidden = !userName;   // 여기까지 왔으면 이름이 있다 — ✕ 로 그냥 닫아도 된다
+        syncNameBtn();
+        nameOverlay.classList.remove("hidden");
     });
     document.getElementById("homeHistoryBtn").addEventListener("click", openHistory);
 

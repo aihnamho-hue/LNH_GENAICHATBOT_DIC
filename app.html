@@ -2526,7 +2526,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v149 (2026-08-23)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v150 (2026-08-27)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -3956,7 +3956,8 @@
         const done = qzDoneToday();
         let items = "";
         questToday("rp").forEach(q => {
-            items += (done.has(q.id) ? "✓ " : "☐ ") + questLabel(q.id) + (q.lv ? " " + "★".repeat(q.lv) : "") + "\n";
+            // v150 — 별(★)을 뺐다. 어려움을 별로 매기면 학습자가 어려운 것부터 피한다.
+            items += (done.has(q.id) ? "✓ " : "☐ ") + questLabel(q.id) + "\n";
         });
         try { hamPeekHtml(t("qzTitle"), items.trim(), ms || 7000); } catch (e) {}
         const b = document.getElementById("qzBtn");
@@ -4044,7 +4045,7 @@
             const row = document.createElement("div");
             row.className = "qz-row";
             row.innerHTML = '<span class="qz-mark">' + (showResult ? "·" : "☐") + "</span>"
-                + '<span class="qz-txt"></span><span class="qz-lv">' + "★".repeat(q.lv) + "</span>";
+                + '<span class="qz-txt"></span>';   // v150 — 난이도 별 없앰
             row.querySelector(".qz-txt").textContent = questLabel(q.id);
             box.appendChild(row);
             rows.push({ row: row, q: q });

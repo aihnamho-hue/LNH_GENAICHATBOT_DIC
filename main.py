@@ -3019,7 +3019,9 @@ async def _idc_flush() -> None:
         return
     part, _idc_log[:] = list(_idc_log), []
     body = "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in part)
-    name = f"idc_learn_{time.strftime('%Y%m%d_%H%M%S')}.jsonl"
+    # v150 — 드라이브에서 세 갈래 자료가 이름으로 갈리도록 맞췄다.
+    #   호아랑대화_주제_… / 호아랑대화_자유_… / 호아랑학습_요소_…
+    name = f"호아랑학습_요소_{time.strftime('%Y%m%d_%H%M%S')}.jsonl"
     try:
         await asyncio.to_thread(_gdrive_upload_sync, name,
                                 body.encode("utf-8"), "application/x-ndjson")
@@ -4221,6 +4223,7 @@ async def upload_recording(
     name: str = Form(default=""),
     meta: str = Form(default=""),
     sid: str = Form(default=""),
+    mode: str = Form(default=""),
 ):
     """대화 녹음(믹스 1파일) + 대화기록(txt) + 대화 정보(json) 저장.
     - 대화 중 60초마다 클라이언트가 같은 sid로 진행분을 보내면 같은 파일을 갱신
@@ -4250,7 +4253,13 @@ async def upload_recording(
         entry["at"] = time.time()
     else:
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        base = f"호아랑대화_{ts}" + (f"_{safe_name}" if safe_name else "") + f"_D{d}_P{p}"
+        # v150 — 어느 통로에서 나온 자료인지를 **파일 이름 앞쪽**에 박는다.
+        #   뒷날 이 자료로 연구를 하려면 주제 대화와 자유 대화가 한눈에 갈려야 한다.
+        #   이름으로 정렬하면 두 덩어리로 모이도록 날짜보다 앞에 둔다.
+        #   meta 의 mode 로도 남으니, 파일 이름이 지워져도 안쪽에서 다시 알 수 있다.
+        kind = {"rp": "주제", "free": "자유"}.get((mode or "").strip(), "자유")
+        base = (f"호아랑대화_{kind}_{ts}"
+                + (f"_{safe_name}" if safe_name else "") + f"_D{d}_P{p}")
         if safe_sid:
             _session_uploads_cleanup()
             entry = {"base": base, "at": time.time(), "ids": {}}
@@ -4267,6 +4276,7 @@ async def upload_recording(
         except (ValueError, TypeError):
             pass
     meta_dict.setdefault("name", name[:20])
+    meta_dict.setdefault("mode", (mode or "").strip() or "free")   # v150
     meta_dict.setdefault("d", d)
     meta_dict.setdefault("p", p)
     meta_dict["hasAudio"] = bool(audio_bytes)

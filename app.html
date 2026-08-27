@@ -10407,6 +10407,8 @@
         lines.push("=====================================");
         lines.push(" 호아랑과 한국어 수다 — 대화 기록");
         lines.push(" 학습자: " + (userName || "(이름 없음)") + " / 화면 언어: " + (uiLang || "ko"));
+        // v150 — 파일 이름이 바뀌어도 안쪽에서 통로를 알 수 있게 한 줄 남긴다
+        lines.push(" 연습 갈래: " + (mode === "rp" ? "주제 대화" : "자유 대화"));
         lines.push(" 시작 시각: " + start);
         lines.push(" 친밀도(D): " + distSlider.value + " / 지위(P): " + powerSlider.value);
         lines.push(" 도와주기(비계): " + (scafSlider ? scafSlider.value : "-") + " / 교육적 개입: " + LAST_INTV + "회");
@@ -10904,6 +10906,7 @@
         const ended = new Date();
         return {
             name: userName,
+            mode: (mode === "rp" ? "rp" : "free"),   // v150 — 주제 대화 / 자유 대화
             lang: uiLang || "ko",
             d: +distSlider.value,
             p: +powerSlider.value,
@@ -10943,12 +10946,20 @@
         };
     }
 
+    /* v150 — 어느 통로에서 나온 자료인지를 서버로 함께 보낸다.
+       뒷날 이 자료로 연구를 하려면 주제 대화와 자유 대화가 파일 이름에서
+       갈려 있어야 한다. 나중에 대화문을 하나씩 열어 보고 가려낼 수는 없다.
+       ★ rpSessionActive 가 아니라 mode 를 본다 — 계획 만들기가 실패해도
+         학습자가 고른 통로는 「주제 대화」이기 때문이다. */
+    function sessionMode() { return mode === "rp" ? "rp" : "free"; }
+
     function appendCommonFields(fd) {
         fd.append("transcript", buildTranscriptText());
         fd.append("d", distSlider.value);
         fd.append("p", powerSlider.value);
         fd.append("name", userName);
         fd.append("sid", sessionSid);
+        fd.append("mode", sessionMode());
         fd.append("meta", JSON.stringify(buildSessionMeta()));
     }
 

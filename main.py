@@ -23,7 +23,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v150"
+APP_VERSION = "v151"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -4257,7 +4257,28 @@ async def upload_recording(
         #   뒷날 이 자료로 연구를 하려면 주제 대화와 자유 대화가 한눈에 갈려야 한다.
         #   이름으로 정렬하면 두 덩어리로 모이도록 날짜보다 앞에 둔다.
         #   meta 의 mode 로도 남으니, 파일 이름이 지워져도 안쪽에서 다시 알 수 있다.
-        kind = {"rp": "주제", "free": "자유"}.get((mode or "").strip(), "자유")
+        # ★★ v151 — 「자유」로 단정하면 안 된다.
+        #   실전 50명 수업에서 **주제 대화가 전부 「자유」로 저장됐다.**
+        #   폼 필드 mode 가 비어 있으면(옛 화면이 캐시돼 있으면 안 보낸다)
+        #   조용히 「자유」로 적혔다 — 주제 대화 자료가 자유 대화에 섞인다.
+        #   연구 자료가 오염되는 자리라 **못 받았을 때는 못 받았다고 적는다.**
+        #
+        #   가르는 근거는 셋. 앞의 것부터 본다.
+        #     ① 폼 필드 mode        ② meta 의 mode        ③ meta 에 roleplay 가 있는가
+        _md = (mode or "").strip()
+        if _md not in ("rp", "free"):
+            try:
+                _m = json.loads(meta) if meta else {}
+            except (ValueError, TypeError):
+                _m = {}
+            if isinstance(_m, dict):
+                _md = str(_m.get("mode") or "").strip()
+                if _md not in ("rp", "free"):
+                    # 계획(roleplay)이 실려 있으면 주제 대화다 — 자유 대화에는 없다
+                    _md = "rp" if _m.get("roleplay") else ""
+        kind = {"rp": "주제", "free": "자유"}.get(_md, "미상")
+        if kind == "미상":
+            print(f"[업로드] ★ mode 를 못 받았다 — 「미상」으로 적는다 (name={name[:12]})")
         base = (f"호아랑대화_{kind}_{ts}"
                 + (f"_{safe_name}" if safe_name else "") + f"_D{d}_P{p}")
         if safe_sid:

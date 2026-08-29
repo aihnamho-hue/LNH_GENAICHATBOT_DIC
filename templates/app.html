@@ -2529,7 +2529,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v150 (2026-08-27)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v151 (2026-08-29)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -10988,7 +10988,7 @@
         const ended = new Date();
         return {
             name: userName,
-            mode: (mode === "rp" ? "rp" : "free"),   // v150 — 주제 대화 / 자유 대화
+            mode: sessionMode(),   // v151 — 파일 이름과 **같은 눈금**을 쓴다
             lang: uiLang || "ko",
             d: +distSlider.value,
             p: +powerSlider.value,
@@ -11033,7 +11033,18 @@
        갈려 있어야 한다. 나중에 대화문을 하나씩 열어 보고 가려낼 수는 없다.
        ★ rpSessionActive 가 아니라 mode 를 본다 — 계획 만들기가 실패해도
          학습자가 고른 통로는 「주제 대화」이기 때문이다. */
-    function sessionMode() { return mode === "rp" ? "rp" : "free"; }
+    /* ★★ v151 — 눈금이 두 벌이면 안 된다.
+       실전 수업에서 **주제 대화가 파일 이름에 「자유」로 저장됐다.**
+       전사 머리글은 `rpSessionActive && rpPlan` 로 「주제 대화」라 적어 놓고,
+       파일 이름은 `mode` 로 「자유」라 적었다 — 같은 판을 두 눈금으로 잰 것이다.
+
+       ★ `rpSessionActive` 를 먼저 믿는다. 대화가 붙을 때 정해지고 대화 내내 안 바뀐다.
+         (`mode` 는 홈에서 카드를 고를 때 정해지는 화면 상태라 그 뒤에 흔들릴 수 있다)
+         계획(rpPlan)이 있는데 「자유」로 적히는 일은 이제 없다. */
+    function sessionMode() {
+        if (rpSessionActive && rpPlan) return "rp";
+        return mode === "rp" ? "rp" : "free";
+    }
 
     function appendCommonFields(fd) {
         fd.append("transcript", buildTranscriptText());

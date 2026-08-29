@@ -9,7 +9,15 @@ const ok = (t, c, x) => { console.log((c ? "  ✅ " : "  ❌ ") + t + (c || x ==
 
 console.log("── ① 음량 ──");
 const V = /const BGM_VOL = \{ bgm: ([\d.]+), prBgm: ([\d.]+), chatBgm: ([\d.]+) \}/.exec(html);
-ok("배경음 셋 다 15%", !!V && V.slice(1).every(x => Number(x) === 0.15), V && V.slice(1).join("/"));
+// ★ v150 — 예전에는 「셋 다 0.15」로 값을 박아 두었다. 홈만 더 조용히 하자
+//   옳은 변경인데도 검사가 깨졌다. **성질**만 잰다 —
+//   ㄱ) 셋 다 말소리를 안 덮을 만큼 작다  ㄴ) 대화 중 두 곡은 서로 같다
+//   ㄷ) 홈은 대화 중보다 크지 않다
+const vs = V ? V.slice(1).map(Number) : [];
+ok("배경음 셋이 다 있다", vs.length === 3, V && V.slice(1).join("/"));
+ok(`셋 다 20% 아래 (${vs.join("/")})`, vs.length === 3 && vs.every(x => x > 0 && x <= 0.2));
+ok("대화 중 두 곡이 서로 같다", vs[1] === vs[2], vs[1] + "/" + vs[2]);
+ok("홈이 대화 중보다 크지 않다", vs[0] <= vs[1], vs[0] + " ≤ " + vs[1]);
 const G = /const GONG_VOL = ([\d.]+)/.exec(html);
 ok("징도 같은 비율(0.5×0.75=0.375)", !!G && Number(G[1]) === 0.375, G && G[1]);
 ok("징 음량이 한 곳에서만 정해진다", (html.match(/= 0\.5;/g) || []).length === 0

@@ -23,7 +23,14 @@ setTimeout(()=>{
   const items=ptx.querySelector(".qz-items");
   const lines=((items&&items.textContent)||"").split("\n").filter(x=>/^[✓☐]/.test(x.trim()));
   ok(`말풍선에 퀘스트 3개 (${lines.length}개)`, lines.length===3);
-  ok("난이도 표시가 섞여 있다", /★/.test(ptx.textContent));
+  /* ★ v150 — 별(★)을 뺐다. 어려움을 별로 매기면 학습자가 어려운 것부터 피한다.
+     예전 검사는 별이 있는지를 봤다 — 옳은 변경인데도 깨졌다.
+     이제 **안 보여야 하는 것**을 잰다. 다시 넣으면 이 검사가 알려 준다. */
+  ok("난이도 별(★)을 안 보인다", !/★/.test(ptx.textContent),
+     "별을 매기면 학습자가 어려운 것부터 피한다");
+  // 대신 한 줄에 「했다/안 했다」와 이름만 있어야 한다
+  ok("줄마다 ✓/☐ 와 이름만", lines.every(x => /^[✓☐]\s*\S/.test(x.trim())),
+     JSON.stringify(lines));
   ok("제목은 굵게 · 항목은 얇게(같은 크기)", !!items && /\.hp-bubble \.qz-items \{[^}]*font-weight: 400/.test(html));
   ok("본 뒤에는 빨간 점이 사라진다", btn.classList.contains("seen"));
   console.log("   →", lines.map(x=>x.replace(/^[✓☐]/,"").trim()).join(" / "));

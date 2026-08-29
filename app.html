@@ -445,6 +445,9 @@
         }
 
         /* ── 호아랑 빼꼼 (오른쪽에서 슬쩍 나와 한마디) ── */
+        /* ★ v150 — 떠 있는 동안에만 눌린다(눌러서 바로 닫기).
+           늘 켜 두면 안 보이는 말풍선이 아래 마이크 단추를 가로챈다. */
+        .ham-peek.show { pointer-events: auto; }
         .ham-peek { position: fixed; right: 0; bottom: 16%; z-index: 1200; pointer-events: none;
             display: flex; align-items: flex-end; gap: 6px;
             transform: translateX(105%); opacity: 0; visibility: hidden;
@@ -2735,6 +2738,42 @@
     let lastEmoteAt = 0;
     let transcriptLog = [];
     let sessionStartedAt = null;
+
+    /* ★★ v150 — 한 판은 10분까지.
+       50명 수업에서 두 학생이 한 대를 쓰며 질질 끌다 10분을 넘겼다.
+       비용은 판 수가 아니라 **말한 시간**이 정한다 — 여기가 가장 곧은 손잡이다.
+
+       교육적으로도 이편이 낫다. 대화를 못 끝내는 학습자는 끝낼 **까닭**이 없어서
+       못 끝낸다. 남은 시간이 보이면 마무리 국면이 저절로 생긴다.
+
+       ★ 끊을 때 **학습자가 「대화 종료하기」를 누른 것과 똑같은 길**로 간다.
+         따로 끊으면 결과·총평·기록이 다 날아간다(웹소켓을 먼저 닫으면 그렇다). */
+    const TALK_LIMIT_MS = 10 * 60 * 1000;   // 한 판 10분
+    const TALK_WARN_MS = 60 * 1000;         // 1분 남았을 때 알린다
+    let talkWarnTimer = null, talkEndTimer = null;
+
+    function talkClockStop() {
+        clearTimeout(talkWarnTimer); talkWarnTimer = null;
+        clearTimeout(talkEndTimer); talkEndTimer = null;
+    }
+    function talkClockStart() {
+        talkClockStop();
+        talkWarnTimer = setTimeout(() => {
+            try {
+                hamPeekHtml(tlT("warn"), tlT("warnSub"), 5200, "nz", NZ_FACE_SRC.fluster);
+                playDing();
+            } catch (e) { console.warn("남은 시간 알림 실패:", e); }
+        }, Math.max(0, TALK_LIMIT_MS - TALK_WARN_MS));
+        talkEndTimer = setTimeout(() => {
+            /* 10분 — 학습자가 단추를 누른 것과 같은 길로 끝낸다.
+               rpSessionActive 로 어느 갈래인지 가른다. */
+            try { hamPeek(tlT("over"), 3200); } catch (e) {}
+            try {
+                if (rpSessionActive) endRoleplaySession();
+                else endFreeSession();
+            } catch (e) { console.warn("시간 종료 실패:", e); }
+        }, TALK_LIMIT_MS);
+    }
 
     /* ── 주제 대화(상황극) 상태 ── */
     let mode = "free";                 // "free" 자유 대화 | "rp" 주제 대화
@@ -5414,6 +5453,7 @@
     function endFreeSession() {
         if (freeEnding) return;
         freeEnding = true;
+        talkClockStop();   // ★ v150 — 끝내는 중에 10분이 닿으면 두 번 끝난다
         rpFinal = null;
         try {
             if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "end_session" }));
@@ -6960,6 +7000,19 @@
         const el = document.getElementById("hamPeek");
         if (el) el.classList.remove("show");
     }
+    /* ★ v150 — 눌러서 바로 닫기.
+       넛지는 5.6초를 버틴다. 다 읽은 학습자에게는 그 뒤가 방해다 —
+       말풍선이 마이크 단추 쪽을 덮고 있어 다음 차례를 잡기 어렵다.
+       ★ .ham-peek 은 pointer-events:none 이라 그대로는 눌리지 않는다.
+         떠 있는 동안에만 눌리게 켠다(안 그러면 아래 단추가 안 눌린다). */
+    (function bindPeekTap() {
+        const el = document.getElementById("hamPeek");
+        if (!el) return;
+        el.style.cursor = "pointer";
+        el.addEventListener("click", () => {
+            if (el.classList.contains("show")) hamPeekHide();
+        });
+    })();
 
     function playDing() { // 기능 단계 달성 — 짧고 경쾌한 딩동↑
         const c = fxContext();
@@ -7210,6 +7263,7 @@
     function endRoleplaySession() {
         if (rpEnding) return;
         rpEnding = true;
+        talkClockStop();   // ★ v150 — 끝내는 중에 10분이 닿으면 두 번 끝난다
         actionBtn.disabled = true;
         setFooterNote(t("rpScoring"), true);
         try {
@@ -9594,6 +9648,32 @@
         return m[key] || STT_MSG.en[key] || "";
     }
 
+    /* ★ v150 — 한 판 10분. 남은 시간을 알리는 말 (18개 언어) */
+    const TL_MSG = {
+        ko: { warn:"1분 남았어요!", warnSub:"이제 인사하고 마무리해 보세요.", over:"시간이 다 됐어요. 잘했어요!" },
+        en: { warn:"One minute left!", warnSub:"Time to say goodbye and wrap up.", over:"Time's up. Well done!" },
+        zh: { warn:"还剩一分钟！", warnSub:"该道别、收尾了。", over:"时间到了。做得好！" },
+        ja: { warn:"あと1分です！", warnSub:"あいさつをして終わりましょう。", over:"時間になりました。よくできました！" },
+        vi: { warn:"Còn một phút!", warnSub:"Hãy chào và kết thúc nhé.", over:"Hết giờ rồi. Giỏi lắm!" },
+        th: { warn:"เหลืออีก 1 นาที!", warnSub:"ถึงเวลากล่าวลาและปิดบทสนทนาแล้ว", over:"หมดเวลาแล้ว เก่งมาก!" },
+        id: { warn:"Tinggal satu menit!", warnSub:"Saatnya berpamitan dan menutup.", over:"Waktunya habis. Bagus sekali!" },
+        mn: { warn:"1 минут үлдлээ!", warnSub:"Одоо салах ёс хийж дуусгая.", over:"Цаг дууслаа. Сайн байна!" },
+        uz: { warn:"Bir daqiqa qoldi!", warnSub:"Endi xayrlashib yakunlang.", over:"Vaqt tugadi. Barakalla!" },
+        ru: { warn:"Осталась одна минута!", warnSub:"Пора попрощаться и завершить.", over:"Время вышло. Молодец!" },
+        es: { warn:"¡Queda un minuto!", warnSub:"Es hora de despedirse y terminar.", over:"Se acabó el tiempo. ¡Muy bien!" },
+        fr: { warn:"Il reste une minute !", warnSub:"C'est le moment de dire au revoir.", over:"C'est fini. Bravo !" },
+        ne: { warn:"एक मिनेट बाँकी!", warnSub:"अब बिदा भनेर टुंग्याउनुहोस्।", over:"समय सकियो। राम्रो!" },
+        lo: { warn:"ເຫຼືອອີກ 1 ນາທີ!", warnSub:"ຮອດເວລາລາແລ້ວ ມາສະຫຼຸບກັນ.", over:"ໝົດເວລາແລ້ວ. ດີຫຼາຍ!" },
+        my: { warn:"တစ်မိနစ်ပဲ ကျန်ပါတော့တယ်!", warnSub:"နှုတ်ဆက်ပြီး အဆုံးသတ်ရအောင်။", over:"အချိန်ကုန်ပါပြီ။ တော်ပါတယ်!" },
+        km: { warn:"នៅសល់មួយនាទី!", warnSub:"ដល់ពេលនិយាយលា រួចបញ្ចប់ហើយ។", over:"អស់ពេលហើយ។ ពូកែណាស់!" },
+        uk: { warn:"Залишилася одна хвилина!", warnSub:"Час попрощатися й завершити.", over:"Час вийшов. Молодець!" },
+        ky: { warn:"Бир мүнөт калды!", warnSub:"Эми коштошуп аяктайлы.", over:"Убакыт бүттү. Азаматсыз!" },
+    };
+    function tlT(key) {
+        const m = TL_MSG[uiLang] || TL_MSG.en;
+        return m[key] || TL_MSG.en[key] || "";
+    }
+
     /* ★ v145 — 넛지마다 호아랑의 얼굴이 달라진다.
        빼꼼 나와 「거절해 보세요!」라고 하면서 활짝 웃고 있으면 말과 얼굴이 어긋난다.
        **넛지가 부르는 감정**대로 표정을 고른다. 학습자는 무엇을 하라는지
@@ -10044,6 +10124,7 @@
             startPinger();
             transcriptLog = [];
             sessionStartedAt = new Date();
+            talkClockStart();          // ★ v150 — 한 판 10분 시계를 건다
             exportBtn.disabled = true;
             setControlsEnabled(true);
             try {
@@ -10329,6 +10410,7 @@
     function stopSession() {
         if (stopping) return;          // 종료가 두 번 돌아 녹음이 이중 저장되던 것 방지
         stopping = true;
+        talkClockStop();               // ★ v150 — 옛 시계가 남으면 다음 판이 곧바로 끊긴다
         setTimeout(() => { stopping = false; }, 1500);
         flowBusy = false;
         closeHamView();   // 영상통화 뷰 열려 있으면 닫고 노드 원위치

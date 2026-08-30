@@ -6,6 +6,8 @@
 //   ② 홈 위에 단추가 다섯이나 늘어서 있었다. 설정으로 모으되
 //     **원래 단추를 지우지 않고 숨겨 두고 대신 누른다** — 지우면 조용히 터진다.
 //   ③ 자유 대화 기억은 드라이브를 뒤지지 않는다. 기기에 두고 함께 보낸다.
+//   ④ v153 — 소속·동의는 **닫힌 문**이다. 안 갖추면 대화로 못 들어간다.
+//     v152 에서는 고르기를 닫으면 그냥 시작됐다 — 그 문은 문이 아니었다.
 
 const fs = require("fs");
 const { JSDOM } = require("jsdom");
@@ -79,6 +81,18 @@ ok("5분 넘은 판만 남긴다", /const MEM_MIN_SEC = 300/.test(html));
 ok("동의서 쪽이 있다", /@app\.get\("\/consent"/.test(py));
 ok("동의서는 인쇄로 PDF (서버에서 안 굽는다)",
    /window\.print\(\)/.test(py) && !/reportlab/.test(py));
+ok("대화록 안쪽에도 소속을 적는다", /lines\.push\(" 소속: "/.test(html),
+   "파일 이름은 옮기다 바뀐다. 안에 적힌 것은 남는다");
+ok("모든 올리기가 소속을 함께 싣는다",
+   /function appendCommonFields\(fd\)[\s\S]{0,600}fd\.append\("orgClass"/.test(html),
+   "한 자리에서 붙여야 세 갈래(중간저장·끝·되돌리기)가 다 같다");
+
+console.log("\n── ④-2 목소리 ───────────────────────────────────");
+ok("기본이 여자아이 (화면)", /localStorage\.getItem\("voicePref"\) \|\| "girl"/.test(html));
+ok("기본이 여자아이 (서버)", /HOARANG_VOICE_KEY = "girl"/.test(py));
+ok("여자아이는 Leda", /"girl":\s*"Leda"/.test(py));
+ok("나이 번호를 || 로 안 받는다", !/AG\[voiceAgeOf\(voicePref\)\] \|\|/.test(html),
+   "AG.young 은 0 이라 || 를 만나면 성인으로 미끄러진다");
 
 console.log("\n── ⑤ 실제로 돌려 본다 ──────────────────────────");
 const dom = new JSDOM(html, {
@@ -159,11 +173,75 @@ setTimeout(() => {
      "어제까지 쓰던 학습자의 자료가 소속 없이 쌓인다");
   ok("묻는 동안엔 대화가 아직 안 시작된다", P("window.__started") === 0);
   P('document.getElementById("orgX").click()');
-  ok("고르기를 닫으면 대화가 시작된다", P("window.__started") === 1,
-     "소속은 자료를 가르는 축일 뿐 대화의 조건이 아니다");
+  // ★ v153 — v152 는 여기서 대화가 시작됐다. 이제는 시작되지 않는다.
+  ok("고르기를 닫으면 대화가 시작되지 않는다", P("window.__started") === 0,
+     "소속 없는 자료가 섞이면 뒷날 갈라낼 축이 없다");
   P('ORG.put("kiip","KIIP 사회통합프로그램 (3단계)","2반")');
   P('requestStartWithConsent(null)');
-  ok("한 번 고른 뒤엔 안 묻는다", P("window.__started") === 2
+  ok("한 번 고른 뒤엔 안 묻고 곧바로 시작한다", P("window.__started") === 1
+     && d.getElementById("orgOverlay").classList.contains("hidden"));
+
+  console.log("\n── ⑥ v153 관문 ─────────────────────────────────");
+  // 홈 위에 남은 단추 — 지난 대화와 설정 둘뿐이어야 한다
+  const top = [...d.querySelectorAll(".home-top button")];
+  const shownTop = top.filter((b) => !b.hidden).map((b) => b.id);
+  ok("홈 위에는 지난 대화와 설정 둘뿐 (" + shownTop.join(", ") + ")",
+     shownTop.length === 2 && shownTop.includes("homeHistoryBtn")
+     && shownTop.includes("homeSetBtn"));
+
+  // 목소리 이름표 — 「아이」가 「성인」으로 뜨던 자리
+  P('voicePref = "boy"'); const vb = P("voiceLabelNow()");
+  P('voicePref = "girl"'); const vg = P("voiceLabelNow()");
+  P('voicePref = "woman"'); const vw = P("voiceLabelNow()");
+  ok("남자아이가 아이로 뜬다 (" + vb + ")", /아이/.test(vb) && !/성인/.test(vb));
+  ok("여자아이가 아이로 뜬다 (" + vg + ")", /아이/.test(vg) && !/성인/.test(vg));
+  ok("성인은 그대로 성인 (" + vw + ")", /성인/.test(vw));
+
+  // 관문 — 동의도 소속도 없는 상태에서 카드를 누른다
+  P('CONSENT.ver=""; localStorage.removeItem("consent"); CONSENT.clear && CONSENT.clear();');
+  P('lsPut("consent.ver",""); lsPut("consent.at",""); ORG.put("","","")');
+  P('window.__rp = 0; window.__free = 0;');
+  P('window.enterTopicSetup = function(){ window.__rp++; };');
+  P('window.enterFreeChat  = function(){ window.__free++; };');
+  ok("치우면 동의도 소속도 없다", P("CONSENT.ok") === false && P("ORG.ok") === false);
+
+  P('document.getElementById("homeRpCard").click()');
+  ok("주제 대화를 누르면 동의부터 묻는다",
+     !d.getElementById("consentOverlay").classList.contains("hidden"));
+  ok("아직 못 들어간다", P("window.__rp") === 0);
+
+  P('document.getElementById("consentCancelBtn").click()');
+  ok("취소하면 그대로 홈이다", P("window.__rp") === 0
+     && d.getElementById("consentOverlay").classList.contains("hidden"));
+
+  P('document.getElementById("homeFreeCard").click()');
+  ok("자유 대화를 눌러도 다시 묻는다",
+     !d.getElementById("consentOverlay").classList.contains("hidden") && P("window.__free") === 0,
+     "한 번 취소했다고 다음부터 그냥 통과하면 문이 아니다");
+
+  P('document.getElementById("consentAgreeBtn").click()');
+  ok("동의하면 이어서 소속을 묻는다",
+     !d.getElementById("orgOverlay").classList.contains("hidden") && P("window.__free") === 0);
+
+  P('document.getElementById("orgX").click()');
+  ok("소속을 닫으면 못 들어간다", P("window.__free") === 0,
+     "★ v152 는 여기서 그냥 시작됐다 — 소속 없는 자료가 섞였다");
+
+  P('document.getElementById("homeFreeCard").click()');
+  ok("다시 누르면 소속만 다시 묻는다",
+     !d.getElementById("orgOverlay").classList.contains("hidden")
+     && d.getElementById("consentOverlay").classList.contains("hidden"),
+     "동의는 이미 했으니 두 번 묻지 않는다");
+
+  P('[...document.querySelectorAll("#orgList .org-opt")][0].click()');
+  P('document.getElementById("orgClassInput").value = "2반"');
+  P('document.getElementById("orgOkBtn").click()');
+  ok("고르고 나서야 들어간다", P("window.__free") === 1);
+  ok("고른 것이 남는다", /2반/.test(P("ORG.label()")), P("ORG.label()"));
+
+  P('document.getElementById("homeRpCard").click()');
+  ok("다 갖춘 뒤엔 안 묻는다", P("window.__rp") === 1
+     && d.getElementById("consentOverlay").classList.contains("hidden")
      && d.getElementById("orgOverlay").classList.contains("hidden"));
 
   console.log();

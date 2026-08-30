@@ -24,7 +24,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v152"
+APP_VERSION = "v153"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -2155,7 +2155,7 @@ def _stt_blank(text: str) -> bool:
     return not re.sub(r"[\s.,!?~…·\-]+", "", t)
 
 # ── 목소리 (Chirp 3 HD 프리빌트 보이스 — Live API·TTS 공용) ──────────────
-# 호아랑은 '갓 쓴 아기 호랑이'라 기본은 밝은 남자아이 목소리(Puck)로 잡는다.
+# 호아랑은 '갓 쓴 아기 호랑이'라 기본은 아이 목소리로 잡는다(v153부터 여자아이 Leda).
 # 주제 대화에서는 호아랑이 배역을 맡으므로, 그 배역에 맞는 목소리로 자동 전환한다.
 VOICE_TABLE = {
     "boy":     "Puck",     # Upbeat  — 밝은 남자아이 (호아랑 본래 목소리)
@@ -2168,7 +2168,9 @@ VOICE_TABLE = {
     "elder_m": "Algenib",  # Gravelly — 나이 든 남성 (할아버지 역)
     "elder_f": "Gacrux",   # Mature — 원숙한 여성 (할머니 역)
 }
-HOARANG_VOICE_KEY = "boy"
+# ★ v153 — 기본 목소리를 여자아이(Leda)로. 화면의 voicePref 기본값과 같아야 한다.
+#   두 곳이 어긋나면 「고른 적 없는 학습자」의 목소리가 화면 표시와 달라진다.
+HOARANG_VOICE_KEY = "girl"
 TTS_VOICE = os.environ.get("TTS_VOICE", "").strip() or VOICE_TABLE[HOARANG_VOICE_KEY]
 
 # 역할 이름에서 성별·나이를 '드러나 있을 때만' 읽는다.
@@ -4405,10 +4407,14 @@ async def upload_recording(
             print(f"[업로드] ★ mode 를 못 받았다 — 「미상」으로 적는다 (name={name[:12]})")
         # ★ v152 — 소속을 **날짜 앞**에 넣는다. 이름으로 정렬하면 기관별로 모인다.
         #   KIIP·언어교육원·연세대 자료가 한 폴더에 섞이면 뒷날 갈라낼 수 없다.
-        _org = _clean_str(orgName, 24) or {"kiip": "KIIP", "cau": "중앙대",
-                                           "yonsei": "연세대"}.get((org or "").strip(), "")
+        #   ★ v153 — 화면에 보이는 긴 이름을 그대로 쓰면 이렇게 된다.
+        #     「KIIP 사회통합프로그램 (3단계)」 → `KIIP사회통합프로그램(3단계` — 괄호가 잘려
+        #     뒤의 반 이름과 엉겨 붙는다. 아는 기관은 **짧은 표**를 먼저 쓴다.
+        #     기타(직접 입력)일 때만 학습자가 적은 이름을 쓴다.
+        _org = ({"kiip": "KIIP", "cau": "중앙대", "yonsei": "연세대"}.get((org or "").strip())
+                or _clean_str(orgName, 24))
         _cls = _clean_str(orgClass, 12)
-        _tag = re.sub(r"[^\w가-힣().-]", "", _org)[:16]
+        _tag = re.sub(r"[^\w가-힣.-]", "", _org)[:16]
         _ctag = re.sub(r"[^\w가-힣]", "", _cls)[:8]
         base = (f"호아랑대화_{kind}"
                 + (f"_{_tag}" if _tag else "")

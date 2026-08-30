@@ -24,7 +24,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v153"
+APP_VERSION = "v154"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -4350,6 +4350,7 @@ async def upload_recording(
     org: str = Form(default=""),        # v152 — 어느 기관 학습자인가
     orgName: str = Form(default=""),
     orgClass: str = Form(default=""),
+    orgVer: str = Form(default=""),     # v154 — 어느 이름표를 보고 골랐나
 ):
     """대화 녹음(믹스 1파일) + 대화기록(txt) + 대화 정보(json) 저장.
     - 대화 중 60초마다 클라이언트가 같은 sid로 진행분을 보내면 같은 파일을 갱신
@@ -4411,7 +4412,9 @@ async def upload_recording(
         #     「KIIP 사회통합프로그램 (3단계)」 → `KIIP사회통합프로그램(3단계` — 괄호가 잘려
         #     뒤의 반 이름과 엉겨 붙는다. 아는 기관은 **짧은 표**를 먼저 쓴다.
         #     기타(직접 입력)일 때만 학습자가 적은 이름을 쓴다.
-        _org = ({"kiip": "KIIP", "cau": "중앙대", "yonsei": "연세대"}.get((org or "").strip())
+        #   ★ v154 — cau 를 「중앙대」로 적으면 KIIP(중앙대 운영)과 폴더에서 또 엉킨다.
+        #     부서 이름으로 갈라 둔다 — KIIP · 언어교육원 · 연세대.
+        _org = ({"kiip": "KIIP", "cau": "언어교육원", "yonsei": "연세대"}.get((org or "").strip())
                 or _clean_str(orgName, 24))
         _cls = _clean_str(orgClass, 12)
         _tag = re.sub(r"[^\w가-힣.-]", "", _org)[:16]
@@ -4442,10 +4445,15 @@ async def upload_recording(
     if org or orgName:
         meta_dict.setdefault("org", {})
         if isinstance(meta_dict["org"], dict):
+            # ★ v154 — ver 를 함께 남긴다. KIIP(중앙대 운영) 학습자가
+            #   「중앙대학교 언어교육원」을 제 학교로 알고 고르던 때가 v1 이다.
+            #   그때 모인 자료와 이름표를 고친 뒤의 자료는 갈라 보아야 한다.
+            #   ver 가 안 오면 v1 — 옛 화면에서 온 것이다.
             meta_dict["org"].update({k: v for k, v in
                                      (("id", (org or "").strip()),
                                       ("name", _clean_str(orgName, 40)),
-                                      ("cls", _clean_str(orgClass, 20))) if v})
+                                      ("cls", _clean_str(orgClass, 20)),
+                                      ("ver", _clean_str(orgVer, 4) or "1")) if v})
     meta_dict.setdefault("d", d)
     meta_dict.setdefault("p", p)
     meta_dict["hasAudio"] = bool(audio_bytes)

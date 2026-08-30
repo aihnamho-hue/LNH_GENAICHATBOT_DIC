@@ -2666,7 +2666,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v153 (2026-08-30)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v154 (2026-08-30)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -3989,6 +3989,13 @@
     function t(key) {
         const dict = I18N[uiLang] || I18N.ko;
         return (key in dict) ? dict[key] : I18N.ko[key];
+    }
+    /* ★ v154 — 화면 언어와 상관없이 **늘 한국어**로 부르는 이름.
+       대화록(.txt)은 학습자에게 보이는 화면이 아니라 연구 자료다.
+       중국어로 배우는 학습자의 기록에 요소 이름이 중국어로 찍히면
+       40편을 나란히 놓고 셀 수 없다. 이름은 하나여야 한다. */
+    function koIdc(key) {
+        return (I18N.ko && I18N.ko["idc_" + key]) || key;
     }
 
     /* ══════════════ 오늘의 퀘스트 ══════════════
@@ -9556,7 +9563,8 @@
         g("setVoiceK").textContent = setT("voice");
         g("setVoiceV").textContent = voiceLabelNow();
         g("setOrgK").textContent = setT("org");
-        g("setOrgV").textContent = ORG.label() || setT("orgNone");
+        // ★ v154 — 옛 이름표로 고른 것은 「안 고름」으로 보인다. 다시 받아야 하기 때문이다.
+        g("setOrgV").textContent = (ORG.ok && ORG.label()) || setT("orgNone");
         // 배경음
         g("setBgmK").textContent = setT("bgm");
         g("setBgmSw").setAttribute("aria-pressed", bgmMuted ? "false" : "true");
@@ -9642,13 +9650,17 @@
         orgBack = onCancel || null;
         const g = (id) => document.getElementById(id);
         g("orgTitleEl").textContent = orgT("t");
-        g("orgBodyEl").textContent = orgT("b");
+        /* ★ v154 — 이름표가 바뀌어 다시 묻는 자리라면 그렇다고 말한다.
+           「한 번만 고르면 됩니다」라고 해 놓고 또 물으면 그 말이 거짓이 된다. */
+        g("orgBodyEl").textContent = ORG.stale ? orgT("b2") : orgT("b");
         g("orgOkBtn").textContent = orgT("ok");
         g("orgClassInput").placeholder = orgT("cls");
         g("orgClassInput").value = ORG.cls || "";
         g("orgEtcInput").placeholder = ORG.name && ORG.id === "etc" ? ORG.name : "…";
         g("orgEtcInput").value = ORG.id === "etc" ? ORG.name : "";
-        orgPick = ORG.id || "";
+        /* 옛 판에서 고른 것은 **미리 골라 두지 않는다.**
+           헷갈려 고른 그 자리에 파란 표시가 켜져 있으면 그대로 확인을 누른다. */
+        orgPick = ORG.stale ? "" : (ORG.id || "");
         const list = g("orgList");
         list.innerHTML = "";
         ORG_LIST.forEach((o) => {
@@ -10201,31 +10213,41 @@
     }
 
     /* 소속 — 자료가 기관별로 갈려야 뒷날 쓸 수 있다. 이름은 번역하지 않는다(고유명). */
+    /* ★ v154 — 이름표를 바꾼다.
+       KIIP 을 **중앙대가 운영한다.** 그래서 KIIP 학습자가 학교 이름이 붙은 쪽을
+       보고 「내가 거기서 배우니까」 하며 그것을 골랐다. 급수(3단계/3급)를
+       붙여 둔 것도 도움이 안 됐다 — 둘 다 3이었다.
+       고르는 사람이 헷갈렸다면 **이름표가 틀린 것이다.**
+
+       ★ 학교 이름을 **어느 쪽에도 안 쓴다.** 한쪽에만 붙여도, 안 붙은 쪽을
+         고를 사람이 「내 학교가 아니네」 하고 망설인다. 둘 다 부르던 이름으로
+         부른다 — KIIP 은 KIIP, 언어교육원은 언어교육원. */
+    const ORG_VER = "2";                       // 이름표 판. 올리면 다시 묻는다
     const ORG_LIST = [
-        { id: "kiip",   ko: "KIIP 사회통합프로그램 (3단계)" },
-        { id: "cau",    ko: "중앙대학교 언어교육원 (3급)" },
-        { id: "yonsei", ko: "연세대학교 글로벌엘리트학부" },
+        { id: "kiip",   ko: "KIIP 사회통합프로그램" },
+        { id: "cau",    ko: "언어교육원 한국어교육과정" },
+        { id: "yonsei", ko: "글로벌엘리트학부(연세)" },
         { id: "etc",    ko: "기타 (직접 입력)" },
     ];
     const ORG_TXT = {
-        ko: { t:"어디에서 배우고 있나요?", b:"한 번만 고르면 됩니다.", cls:"반 (예: 2반)", ok:"확인" },
-        en: { t:"Where are you studying?", b:"You only need to choose once.", cls:"Class (e.g. Class 2)", ok:"OK" },
-        zh: { t:"您在哪里学习？", b:"只需选择一次。", cls:"班级（例：2班）", ok:"确定" },
-        ja: { t:"どこで学んでいますか?", b:"一度だけ選べば大丈夫です。", cls:"クラス（例: 2組）", ok:"確認" },
-        vi: { t:"Bạn đang học ở đâu?", b:"Chỉ cần chọn một lần.", cls:"Lớp (ví dụ: Lớp 2)", ok:"Xác nhận" },
-        th: { t:"คุณเรียนที่ไหน?", b:"เลือกเพียงครั้งเดียว", cls:"ห้อง (เช่น ห้อง 2)", ok:"ตกลง" },
-        id: { t:"Di mana Anda belajar?", b:"Cukup pilih satu kali.", cls:"Kelas (mis. Kelas 2)", ok:"OK" },
-        mn: { t:"Та хаана сурч байна вэ?", b:"Ганц удаа сонгоход хангалттай.", cls:"Анги (жишээ: 2-р анги)", ok:"Болсон" },
-        uz: { t:"Qayerda o'qiyapsiz?", b:"Faqat bir marta tanlash kifoya.", cls:"Sinf (masalan: 2-sinf)", ok:"OK" },
-        ru: { t:"Где вы учитесь?", b:"Выбрать нужно только один раз.", cls:"Группа (напр.: 2 группа)", ok:"Готово" },
-        es: { t:"¿Dónde estudias?", b:"Solo hay que elegir una vez.", cls:"Clase (p. ej. Clase 2)", ok:"Aceptar" },
-        fr: { t:"Où étudiez-vous ?", b:"À choisir une seule fois.", cls:"Classe (ex. Classe 2)", ok:"OK" },
-        ne: { t:"तपाईं कहाँ पढ्दै हुनुहुन्छ?", b:"एक पटक मात्र छान्नुहोस्।", cls:"कक्षा (जस्तै: कक्षा २)", ok:"ठीक छ" },
-        lo: { t:"ທ່ານຮຽນຢູ່ໃສ?", b:"ເລືອກພຽງເທື່ອດຽວ.", cls:"ຫ້ອງ (ເຊັ່ນ: ຫ້ອງ 2)", ok:"ຕົກລົງ" },
-        my: { t:"ဘယ်မှာ သင်ယူနေပါသလဲ?", b:"တစ်ကြိမ်သာ ရွေးရန်လိုပါသည်။", cls:"အတန်း (ဥပမာ - အတန်း ၂)", ok:"အိုကေ" },
-        km: { t:"អ្នកកំពុងសិក្សានៅឯណា?", b:"ជ្រើសរើសតែម្តងគត់។", cls:"ថ្នាក់ (ឧ. ថ្នាក់ទី២)", ok:"យល់ព្រម" },
-        uk: { t:"Де ви навчаєтесь?", b:"Обрати потрібно лише раз.", cls:"Група (напр.: 2 група)", ok:"Готово" },
-        ky: { t:"Кайда окуп жатасыз?", b:"Бир жолу гана тандасаңыз болот.", cls:"Класс (мисалы: 2-класс)", ok:"Даяр" },
+        ko: { t:"어디에서 배우고 있나요?", b:"한 번만 고르면 됩니다.", b2:"이름이 바뀌었어요. 한 번만 다시 골라 주세요.", cls:"반 (예: 2반)", ok:"확인" },
+        en: { t:"Where are you studying?", b:"You only need to choose once.", b2:"The names have changed. Please choose once more.", cls:"Class (e.g. Class 2)", ok:"OK" },
+        zh: { t:"您在哪里学习？", b:"只需选择一次。", b2:"名称有变动，请再选择一次。", cls:"班级（例：2班）", ok:"确定" },
+        ja: { t:"どこで学んでいますか?", b:"一度だけ選べば大丈夫です。", b2:"名前が変わりました。もう一度選んでください。", cls:"クラス（例: 2組）", ok:"確認" },
+        vi: { t:"Bạn đang học ở đâu?", b:"Chỉ cần chọn một lần.", b2:"Tên đã thay đổi. Vui lòng chọn lại một lần.", cls:"Lớp (ví dụ: Lớp 2)", ok:"Xác nhận" },
+        th: { t:"คุณเรียนที่ไหน?", b:"เลือกเพียงครั้งเดียว", b2:"ชื่อมีการเปลี่ยนแปลง กรุณาเลือกอีกครั้ง", cls:"ห้อง (เช่น ห้อง 2)", ok:"ตกลง" },
+        id: { t:"Di mana Anda belajar?", b:"Cukup pilih satu kali.", b2:"Namanya berubah. Silakan pilih sekali lagi.", cls:"Kelas (mis. Kelas 2)", ok:"OK" },
+        mn: { t:"Та хаана сурч байна вэ?", b:"Ганц удаа сонгоход хангалттай.", b2:"Нэр өөрчлөгдсөн. Дахин нэг удаа сонгоно уу.", cls:"Анги (жишээ: 2-р анги)", ok:"Болсон" },
+        uz: { t:"Qayerda o'qiyapsiz?", b:"Faqat bir marta tanlash kifoya.", b2:"Nomlar o'zgardi. Iltimos, yana bir marta tanlang.", cls:"Sinf (masalan: 2-sinf)", ok:"OK" },
+        ru: { t:"Где вы учитесь?", b:"Выбрать нужно только один раз.", b2:"Названия изменились. Выберите ещё раз.", cls:"Группа (напр.: 2 группа)", ok:"Готово" },
+        es: { t:"¿Dónde estudias?", b:"Solo hay que elegir una vez.", b2:"Los nombres han cambiado. Elige una vez más.", cls:"Clase (p. ej. Clase 2)", ok:"Aceptar" },
+        fr: { t:"Où étudiez-vous ?", b:"À choisir une seule fois.", b2:"Les noms ont changé. Choisissez encore une fois.", cls:"Classe (ex. Classe 2)", ok:"OK" },
+        ne: { t:"तपाईं कहाँ पढ्दै हुनुहुन्छ?", b:"एक पटक मात्र छान्नुहोस्।", b2:"नामहरू परिवर्तन भए। कृपया फेरि एक पटक छान्नुहोस्।", cls:"कक्षा (जस्तै: कक्षा २)", ok:"ठीक छ" },
+        lo: { t:"ທ່ານຮຽນຢູ່ໃສ?", b:"ເລືອກພຽງເທື່ອດຽວ.", b2:"ຊື່ໄດ້ປ່ຽນແປງແລ້ວ. ກະລຸນາເລືອກອີກເທື່ອໜຶ່ງ.", cls:"ຫ້ອງ (ເຊັ່ນ: ຫ້ອງ 2)", ok:"ຕົກລົງ" },
+        my: { t:"ဘယ်မှာ သင်ယူနေပါသလဲ?", b:"တစ်ကြိမ်သာ ရွေးရန်လိုပါသည်။", b2:"အမည်များ ပြောင်းလဲသွားပါပြီ။ တစ်ကြိမ် ပြန်ရွေးပေးပါ။", cls:"အတန်း (ဥပမာ - အတန်း ၂)", ok:"အိုကေ" },
+        km: { t:"អ្នកកំពុងសិក្សានៅឯណា?", b:"ជ្រើសរើសតែម្តងគត់។", b2:"ឈ្មោះបានផ្លាស់ប្តូរ។ សូមជ្រើសរើសម្តងទៀត។", cls:"ថ្នាក់ (ឧ. ថ្នាក់ទី២)", ok:"យល់ព្រម" },
+        uk: { t:"Де ви навчаєтесь?", b:"Обрати потрібно лише раз.", b2:"Назви змінилися. Оберіть ще раз.", cls:"Група (напр.: 2 група)", ok:"Готово" },
+        ky: { t:"Кайда окуп жатасыз?", b:"Бир жолу гана тандасаңыз болот.", b2:"Аталыштар өзгөрдү. Дагы бир жолу тандаңыз.", cls:"Класс (мисалы: 2-класс)", ok:"Даяр" },
     };
     function orgT(key) {
         const m = ORG_TXT[uiLang] || ORG_TXT.en;
@@ -10263,19 +10285,27 @@
     };
 
     /* 소속 — { id, name, cls } */
+    /* ★ v154 — 소속에도 **판번호**를 붙인다(동의서와 같은 얼개).
+       이름표를 고쳤으면 예전에 고른 것은 **그 뜻이 아니다.** 판이 다르면
+       다시 묻는다. 안 그러면 헷갈려 고른 사람이 영영 그대로 쌓인다.
+       고른 판번호는 자료에도 함께 실어 보낸다 — 뒷날 「이름표가 헷갈리던
+       때 모인 것」과 그 뒤의 것을 갈라낼 수 있어야 한다. */
     const ORG = {
         get id()   { return lsGet("org.id"); },
         get name() { return lsGet("org.name"); },
         get cls()  { return lsGet("org.cls"); },
-        get ok()   { return !!this.id && !!this.name; },
+        get ver()  { return lsGet("org.ver"); },
+        get ok()   { return !!this.id && !!this.name && this.ver === ORG_VER; },
+        get stale() { return !!this.id && this.ver !== ORG_VER; },   // 옛 이름표로 골랐다
         put(id, name, cls) {
             lsPut("org.id", id); lsPut("org.name", name); lsPut("org.cls", cls || "");
+            lsPut("org.ver", id ? ORG_VER : "");
         },
         label() {
-            if (!this.ok) return "";
+            if (!this.id) return "";
             return this.name + (this.cls ? " · " + this.cls : "");
         },
-        pack() { return { id: this.id, name: this.name, cls: this.cls }; },
+        pack() { return { id: this.id, name: this.name, cls: this.cls, ver: this.ver }; },
     };
 
     /* ══════════ v152 — 자유 대화 기억 ══════════
@@ -10813,6 +10843,13 @@
             lastRtt = null; lastTurnSec = null; userTextAt = null;
             startPinger();
             transcriptLog = [];
+            /* ★ v154 — 지난 판의 숫자를 지운다.
+               이 둘만 안 지워지고 있었다. 대화록은 60초마다 만들어 올라가는데,
+               서버가 새 값을 보내는 것은 **판이 끝날 때**다. 그 사이의 저장본은
+               내내 **지난 판의 「지시받고 해낸 것」**을 달고 올라갔다.
+               개입이 하나도 없던 판에도 그 줄이 찍혔다 — 자료가 조용히 오염된다. */
+            LAST_PROMPTED = null;
+            LAST_INTV = 0;
             sessionStartedAt = new Date();
             talkClockStart();          // ★ v150 — 한 판 10분 시계를 건다
             exportBtn.disabled = true;
@@ -11183,16 +11220,20 @@
         /* ★ v153 — 소속을 파일 **안쪽에도** 적는다.
            파일 이름은 옮기다 바뀌고 잘린다. 안에 적힌 것은 남는다 —
            뒷날 KIIP·언어교육원·연세대를 갈라내는 축이 여기에도 있어야 한다. */
-        lines.push(" 소속: " + (ORG.ok ? ORG.label() : "(안 고름)")
-                   + (ORG.id ? " [" + ORG.id + "]" : ""));
+        lines.push(" 소속: " + (ORG.id ? ORG.label() : "(안 고름)")
+                   + (ORG.id ? " [" + ORG.id + " · 이름표 v" + (ORG.ver || "1") + "]" : ""));
         // v150 — 파일 이름이 바뀌어도 안쪽에서 통로를 알 수 있게 한 줄 남긴다
         lines.push(" 연습 갈래: " + (mode === "rp" ? "주제 대화" : "자유 대화"));
         lines.push(" 시작 시각: " + start);
         lines.push(" 친밀도(D): " + distSlider.value + " / 지위(P): " + powerSlider.value);
         lines.push(" 도와주기(비계): " + (scafSlider ? scafSlider.value : "-") + " / 교육적 개입: " + LAST_INTV + "회");
+        /* ★ v154 — 요소 이름을 **한국어로 못 박는다.**
+           `t()` 는 학습자의 화면 언어를 따른다. 그래서 중국어로 배우는 학습자의
+           대화록에는 요소 이름이 중국어로 찍혔다. 이 파일은 학습자에게 보이는
+           화면이 아니라 **연구 자료**다. 40편을 나란히 놓고 세려면 이름이 하나여야 한다. */
         if (LAST_PROMPTED) {
             const pr = Object.keys(LAST_PROMPTED).filter(k => LAST_PROMPTED[k] > 0)
-                             .map(k => t("idc_" + k) + " " + LAST_PROMPTED[k]).join(", ");
+                             .map(k => koIdc(k) + " " + LAST_PROMPTED[k]).join(", ");
             if (pr) lines.push(" 지시받고 해낸 것: " + pr);
         }
         if (rpSessionActive && rpPlan) {
@@ -11755,6 +11796,7 @@
         fd.append("org", ORG.id || "");          // ★ v152 — 기관별로 갈려야 뒷날 쓴다
         fd.append("orgName", ORG.name || "");
         fd.append("orgClass", ORG.cls || "");
+        fd.append("orgVer", ORG.ver || "");      // ★ v154 — 어느 이름표를 보고 골랐나
         fd.append("meta", JSON.stringify(buildSessionMeta()));
     }
 

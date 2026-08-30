@@ -31,11 +31,14 @@ def name_of(org="", orgName="", orgClass="", kind="주제",
     return g["base"]
 
 print("── 소속이 이름에 들어가는가 ─────────────────")
-n1 = name_of("kiip", "KIIP 사회통합프로그램 (3단계)", "2반")
+n1 = name_of("kiip", "KIIP 사회통합프로그램", "2반")
 print("     " + n1)
 ok("기관이 들어간다", "KIIP" in n1)
 ok("긴 이름 대신 짧은 표를 쓴다", "사회통합" not in n1,
-   "「KIIP사회통합프로그램(3단계」처럼 괄호가 잘려 반 이름과 엉긴다")
+   "「KIIP사회통합프로그램(3단계」처럼 괄호가 잘려 반 이름과 엉겼다")
+ok("KIIP 과 언어교육원이 갈린다",
+   name_of("kiip", "", "").split("_")[2] != name_of("cau", "", "").split("_")[2],
+   "둘 다 중앙대라 「중앙대」로 적으면 폴더에서 또 엉킨다")
 ok("반이 들어간다", "2반" in n1)
 ok("갈래가 앞에 온다", n1.startswith("호아랑대화_주제_"))
 ok("소속이 날짜 앞에 온다", n1.index("KIIP") < n1.index("20260830"))
@@ -45,9 +48,9 @@ print("\n── 안 골랐어도 이름이 깨지지 않는가 ─────�
 n2 = name_of("", "", "", kind="자유")
 print("     " + n2)
 ok("소속 칸이 통째로 빠진다", n2 == "호아랑대화_자유_20260830_080224_Purna_D74_P50")
-n3 = name_of("cau", "중앙대학교 언어교육원 (3급)", "")   # 아는 기관 — 짧은 표를 쓴다
+n3 = name_of("cau", "언어교육원 한국어교육과정", "")   # 아는 기관 — 짧은 표를 쓴다
 print("     " + n3)
-ok("아는 기관은 짧게 적는다", n3.split("_")[2] == "중앙대", n3)
+ok("아는 기관은 짧게 적는다", n3.split("_")[2] == "언어교육원", n3)
 n4 = name_of("kiip", "KIIP", "")     # 반이 없을 때
 ok("반이 없으면 - 가 안 붙는다", "KIIP_2026" in n4, n4)
 
@@ -64,7 +67,7 @@ print("\n── 정렬하면 기관별로 모이는가 ────────�
 rows = sorted([name_of("kiip", "KIIP", "2반", ts="20260830_1"),
                name_of("yonsei", "연세대", "A", ts="20260829_1"),
                name_of("kiip", "KIIP", "1반", ts="20260828_1"),
-               name_of("cau", "중앙대", "3급", ts="20260827_1")])
+               name_of("cau", "언어교육원", "3급", ts="20260827_1")])
 for r in rows: print("     " + r)
 tags = [r.split("_")[2].split("-")[0] for r in rows]
 ok("같은 기관끼리 붙는다", tags == sorted(tags), tags)

@@ -34,6 +34,15 @@ console.log("── ① 문구가 지원 언어 전부에 ───────�
      g ? "빠진 언어: " + JSON.stringify(codes.filter(c => !g.has(c))) : "표가 없다");
 });
 
+// b2 는 「이름이 바뀌었어요」 — 다시 묻는 자리의 안내. 빠지면 영어로 뜬다
+{
+  const m = html.match(/const ORG_TXT\s*=\s*\{/);
+  const seg = m ? html.slice(m.index, html.indexOf("\n    };", m.index)) : "";
+  const has = new Set([...seg.matchAll(/[\{\s,]([a-z]{2}):\s*\{[^\n]*b2:/g)].map(x => x[1]));
+  ok(`ORG_TXT.b2 (${has.size}/${codes.length})`, codes.every(c => has.has(c)),
+     "빠진 언어: " + JSON.stringify(codes.filter(c => !has.has(c))));
+}
+
 console.log("\n── ② 동의를 기기에 남기는가 ─────────────────────");
 ok("옛 변수(consentGiven)를 안 쓴다",
    !/^\s*let consentGiven/m.test(html), "새로 고치면 사라지는 값이었다");
@@ -86,6 +95,21 @@ ok("대화록 안쪽에도 소속을 적는다", /lines\.push\(" 소속: "/.test
 ok("모든 올리기가 소속을 함께 싣는다",
    /function appendCommonFields\(fd\)[\s\S]{0,600}fd\.append\("orgClass"/.test(html),
    "한 자리에서 붙여야 세 갈래(중간저장·끝·되돌리기)가 다 같다");
+
+ok("소속 판번호를 서버로 보낸다", /fd\.append\("orgVer", ORG\.ver/.test(html));
+ok("서버가 판번호를 받는다", /orgVer:\s*str = Form/.test(py));
+ok("안 오면 v1 로 적는다", /_clean_str\(orgVer, 4\) or "1"/.test(py),
+   "옛 화면에서 온 자료도 어느 이름표였는지 알 수 있어야 한다");
+ok("대화록에도 판번호", /이름표 v/.test(html));
+{
+  // ★ 학습자가 보는 것은 ORG_LIST 뿐이다. 주석에 적힌 사연은 안 본다.
+  const m = html.match(/const ORG_LIST = \[[\s\S]*?\];/);
+  const seg = m ? m[0] : "";
+  ok("학교 이름이 앞에 안 온다", !!seg && !/ko: "[^"]*대학교/.test(seg) && !/ko: "중앙대/.test(seg),
+     "고를 것은 과정이지 학교가 아니다. 학교 이름이 앞에 오면 제 학교를 찾는다");
+  ok("급수를 안 붙인다", !!seg && !/3단계|3급/.test(seg),
+     "둘 다 3이라 가르는 데 아무 도움이 안 됐다");
+}
 
 console.log("\n── ④-2 목소리 ───────────────────────────────────");
 ok("기본이 여자아이 (화면)", /localStorage\.getItem\("voicePref"\) \|\| "girl"/.test(html));
@@ -243,6 +267,44 @@ setTimeout(() => {
   ok("다 갖춘 뒤엔 안 묻는다", P("window.__rp") === 1
      && d.getElementById("consentOverlay").classList.contains("hidden")
      && d.getElementById("orgOverlay").classList.contains("hidden"));
+
+  console.log("\n── ⑦ v154 이름표를 고쳤으니 다시 묻는다 ────────");
+  const NEW = P('ORG_LIST.map(o => o.ko).join(" | ")');
+  ok("새 이름표 (" + NEW + ")",
+     /KIIP 사회통합프로그램/.test(NEW) && /언어교육원 한국어교육과정/.test(NEW)
+     && /글로벌엘리트학부\(연세\)/.test(NEW));
+
+  // 옛 판(v1)으로 골라 둔 학습자 — 손으로 넣어 흉내 낸다
+  P('lsPut("org.id","cau"); lsPut("org.name","중앙대학교 언어교육원 (3급)"); lsPut("org.cls","3반"); lsPut("org.ver","1")');
+  ok("옛 판은 「덜 갖춘 것」으로 본다", P("ORG.ok") === false && P("ORG.stale") === true,
+     "이름표가 바뀌었으면 예전에 고른 것은 그 뜻이 아니다");
+  P('window.__free = 0');
+  P('document.getElementById("homeFreeCard").click()');
+  ok("옛 판이면 다시 묻는다",
+     !d.getElementById("orgOverlay").classList.contains("hidden") && P("window.__free") === 0);
+  const body = d.getElementById("orgBodyEl").textContent || "";
+  ok("바뀌었다고 알린다 (" + (P("uiLang") || "?") + ")",
+     body === P("orgT('b2')") && body !== P("orgT('b')"),
+     "「한 번만 고르면 됩니다」라 해 놓고 또 물으면 그 말이 거짓이 된다");
+  ok("옛 선택을 미리 켜 두지 않는다",
+     [...d.querySelectorAll("#orgList .org-opt")].every((b) => !b.classList.contains("on")),
+     "헷갈려 고른 그 자리가 켜져 있으면 그대로 확인을 누른다");
+  P("paintSettings()");
+  ok("설정에도 「안 고름」으로 보인다",
+     (d.getElementById("setOrgV").textContent || "") === P("setT('orgNone')"),
+     d.getElementById("setOrgV").textContent);
+
+  // 새로 고른다
+  P('[...document.querySelectorAll("#orgList .org-opt")][0].click()');
+  P('document.getElementById("orgOkBtn").click()');
+  ok("새로 고르면 통과한다", P("ORG.ok") === true && P("window.__free") === 1);
+  ok("판번호가 새로 남는다", P("ORG.ver") === P("ORG_VER"), P("ORG.ver"));
+  ok("자료에 판번호가 실린다", P("JSON.stringify(ORG.pack())").indexOf('"ver"') > 0,
+     P("JSON.stringify(ORG.pack())"));
+  ok("고른 것은 KIIP", /KIIP/.test(P("ORG.label()")), P("ORG.label()"));
+
+  P('document.getElementById("homeFreeCard").click()');
+  ok("그 뒤로는 안 묻는다", P("window.__free") === 2);
 
   console.log();
   try { w.close(); } catch (e) {}

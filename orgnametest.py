@@ -31,7 +31,7 @@ def name_of(org="", orgName="", orgClass="", kind="주제",
     return g["base"]
 
 print("── 소속이 이름에 들어가는가 ─────────────────")
-n1 = name_of("kiip", "KIIP 사회통합프로그램", "2반")
+n1 = name_of("kiip", "KIIP 사회통합프로그램", "2반")   # 반은 이제 화면이 안 보내지만, 와도 안 깨져야 한다
 print("     " + n1)
 ok("기관이 들어간다", "KIIP" in n1)
 ok("긴 이름 대신 짧은 표를 쓴다", "사회통합" not in n1,

@@ -24,7 +24,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v154"
+APP_VERSION = "v155"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -3927,6 +3927,74 @@ async def home_loops():
     if not out:
         out = [{"mp4": "/static/home_loop.mp4", "jpg": "/static/home_loop.jpg"}]
     return {"loops": out}
+
+
+@app.post("/consent-record")
+async def consent_record(
+    name: str = Form(default=""),
+    org: str = Form(default=""),
+    orgName: str = Form(default=""),
+    orgVer: str = Form(default=""),
+    at: str = Form(default=""),
+    ver: str = Form(default=""),
+    lang: str = Form(default=""),
+):
+    """★ v155 — 동의 기록 한 장을 드라이브에 남긴다.
+
+    ★ 왜 필요한가
+      동의 판본·시각은 대화 자료(.json)마다 이미 실려 간다. 그러나 그것은
+      **대화가 있어야** 남는다. 동의만 하고 대화를 안 한 학습자, 그리고
+      「누가 언제 무엇에 동의했나」를 **한눈에 보는 명단**이 따로 필요하다.
+
+    ★ 왜 PDF 가 아닌가
+      18개 언어 글꼴을 서버에 실을 까닭이 없다(/consent 와 같은 판단).
+      이것은 연구자가 폴더에서 이름으로 훑을 목록이지 배포할 서류가 아니다.
+
+    ★ 왜 화면이 부르나
+      서버는 「지금 동의했다」를 스스로 알 수 없다. 동의와 소속이 다 갖춰진
+      그 순간에 화면이 한 번 부른다. 같은 판본·같은 소속이면 다시 안 부른다.
+    """
+    if not GDRIVE_ENABLED:
+        return {"ok": False, "why": "drive-off"}
+    _nm = _clean_str(name, 20)
+    _org_ko = ({"kiip": "KIIP", "cau": "언어교육원", "yonsei": "연세대"}.get((org or "").strip())
+               or _clean_str(orgName, 24))
+    _tag = re.sub(r"[^\w가-힣.-]", "", _org_ko)[:16]
+    _ntag = re.sub(r"[^\w가-힣]", "", _nm)[:16]
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    fname = ("호아랑동의" + (f"_{_tag}" if _tag else "")
+             + (f"_{_ntag}" if _ntag else "") + f"_{ts}.txt")
+    try:
+        at_ko = datetime.datetime.fromisoformat(
+            (at or "").replace("Z", "+00:00")).strftime("%Y년 %m월 %d일 %H:%M")
+    except Exception:
+        at_ko = at or "—"
+    body = "\n".join([
+        "호아랑 — 녹음·연구 자료 수집 동의 기록",
+        "=" * 44,
+        f"동의한 사람 : {_nm or '(이름 없음)'}",
+        f"소속        : {_clean_str(orgName, 40) or '(안 고름)'}"
+        + (f"  [{(org or '').strip()}]" if org else ""),
+        f"동의한 때   : {at_ko}",
+        f"문안 판본   : {_clean_str(ver, 8) or '—'}",
+        f"이름표 판본 : {_clean_str(orgVer, 4) or '1'}",
+        f"화면 언어   : {_clean_str(lang, 8) or '—'}",
+        f"서버가 받은 때: {datetime.datetime.now().isoformat(timespec='seconds')}",
+        "",
+        "이 기록은 학습자가 화면에서 「동의하고 시작하기」를 누른 그 순간에",
+        "만들어졌습니다. 문안 전체는 /consent 에서 볼 수 있습니다.",
+        "",
+    ])
+    try:
+        fid = await asyncio.to_thread(_gdrive_upload_sync, fname,
+                                      ("﻿" + body).encode("utf-8"), "text/plain")
+        print(f"[동의] 기록 남김 — {fname}")
+        return {"ok": True, "file": fname, "id": fid}
+    except Exception as e:
+        # ★ 여기서 터져도 대화는 막지 않는다. 동의는 이미 기기에 남아 있고,
+        #   대화 자료(.json)에도 실려 간다. 이 한 장은 **명단용 사본**일 뿐이다.
+        print(f"[동의] ★ 기록 실패 — {e}")
+        return {"ok": False, "why": str(e)[:120]}
 
 
 @app.get("/consent", response_class=HTMLResponse)

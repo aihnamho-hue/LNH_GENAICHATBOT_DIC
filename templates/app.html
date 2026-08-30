@@ -17,6 +17,17 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=102">
     <link rel="preload" as="font" type="font/woff2" href="/static/fonts/GmarketSansMedium.woff2?v=102" crossorigin>
     <style>
+        /* ★ v155 — 숨김은 무엇보다 세야 한다.
+           `hidden` 은 브라우저 기본 규칙(display:none)이다. 그런데 우리가 쓴
+           `.home-top .home-ico { display: inline-flex }` 한 줄이 그것을 이긴다.
+           v152 에서 홈 위 단추 넷을 hidden 으로 돌려 놓고도 **그대로 보이고 있었다.**
+           검사는 `el.hidden` 이 true 인지만 보아 통과했다 — 「숨겼다고 적혀 있는가」를
+           쟀지 「보이지 않는가」를 재지 않았다. 표시가 아니라 성질을 재야 한다.
+           이 한 줄이 앞으로 숨기는 모든 자리를 함께 지킨다. */
+        [hidden] { display: none !important; }
+        /* 설정이 대신 눌러 주는 단추들이 사는 곳. 화면에는 없다. */
+        .set-proxy { display: none !important; }
+
         /* ── 지마켓 산스 (G마켓·무료 배포 서체) ── */
         @font-face {
             font-family: "GmarketSans";
@@ -1979,7 +1990,10 @@
         <p class="consent-text" id="orgBodyEl" style="text-align:center;"></p>
         <div class="org-list" id="orgList"></div>
         <input type="text" id="orgEtcInput" class="name-input hidden" maxlength="30">
-        <input type="text" id="orgClassInput" class="name-input" maxlength="20">
+        <!-- ★ v155 — 반 번호 칸을 뺐다. 물음이 둘이면 학습자가 아래 칸을 비워 두고
+             확인을 눌러 버려, 반이 있는 자료와 없는 자료가 뒤섞였다.
+             자리만 남겨 둔다(숨김) — 여러 곳에서 이 아이디를 부른다. -->
+        <input type="text" id="orgClassInput" class="name-input" maxlength="20" hidden>
         <div class="consent-actions">
             <button class="action-btn" id="orgOkBtn"></button>
         </div>
@@ -2255,17 +2269,23 @@
             <img class="home-logo" id="homeLogoBtn" src="/static/icon-192.png?v=102" alt="" role="button" tabindex="0">
             <span id="homeTitleEl">호아랑</span>
         </h1>
+        <!-- ★ v155 — 홈 위에는 둘만 남긴다: 지난 대화 · 설정.
+             v152 에서 나머지 넷에 `hidden` 을 붙였는데 **그대로 보이고 있었다.**
+             `.home-top .home-ico { display: inline-flex }` 한 줄이
+             브라우저 기본 규칙(`[hidden]{display:none}`)을 이겼기 때문이다.
+             이제는 아예 이 줄 밖으로 내보낸다 — 안 보이는 것이 아니라 없다. -->
         <div class="home-top">
-            <!-- ★ v152 — 목소리·배경음·이름·언어는 설정 안으로 들어갔다.
-                 자리만 남겨 둔다(숨김) — 여러 곳에서 이 아이디를 부르고 있어
-                 지우면 조용히 터진다. 설정 화면이 이 단추들을 대신 누른다. -->
-            <button type="button" class="home-ico icon-only" id="voiceBtn" title="Voice" hidden><svg class="ic"><use href="#ic-voice"></use></svg></button>
-            <button type="button" class="home-ico icon-only" id="bgmBtn" title="BGM" hidden><svg class="ic"><use href="#ic-sound"></use></svg></button>
             <button type="button" class="home-ico" id="homeHistoryBtn"><span><svg class="ic"><use href="#ic-history"></use></svg></span><span id="homeHistoryLbl"></span></button>
-            <button type="button" class="home-ico" id="homeNameBtn" hidden><span><svg class="ic"><use href="#ic-name"></use></svg></span><span id="homeNameLbl"></span></button>
-            <button type="button" class="home-ico icon-only" id="homeLangBtn" title="Language" hidden><svg class="ic"><use href="#ic-lang"></use></svg></button>
-            <!-- ★ v152 — 설정. 이름·언어·목소리·배경음·녹음이 모두 이 안으로 들어왔다. -->
             <button type="button" class="home-ico icon-only" id="homeSetBtn" title="설정"><svg class="ic"><use href="#ic-gear"></use></svg></button>
+        </div>
+        <!-- ★ 설정이 대신 누르는 단추들. 지우면 이 아이디를 부르던 여러 자리가
+             조용히 터지므로, 화면에서만 뺀다. `.set-proxy` 는 !important 로
+             잠가 두어 어떤 규칙도 이것을 되살리지 못한다. -->
+        <div class="set-proxy" id="setProxies" aria-hidden="true">
+            <button type="button" id="voiceBtn" title="Voice"><svg class="ic"><use href="#ic-voice"></use></svg></button>
+            <button type="button" id="bgmBtn" title="BGM"><svg class="ic"><use href="#ic-sound"></use></svg></button>
+            <button type="button" id="homeNameBtn"><span><svg class="ic"><use href="#ic-name"></use></svg></span><span id="homeNameLbl"></span></button>
+            <button type="button" id="homeLangBtn" title="Language"><svg class="ic"><use href="#ic-lang"></use></svg></button>
         </div>
     </div>
     <!-- 호아랑이 마루에서 기다리는 영상이 홈 화면 전체를 채운다.
@@ -2666,7 +2686,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v154 (2026-08-30)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v155 (2026-08-30)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -4887,7 +4907,35 @@
     function passGate(go, onCancel) {
         if (!CONSENT.ok) { openConsentGate(() => passGate(go, onCancel), onCancel); return; }
         if (!ORG.ok)     { openOrgPicker(() => passGate(go, onCancel), onCancel); return; }
+        sendConsentRecord();      // ★ v155 — 둘 다 갖춰진 그 순간에 한 번만
         go();
+    }
+    /* ★ v155 — 동의 기록 한 장을 드라이브에 남긴다.
+       동의 판본·시각은 대화 자료(.json)마다 이미 실려 간다. 그러나 그것은
+       **대화가 있어야** 남는다. 동의만 하고 그만둔 학습자와, 「누가 언제
+       무엇에 동의했나」를 한눈에 보는 명단은 따로 있어야 한다.
+
+       ★ 판본과 소속을 함께 표시로 남긴다. 동의를 다시 받거나 소속을 바꾸면
+         그때 한 장이 더 남는다 — 바뀐 것도 기록이기 때문이다.
+       ★ 실패해도 아무 일도 안 일어난다. 이 한 장은 **사본**이지 관문이 아니다. */
+    function sendConsentRecord() {
+        try {
+            const tag = (CONSENT.ver || "") + "|" + (ORG.ver || "") + "|" + (ORG.id || "");
+            if (lsGet("consent.sent") === tag) return;
+            const fd = new FormData();
+            fd.append("name", userName || "");
+            fd.append("org", ORG.id || "");
+            fd.append("orgName", ORG.name || "");
+            fd.append("orgVer", ORG.ver || "");
+            fd.append("at", CONSENT.at || "");
+            fd.append("ver", CONSENT.ver || "");
+            fd.append("lang", uiLang || "");
+            lsPut("consent.sent", tag);          // 먼저 찍는다 — 두 번 보내지 않도록
+            fetch("/consent-record", { method: "POST", body: fd })
+                .then((r) => r.json())
+                .then((j) => { if (!j || !j.ok) lsPut("consent.sent", ""); })
+                .catch(() => { lsPut("consent.sent", ""); });   // 다음에 다시 시도
+        } catch (e) {}
     }
     function openConsentGate(then, onCancel) {
         consentThen = then || null;
@@ -9702,7 +9750,7 @@
                 nm = (document.getElementById("orgEtcInput").value || "").trim();
                 if (!nm) { document.getElementById("orgEtcInput").focus(); return; }
             }
-            ORG.put(orgPick, nm, (document.getElementById("orgClassInput").value || "").trim());
+            ORG.put(orgPick, nm, "");        // ★ v155 — 반은 안 받는다
             ov.classList.add("hidden");
             try { paintSettings(); } catch (e) {}
             const then = orgThen; orgThen = null; orgBack = null;

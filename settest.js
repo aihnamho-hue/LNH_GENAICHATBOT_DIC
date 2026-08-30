@@ -62,10 +62,31 @@ ok("녹음을 끄면 소리를 안 올린다",
    "껐는데도 올라가면 동의문이 거짓말이 된다");
 
 console.log("\n── ③ 설정이 원래 단추를 대신 누르는가 ───────────");
-ok("원래 단추를 지우지 않고 숨겼다",
-   /id="voiceBtn"[^>]*hidden/.test(html) && /id="bgmBtn"[^>]*hidden/.test(html)
-   && /id="homeNameBtn"[^>]*hidden/.test(html) && /id="homeLangBtn"[^>]*hidden/.test(html),
-   "지우면 여러 곳에서 부르던 자리가 조용히 터진다");
+/* ★ v155 — 여기가 이 판의 핵심이다.
+   v152 는 `hidden` 속성이 붙어 있는지만 보고 통과했다. 그런데 화면에는
+   **그대로 보이고 있었다** — `.home-top .home-ico { display: inline-flex }` 가
+   브라우저 기본 규칙을 이겼기 때문이다. jsdom 은 이 어긋남을 못 잡는다
+   (기본 규칙을 더 세게 친다). 그래서 **마크업을 직접 센다.** */
+{
+  const m = html.match(/<div class="home-top">[\s\S]*?<\/div>/);
+  const bar = m ? m[0] : "";
+  const ids = [...bar.matchAll(/id="([^"]+)"/g)].map((x) => x[1]);
+  ok(`홈 위 줄에 단추가 둘뿐 (${ids.join(", ")})`,
+     (bar.match(/<button/g) || []).length === 2
+     && ids.includes("homeHistoryBtn") && ids.includes("homeSetBtn"),
+     "안 보이게 하는 것으로는 모자랐다 — 아예 이 줄 밖으로 내보낸다");
+  ["voiceBtn", "bgmBtn", "homeNameBtn", "homeLangBtn"].forEach((id) => {
+    ok(`${id} 는 홈 줄 밖에 있다`, bar.indexOf('id="' + id + '"') < 0);
+  });
+  ok("대신 눌러 줄 자리는 남아 있다",
+     /<div class="set-proxy"[\s\S]*?id="voiceBtn"[\s\S]*?id="homeLangBtn"[\s\S]*?<\/div>/.test(html),
+     "지우면 이 아이디를 부르던 여러 자리가 조용히 터진다");
+  ok("그 자리는 !important 로 잠갔다",
+     /\.set-proxy \{ display: none !important; \}/.test(html));
+  ok("숨김이 무엇보다 세다",
+     /\[hidden\] \{ display: none !important; \}/.test(html),
+     "`hidden` 은 기본 규칙이라 우리가 쓴 display 한 줄에 진다");
+}
 ["homeNameBtn", "homeLangBtn", "voiceBtn", "bgmBtn"].forEach(id => {
   ok(`설정이 ${id} 를 대신 누른다`, new RegExp('clickHidden\\("' + id + '"\\)').test(html));
 });
@@ -171,9 +192,8 @@ setTimeout(() => {
   P("CONSENT.setOn(true)");
 
   // 소속
-  P('ORG.put("kiip","KIIP 사회통합프로그램 (3단계)","2반")');
+  P('ORG.put("kiip","KIIP 사회통합프로그램","")');
   ok("소속이 남는다", /KIIP/.test(P("ORG.label()")), P("ORG.label()"));
-  ok("반도 함께", /2반/.test(P("ORG.label()")));
 
   // 기억
   ok("짧은 판은 안 남긴다",
@@ -200,18 +220,20 @@ setTimeout(() => {
   // ★ v153 — v152 는 여기서 대화가 시작됐다. 이제는 시작되지 않는다.
   ok("고르기를 닫으면 대화가 시작되지 않는다", P("window.__started") === 0,
      "소속 없는 자료가 섞이면 뒷날 갈라낼 축이 없다");
-  P('ORG.put("kiip","KIIP 사회통합프로그램 (3단계)","2반")');
+  P('ORG.put("kiip","KIIP 사회통합프로그램","")');
   P('requestStartWithConsent(null)');
   ok("한 번 고른 뒤엔 안 묻고 곧바로 시작한다", P("window.__started") === 1
      && d.getElementById("orgOverlay").classList.contains("hidden"));
 
   console.log("\n── ⑥ v153 관문 ─────────────────────────────────");
   // 홈 위에 남은 단추 — 지난 대화와 설정 둘뿐이어야 한다
-  const top = [...d.querySelectorAll(".home-top button")];
-  const shownTop = top.filter((b) => !b.hidden).map((b) => b.id);
-  ok("홈 위에는 지난 대화와 설정 둘뿐 (" + shownTop.join(", ") + ")",
-     shownTop.length === 2 && shownTop.includes("homeHistoryBtn")
-     && shownTop.includes("homeSetBtn"));
+  const top = [...d.querySelectorAll(".home-top button")].map((b) => b.id);
+  ok("홈 위에는 지난 대화와 설정 둘뿐 (" + top.join(", ") + ")",
+     top.length === 2 && top[0] === "homeHistoryBtn" && top[1] === "homeSetBtn");
+  ok("설정이 여전히 넷을 대신 누른다",
+     ["voiceBtn", "bgmBtn", "homeNameBtn", "homeLangBtn"]
+       .every((id) => !!d.getElementById(id)),
+     "화면에서만 뺀 것이지 지운 것이 아니다");
 
   // 목소리 이름표 — 「아이」가 「성인」으로 뜨던 자리
   P('voicePref = "boy"'); const vb = P("voiceLabelNow()");
@@ -258,15 +280,17 @@ setTimeout(() => {
      "동의는 이미 했으니 두 번 묻지 않는다");
 
   P('[...document.querySelectorAll("#orgList .org-opt")][0].click()');
-  P('document.getElementById("orgClassInput").value = "2반"');
   P('document.getElementById("orgOkBtn").click()');
   ok("고르고 나서야 들어간다", P("window.__free") === 1);
-  ok("고른 것이 남는다", /2반/.test(P("ORG.label()")), P("ORG.label()"));
+  ok("고른 것이 남는다", /KIIP/.test(P("ORG.label()")), P("ORG.label()"));
 
   P('document.getElementById("homeRpCard").click()');
   ok("다 갖춘 뒤엔 안 묻는다", P("window.__rp") === 1
      && d.getElementById("consentOverlay").classList.contains("hidden")
      && d.getElementById("orgOverlay").classList.contains("hidden"));
+
+  ok("반 번호를 안 묻는다", d.getElementById("orgClassInput").hidden === true,
+     "물음이 둘이면 아래 칸을 비워 두고 확인을 눌러, 반 있는 자료와 없는 자료가 섞인다");
 
   console.log("\n── ⑦ v154 이름표를 고쳤으니 다시 묻는다 ────────");
   const NEW = P('ORG_LIST.map(o => o.ko).join(" | ")');
@@ -275,7 +299,7 @@ setTimeout(() => {
      && /글로벌엘리트학부\(연세\)/.test(NEW));
 
   // 옛 판(v1)으로 골라 둔 학습자 — 손으로 넣어 흉내 낸다
-  P('lsPut("org.id","cau"); lsPut("org.name","중앙대학교 언어교육원 (3급)"); lsPut("org.cls","3반"); lsPut("org.ver","1")');
+  P('lsPut("org.id","cau"); lsPut("org.name","중앙대학교 언어교육원 (3급)"); lsPut("org.ver","1")');
   ok("옛 판은 「덜 갖춘 것」으로 본다", P("ORG.ok") === false && P("ORG.stale") === true,
      "이름표가 바뀌었으면 예전에 고른 것은 그 뜻이 아니다");
   P('window.__free = 0');

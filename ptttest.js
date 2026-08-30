@@ -24,6 +24,7 @@ const dom = new JSDOM(html, {
         w.scrollTo = () => {};
         w.HTMLElement.prototype.scrollIntoView = () => {};
         w.HTMLMediaElement.prototype.play = () => Promise.resolve();
+        w.HTMLMediaElement.prototype.pause = () => {};
         w.HTMLMediaElement.prototype.load = () => {};
         // 진동을 가로채 **정말 부르는지** 본다 (기기에 없어도 코드는 불러야 한다)
         w.navigator.vibrate = (p) => { buzzes.push(p); return true; };

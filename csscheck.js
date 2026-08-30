@@ -1,6 +1,6 @@
 
 const fs=require("fs"), csstree=require("css-tree");
-const css=fs.readFileSync("i.html","utf8").match(/<style>([\s\S]*?)<\/style>/)[1];
+const css=fs.readFileSync(process.argv[2] || "app.html","utf8").match(/<style>([\s\S]*?)<\/style>/)[1];
 let errs=0;
 csstree.parse(css,{positions:true,onParseError(e){errs++;if(errs<=8)console.log("  ❌",e.message,"(줄",e.line+")");}});
 console.log(errs? `💥 CSS 파싱 오류 ${errs}건` : "✅ CSS 문법 오류 없음");

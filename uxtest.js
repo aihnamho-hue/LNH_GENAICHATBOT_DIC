@@ -49,7 +49,11 @@ setTimeout(()=>{
   console.log("── 지난 대화 ──");
   // v87 — 저자 요청으로 3개 제한을 풀었다. 저장된 대화(최대 30개)를 모두 보이고,
   //        항목을 눌러 그 자리에서 펼치고 다시 눌러 접는다.
-  ok("목록은 전부 보인다", /list\.forEach\(\(it, i\)/.test(html) && !/list\.slice\(0, 3\)/.test(html));
+  // v152 — slice(0,3) 금지를 파일 전체에 걸어 두었더니 자유 대화 기억의
+  //        slice 가 애먼 곳에서 걸렸다. 지난 대화를 그리는 함수 안만 본다.
+  const histFn = (html.match(/function renderHistList\(\)[\s\S]{0,2000}/) || [""])[0];
+  ok("목록은 전부 보인다",
+     /list\.forEach\(\(it, i\)/.test(histFn) && !/list\.slice\(/.test(histFn));
   ok("항목 안에서 펼친다", /class="hi-body"/.test(html) && /\.hist-item\.open \.hi-body/.test(html));
   ok("다시 누르면 접힌다", /function toggleHistItem/.test(html) && /if \(wasOpen\)/.test(html));
   // 목록은 다시 길게(52vh), 펼친 기록은 그 안에서 34vh — 내보내기·닫기 버튼이 밀리지 않는 선

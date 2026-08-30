@@ -8,7 +8,11 @@ let fail=0;
 
 // ① getElementById("x") 대상이 HTML에 있는가
 const ids=new Set([...script.matchAll(/getElementById\(\s*"([A-Za-z0-9_\-]+)"\s*\)/g)].map(m=>m[1]));
-const deadIds=[...ids].filter(i=>!d.getElementById(i));
+/* ★ v129 — 코드가 만들어 붙이는 자리는 HTML 에 없는 것이 정상이다.
+   (id 를 지어 넣고 곧바로 찾는 꼴 — createElement 뒤 .id = "..." 가 있으면 만든 것이다) */
+const MADE = new Set([...script.matchAll(/\.id\s*=\s*"([A-Za-z0-9_\-]+)"/g)].map(m => m[1]));
+const deadIds=[...ids].filter(i=>!d.getElementById(i) && !MADE.has(i));
+if (MADE.size) console.log(`   (코드가 만들어 붙이는 자리 ${MADE.size}개는 뺐다)`);
 console.log(`① getElementById 대상 ${ids.size}개`);
 if(deadIds.length){fail++;console.log("  ❌ HTML에 없는 id: "+deadIds.join(", "));}
 else console.log("  ✅ 전부 존재");

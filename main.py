@@ -6,6 +6,7 @@ import time
 import datetime
 import re
 import hashlib
+from html import escape as html_escape   # v152 — 동의서 쪽에 값을 안전하게 끼운다
 import shutil          # ★ v115 — 55행에서 쓰면서 import 가 없었다. 아래 각주 참조.
 from pathlib import Path
 from dotenv import load_dotenv
@@ -23,7 +24,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v151"
+APP_VERSION = "v152"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -883,8 +884,24 @@ def _band(v: int) -> str:
     return "high"
 
 
-def build_system_prompt(d: int, p: int, ui_lang: str = "", user_name: str = "") -> str:
+def build_system_prompt(d: int, p: int, ui_lang: str = "", user_name: str = "",
+                       past_mem: str = "") -> str:
     d_band, p_band = _band(d), _band(p)
+    # ★★ v152 — 지난 자유 대화의 기억.
+    #   「얘가 나를 기억하네」가 되어야지 「내 얘기를 다 저장해 뒀네」가 되면 안 된다.
+    #   그래서 **첫 인사에서 한 번만** 꺼내게 못 박는다.
+    mem_hint = ""
+    if past_mem:
+        mem_hint = f"""
+# 지난번에 나눈 이야기
+{past_mem}
+
+- ★ 이것을 **첫 인사에서 딱 한 번만** 꺼내라.
+  예) "지난번에 카페 아르바이트 이야기 했잖아. 어떻게 됐어?"
+- 그 뒤로는 다시 꺼내지 마라. 자꾸 꺼내면 학습자가 감시받는다고 느낀다.
+- 학습자가 그 이야기를 반기지 않으면 곧바로 다른 화제로 넘어가라.
+- 여기 없는 것을 아는 척하지 마라.
+"""
     name_hint = ""
     if user_name:
         name_hint = f"""
@@ -925,7 +942,7 @@ def build_system_prompt(d: int, p: int, ui_lang: str = "", user_name: str = "") 
     sep = """
 
 """
-    return BASE_PERSONA + LEVEL_RULES + SPOKEN_RULES + name_hint + native_hint + coord + D_RULES[d_band] + sep + P_RULES[p_band] + sep + fusion
+    return BASE_PERSONA + LEVEL_RULES + SPOKEN_RULES + name_hint + mem_hint + native_hint + coord + D_RULES[d_band] + sep + P_RULES[p_band] + sep + fusion
 
 
 # ============================================================
@@ -2085,6 +2102,10 @@ _hint_dx = {"ok": 0, "fail": 0, "empty": 0, "last": ""}
 #   쪼개져 도착하면 조각마다 정규식을 걸어서는 영영 못 잡는다.
 #   그래서 표식이 될 수도 있는 꼬리(`<`, `<no`, `<nois`…)는 **붙들어 두었다가**
 #   다음 조각과 이어 붙여서 다시 본다.
+# ★ v152 — 동의서 판본. 화면(app.html 의 CONSENT_VER)과 **같아야 한다.**
+#   문안을 고치면 여기와 저기를 함께 올린다 — 그래야 학습자에게 다시 받는다.
+CONSENT_DOC_VER = "1.0"
+
 STT_UNHEARD = "(안 들림)"
 _STT_JUNK = re.compile(
     r"""[<\[(]\s*
@@ -3906,6 +3927,106 @@ async def home_loops():
     return {"loops": out}
 
 
+@app.get("/consent", response_class=HTMLResponse)
+async def consent_doc(request: Request):
+    """★ v152 — 동의서 한 장 (한국어).
+
+    ★ 왜 서버에서 PDF 를 안 굽나
+      18개 언어 글꼴(태국어·미얀마어·크메르어까지)을 서버에 실어야 한다.
+      **읽고 보관하는 글**이지 서명받을 서류가 아니라 그럴 까닭이 없다.
+      이 쪽을 열고 브라우저에서 「인쇄 → PDF로 저장」을 고르면
+      **기기의 글꼴로** 어디서나 제대로 나온다. 서버 무게 0.
+
+    ★ 문안을 고치면 CONSENT_VER 를 올린다. 그래야 다시 받는다.
+    """
+    q = request.query_params
+    esc = lambda x: html_escape(str(x or "")[:60])
+    at = (q.get("at") or "").strip()
+    try:
+        at_ko = datetime.datetime.fromisoformat(at.replace("Z", "+00:00")).strftime("%Y년 %m월 %d일 %H:%M")
+    except Exception:
+        at_ko = "—"
+    off = (q.get("offAt") or "").strip()
+    try:
+        off_ko = datetime.datetime.fromisoformat(off.replace("Z", "+00:00")).strftime("%Y년 %m월 %d일") if off else ""
+    except Exception:
+        off_ko = ""
+    on = (q.get("on") or "1") != "0"
+
+    return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>호아랑 — 녹음·연구 자료 수집 동의서</title>
+<style>
+ @page {{ size: A4; margin: 18mm 16mm; }}
+ * {{ box-sizing: border-box; }}
+ body {{ font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+   color: #23282C; background: #F4F0E6; margin: 0; padding: 28px 18px 60px;
+   line-height: 1.75; font-size: 14px; }}
+ .sheet {{ max-width: 640px; margin: 0 auto; background: #fff; padding: 38px 34px 34px;
+   border-radius: 14px; box-shadow: 0 10px 30px -18px rgba(40,35,25,.5); }}
+ h1 {{ font-size: 21px; margin: 0 0 4px; color: #22356B; }}
+ .sub {{ font-size: 12px; color: #6B6357; margin: 0 0 22px; }}
+ .rec {{ background: #FBF9F3; border: 1.5px solid #E7E0D2; border-radius: 11px;
+   padding: 14px 16px; margin: 0 0 24px; font-size: 13px; }}
+ .rec dl {{ display: grid; grid-template-columns: 92px 1fr; gap: 5px 10px; margin: 0; }}
+ .rec dt {{ color: #6B6357; font-weight: 400; }}
+ .rec dd {{ margin: 0; font-weight: 700; }}
+ h2 {{ font-size: 14.5px; margin: 22px 0 5px; color: #22356B; }}
+ p {{ margin: 0 0 8px; }}
+ .foot {{ margin-top: 28px; padding-top: 14px; border-top: 1px solid #E7E0D2;
+   font-size: 11.5px; color: #6B6357; }}
+ .btn {{ display: block; width: 100%; max-width: 640px; margin: 18px auto 0; padding: 14px;
+   border: none; border-radius: 11px; background: #22356B; color: #fff;
+   font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit; }}
+ @media print {{ body {{ background: #fff; padding: 0; }}
+   .sheet {{ box-shadow: none; border-radius: 0; padding: 0; max-width: none; }}
+   .btn {{ display: none; }} }}
+</style></head><body>
+<div class="sheet">
+<h1>녹음·연구 자료 수집 동의서</h1>
+<p class="sub">호아랑(Hoarang) · 판본 {esc(q.get('ver') or CONSENT_DOC_VER)} · 이남호
+ (중앙대학교 국어국문학과 한국어교육학전공)</p>
+
+<div class="rec"><dl>
+ <dt>동의한 사람</dt><dd>{esc(q.get('name')) or '—'}</dd>
+ <dt>소속</dt><dd>{esc(q.get('org')) or '—'}</dd>
+ <dt>동의한 때</dt><dd>{at_ko}</dd>
+ <dt>지금 상태</dt><dd>{'켜짐' if on else ('꺼짐 — ' + off_ko + ' 에 끔' if off_ko else '꺼짐')}</dd>
+</dl></div>
+
+<h2>1. 무엇을 모읍니까</h2>
+<p>대화 음성, 대화 글(전사), 대화 설정(주제·장소·역할·말투), 학습 기록.</p>
+
+<h2>2. 왜 모읍니까</h2>
+<p>이 연구는 <b>학습자를 위한 생성형 AI 활용 한국어 상호작용 대화 교육 모형을 개발하고
+그 교육적 효과를 검증</b>하는 데 목적이 있습니다.
+모인 자료는 <b>중앙대학교 한국어교육학 연구</b>에 쓰일 수 있습니다.</p>
+
+<h2>3. 이름은 지웁니다</h2>
+<p>연구에 쓸 때 이름과 소속을 지웁니다. 누구의 대화인지 알 수 없게 합니다.</p>
+
+<h2>4. 돈</h2>
+<p><b>2026년 12월 12일까지</b> 이 앱을 쓰는 데 돈을 내지 않습니다.
+동의를 하든 하지 않든 마찬가지입니다.</p>
+
+<h2>5. 불이익이 없습니다</h2>
+<p>참여하지 않아도, 도중에 그만두어도 <b>어떤 불이익도 없습니다.</b>
+수업 성적과 관계가 없습니다.</p>
+
+<h2>6. 그만두려면</h2>
+<p>설정에서 녹음을 끌 수 있습니다. 끈 뒤로는 녹음하지 않습니다.
+이미 모인 자료는 이름을 지운 상태로 연구에 쓰입니다.</p>
+
+<h2>7. 언제까지 둡니까</h2>
+<p>연구가 끝난 뒤 <b>3년</b>까지 두고, 그 뒤에 지웁니다.</p>
+
+<div class="foot">문의 · 이남호 · namho1210@naver.com<br>
+문안 판본 {esc(q.get('ver') or CONSENT_DOC_VER)} · 2026-08-29</div>
+</div>
+<button class="btn" onclick="window.print()">인쇄 · PDF로 저장</button>
+</body></html>"""
+
+
 @app.get("/version")
 async def version_check():
     """서버 코드와 화면 파일의 버전이 서로 맞는지 한눈에 확인한다.
@@ -4224,6 +4345,9 @@ async def upload_recording(
     meta: str = Form(default=""),
     sid: str = Form(default=""),
     mode: str = Form(default=""),
+    org: str = Form(default=""),        # v152 — 어느 기관 학습자인가
+    orgName: str = Form(default=""),
+    orgClass: str = Form(default=""),
 ):
     """대화 녹음(믹스 1파일) + 대화기록(txt) + 대화 정보(json) 저장.
     - 대화 중 60초마다 클라이언트가 같은 sid로 진행분을 보내면 같은 파일을 갱신
@@ -4279,7 +4403,17 @@ async def upload_recording(
         kind = {"rp": "주제", "free": "자유"}.get(_md, "미상")
         if kind == "미상":
             print(f"[업로드] ★ mode 를 못 받았다 — 「미상」으로 적는다 (name={name[:12]})")
-        base = (f"호아랑대화_{kind}_{ts}"
+        # ★ v152 — 소속을 **날짜 앞**에 넣는다. 이름으로 정렬하면 기관별로 모인다.
+        #   KIIP·언어교육원·연세대 자료가 한 폴더에 섞이면 뒷날 갈라낼 수 없다.
+        _org = _clean_str(orgName, 24) or {"kiip": "KIIP", "cau": "중앙대",
+                                           "yonsei": "연세대"}.get((org or "").strip(), "")
+        _cls = _clean_str(orgClass, 12)
+        _tag = re.sub(r"[^\w가-힣().-]", "", _org)[:16]
+        _ctag = re.sub(r"[^\w가-힣]", "", _cls)[:8]
+        base = (f"호아랑대화_{kind}"
+                + (f"_{_tag}" if _tag else "")
+                + (f"-{_ctag}" if _ctag else "")
+                + f"_{ts}"
                 + (f"_{safe_name}" if safe_name else "") + f"_D{d}_P{p}")
         if safe_sid:
             _session_uploads_cleanup()
@@ -4298,6 +4432,14 @@ async def upload_recording(
             pass
     meta_dict.setdefault("name", name[:20])
     meta_dict.setdefault("mode", (mode or "").strip() or "free")   # v150
+    # ★ v152 — 소속·동의 기록. 화면이 meta 로도 보내지만, 폼으로 온 것을 우선 믿는다.
+    if org or orgName:
+        meta_dict.setdefault("org", {})
+        if isinstance(meta_dict["org"], dict):
+            meta_dict["org"].update({k: v for k, v in
+                                     (("id", (org or "").strip()),
+                                      ("name", _clean_str(orgName, 40)),
+                                      ("cls", _clean_str(orgClass, 20))) if v})
     meta_dict.setdefault("d", d)
     meta_dict.setdefault("p", p)
     meta_dict["hasAudio"] = bool(audio_bytes)
@@ -4431,6 +4573,8 @@ async def _handle_session(websocket: WebSocket):
     user_name = re.sub(r"\s+", " ", websocket.query_params.get("name", "")).strip()[:20]
     # 학습자가 홈에서 고른 목소리 (빈 값·auto면 배역에 맞춰 자동 선택)
     voice_pref = websocket.query_params.get("voice", "").strip().lower()[:20]
+    # ★ v152 — 자유 대화 기억. 기기가 들고 와 건네준다 — 서버는 아무것도 안 찾는다.
+    past_mem = websocket.query_params.get("mem", "").strip()[:400]
     # 비계 넛지의 세기 — 홈의 페이더로 학습자가 정한다 (0 끔 / 1 적게 / 2 보통 / 3 많이).
     # 학습자가 상한을 정하고, 그 아래에서는 실현 여부에 따른 자동 페이딩이 그대로 돈다.
     try:
@@ -4514,7 +4658,7 @@ async def _handle_session(websocket: WebSocket):
     else:
         # 자유 대화에도 MKO 블록을 붙인다 — IDC는 상황극 전용 능력이 아니다.
         # 오히려 과업이 없는 자유 대화에서 화제·차례 관리가 순수하게 드러난다.
-        system_prompt = build_system_prompt(d, p, ui_lang, user_name) \
+        system_prompt = build_system_prompt(d, p, ui_lang, user_name, past_mem) \
             + build_mko_block(idc_state["levels"], idc_state["counts"],
                               native=LANG_NAMES.get(ui_lang, ""))
         print(f"[서버] 클라이언트 연결 성공 — 친밀도(D)={d}, 지위(P)={p}, 언어={ui_lang or 'ko'}, 이름={user_name or '(없음)'}")
@@ -5428,7 +5572,14 @@ why는 학습자가 읽을 한 문장(30자 이내). 실제 발화를 근거로 
       "레지스터를 선택하지 못했습니다"     → "상대에 맞는 높임말을 써 보세요"
       "기능 단계가 나타나지 않았습니다"     → "인사하고 끝인사까지 해 보세요"
   '~하지 못했습니다'보다 '~해 보세요'처럼 다음에 할 일로 적어라. 반드시 한국어로.
-JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
+★★ v152 — memory 칸을 함께 채워라 (자유 대화에서만 쓴다).
+  다음에 호아랑이 이 학습자를 다시 만났을 때 **「지난번 그 이야기」로 말을 걸** 밑천이다.
+  · topics: 이번에 나온 이야깃거리 2~4개. 짧은 이름씩(예: "고향 네팔", "카페 아르바이트")
+  · note: 다음에 물어보면 좋을 것 한 줄(40자 이내). 예) "아르바이트 어떻게 됐는지 물어보기"
+  학습자가 스스로 말한 것만 적어라. 없으면 빈 배열·빈 문자열로 둔다.
+
+JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}],
+  "memory":{{"topics":[],"note":""}}}}"""
         data = None
         try:
             data = await _gen_json(prompt, timeout_s=18.0)
@@ -5467,7 +5618,17 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
             print(f"[IDC] 그중 지시받고 해낸 것: {pr}")
         print(f"[IDC] 프로파일 — 총점 {total}점 / " +
               " ".join(f"{i['key']}:{i['grade']}" for i in items if i["scored"]))
-        return {"items": items, "total": total}
+        # ★ v152 — 자유 대화 기억. 위 판정과 **같은 호출**에서 함께 받았다(추가 호출 0회).
+        mem = {"topics": [], "note": ""}
+        try:
+            m = (data or {}).get("memory") or {}
+            if isinstance(m, dict):
+                mem["topics"] = [_clean_str(x, 30) for x in (m.get("topics") or [])[:4]
+                                 if _clean_str(x, 30)]
+                mem["note"] = _clean_str(m.get("note"), 60)
+        except Exception:
+            pass
+        return {"items": items, "total": total, "memory": mem}
 
     async def run_review(send_piece=None) -> str:
         """총평 — 등급표 말고 사람이 쓴 것 같은 줄글로.
@@ -5627,6 +5788,8 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}]}}"""
             "stages": payload.get("stages", []),
             "idc": idc["items"],
             "idcTotal": idc["total"],
+            # ★ v152 — 자유 대화에서만. 5분 넘겼을 때만 화면이 기기에 적는다.
+            "memory": (idc.get("memory") or {}) if not rp_plan else {},
             "abc": rp_progress["abc"],                      # 대화 유형 A/B/C
             "chains": rp_progress["chains"],                # 대화이동 연쇄 횟수
             "review": review,                              # 총평은 뒤이어 따로 온다(type:"review")

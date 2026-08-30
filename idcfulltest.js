@@ -6,7 +6,10 @@ const LANGS=(html.match(/data-lang="[a-z]+"/g)||[]).length;
 const py=fs.readFileSync("main.py","utf8");
 let fail=0; const ok=(n,c)=>{console.log((c?"  ✅ ":"  ❌ ")+n); if(!c)fail++;};
 console.log("── ⓐ 자유 수다에도 IDC ──");
-ok("자유 수다 프롬프트에 MKO 블록", /build_system_prompt\(d, p, ui_lang, user_name\) \\\n            \+ build_mko_block/.test(py));
+// v152 — 인자 목록을 글자로 대조하다 past_mem 이 늘면서 깨졌다.
+// 「자유 대화 갈래에서 두 블록이 이어 붙는가」만 본다.
+ok("자유 수다 프롬프트에 MKO 블록",
+   /system_prompt = build_system_prompt\([^)]*\)\s*\\\s*\n\s*\+ build_mko_block/.test(py));
 ok("비계 주입이 자유 대화 허용", /if sess is None:\s*#\s*자유 대화에도 비계 갱신/.test(py));
 ok("분석이 자유 수다 허용", /stages_txt = "\(자유 대화 — 기능단계 없음/.test(py));
 ok("프로파일이 자유 수다 허용", !/if rp_plan is None or not convo:\s*\n\s*return blank/.test(py));

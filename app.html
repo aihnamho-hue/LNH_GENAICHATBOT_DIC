@@ -871,10 +871,64 @@
         .lang-item:hover { transform: translateY(-1px); border-color: var(--accent-ink); background: #EAF0EB; }
         .lang-item .flag { font-size: 20px; }
 
+        /* ★★ v152 — 설정 ─────────────────────────────────────
+           줄 하나가 「무엇을」 「지금 무엇으로」 두 조각으로 되어 있다.
+           고르러 들어가기 전에 지금 값을 볼 수 있어야 한다. */
+        .set-box { max-width: 440px; text-align: left; }
+        .set-box h2 { text-align: center; margin: 0 0 16px; }
+        .set-row { display: flex; align-items: center; gap: 12px; width: 100%;
+            padding: 13px 14px; margin-bottom: 7px; border-radius: 12px;
+            border: 1.5px solid #E7E0D2; background: #FBF9F3; cursor: pointer; text-align: left; }
+        .set-row:hover { background: #fff; border-color: var(--accent-ink); }
+        .set-ico { flex: none; width: 30px; height: 30px; border-radius: 9px;
+            background: #EAF1EE; display: flex; align-items: center; justify-content: center;
+            color: var(--accent-ink); }
+        .set-ico .ic { width: 17px; height: 17px; }
+        .set-txt { flex: 1; min-width: 0; }
+        .set-k { display: block; font-size: 14.5px; font-weight: 800; color: var(--ink); }
+        .set-v { display: block; font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 2px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .set-go { flex: none; font-size: 19px; color: #B9B0A0; }
+        .set-blk { padding: 12px 14px; margin-bottom: 7px; border-radius: 12px;
+            border: 1.5px solid #E7E0D2; background: #FBF9F3; }
+        .set-head { display: flex; align-items: center; gap: 12px; }
+        .set-head .set-k { flex: 1; }
+        /* 켜고 끄는 손잡이 */
+        .set-sw { flex: none; width: 46px; height: 26px; border-radius: 13px; border: none;
+            background: #CFC7B7; position: relative; cursor: pointer; transition: background 0.18s; }
+        .set-sw i { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+            border-radius: 50%; background: #fff; transition: transform 0.18s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
+        .set-sw[aria-pressed="true"] { background: var(--accent-ink); }
+        .set-sw[aria-pressed="true"] i { transform: translateX(20px); }
+        .set-fader { display: flex; align-items: center; gap: 10px; margin-top: 11px; }
+        .set-fader input[type=range] { flex: 1; }
+        .set-fader.off { opacity: 0.38; pointer-events: none; }
+        .set-num { flex: none; width: 34px; text-align: right; font-size: 12px;
+            font-weight: 700; color: var(--muted); }
+        .set-note { font-size: 11.5px; font-weight: 400; color: var(--muted);
+            line-height: 1.55; margin: 9px 0 0; white-space: pre-line; }
+        .set-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+            padding: 8px 13px; border-radius: 9px; border: 1.5px solid var(--accent-soft);
+            background: #fff; color: var(--accent-ink); font-size: 12.5px; font-weight: 800;
+            cursor: pointer; }
+        .set-link:hover { border-color: var(--accent-ink); }
+        .set-link .ic { width: 15px; height: 15px; }
+        .set-ver { text-align: center; font-size: 10.5px; color: #A79E8E; margin: 14px 0 0; }
+        /* 소속 고르기 */
+        .org-list { display: flex; flex-direction: column; gap: 7px; margin: 4px 0 10px; }
+        .org-opt { display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+            border-radius: 11px; border: 1.5px solid #E7E0D2; background: #FBF9F3;
+            font-size: 14px; font-weight: 700; color: var(--ink); cursor: pointer; text-align: left; }
+        .org-opt.on { border-color: var(--dan-gold); background: #FFF6E2; }
+        .org-opt b { flex: none; width: 18px; height: 18px; border-radius: 50%;
+            border: 2px solid #CFC7B7; }
+        .org-opt.on b { border-color: var(--dan-gold); background: var(--dan-gold); }
+
         /* ── 녹음 동의 모달 ── */
         .consent-box { max-width: 420px; }
         .name-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--accent-soft); font-size: 14px; margin-bottom: 14px; text-align: center; background: #F7F4EC; color: var(--ink); }
-        .consent-box p.consent-text { font-size: 13px; color: var(--ink); line-height: 1.75; text-align: left; margin: 0 0 18px; }
+        .consent-box p.consent-text { font-size: 13px; color: var(--ink); line-height: 1.75; text-align: left; margin: 0 0 18px; white-space: pre-line; }
         .consent-actions { display: flex; flex-direction: column; gap: 8px; }
 
         /* ── 카카오톡 인앱 브라우저 안내 배너 ── */
@@ -1726,6 +1780,9 @@
 <body data-screen="home"><!-- 화면 상태: home | chat | feedback (방안 A: 홈+대화 분리) -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><!-- 아이콘: Lucide (ISC) — 선 굵기·모서리는 앱 팔레트에 맞춰 CSS에서 지정 --><symbol id="ic-ladder" viewBox="0 0 24 24"><path d="M7 3v18M17 3v18M7 8h10M7 13h10M7 18h10"/></symbol><symbol id="ic-idc-move" viewBox="0 0 24 24"><path d="M3 5h9v7H7l-4 3z"/><path d="M21 11h-6v7h4l2 2z"/></symbol><symbol id="ic-idc-topic" viewBox="0 0 24 24"><path d="M21 6a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h2l4 4v-4h6a3 3 0 0 0 3-3z"/><circle cx="8.5" cy="9.5" r=".6"/><circle cx="12" cy="9.5" r=".6"/><circle cx="15.5" cy="9.5" r=".6"/></symbol><symbol id="ic-idc-turn" viewBox="0 0 24 24"><path d="M4 9h13l-3-3M20 15H7l3 3"/></symbol><symbol id="ic-idc-repair" viewBox="0 0 24 24"><path d="M3 12h5M16 12h5"/><path d="M10 8l4 8M14 8l-4 8"/></symbol><symbol id="ic-idc-strategy" viewBox="0 0 24 24"><path d="M4 18c0-6 4-9 8-9h6l-3-3M18 9l-3 3"/><path d="M10 20h-6"/></symbol><symbol id="ic-idc-listen" viewBox="0 0 24 24"><path d="M4 5h10v7H8l-4 3z"/><path d="M17 7c1.5 1.5 1.5 4 0 5.5M20 5c2.5 2.5 2.5 7 0 9.5"/></symbol><symbol id="ic-idc-context" viewBox="0 0 24 24"><path d="M3 4h8v6H6l-3 2z"/><path d="M21 11h-11v8h7l4 3z"/></symbol><symbol id="ic-idc-stage" viewBox="0 0 24 24"><path d="M3 20h4v-4h5v-4h5V8h4"/></symbol><symbol id="ic-idc-nonverbal" viewBox="0 0 24 24"><path d="M4 6h4M12 6h4M20 6v3M20 13v1M4 6v8l3 3M11 17h6" stroke-dasharray="3 2.6"/></symbol><symbol id="ic-topic" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" /></symbol><symbol id="ic-free" viewBox="0 0 24 24"><path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /> <path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1" /></symbol><symbol id="ic-mic" viewBox="0 0 24 24"><path d="M12 19v3" /> <path d="M19 10v2a7 7 0 0 1-14 0v-2" /> <rect x="9" y="2" width="6" height="13" rx="3" /></symbol><symbol id="ic-hint" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" /> <path d="M9 18h6" /> <path d="M10 22h4" /></symbol><symbol id="ic-video" viewBox="0 0 24 24"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" /> <rect x="2" y="6" width="14" height="12" rx="2" /></symbol><symbol id="ic-chat" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></symbol><symbol id="ic-sound" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /> <path d="M16 9a5 5 0 0 1 0 6" /> <path d="M19.364 18.364a9 9 0 0 0 0-12.728" /></symbol><symbol id="ic-mute" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /> <line x1="22" x2="16" y1="9" y2="15" /> <line x1="16" x2="22" y1="9" y2="15" /></symbol><symbol id="ic-lang" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /> <path d="M2 12h20" /></symbol><symbol id="ic-name" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /> <path d="m15 5 4 4" /></symbol><symbol id="ic-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /> <path d="M3 3v5h5" /> <path d="M12 7v5l4 2" /></symbol><symbol id="ic-voice" viewBox="0 0 24 24"><path d="M2 10v3" /> <path d="M6 6v11" /> <path d="M10 3v18" /> <path d="M14 8v7" /> <path d="M18 5v13" /> <path d="M22 10v3" /></symbol><symbol id="ic-ear" viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" /></symbol><symbol id="ic-phone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /> <path d="M12 18h.01" /></symbol><symbol id="ic-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /> <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></symbol><symbol id="ic-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol><symbol id="ic-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z"/><circle cx="12" cy="13" r="3"/></symbol>
 <symbol id="ic-dice" viewBox="0 0 24 24"><rect width="12" height="12" x="2" y="10" rx="2" ry="2" /> <path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" /> <path d="M6 18h.01" /> <path d="M10 14h.01" /> <path d="M15 6h.01" /> <path d="M18 9h.01" /></symbol><symbol id="ic-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <circle cx="12" cy="12" r="6" /> <circle cx="12" cy="12" r="2" /></symbol><symbol id="ic-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /> <circle cx="12" cy="7" r="4" /></symbol><symbol id="ic-tone" viewBox="0 0 24 24"><path d="m12 14 4-4" /> <path d="M3.34 19a10 10 0 1 1 17.32 0" /></symbol><symbol id="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol><symbol id="ic-plan" viewBox="0 0 24 24"><path d="M13 5h8" /> <path d="M13 12h8" /> <path d="M13 19h8" /> <path d="m3 17 2 2 4-4" /> <path d="m3 7 2 2 4-4" /></symbol><symbol id="ic-trophy" viewBox="0 0 24 24"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2" /> <path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2" /> <path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3" /> <path d="M4 22h16" /> <path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z" /> <path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3" /></symbol><symbol id="ic-share" viewBox="0 0 24 24"><path d="M12 3v13M12 3l-4 4M12 3l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="ic-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+        <symbol id="ic-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></symbol>
+        <symbol id="ic-school" viewBox="0 0 24 24"><path d="m4 6 8-4 8 4-8 4z"/><path d="M6 10v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/><path d="M20 7v6"/></symbol>
         <symbol id="ic-addhome" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v8M8 12h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
         <symbol id="ic-dots" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></symbol>
         <symbol id="ic-wave" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" /> <path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" /> <path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" /> <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></symbol></svg>
@@ -1854,6 +1911,81 @@
         </div>
     </div>
 </div>
+<!-- ★★ v152 — 설정. 흩어져 있던 것을 한자리에 모았다.
+     홈 위에 단추가 다섯이나 늘어서 있어 무엇이 무엇인지 알 수 없었다.
+     여기서 고르는 것은 다섯 — 이름 · 화면 언어 · 호아랑 목소리 · 배경음 · 녹음. -->
+<div class="lang-overlay hidden" id="setOverlay">
+    <div class="lang-box set-box">
+        <button type="button" class="ov-x" id="setX">✕</button>
+        <h2 id="setTitleEl">설정</h2>
+
+        <!-- 눌러서 원래 있던 창을 여는 줄 -->
+        <button type="button" class="set-row" id="setNameRow">
+            <span class="set-ico"><svg class="ic"><use href="#ic-name"></use></svg></span>
+            <span class="set-txt"><span class="set-k" id="setNameK"></span><span class="set-v" id="setNameV"></span></span>
+            <span class="set-go">›</span>
+        </button>
+        <button type="button" class="set-row" id="setLangRow">
+            <span class="set-ico"><svg class="ic"><use href="#ic-lang"></use></svg></span>
+            <span class="set-txt"><span class="set-k" id="setLangK"></span><span class="set-v" id="setLangV"></span></span>
+            <span class="set-go">›</span>
+        </button>
+        <button type="button" class="set-row" id="setVoiceRow">
+            <span class="set-ico"><svg class="ic"><use href="#ic-voice"></use></svg></span>
+            <span class="set-txt"><span class="set-k" id="setVoiceK"></span><span class="set-v" id="setVoiceV"></span></span>
+            <span class="set-go">›</span>
+        </button>
+        <button type="button" class="set-row" id="setOrgRow">
+            <span class="set-ico"><svg class="ic"><use href="#ic-school"></use></svg></span>
+            <span class="set-txt"><span class="set-k" id="setOrgK"></span><span class="set-v" id="setOrgV"></span></span>
+            <span class="set-go">›</span>
+        </button>
+
+        <!-- 배경음 — 켜고 끄기 + 크기 페이더 -->
+        <div class="set-blk">
+            <div class="set-head">
+                <span class="set-ico"><svg class="ic"><use href="#ic-sound"></use></svg></span>
+                <span class="set-k" id="setBgmK"></span>
+                <button type="button" class="set-sw" id="setBgmSw" aria-pressed="true"><i></i></button>
+            </div>
+            <div class="set-fader" id="setBgmFader">
+                <input type="range" id="setBgmVol" min="0" max="100" step="5" value="100">
+                <span class="set-num" id="setBgmNum">100</span>
+            </div>
+        </div>
+
+        <!-- 녹음 — 켜고 끄기 + 동의 기록 + 동의서 받기 -->
+        <div class="set-blk">
+            <div class="set-head">
+                <span class="set-ico"><svg class="ic"><use href="#ic-mic"></use></svg></span>
+                <span class="set-k" id="setRecK"></span>
+                <button type="button" class="set-sw" id="setRecSw" aria-pressed="true"><i></i></button>
+            </div>
+            <p class="set-note" id="setRecNote"></p>
+            <button type="button" class="set-link" id="setRecDoc">
+                <svg class="ic"><use href="#ic-file"></use></svg><span id="setRecDocLbl"></span>
+            </button>
+        </div>
+
+        <p class="set-ver" id="setVerEl"></p>
+    </div>
+</div>
+
+<!-- ★ v152 — 소속 고르기. 자료가 기관별로 갈려야 뒷날 쓸 수 있다. -->
+<div class="lang-overlay hidden" id="orgOverlay">
+    <div class="lang-box consent-box">
+        <button type="button" class="ov-x" id="orgX">✕</button>
+        <h2 id="orgTitleEl"></h2>
+        <p class="consent-text" id="orgBodyEl" style="text-align:center;"></p>
+        <div class="org-list" id="orgList"></div>
+        <input type="text" id="orgEtcInput" class="name-input hidden" maxlength="30">
+        <input type="text" id="orgClassInput" class="name-input" maxlength="20">
+        <div class="consent-actions">
+            <button class="action-btn" id="orgOkBtn"></button>
+        </div>
+    </div>
+</div>
+
 <!-- 녹음 동의 모달 (첫 대화 시작 전 1회) -->
 <div class="lang-overlay hidden" id="consentOverlay">
     <div class="lang-box consent-box">
@@ -2124,11 +2256,16 @@
             <span id="homeTitleEl">호아랑</span>
         </h1>
         <div class="home-top">
-            <button type="button" class="home-ico icon-only" id="voiceBtn" title="Voice"><svg class="ic"><use href="#ic-voice"></use></svg></button>
-            <button type="button" class="home-ico icon-only" id="bgmBtn" title="BGM"><svg class="ic"><use href="#ic-sound"></use></svg></button>
+            <!-- ★ v152 — 목소리·배경음·이름·언어는 설정 안으로 들어갔다.
+                 자리만 남겨 둔다(숨김) — 여러 곳에서 이 아이디를 부르고 있어
+                 지우면 조용히 터진다. 설정 화면이 이 단추들을 대신 누른다. -->
+            <button type="button" class="home-ico icon-only" id="voiceBtn" title="Voice" hidden><svg class="ic"><use href="#ic-voice"></use></svg></button>
+            <button type="button" class="home-ico icon-only" id="bgmBtn" title="BGM" hidden><svg class="ic"><use href="#ic-sound"></use></svg></button>
             <button type="button" class="home-ico" id="homeHistoryBtn"><span><svg class="ic"><use href="#ic-history"></use></svg></span><span id="homeHistoryLbl"></span></button>
-            <button type="button" class="home-ico" id="homeNameBtn"><span><svg class="ic"><use href="#ic-name"></use></svg></span><span id="homeNameLbl"></span></button>
-            <button type="button" class="home-ico icon-only" id="homeLangBtn" title="Language"><svg class="ic"><use href="#ic-lang"></use></svg></button>
+            <button type="button" class="home-ico" id="homeNameBtn" hidden><span><svg class="ic"><use href="#ic-name"></use></svg></span><span id="homeNameLbl"></span></button>
+            <button type="button" class="home-ico icon-only" id="homeLangBtn" title="Language" hidden><svg class="ic"><use href="#ic-lang"></use></svg></button>
+            <!-- ★ v152 — 설정. 이름·언어·목소리·배경음·녹음이 모두 이 안으로 들어왔다. -->
+            <button type="button" class="home-ico icon-only" id="homeSetBtn" title="설정"><svg class="ic"><use href="#ic-gear"></use></svg></button>
         </div>
     </div>
     <!-- 호아랑이 마루에서 기다리는 영상이 홈 화면 전체를 채운다.
@@ -2529,7 +2666,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v151 (2026-08-29)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v152 (2026-08-30)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -4164,9 +4301,7 @@
         actionBtn.innerText = isConnected ? t("btnStop") : t("btnStart");
         pttSetLabel(isTalking ? t("pttTalking") : t("pttHold"));
         exportBtn.textContent = t("btnExport");
-        document.getElementById("consentTitleEl").textContent = t("consentTitle");
-        document.getElementById("consentBodyEl").textContent = t("consentBody");
-        document.getElementById("consentAgreeBtn").textContent = t("consentAgree");
+        try { paintConsent(); } catch (e) {}   // ★ v152 — 새 문안(18개 언어)
         document.getElementById("consentCancelBtn").textContent = t("consentCancel");
         document.getElementById("kakaoNoticeText").textContent = t("kakaoNotice");
         document.getElementById("kakaoOpenBtn").textContent = t("kakaoOpen");
@@ -4709,11 +4844,40 @@
     /* ── 녹음 동의 — 앱 실행(페이지 로드)마다 1회씩 다시 받는다.
        공용 기기에서 참여자가 바뀌어도 반드시 동의 화면을 보게 하기 위함. ── */
     const consentOverlay = document.getElementById("consentOverlay");
-    let consentGiven = false;
     let consentCancelBack = null;   // 동의를 취소했을 때 돌아갈 곳
+    /* ★★ v152 — 동의 여부를 **기기에 남긴다.**
+       예전에는 `let consentGiven = false` 하나였다. 새로 고칠 때마다 다시 뜨고
+       「언제 동의했다」가 아무 데도 안 남았다 — 연구 자료로 쓸 수가 없었다.
+       문안을 고쳐 판본을 올리면 CONSENT.ok 가 false 가 되어 **다시 받는다.** */
+    function paintConsent() {
+        const g = (id) => document.getElementById(id);
+        g("consentTitleEl").textContent = "🎙️ " + cnT("t");
+        g("consentBodyEl").textContent =
+            cnT("lead") + "\n\n"
+            + cnT("q") + "\n"
+            + " · " + cnT("a") + "\n"
+            + " · " + cnT("b") + "\n"
+            + " · " + cnT("c") + "\n\n"
+            + cnT("p1") + "\n"
+            + cnT("p2") + "\n"
+            + cnT("p3") + "\n\n"
+            + cnT("more");
+        g("consentAgreeBtn").textContent = cnT("ok");
+        g("consentCancelBtn").textContent = cnT("no");
+    }
+    /* ★ v152 — 소속을 아직 안 골랐으면 대화 앞에서 한 번 묻고, 그 뒤에 시작한다.
+       처음에는 동의 단추 뒤에만 이 자리를 두었는데, **이미 동의한 학습자는
+       그 길을 지나지 않아** 영영 안 물었다. 동의와 별개의 관문으로 세운다.
+       고르기를 닫아도 대화는 시작된다 — 소속은 자료를 가르는 축일 뿐
+       대화의 조건이 아니다. */
+    function startAfterOrg() {
+        if (!ORG.ok) { openOrgPicker(startSession); return; }
+        startSession();
+    }
     function requestStartWithConsent(onCancel) {
         consentCancelBack = onCancel || null;
-        if (consentGiven) { startSession(); return; }
+        if (CONSENT.ok) { startAfterOrg(); return; }
+        paintConsent();
         consentOverlay.classList.remove("hidden");
     }
     function cancelConsent() {
@@ -4724,10 +4888,10 @@
         if (back) { try { back(); } catch (e) {} }
     }
     document.getElementById("consentAgreeBtn").addEventListener("click", () => {
-        consentGiven = true;
+        CONSENT.agree();                 // ★ v152 — 판본·시각을 기기에 남긴다
         consentCancelBack = null;
         consentOverlay.classList.add("hidden");
-        startSession();
+        startAfterOrg();      // 소속을 안 골랐으면 묻고, 그 뒤에 시작한다
     });
     document.getElementById("consentCancelBtn").addEventListener("click", cancelConsent);
 
@@ -5061,7 +5225,11 @@
         _fades.set(el, id);
     }
     function bgmTarget(key) {
-        const base = BGM_VOL[key] || 0.2;
+        let base = BGM_VOL[key] || 0.2;
+        /* ★ v152 — 설정의 페이더를 곱한다.
+           BGM_VOL 은 **곡끼리의 균형**(홈 10% · 대화 15%)이고,
+           페이더는 그 전체를 함께 올리고 내린다. 둘을 섞으면 균형이 깨진다. */
+        try { base *= (typeof bgmVolPct === "number" ? bgmVolPct : 100) / 100; } catch (e) {}
         // 대화 중 음악만 더킹한다 (홈 배경음은 말소리와 겹치지 않는다)
         return (ducking && key === "chatBgm") ? base * DUCK_RATIO : base;
     }
@@ -5469,6 +5637,13 @@
         if (!freeEnding) return;
         freeEnding = false;
         clearTimeout(freeEndTimer);
+        /* ★ v152 — 5분을 넘긴 자유 대화만 기억으로 남긴다.
+           짧은 판까지 기억하면 「어제 뭐 했지」가 잡음이 된다. */
+        try {
+            const secs = sessionStartedAt
+                ? Math.round((Date.now() - sessionStartedAt) / 1000) : 0;
+            memPut(secs, rpFinal && rpFinal.memory);
+        } catch (e) { console.warn("기억 저장 실패:", e); }
         stopSession();
         doorSwap(showFreeFeedback);
     }
@@ -9326,6 +9501,176 @@
         });
     })();
 
+    /* ══════════ v152 — 설정 ══════════
+       홈 위에 단추가 다섯이나 늘어서 있어 무엇이 무엇인지 알 수 없었다.
+       ★ 원래 단추를 지우지 않고 **숨겨 두고 대신 누른다.**
+         여러 곳에서 그 아이디를 부르고 있어 지우면 조용히 터진다(v124 사고). */
+    function clickHidden(id) {
+        const b = document.getElementById(id);
+        if (b) { try { b.click(); } catch (e) {} }
+    }
+    /* 지금 값을 보여 주려면 이름표가 필요하다 — 언어 고르기 단추에서 그대로 읽는다.
+       따로 표를 만들면 언어를 늘릴 때 한쪽만 고쳐 어긋난다(v147에서 겪은 그것). */
+    function langLabelNow() {
+        try {
+            const b = document.querySelector('.lang-item[data-lang="' + uiLang + '"]');
+            if (b) return (b.textContent || "").trim();
+        } catch (e) {}
+        return uiLang || "—";
+    }
+    function voiceLabelNow() {
+        try {
+            const SX = { auto: 0, m: 1, f: 2 }, AG = { young: 0, adult: 1, elder: 2 };
+            const sex = (vpT("sex") || [])[SX[voiceSexOf(voicePref)] || 0] || "";
+            if (voiceSexOf(voicePref) === "auto") return sex || "—";
+            const age = (vpT("age") || [])[AG[voiceAgeOf(voicePref)] || 1] || "";
+            return [sex, age].filter(Boolean).join(" · ") || "—";
+        } catch (e) { return "—"; }
+    }
+    function paintSettings() {
+        const g = (id) => document.getElementById(id);
+        g("setTitleEl").textContent = setT("title");
+        g("setNameK").textContent = setT("name");
+        g("setNameV").textContent = userName || "—";
+        g("setLangK").textContent = setT("lang");
+        g("setLangV").textContent = langLabelNow();
+        g("setVoiceK").textContent = setT("voice");
+        g("setVoiceV").textContent = voiceLabelNow();
+        g("setOrgK").textContent = setT("org");
+        g("setOrgV").textContent = ORG.label() || setT("orgNone");
+        // 배경음
+        g("setBgmK").textContent = setT("bgm");
+        g("setBgmSw").setAttribute("aria-pressed", bgmMuted ? "false" : "true");
+        g("setBgmVol").value = String(bgmVolPct);
+        g("setBgmNum").textContent = bgmVolPct + "%";
+        g("setBgmFader").classList.toggle("off", bgmMuted);
+        // 녹음
+        g("setRecK").textContent = setT("rec");
+        const on = CONSENT.on && CONSENT.ok;
+        g("setRecSw").setAttribute("aria-pressed", on ? "true" : "false");
+        let note = on ? setT("recOn") : setT("recOff");
+        if (CONSENT.at) {
+            note += "\n" + setT("agreedAt")
+                .replace("{d}", new Date(CONSENT.at).toLocaleDateString())
+                .replace("{v}", CONSENT.ver || CONSENT_VER);
+        }
+        if (!on) note += "\n\n" + setT("offNote");
+        g("setRecNote").textContent = note;
+        g("setRecDocLbl").textContent = setT("doc");
+        g("setRecDoc").hidden = !CONSENT.at;      // 동의한 적이 없으면 받을 것도 없다
+        g("setVerEl").textContent = "호아랑 " + APP_VERSION;
+    }
+    function openSettings() {
+        paintSettings();
+        document.getElementById("setOverlay").classList.remove("hidden");
+    }
+    (function bindSettings() {
+        const ov = document.getElementById("setOverlay");
+        if (!ov) return;
+        const close = () => ov.classList.add("hidden");
+        document.getElementById("homeSetBtn").addEventListener("click", openSettings);
+        document.getElementById("setX").addEventListener("click", close);
+        ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+
+        // 원래 있던 창을 그대로 연다 — 두 벌로 만들지 않는다
+        document.getElementById("setNameRow").addEventListener("click", () => { close(); clickHidden("homeNameBtn"); });
+        document.getElementById("setLangRow").addEventListener("click", () => { close(); clickHidden("homeLangBtn"); });
+        document.getElementById("setVoiceRow").addEventListener("click", () => { close(); clickHidden("voiceBtn"); });
+        document.getElementById("setOrgRow").addEventListener("click", () => { close(); openOrgPicker(); });
+
+        // 배경음 — 켜고 끄기는 원래 단추가 맡는다(한 곳에서만 정해야 어긋나지 않는다)
+        document.getElementById("setBgmSw").addEventListener("click", () => {
+            clickHidden("bgmBtn"); paintSettings();
+        });
+        const vol = document.getElementById("setBgmVol");
+        vol.addEventListener("input", () => {
+            bgmVolSet(parseInt(vol.value, 10));
+            document.getElementById("setBgmNum").textContent = bgmVolPct + "%";
+        });
+
+        // 녹음 — 끄면 그 자리에서 멈춘다
+        document.getElementById("setRecSw").addEventListener("click", () => {
+            if (!CONSENT.ok) { close(); requestStartWithConsent(null); return; }
+            CONSENT.setOn(!CONSENT.on);
+            paintSettings();
+        });
+        document.getElementById("setRecDoc").addEventListener("click", openConsentDoc);
+    })();
+
+    /* ── 동의서 받기 — 한국어 한 장. 인쇄에서 「PDF로 저장」을 고르면 된다.
+       ★ 서버에서 PDF 를 굽지 않는다. 18개 언어 글꼴(태국어·미얀마어·크메르어까지)을
+         서버에 실어야 하는데, **읽고 보관하는 글**이라 그럴 까닭이 없다.
+         기기의 글꼴로 인쇄하면 어디서나 제대로 나온다. */
+    function openConsentDoc() {
+        const q = new URLSearchParams({
+            name: userName || "", org: ORG.label() || "",
+            at: CONSENT.at || "", ver: CONSENT.ver || CONSENT_VER,
+            on: CONSENT.on ? "1" : "0", offAt: CONSENT.offAt || "",
+        });
+        try { window.open("/consent?" + q.toString(), "_blank"); }
+        catch (e) { console.warn("동의서 열기 실패:", e); }
+    }
+
+    /* ══════════ v152 — 소속 ══════════
+       KIIP·언어교육원·연세대 자료가 한 폴더에 섞이면 뒷날 갈라낼 수 없다.
+       ★ 이름을 안 받고 **소속과 반**만 받는다 — 그것이 자료를 가르는 축이다. */
+    let orgPick = "";
+    let orgThen = null;                 // 고르기가 끝난 뒤에 할 일 (없으면 아무것도 안 함)
+    function openOrgPicker(then) {
+        orgThen = then || null;
+        const g = (id) => document.getElementById(id);
+        g("orgTitleEl").textContent = orgT("t");
+        g("orgBodyEl").textContent = orgT("b");
+        g("orgOkBtn").textContent = orgT("ok");
+        g("orgClassInput").placeholder = orgT("cls");
+        g("orgClassInput").value = ORG.cls || "";
+        g("orgEtcInput").placeholder = ORG.name && ORG.id === "etc" ? ORG.name : "…";
+        g("orgEtcInput").value = ORG.id === "etc" ? ORG.name : "";
+        orgPick = ORG.id || "";
+        const list = g("orgList");
+        list.innerHTML = "";
+        ORG_LIST.forEach((o) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "org-opt" + (orgPick === o.id ? " on" : "");
+            b.innerHTML = "<b></b><span></span>";
+            b.lastChild.textContent = o.ko;
+            b.addEventListener("click", () => {
+                orgPick = o.id;
+                [...list.children].forEach((c) => c.classList.remove("on"));
+                b.classList.add("on");
+                g("orgEtcInput").classList.toggle("hidden", o.id !== "etc");
+                if (o.id === "etc") g("orgEtcInput").focus();
+            });
+            list.appendChild(b);
+        });
+        g("orgEtcInput").classList.toggle("hidden", orgPick !== "etc");
+        g("orgOverlay").classList.remove("hidden");
+    }
+    (function bindOrg() {
+        const ov = document.getElementById("orgOverlay");
+        if (!ov) return;
+        // 닫을 때 「뒤에 할 일」을 반드시 꺼내 쓴다 — 안 그러면 대화가 영영 안 시작된다
+        const close = () => {
+            ov.classList.add("hidden");
+            const then = orgThen; orgThen = null;
+            if (then) { try { then(); } catch (e) {} }
+        };
+        document.getElementById("orgX").addEventListener("click", close);
+        document.getElementById("orgOkBtn").addEventListener("click", () => {
+            if (!orgPick) return;                       // 아직 안 골랐다
+            const found = ORG_LIST.find((o) => o.id === orgPick);
+            let nm = found ? found.ko : "";
+            if (orgPick === "etc") {
+                nm = (document.getElementById("orgEtcInput").value || "").trim();
+                if (!nm) { document.getElementById("orgEtcInput").focus(); return; }
+            }
+            ORG.put(orgPick, nm, (document.getElementById("orgClassInput").value || "").trim());
+            try { paintSettings(); } catch (e) {}   // 닫기가 대화를 시작하므로 그 앞에서 칠한다
+            close();
+        });
+    })();
+
     function openVoicePicker() {
         document.getElementById("voiceTitleEl").textContent = t("vcTitle");
         document.getElementById("voiceBodyEl").textContent = t("vcBody");
@@ -9646,6 +9991,321 @@
     function sttMsg(key) {
         const m = STT_MSG[uiLang] || STT_MSG.en;
         return m[key] || STT_MSG.en[key] || "";
+    }
+
+    /* ★★ v152 — 설정·소속·녹음 동의 문구 (18개 언어).
+       눈높이는 **중급(3급 초입)**. KIIP 3단계·언어교육원 3급이 주 대상이라
+       1~2급으로 낮추면 오히려 유치해진다. 동의문은 합쇼체로 고르게 편다 —
+       격식을 갖춰야 무게가 실린다. */
+    const SET_MSG = {
+        ko: { title:"설정", name:"이름", lang:"화면 언어", voice:"호아랑 목소리", org:"소속",
+              bgm:"배경음악", rec:"녹음", doc:"동의서 받기", orgNone:"아직 안 골랐어요",
+              recOn:"켜져 있습니다", recOff:"꺼져 있습니다",
+              agreedAt:"{d}에 동의했습니다 (판본 {v})",
+              offNote:"끈 뒤로는 녹음하지 않습니다.\n이미 모인 자료는 이름을 지운 상태로 연구에 쓰입니다." },
+        en: { title:"Settings", name:"Name", lang:"App language", voice:"Hoarang's voice", org:"Where you study",
+              bgm:"Background music", rec:"Recording", doc:"Get the consent form", orgNone:"Not chosen yet",
+              recOn:"On", recOff:"Off",
+              agreedAt:"Agreed on {d} (version {v})",
+              offNote:"Nothing is recorded from now on.\nData already collected is used for research with your name removed." },
+        zh: { title:"设置", name:"名字", lang:"界面语言", voice:"Hoarang 的声音", org:"就读机构",
+              bgm:"背景音乐", rec:"录音", doc:"获取同意书", orgNone:"尚未选择",
+              recOn:"已开启", recOff:"已关闭", agreedAt:"{d} 同意（版本 {v}）",
+              offNote:"从现在起不再录音。\n已收集的资料会去除姓名后用于研究。" },
+        ja: { title:"設定", name:"名前", lang:"画面の言語", voice:"ホアランの声", org:"所属",
+              bgm:"背景音楽", rec:"録音", doc:"同意書を受け取る", orgNone:"まだ選んでいません",
+              recOn:"オン", recOff:"オフ", agreedAt:"{d} に同意しました（版 {v}）",
+              offNote:"これ以降は録音しません。\nすでに集めた資料は名前を消して研究に使います。" },
+        vi: { title:"Cài đặt", name:"Tên", lang:"Ngôn ngữ màn hình", voice:"Giọng của Hoarang", org:"Nơi học",
+              bgm:"Nhạc nền", rec:"Ghi âm", doc:"Nhận bản đồng ý", orgNone:"Chưa chọn",
+              recOn:"Đang bật", recOff:"Đang tắt", agreedAt:"Đã đồng ý ngày {d} (bản {v})",
+              offNote:"Từ giờ sẽ không ghi âm nữa.\nDữ liệu đã thu sẽ được xoá tên và dùng cho nghiên cứu." },
+        th: { title:"ตั้งค่า", name:"ชื่อ", lang:"ภาษาหน้าจอ", voice:"เสียงของโฮอารัง", org:"สถานที่เรียน",
+              bgm:"เพลงประกอบ", rec:"การบันทึกเสียง", doc:"รับเอกสารยินยอม", orgNone:"ยังไม่ได้เลือก",
+              recOn:"เปิดอยู่", recOff:"ปิดอยู่", agreedAt:"ยินยอมเมื่อ {d} (ฉบับ {v})",
+              offNote:"จากนี้จะไม่บันทึกเสียงอีก\nข้อมูลที่เก็บไว้แล้วจะลบชื่อออกและใช้เพื่อการวิจัย" },
+        id: { title:"Pengaturan", name:"Nama", lang:"Bahasa layar", voice:"Suara Hoarang", org:"Tempat belajar",
+              bgm:"Musik latar", rec:"Perekaman", doc:"Ambil surat persetujuan", orgNone:"Belum dipilih",
+              recOn:"Aktif", recOff:"Nonaktif", agreedAt:"Disetujui pada {d} (versi {v})",
+              offNote:"Mulai sekarang tidak direkam.\nData yang sudah terkumpul dipakai untuk penelitian tanpa nama." },
+        mn: { title:"Тохиргоо", name:"Нэр", lang:"Дэлгэцийн хэл", voice:"Хоарангийн дуу хоолой", org:"Суралцаж буй газар",
+              bgm:"Дэвсгэр хөгжим", rec:"Бичлэг", doc:"Зөвшөөрлийн хуудас авах", orgNone:"Хараахан сонгоогүй",
+              recOn:"Асаалттай", recOff:"Унтраалттай", agreedAt:"{d}-нд зөвшөөрсөн ({v} хувилбар)",
+              offNote:"Үүнээс хойш бичихгүй.\nАль хэдийн цуглуулсан материалыг нэрийг нь устгаад судалгаанд ашиглана." },
+        uz: { title:"Sozlamalar", name:"Ism", lang:"Ekran tili", voice:"Hoarang ovozi", org:"O'qiyotgan joy",
+              bgm:"Fon musiqasi", rec:"Yozib olish", doc:"Rozilik hujjatini olish", orgNone:"Hali tanlanmagan",
+              recOn:"Yoqilgan", recOff:"O'chirilgan", agreedAt:"{d} da rozilik berildi ({v}-nashr)",
+              offNote:"Bundan keyin yozib olinmaydi.\nYig'ilgan materiallar ismsiz holda tadqiqotda ishlatiladi." },
+        ru: { title:"Настройки", name:"Имя", lang:"Язык экрана", voice:"Голос Хоарана", org:"Где учитесь",
+              bgm:"Фоновая музыка", rec:"Запись", doc:"Получить согласие", orgNone:"Ещё не выбрано",
+              recOn:"Включена", recOff:"Выключена", agreedAt:"Согласие от {d} (версия {v})",
+              offNote:"С этого момента запись не ведётся.\nУже собранные данные используются для исследования без имени." },
+        es: { title:"Ajustes", name:"Nombre", lang:"Idioma de la app", voice:"Voz de Hoarang", org:"Dónde estudias",
+              bgm:"Música de fondo", rec:"Grabación", doc:"Obtener el consentimiento", orgNone:"Sin elegir",
+              recOn:"Activada", recOff:"Desactivada", agreedAt:"Aceptado el {d} (versión {v})",
+              offNote:"A partir de ahora no se graba.\nLos datos ya recogidos se usan en la investigación sin tu nombre." },
+        fr: { title:"Réglages", name:"Nom", lang:"Langue de l'appli", voice:"Voix de Hoarang", org:"Lieu d'étude",
+              bgm:"Musique de fond", rec:"Enregistrement", doc:"Obtenir le consentement", orgNone:"Pas encore choisi",
+              recOn:"Activé", recOff:"Désactivé", agreedAt:"Accepté le {d} (version {v})",
+              offNote:"Plus rien n'est enregistré à partir de maintenant.\nLes données déjà recueillies servent à la recherche sans votre nom." },
+        ne: { title:"सेटिङ", name:"नाम", lang:"स्क्रिनको भाषा", voice:"होआराङको आवाज", org:"अध्ययन गर्ने ठाउँ",
+              bgm:"पृष्ठभूमि संगीत", rec:"रेकर्डिङ", doc:"सहमतिपत्र लिनुहोस्", orgNone:"अझै छानिएको छैन",
+              recOn:"खुला छ", recOff:"बन्द छ", agreedAt:"{d} मा सहमति (संस्करण {v})",
+              offNote:"अबदेखि रेकर्ड गरिँदैन।\nपहिले जम्मा भएको सामग्री नाम हटाएर अनुसन्धानमा प्रयोग हुन्छ।" },
+        lo: { title:"ຕັ້ງຄ່າ", name:"ຊື່", lang:"ພາສາໜ້າຈໍ", voice:"ສຽງຂອງໂຮອາລາງ", org:"ບ່ອນຮຽນ",
+              bgm:"ເພງປະກອບ", rec:"ການບັນທຶກສຽງ", doc:"ຮັບເອກະສານຍິນຍອມ", orgNone:"ຍັງບໍ່ໄດ້ເລືອກ",
+              recOn:"ເປີດຢູ່", recOff:"ປິດຢູ່", agreedAt:"ຍິນຍອມເມື່ອ {d} (ສະບັບ {v})",
+              offNote:"ຈາກນີ້ໄປຈະບໍ່ບັນທຶກສຽງອີກ.\nຂໍ້ມູນທີ່ເກັບໄວ້ແລ້ວຈະລຶບຊື່ອອກແລ້ວໃຊ້ເພື່ອການຄົ້ນຄວ້າ." },
+        my: { title:"ဆက်တင်", name:"နာမည်", lang:"မျက်နှာပြင်ဘာသာစကား", voice:"ဟိုအာရန်၏အသံ", org:"ပညာသင်ရာနေရာ",
+              bgm:"နောက်ခံသီချင်း", rec:"အသံသွင်းခြင်း", doc:"သဘောတူညီချက်စာရယူရန်", orgNone:"မရွေးရသေးပါ",
+              recOn:"ဖွင့်ထားသည်", recOff:"ပိတ်ထားသည်", agreedAt:"{d} တွင် သဘောတူခဲ့သည် (ဗားရှင်း {v})",
+              offNote:"ယခုမှစ၍ အသံမသွင်းတော့ပါ။\nစုဆောင်းပြီးသား အချက်အလက်များကို နာမည်ဖျက်ပြီး သုတေသနတွင် အသုံးပြုပါမည်။" },
+        km: { title:"ការកំណត់", name:"ឈ្មោះ", lang:"ភាសាអេក្រង់", voice:"សំឡេងហូអារ៉ាង", org:"កន្លែងសិក្សា",
+              bgm:"តន្ត្រីផ្ទៃខាងក្រោយ", rec:"ការថតសំឡេង", doc:"ទទួលបានលិខិតយល់ព្រម", orgNone:"មិនទាន់ជ្រើសរើស",
+              recOn:"បើក", recOff:"បិទ", agreedAt:"យល់ព្រមនៅ {d} (កំណែ {v})",
+              offNote:"ចាប់ពីពេលនេះនឹងមិនថតទៀតទេ។\nទិន្នន័យដែលប្រមូលរួចនឹងលុបឈ្មោះចេញ រួចប្រើសម្រាប់ការស្រាវជ្រាវ។" },
+        uk: { title:"Налаштування", name:"Ім'я", lang:"Мова екрана", voice:"Голос Хоарана", org:"Де навчаєтесь",
+              bgm:"Фонова музика", rec:"Запис", doc:"Отримати згоду", orgNone:"Ще не обрано",
+              recOn:"Увімкнено", recOff:"Вимкнено", agreedAt:"Згода від {d} (версія {v})",
+              offNote:"Відтепер запис не ведеться.\nУже зібрані дані використовуються для дослідження без вашого імені." },
+        ky: { title:"Жөндөөлөр", name:"Аты", lang:"Экрандын тили", voice:"Хоаранг үнү", org:"Окуган жери",
+              bgm:"Фондук музыка", rec:"Жаздыруу", doc:"Макулдук кагазын алуу", orgNone:"Азырынча тандалган жок",
+              recOn:"Күйүк", recOff:"Өчүк", agreedAt:"{d} күнү макул болгон ({v}-версия)",
+              offNote:"Мындан ары жаздырылбайт.\nЧогултулган материалдар атыңыз өчүрүлүп изилдөөдө колдонулат." },
+    };
+    function setT(key) {
+        const m = SET_MSG[uiLang] || SET_MSG.en;
+        return m[key] || SET_MSG.en[key] || "";
+    }
+
+    /* ★★ v152 — 녹음 동의문 (판본 1.0).
+       예전 문안은 두 문장뿐이었고 **연구 목적이 빠져 있었다.**
+       그리고 동의 여부가 그냥 변수였다 — 새로 고칠 때마다 다시 뜨고
+       「언제 동의했다」가 아무 데도 안 남았다. 연구 자료로 쓰려면 그게 있어야 한다.
+
+       전체 문안은 화면에서 안 펼친다. 첫 화면에 긴 글이 붙으면 학습자는
+       **안 읽고 누른다** — 그러면 「읽었다」가 거짓이 된다.
+       읽을 사람이 읽을 자리(설정 → 동의서 받기)로 옮겼다. */
+    const CONSENT_VER = "1.0";
+    const CN_MSG = {
+        ko: { t:"녹음 안내", lead:"호아랑과 나눈 대화는 녹음되어 저장됩니다.",
+              q:"왜 녹음합니까?",
+              a:"학습 기록을 돌려 드리기 위해", b:"앱을 더 좋게 만들기 위해", c:"한국어 교육 연구에 쓰기 위해",
+              p1:"이름은 지웁니다. 누구의 대화인지 알 수 없게 합니다.",
+              p2:"2026년 12월 12일까지 무료입니다.", p3:"수업 성적과는 관계가 없습니다.",
+              more:"동의서 전체는 설정에서 받아 볼 수 있습니다.",
+              ok:"동의하고 시작하기", no:"취소" },
+        en: { t:"Recording notice", lead:"Your conversations with Hoarang are recorded and stored.",
+              q:"Why do we record?",
+              a:"To give your learning records back to you", b:"To make the app better", c:"For Korean language education research",
+              p1:"Your name is removed. No one can tell whose conversation it is.",
+              p2:"Free until 12 December 2026.", p3:"It has nothing to do with your course grade.",
+              more:"You can get the full consent form in Settings.",
+              ok:"Agree & Start", no:"Cancel" },
+        zh: { t:"录音说明", lead:"您与 Hoarang 的对话会被录音并保存。", q:"为什么录音？",
+              a:"为了把学习记录还给您", b:"为了把应用做得更好", c:"为了韩语教育研究",
+              p1:"姓名会被删除。没有人知道是谁的对话。", p2:"2026年12月12日之前免费。",
+              p3:"与课程成绩无关。", more:"完整同意书可在设置中获取。", ok:"同意并开始", no:"取消" },
+        ja: { t:"録音のご案内", lead:"ホアランとの会話は録音され保存されます。", q:"なぜ録音しますか?",
+              a:"学習記録をお返しするため", b:"アプリをより良くするため", c:"韓国語教育の研究に使うため",
+              p1:"名前は消します。誰の会話かは分かりません。", p2:"2026年12月12日まで無料です。",
+              p3:"授業の成績とは関係ありません。", more:"同意書の全文は設定で受け取れます。", ok:"同意して始める", no:"キャンセル" },
+        vi: { t:"Thông báo ghi âm", lead:"Cuộc trò chuyện với Hoarang sẽ được ghi âm và lưu lại.", q:"Vì sao ghi âm?",
+              a:"Để trả lại hồ sơ học tập cho bạn", b:"Để cải thiện ứng dụng", c:"Để dùng cho nghiên cứu giáo dục tiếng Hàn",
+              p1:"Tên của bạn sẽ được xoá. Không ai biết đó là cuộc trò chuyện của ai.",
+              p2:"Miễn phí đến ngày 12 tháng 12 năm 2026.", p3:"Không liên quan đến điểm số của lớp học.",
+              more:"Bạn có thể nhận bản đồng ý đầy đủ trong Cài đặt.", ok:"Đồng ý và bắt đầu", no:"Huỷ" },
+        th: { t:"ประกาศเรื่องการบันทึกเสียง", lead:"บทสนทนากับโฮอารังจะถูกบันทึกและจัดเก็บไว้", q:"ทำไมต้องบันทึกเสียง?",
+              a:"เพื่อคืนบันทึกการเรียนให้คุณ", b:"เพื่อพัฒนาแอปให้ดีขึ้น", c:"เพื่อใช้ในการวิจัยการสอนภาษาเกาหลี",
+              p1:"ชื่อของคุณจะถูกลบ ไม่มีใครรู้ว่าเป็นบทสนทนาของใคร", p2:"ใช้ฟรีจนถึงวันที่ 12 ธันวาคม 2026",
+              p3:"ไม่เกี่ยวข้องกับคะแนนในชั้นเรียน", more:"รับเอกสารยินยอมฉบับเต็มได้ในการตั้งค่า", ok:"ยินยอมและเริ่ม", no:"ยกเลิก" },
+        id: { t:"Pemberitahuan perekaman", lead:"Percakapan Anda dengan Hoarang direkam dan disimpan.", q:"Mengapa direkam?",
+              a:"Untuk mengembalikan catatan belajar Anda", b:"Untuk membuat aplikasi lebih baik", c:"Untuk penelitian pendidikan bahasa Korea",
+              p1:"Nama Anda dihapus. Tidak ada yang tahu percakapan siapa itu.", p2:"Gratis sampai 12 Desember 2026.",
+              p3:"Tidak ada hubungannya dengan nilai kelas.", more:"Surat persetujuan lengkap tersedia di Pengaturan.", ok:"Setuju & Mulai", no:"Batal" },
+        mn: { t:"Бичлэгийн тухай", lead:"Хоарангтай хийсэн яриа бичигдэж хадгалагдана.", q:"Яагаад бичдэг вэ?",
+              a:"Суралцах бүртгэлийг тань буцааж өгөхийн тулд", b:"Аппыг илүү сайжруулахын тулд", c:"Солонгос хэлний боловсролын судалгаанд ашиглахын тулд",
+              p1:"Нэрийг тань устгана. Хэний яриа болохыг хэн ч мэдэхгүй.", p2:"2026 оны 12 сарын 12 хүртэл үнэгүй.",
+              p3:"Хичээлийн дүнтэй холбоогүй.", more:"Зөвшөөрлийн бүрэн хуудсыг Тохиргооноос авч болно.", ok:"Зөвшөөрч эхлэх", no:"Болих" },
+        uz: { t:"Yozib olish haqida", lead:"Hoarang bilan suhbatingiz yozib olinadi va saqlanadi.", q:"Nega yozib olinadi?",
+              a:"O'quv yozuvlaringizni qaytarish uchun", b:"Ilovani yaxshilash uchun", c:"Koreys tili ta'limi tadqiqoti uchun",
+              p1:"Ismingiz o'chiriladi. Bu kimning suhbati ekanini hech kim bilmaydi.", p2:"2026-yil 12-dekabrgacha bepul.",
+              p3:"Dars bahosiga aloqasi yo'q.", more:"To'liq rozilik hujjatini Sozlamalardan olishingiz mumkin.", ok:"Rozilik berib boshlash", no:"Bekor qilish" },
+        ru: { t:"О записи", lead:"Ваши разговоры с Хоараном записываются и сохраняются.", q:"Зачем мы записываем?",
+              a:"Чтобы вернуть вам записи занятий", b:"Чтобы улучшить приложение", c:"Для исследования преподавания корейского языка",
+              p1:"Имя удаляется. Никто не узнает, чей это разговор.", p2:"Бесплатно до 12 декабря 2026 года.",
+              p3:"Это не влияет на оценку за курс.", more:"Полный текст согласия можно получить в Настройках.", ok:"Согласиться и начать", no:"Отмена" },
+        es: { t:"Aviso de grabación", lead:"Tus conversaciones con Hoarang se graban y se guardan.", q:"¿Por qué grabamos?",
+              a:"Para devolverte tu registro de aprendizaje", b:"Para mejorar la aplicación", c:"Para la investigación en enseñanza del coreano",
+              p1:"Tu nombre se elimina. Nadie sabe de quién es la conversación.", p2:"Gratis hasta el 12 de diciembre de 2026.",
+              p3:"No tiene relación con la nota del curso.", more:"Puedes obtener el consentimiento completo en Ajustes.", ok:"Aceptar y empezar", no:"Cancelar" },
+        fr: { t:"Avis d'enregistrement", lead:"Vos conversations avec Hoarang sont enregistrées et conservées.", q:"Pourquoi enregistrons-nous ?",
+              a:"Pour vous rendre votre suivi d'apprentissage", b:"Pour améliorer l'application", c:"Pour la recherche en didactique du coréen",
+              p1:"Votre nom est supprimé. Personne ne sait de qui vient la conversation.", p2:"Gratuit jusqu'au 12 décembre 2026.",
+              p3:"Cela n'a aucun lien avec votre note de cours.", more:"Le formulaire complet est disponible dans les Réglages.", ok:"Accepter et commencer", no:"Annuler" },
+        ne: { t:"रेकर्डिङ सूचना", lead:"होआराङसँगको कुराकानी रेकर्ड गरी सुरक्षित गरिन्छ।", q:"किन रेकर्ड गरिन्छ?",
+              a:"तपाईंको सिकाइ अभिलेख फिर्ता दिन", b:"एप अझ राम्रो बनाउन", c:"कोरियन भाषा शिक्षा अनुसन्धानमा प्रयोग गर्न",
+              p1:"नाम हटाइन्छ। कसको कुराकानी हो थाहा हुँदैन।", p2:"२०२६ डिसेम्बर १२ सम्म निःशुल्क।",
+              p3:"कक्षाको अंकसँग कुनै सम्बन्ध छैन।", more:"पूरा सहमतिपत्र सेटिङमा पाउन सकिन्छ।", ok:"सहमत भई सुरु गर्ने", no:"रद्द" },
+        lo: { t:"ແຈ້ງການບັນທຶກສຽງ", lead:"ບົດສົນທະນາກັບໂຮອາລາງຈະຖືກບັນທຶກແລະເກັບໄວ້.", q:"ເປັນຫຍັງຈຶ່ງບັນທຶກ?",
+              a:"ເພື່ອສົ່ງບັນທຶກການຮຽນຄືນໃຫ້ທ່ານ", b:"ເພື່ອປັບປຸງແອັບໃຫ້ດີຂຶ້ນ", c:"ເພື່ອໃຊ້ໃນການຄົ້ນຄວ້າການສອນພາສາເກົາຫຼີ",
+              p1:"ຊື່ຈະຖືກລຶບອອກ. ບໍ່ມີໃຜຮູ້ວ່າເປັນບົດສົນທະນາຂອງໃຜ.", p2:"ໃຊ້ຟຣີຮອດວັນທີ 12 ທັນວາ 2026.",
+              p3:"ບໍ່ກ່ຽວຂ້ອງກັບຄະແນນຂອງຫ້ອງຮຽນ.", more:"ຮັບເອກະສານຍິນຍອມສະບັບເຕັມໄດ້ໃນການຕັ້ງຄ່າ.", ok:"ຍິນຍອມແລະເລີ່ມ", no:"ຍົກເລີກ" },
+        my: { t:"အသံသွင်းခြင်းအကြောင်းကြားစာ", lead:"ဟိုအာရန်နှင့် စကားပြောသည်များကို အသံသွင်း၍ သိမ်းဆည်းပါသည်။", q:"ဘာကြောင့် အသံသွင်းသလဲ?",
+              a:"သင်၏ သင်ယူမှုမှတ်တမ်းကို ပြန်ပေးရန်", b:"အက်ပ်ကို ပိုကောင်းအောင်လုပ်ရန်", c:"ကိုရီးယားဘာသာ ပညာရေးသုတေသနတွင် အသုံးပြုရန်",
+              p1:"နာမည်ကို ဖျက်ပါသည်။ မည်သူ့စကားပြောမှန်း မသိနိုင်ပါ။", p2:"၂၀၂၆ ဒီဇင်ဘာ ၁၂ ရက်အထိ အခမဲ့ဖြစ်သည်။",
+              p3:"အတန်းအမှတ်နှင့် မသက်ဆိုင်ပါ။", more:"သဘောတူညီချက်စာအပြည့်အစုံကို ဆက်တင်တွင် ရယူနိုင်သည်။", ok:"သဘောတူပြီး စတင်မည်", no:"ပယ်ဖျက်" },
+        km: { t:"ការជូនដំណឹងអំពីការថតសំឡេង", lead:"ការសន្ទនាជាមួយហូអារ៉ាងនឹងត្រូវបានថត និងរក្សាទុក។", q:"ហេតុអ្វីបានជាថត?",
+              a:"ដើម្បីប្រគល់កំណត់ត្រាសិក្សាជូនអ្នកវិញ", b:"ដើម្បីធ្វើឱ្យកម្មវិធីកាន់តែប្រសើរ", c:"ដើម្បីប្រើក្នុងការស្រាវជ្រាវអប់រំភាសាកូរ៉េ",
+              p1:"ឈ្មោះនឹងត្រូវលុប។ គ្មាននរណាដឹងថាជាការសន្ទនារបស់នរណាទេ។", p2:"ឥតគិតថ្លៃរហូតដល់ថ្ងៃទី១២ ខែធ្នូ ឆ្នាំ២០២៦។",
+              p3:"គ្មានទាក់ទងនឹងពិន្ទុថ្នាក់រៀនទេ។", more:"អាចទទួលបានលិខិតយល់ព្រមពេញលេញនៅក្នុងការកំណត់។", ok:"យល់ព្រម និងចាប់ផ្តើម", no:"បោះបង់" },
+        uk: { t:"Повідомлення про запис", lead:"Ваші розмови з Хоараном записуються та зберігаються.", q:"Навіщо ми записуємо?",
+              a:"Щоб повернути вам записи занять", b:"Щоб покращити застосунок", c:"Для дослідження викладання корейської мови",
+              p1:"Ім'я видаляється. Ніхто не знає, чия це розмова.", p2:"Безкоштовно до 12 грудня 2026 року.",
+              p3:"Це не пов'язано з оцінкою за курс.", more:"Повний текст згоди можна отримати в Налаштуваннях.", ok:"Погодитися і почати", no:"Скасувати" },
+        ky: { t:"Жаздыруу тууралуу", lead:"Хоаранг менен маегиңиз жаздырылып сакталат.", q:"Эмне үчүн жаздырабыз?",
+              a:"Окуу жазууларыңызды кайтарып берүү үчүн", b:"Колдонмону жакшыртуу үчүн", c:"Корей тили билим берүү изилдөөсүндө колдонуу үчүн",
+              p1:"Атыңыз өчүрүлөт. Кимдин маеги экенин эч ким билбейт.", p2:"2026-жылдын 12-декабрына чейин акысыз.",
+              p3:"Сабактын баасына эч кандай тиешеси жок.", more:"Толук макулдук кагазын Жөндөөлөрдөн алсаңыз болот.", ok:"Макул болуп баштоо", no:"Жокко чыгаруу" },
+    };
+    function cnT(key) {
+        const m = CN_MSG[uiLang] || CN_MSG.en;
+        return m[key] || CN_MSG.en[key] || "";
+    }
+
+    /* 소속 — 자료가 기관별로 갈려야 뒷날 쓸 수 있다. 이름은 번역하지 않는다(고유명). */
+    const ORG_LIST = [
+        { id: "kiip",   ko: "KIIP 사회통합프로그램 (3단계)" },
+        { id: "cau",    ko: "중앙대학교 언어교육원 (3급)" },
+        { id: "yonsei", ko: "연세대학교 글로벌엘리트학부" },
+        { id: "etc",    ko: "기타 (직접 입력)" },
+    ];
+    const ORG_TXT = {
+        ko: { t:"어디에서 배우고 있나요?", b:"한 번만 고르면 됩니다.", cls:"반 (예: 2반)", ok:"확인" },
+        en: { t:"Where are you studying?", b:"You only need to choose once.", cls:"Class (e.g. Class 2)", ok:"OK" },
+        zh: { t:"您在哪里学习？", b:"只需选择一次。", cls:"班级（例：2班）", ok:"确定" },
+        ja: { t:"どこで学んでいますか?", b:"一度だけ選べば大丈夫です。", cls:"クラス（例: 2組）", ok:"確認" },
+        vi: { t:"Bạn đang học ở đâu?", b:"Chỉ cần chọn một lần.", cls:"Lớp (ví dụ: Lớp 2)", ok:"Xác nhận" },
+        th: { t:"คุณเรียนที่ไหน?", b:"เลือกเพียงครั้งเดียว", cls:"ห้อง (เช่น ห้อง 2)", ok:"ตกลง" },
+        id: { t:"Di mana Anda belajar?", b:"Cukup pilih satu kali.", cls:"Kelas (mis. Kelas 2)", ok:"OK" },
+        mn: { t:"Та хаана сурч байна вэ?", b:"Ганц удаа сонгоход хангалттай.", cls:"Анги (жишээ: 2-р анги)", ok:"Болсон" },
+        uz: { t:"Qayerda o'qiyapsiz?", b:"Faqat bir marta tanlash kifoya.", cls:"Sinf (masalan: 2-sinf)", ok:"OK" },
+        ru: { t:"Где вы учитесь?", b:"Выбрать нужно только один раз.", cls:"Группа (напр.: 2 группа)", ok:"Готово" },
+        es: { t:"¿Dónde estudias?", b:"Solo hay que elegir una vez.", cls:"Clase (p. ej. Clase 2)", ok:"Aceptar" },
+        fr: { t:"Où étudiez-vous ?", b:"À choisir une seule fois.", cls:"Classe (ex. Classe 2)", ok:"OK" },
+        ne: { t:"तपाईं कहाँ पढ्दै हुनुहुन्छ?", b:"एक पटक मात्र छान्नुहोस्।", cls:"कक्षा (जस्तै: कक्षा २)", ok:"ठीक छ" },
+        lo: { t:"ທ່ານຮຽນຢູ່ໃສ?", b:"ເລືອກພຽງເທື່ອດຽວ.", cls:"ຫ້ອງ (ເຊັ່ນ: ຫ້ອງ 2)", ok:"ຕົກລົງ" },
+        my: { t:"ဘယ်မှာ သင်ယူနေပါသလဲ?", b:"တစ်ကြိမ်သာ ရွေးရန်လိုပါသည်။", cls:"အတန်း (ဥပမာ - အတန်း ၂)", ok:"အိုကေ" },
+        km: { t:"អ្នកកំពុងសិក្សានៅឯណា?", b:"ជ្រើសរើសតែម្តងគត់។", cls:"ថ្នាក់ (ឧ. ថ្នាក់ទី២)", ok:"យល់ព្រម" },
+        uk: { t:"Де ви навчаєтесь?", b:"Обрати потрібно лише раз.", cls:"Група (напр.: 2 група)", ok:"Готово" },
+        ky: { t:"Кайда окуп жатасыз?", b:"Бир жолу гана тандасаңыз болот.", cls:"Класс (мисалы: 2-класс)", ok:"Даяр" },
+    };
+    function orgT(key) {
+        const m = ORG_TXT[uiLang] || ORG_TXT.en;
+        return m[key] || ORG_TXT.en[key] || "";
+    }
+
+    /* ══════════ v152 — 기기에 남기는 것 ══════════
+       ★ 예전에는 `let consentGiven = false` 하나였다. **기기에 안 남았다.**
+         새로 고칠 때마다 다시 뜨고, 「언제 동의했다」가 아무 데도 없었다.
+         연구 자료로 쓰려면 **그때 이 문안에 동의했다**를 보일 수 있어야 한다. */
+    function lsGet(k, d) { try { return localStorage.getItem(k) || d || ""; } catch (e) { return d || ""; } }
+    function lsPut(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+    const CONSENT = {
+        get ver() { return lsGet("consent.ver"); },
+        get at()  { return lsGet("consent.at"); },
+        get on()  { return lsGet("consent.on") !== "0"; },      // 없으면 켜짐으로 본다
+        get offAt(){ return lsGet("consent.offAt"); },
+        /* 이 판본에 동의했는가. 문안을 고쳐 판본을 올리면 **다시 받는다.** */
+        get ok()  { return this.ver === CONSENT_VER && !!this.at; },
+        agree() {
+            lsPut("consent.ver", CONSENT_VER);
+            lsPut("consent.at", new Date().toISOString());
+            lsPut("consent.on", "1");
+            lsPut("consent.offAt", "");
+        },
+        setOn(v) {
+            lsPut("consent.on", v ? "1" : "0");
+            if (!v) lsPut("consent.offAt", new Date().toISOString());
+            else lsPut("consent.offAt", "");
+        },
+        pack() {   // 대화 자료마다 함께 실어 보낸다 — 파일 하나가 스스로 증명하게
+            return { ver: this.ver, at: this.at, on: this.on, offAt: this.offAt };
+        },
+    };
+
+    /* 소속 — { id, name, cls } */
+    const ORG = {
+        get id()   { return lsGet("org.id"); },
+        get name() { return lsGet("org.name"); },
+        get cls()  { return lsGet("org.cls"); },
+        get ok()   { return !!this.id && !!this.name; },
+        put(id, name, cls) {
+            lsPut("org.id", id); lsPut("org.name", name); lsPut("org.cls", cls || "");
+        },
+        label() {
+            if (!this.ok) return "";
+            return this.name + (this.cls ? " · " + this.cls : "");
+        },
+        pack() { return { id: this.id, name: this.name, cls: this.cls }; },
+    };
+
+    /* ══════════ v152 — 자유 대화 기억 ══════════
+       「지난번에 카페 아르바이트 이야기 했잖아. 어떻게 됐어?」
+
+       ★ 드라이브에서 찾아오지 않는다. 서버가 대화마다 파일을 뒤지면 느리고 비싸다.
+         **기기에 두고 대화 시작할 때 함께 보낸다** — 서버는 아무것도 안 찾는다.
+         요약은 끝날 때 IDC 프로파일과 **같은 호출**에서 함께 받는다(추가 호출 0회).
+
+       ★ 자유 대화만. 주제 대화는 과업이 축이라 지난 이야기가 끼면 오히려 흐트러진다.
+       ★ 5분(300초)을 넘긴 판만. 짧은 판까지 기억하면 「어제 뭐 했지」가 잡음이 된다.
+       ★ 한 판에 **첫 인사에서 한 번만** 꺼낸다. 자꾸 꺼내면
+         「얘가 나를 기억하네」가 아니라 「내 얘기를 다 저장해 뒀네」가 된다. */
+    const MEM_MIN_SEC = 300;      // 5분
+    const MEM_KEEP = 5;           // 최근 다섯 판
+    const MEM_KEY = "freeMemory";
+    function memAll() {
+        try { const v = JSON.parse(lsGet(MEM_KEY, "[]")); return Array.isArray(v) ? v : []; }
+        catch (e) { return []; }
+    }
+    function memPut(secs, memory) {
+        if (secs < MEM_MIN_SEC) return;                     // 짧은 판은 안 남긴다
+        const topics = (memory && memory.topics) || [];
+        const note = (memory && memory.note) || "";
+        if (!topics.length && !note) return;                // 적을 것이 없다
+        const list = memAll();
+        list.unshift({ at: new Date().toISOString(), topics: topics.slice(0, 4), note: note });
+        lsPut(MEM_KEY, JSON.stringify(list.slice(0, MEM_KEEP)));
+    }
+    /* 서버로 보낼 한 덩어리. 없으면 빈 글자 — 프롬프트에 아무것도 안 얹힌다. */
+    function memBrief() {
+        const list = memAll();
+        if (!list.length) return "";
+        return list.slice(0, 3).map((m) => {
+            const d = new Date(m.at);
+            const when = (isNaN(d) ? "" : (d.getMonth() + 1) + "/" + d.getDate());
+            return (when ? when + " " : "") + (m.topics || []).join(", ")
+                 + (m.note ? " — " + m.note : "");
+        }).join(" / ").slice(0, 400);
+    }
+
+    /* 배경음 크기 — 0~100. 켜고 끄기(bgmMuted)와 따로 둔다.
+       끄면 0이 아니라 **끈 상태**다. 다시 켜면 그 사람이 정한 크기로 돌아온다. */
+    let bgmVolPct = (() => {
+        const v = parseInt(lsGet("bgmVol", "100"), 10);
+        return isNaN(v) ? 100 : Math.max(0, Math.min(100, v));
+    })();
+    function bgmVolSet(pct) {
+        bgmVolPct = Math.max(0, Math.min(100, pct | 0));
+        lsPut("bgmVol", String(bgmVolPct));
+        try { updateBgm(); } catch (e) {}
+        // 지금 울리고 있는 것도 그 자리에서 따라 바뀐다 (다음 곡부터가 아니라)
+        try {
+            [[bgm, "bgm"], [prBgm, "prBgm"], [chatBgm, "chatBgm"]].forEach(([el, k]) => {
+                if (el && !el.paused) fadeAudio(el, bgmTarget(k), 160);
+            });
+        } catch (e) {}
     }
 
     /* ★ v150 — 한 판 10분. 남은 시간을 알리는 말 (18개 언어) */
@@ -10042,7 +10702,10 @@
             idcQ = Object.keys(m).map(k => k + ":" + m[k]).join(",");
         } catch (e) {}
         ws = new WebSocket(proto + location.host + "/ws/live?idc=" + encodeURIComponent(idcQ) + "&d=" + d + "&p=" + p + "&lang=" + encodeURIComponent(uiLang || "ko") + "&name=" + encodeURIComponent(userName) + "&voice=" + encodeURIComponent(voicePref)
-            + "&scaf=" + (scafSlider ? (+scafSlider.value) : 2) + rpParams);
+            + "&scaf=" + (scafSlider ? (+scafSlider.value) : 2) + rpParams
+            /* ★ v152 — 자유 대화에만 지난 이야기를 얹는다.
+               주제 대화는 과업이 축이라 지난 이야기가 끼면 흐트러진다. */
+            + (mode === "rp" ? "" : "&mem=" + encodeURIComponent(memBrief())));
         ws.binaryType = "arraybuffer"; // 오디오는 바이너리 프레임 (base64 오버헤드 제거)
         let sessionOpened = false;     // 한 번이라도 붙었는지 (연결 실패 판별용)
         connectStartedAt = Date.now();
@@ -10254,6 +10917,7 @@
                 // 종료 버튼에 대한 서버의 최종 분석 결과 — 퍼센트를 점수로 치환
                 rpFinal = { percent: msg.percent || 0, score: msg.score || 0, stages: msg.stages || rpStagesState,
                             idc: msg.idc || [], idcTotal: msg.idcTotal || 0,
+                            memory: msg.memory || null,   // ★ v152 — 자유 대화 기억
                             abc: msg.abc || "", chains: msg.chains || null,
                             review: msg.review || "" };
                 // 서버가 준 누적 횟수를 기기에 보관 — 다음 세션의 비계가 여기서 출발한다
@@ -10989,6 +11653,9 @@
         return {
             name: userName,
             mode: sessionMode(),   // v151 — 파일 이름과 **같은 눈금**을 쓴다
+            // ★ v152 — 자료 한 장이 스스로 「동의 아래 모였다」를 증명한다
+            consent: CONSENT.pack(),
+            org: ORG.pack(),
             lang: uiLang || "ko",
             d: +distSlider.value,
             p: +powerSlider.value,
@@ -11053,6 +11720,9 @@
         fd.append("name", userName);
         fd.append("sid", sessionSid);
         fd.append("mode", sessionMode());
+        fd.append("org", ORG.id || "");          // ★ v152 — 기관별로 갈려야 뒷날 쓴다
+        fd.append("orgName", ORG.name || "");
+        fd.append("orgClass", ORG.cls || "");
         fd.append("meta", JSON.stringify(buildSessionMeta()));
     }
 
@@ -11069,7 +11739,7 @@
             partialBusy = true;
             try {
                 const fd = new FormData();
-                if (hasAudio) {
+                if (hasAudio && CONSENT.on) {   // ★ v152 — 껐으면 소리는 빼고 글만
                     const mime = (recorder && recorder.mimeType) || recorderMime || "audio/webm";
                     const type = mime.split(";")[0];
                     const ext = type.indexOf("mp4") >= 0 ? "m4a" : type.indexOf("ogg") >= 0 ? "ogg" : type.indexOf("wav") >= 0 ? "wav" : "webm";
@@ -11087,7 +11757,10 @@
 
     async function uploadRecording(blob) {
         const transcriptText = buildTranscriptText();
-        const hasAudio = blob && blob.size > 0;
+        /* ★ v152 — 설정에서 녹음을 껐으면 **소리는 안 올린다.**
+           글 기록은 남긴다 — 학습 기록을 돌려주는 것은 껐다고 그만둘 일이 아니고,
+           동의문에도 「녹음하지 않는다」고만 적었다. */
+        const hasAudio = CONSENT.on && blob && blob.size > 0;
         if (!hasAudio && !transcriptText) return;
         sessionUploaded = true; // pagehide 비콘과의 이중 전송 방지
         try {

@@ -1493,7 +1493,11 @@
         /* 상단 헤더: 제목(왼쪽) · 버튼(오른쪽) */
         /* ★ 헤더만 위에 두고 남는 공간을 전부 여기서 먹는다 → 카드는 항상 화면 아래에 붙는다.
            여백(vh)으로 밀던 방식은 화면 크기마다 결과가 달라져 못 쓴다. */
+        /* ★ v156 — 단추 둘을 안쪽으로 조금 당긴다.
+           넷을 뺀 뒤로 이름과 단추 사이가 화면을 가로질러 너무 멀어졌다.
+           끝에 딱 붙어 있으면 한 덩어리로 안 읽힌다. */
         .home-header { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 4px; margin-bottom: auto; }
+        .home-top { margin-right: 10px; }
         .home-title { font-size: var(--t-ko-l); font-weight: 900; margin: 0; color: var(--ink); letter-spacing: -0.4px; text-align: left; line-height: 1.2;
             display: flex; align-items: center; gap: 9px; min-width: 0; }
         .home-logo { width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; object-fit: cover; cursor: pointer;
@@ -1600,7 +1604,16 @@
         /* 배경 위에 놓이는 것들 */
         body[data-screen="home"] .home-screen > * { position: relative; z-index: 1; }
         .home-screen { z-index: 1; }
-        .home-hero { display: none; }   /* 빈 여백 자리는 더 이상 필요 없다 */   /* 호아랑이 보이도록 비워 두는 자리 */
+        /* ★ v156 — 호아랑이 서 있는 가운데 빈 자리를 **눌러 지난 대화**로 간다.
+           여기는 원래 아무 일도 안 하던 여백이다. 오른쪽 위 작은 시계 단추 하나로만
+           들어갈 수 있었는데, 그 단추는 학습자가 잘 못 찾는다.
+           호아랑을 눌러 지난 이야기를 꺼내는 것이 더 자연스럽다.
+           카드 위가 아니라 **카드 위쪽 빈 자리**만 먹는다 — 카드는 그대로 눌린다. */
+        .home-hero { display: none; }
+        body[data-screen="home"] .home-hero {
+            display: block; flex: 1 1 auto; min-height: 120px; width: 100%;
+            cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        body[data-screen="home"] .home-hero:active { opacity: 0.9; }
         .home-header .home-title { text-shadow: 0 1px 3px rgba(244,240,230,0.9); }
         body[data-screen="home"] .home-sub { display: none; }   /* 영상이 인사를 대신한다 */
 
@@ -1643,6 +1656,22 @@
             max-height: calc(34vh / var(--ui-zoom)); overflow-y: auto; }
         .hist-item.open { border-color: var(--accent-ink); }
         .hist-item.open .hi-body { display: block; }
+        /* ★ v156 — 지난 대화 위에 얹는 복습 카드.
+           대화 글은 pre-wrap 이라 줄바꿈이 그대로 산다. 카드는 그 규칙에서 빼낸다. */
+        .hlrn { white-space: normal; background: #fff; border: 1px solid var(--accent-soft);
+            border-radius: 12px; padding: 11px 12px 12px; margin-bottom: 11px; }
+        .hlrn-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+            margin: 12px 0 6px; font-size: 12.5px; color: var(--ink); }
+        .hlrn-h:first-child { margin-top: 0; }
+        .hlrn-h b { font-weight: 900; }
+        .hlrn-h span { font-weight: 900; color: var(--accent); font-size: 12px; flex: none; }
+        .hlrn-rv { font-size: 12.5px; line-height: 1.65; color: var(--ink);
+            background: var(--sand-soft); border-radius: 10px; padding: 9px 11px; }
+        .hlrn .idc-row { padding: 7px 9px; margin-top: 5px; }
+        .hlrn-say { display: flex; flex-direction: column; gap: 2px; padding: 8px 11px; margin-top: 5px;
+            border-radius: 10px; background: var(--sand-soft); border-left: 3px solid var(--accent); }
+        .hlrn-say b { font-size: 13.5px; font-weight: 900; color: var(--ink); line-height: 1.4; }
+        .hlrn-say span { font-size: 11.5px; font-weight: 700; color: var(--muted); }
         .hist-item.open .hi-preview { display: none; }
         .hist-item .hi-caret { font-size: 11px; color: var(--muted); margin-left: 6px; }
         .hist-detail { text-align: left; max-height: calc(38vh / var(--ui-zoom)); overflow-y: auto; white-space: pre-wrap;
@@ -2290,7 +2319,9 @@
     </div>
     <!-- 호아랑이 마루에서 기다리는 영상이 홈 화면 전체를 채운다.
          영상을 못 트는 환경에서는 포스터 이미지가 그대로 남아 화면이 비지 않는다. -->
-    <div class="home-hero" aria-hidden="true"></div>
+    <!-- ★ v156 — 호아랑이 서 있는 자리를 누르면 지난 대화가 열린다.
+         읽어 줄 것이 없는 빈 자리이므로 role/label 을 갖춰 둔다. -->
+    <div class="home-hero" id="homeHeroTap" role="button" tabindex="0"></div>
     <p class="home-sub" id="homeSubEl"></p>
     <!-- ★ v128 — 제시·연습·적용 가운데 「제시」와 「연습」을 챗봇으로 끌어온 자리.
          주제 대화(적용)보다 위에 둔다. 순서가 곧 안내다. -->
@@ -2686,7 +2717,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v155 (2026-08-30)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v157 (2026-08-30)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -4875,7 +4906,7 @@
     /* ★★ v152 — 동의 여부를 **기기에 남긴다.**
        예전에는 `let consentGiven = false` 하나였다. 새로 고칠 때마다 다시 뜨고
        「언제 동의했다」가 아무 데도 안 남았다 — 연구 자료로 쓸 수가 없었다.
-       문안을 고쳐 판본을 올리면 CONSENT.ok 가 false 가 되어 **다시 받는다.** */
+       문안을 고쳐 버전을 올리면 CONSENT.ok 가 false 가 되어 **다시 받는다.** */
     function paintConsent() {
         const g = (id) => document.getElementById(id);
         g("consentTitleEl").textContent = "🎙️ " + cnT("t");
@@ -4911,11 +4942,11 @@
         go();
     }
     /* ★ v155 — 동의 기록 한 장을 드라이브에 남긴다.
-       동의 판본·시각은 대화 자료(.json)마다 이미 실려 간다. 그러나 그것은
+       동의 버전·시각은 대화 자료(.json)마다 이미 실려 간다. 그러나 그것은
        **대화가 있어야** 남는다. 동의만 하고 그만둔 학습자와, 「누가 언제
        무엇에 동의했나」를 한눈에 보는 명단은 따로 있어야 한다.
 
-       ★ 판본과 소속을 함께 표시로 남긴다. 동의를 다시 받거나 소속을 바꾸면
+       ★ 버전과 소속을 함께 표시로 남긴다. 동의를 다시 받거나 소속을 바꾸면
          그때 한 장이 더 남는다 — 바뀐 것도 기록이기 때문이다.
        ★ 실패해도 아무 일도 안 일어난다. 이 한 장은 **사본**이지 관문이 아니다. */
     function sendConsentRecord() {
@@ -4952,7 +4983,7 @@
         if (back) { try { back(); } catch (e) {} }
     }
     document.getElementById("consentAgreeBtn").addEventListener("click", () => {
-        CONSENT.agree();                 // ★ v152 — 판본·시각을 기기에 남긴다
+        CONSENT.agree();                 // ★ v152 — 버전·시각을 기기에 남긴다
         consentOverlay.classList.add("hidden");
         const then = consentThen;
         consentThen = null; consentCancelBack = null;
@@ -5115,6 +5146,17 @@
         nameOverlay.classList.remove("hidden");
     });
     document.getElementById("homeHistoryBtn").addEventListener("click", openHistory);
+    /* ★ v156 — 홈 가운데(호아랑이 서 있는 자리)를 눌러도 지난 대화가 열린다.
+       오른쪽 위 작은 시계 단추 하나로만 들어갈 수 있었는데 잘 못 찾는다. */
+    (function bindHeroTap() {
+        const hero = document.getElementById("homeHeroTap");
+        if (!hero) return;
+        hero.setAttribute("aria-label", "지난 대화");
+        hero.addEventListener("click", openHistory);
+        hero.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openHistory(); }
+        });
+    })();
 
     /* ── 홈 배경 영상 ──
        화면 전체를 채우는 무한 루프. 서버가 static/ 안의 home_loop*.mp4를 모두 알려주면
@@ -5471,8 +5513,21 @@
             r: m.role === "user" ? "me" : "ham",
             t: (m.text || "").trim(),
         })).filter((x) => x.t);
+        /* ★ v156 — 「배운 것」을 함께 남긴다.
+           지금까지 지난 대화는 **읽을 글 덩어리**였다. 다시 열어도 대화만 있고,
+           그 판에서 무엇을 해냈고 다음에 무엇을 해 볼지가 없었다.
+           총평·요소별 판정·다음에 써 볼 한 마디를 따로 남겨 두면
+           지난 대화가 **복습 자리**가 된다. 셋 다 이미 받아 둔 것이라 호출 0회. */
+        const learn = {
+            review: (rpFinal && (rpFinal.review || "").trim()) || "",
+            idc: (rpFinal && rpFinal.idc) || [],
+            idcTotal: (rpFinal && rpFinal.idcTotal) || 0,
+            phrases: (rpFinal && rpFinal.phrases) || [],
+            prompted: LAST_PROMPTED || null,
+            intv: LAST_INTV || 0,
+        };
         list.unshift({ ts: new Date().toISOString(), mode: rpSessionActive ? "rp" : "free",
-                       title, preview, text, turns, quests, stats });
+                       title, preview, text, turns, quests, stats, learn });
         /* ★★ v143 — 교실 화면으로 **저절로** 보낸다.
            v142 는 학습자가 대목을 골라 네 글자 코드를 만들고, 교사가 그 코드를 넣는 방식이었다.
            교실에서는 그렇게 안 돌아간다 — 코드를 하나하나 받아 적고 하나하나 넣어야 하고,
@@ -5523,6 +5578,89 @@
             histList.appendChild(div);
         });
     }
+    /* ══════════ v156 — 지난 대화를 복습 자리로 ══════════
+       지금까지 지난 대화는 **읽을 글 덩어리**였다. 다시 열어도 대화만 있고,
+       그 판에서 무엇을 해냈고 다음에 무엇을 해 볼지가 없었다.
+       기록을 다시 보는 일이 학습이 되려면 **세 가지**가 함께 있어야 한다.
+         ① 그때 호아랑이 해 준 총평   ② 요소별로 무엇을 해냈나
+         ③ 다음에 그대로 입에 올려 볼 한 마디
+       셋 다 판이 끝날 때 이미 받아 둔 것이다 — 다시 여는 데 호출 0회. */
+    const RVW_TXT = {
+        ko:{n:"다음에 이렇게 말해 보세요"}, en:{n:"Try saying this next time"},
+        zh:{n:"下次试着这样说"}, ja:{n:"次はこう言ってみましょう"},
+        vi:{n:"Lần sau hãy thử nói thế này"}, th:{n:"ครั้งหน้าลองพูดแบบนี้"},
+        id:{n:"Lain kali coba katakan ini"}, mn:{n:"Дараагийн удаад ингэж хэлж үзээрэй"},
+        uz:{n:"Keyingi safar shunday deb ko'ring"}, ru:{n:"В следующий раз попробуйте сказать так"},
+        es:{n:"La próxima vez prueba a decir esto"}, fr:{n:"La prochaine fois, essayez de dire ceci"},
+        ne:{n:"अर्को पटक यसो भन्ने प्रयास गर्नुहोस्"}, lo:{n:"ເທື່ອໜ້າລອງເວົ້າແບບນີ້"},
+        my:{n:"နောက်တစ်ခါ ဒီလိုပြောကြည့်ပါ"}, km:{n:"លើកក្រោយសាកនិយាយបែបនេះ"},
+        uk:{n:"Наступного разу спробуйте сказати так"}, ky:{n:"Кийинки жолу мындай айтып көрүңүз"},
+    };
+    function rvwT(k) { return (RVW_TXT[uiLang] || RVW_TXT.en)[k] || RVW_TXT.ko[k]; }
+
+    function buildLearnCard(it) {
+        const L = it && it.learn;
+        if (!L) return null;                       // v156 앞의 기록에는 없다 — 대화만 보인다
+        const items = (L.idc || []).filter((x) => x && x.key);
+        const says = (L.phrases || []).filter((x) => x && x.say);
+        if (!L.review && !items.length && !says.length) return null;
+        const box = document.createElement("div");
+        box.className = "hlrn";
+        const head = (txt, right) => {
+            const h = document.createElement("div");
+            h.className = "hlrn-h";
+            const b = document.createElement("b"); b.textContent = txt; h.appendChild(b);
+            if (right) { const s = document.createElement("span"); s.textContent = right; h.appendChild(s); }
+            box.appendChild(h);
+        };
+        // ① 그때 호아랑이 해 준 말 — 대화를 다시 읽기 전에 먼저 온다
+        if (L.review) {
+            head(t("revHead"));
+            const p = document.createElement("div");
+            p.className = "hlrn-rv"; p.textContent = L.review;
+            box.appendChild(p);
+        }
+        // ② 요소별로 무엇을 해냈나 — 결과 화면과 **같은 꼴**로 보인다(두 번 배울 것이 없게)
+        if (items.length) {
+            head(t("idcTitle"), (L.idcTotal ? L.idcTotal + t("rpPts") : ""));
+            const lbl = { hi: t("idcHi"), mid: t("idcMid"), lo: t("idcLo") };
+            items.forEach((x) => {
+                const row = document.createElement("div");
+                row.className = "idc-row" + (x.scored === false ? " na" : "");
+                const g = document.createElement("span");
+                g.className = "idc-grade " + (x.grade || "na");
+                g.textContent = lbl[x.grade] || "—";
+                const body = document.createElement("div");
+                body.className = "idc-body";
+                const nm = document.createElement("div");
+                nm.className = "idc-name";
+                nm.textContent = t("idc_" + x.key) || x.name || x.key;
+                body.appendChild(nm);
+                if (x.why) {
+                    const w = document.createElement("div");
+                    w.className = "idc-why"; w.textContent = x.why;
+                    body.appendChild(w);
+                }
+                row.appendChild(g); row.appendChild(body);
+                box.appendChild(row);
+            });
+        }
+        // ③ 다음에 그대로 써 볼 한 마디 — 통째로 외워 쓸 수 있는 말만 온다
+        if (says.length) {
+            head(rvwT("n"));
+            says.forEach((s) => {
+                const r = document.createElement("div");
+                r.className = "hlrn-say";
+                const q = document.createElement("b"); q.textContent = "“" + s.say + "”";
+                r.appendChild(q);
+                const when = [s.when, s.key ? t("idc_" + s.key) : ""].filter(Boolean).join(" · ");
+                if (when) { const c = document.createElement("span"); c.textContent = when; r.appendChild(c); }
+                box.appendChild(r);
+            });
+        }
+        return box;
+    }
+
     function toggleHistItem(div, i) {
         const wasOpen = div.classList.contains("open");
         // 한 번에 하나만 펼친다 — 여러 개가 열리면 어느 대화를 내보내는지 모호해진다
@@ -5534,6 +5672,16 @@
         }
         div.classList.add("open");
         histCurrent = loadHistory()[i] || null;
+        /* ★ v156 — 펼칠 때 복습 카드를 대화 **앞에** 끼운다.
+           대화 글부터 나오면 학습자는 그대로 다시 읽고 만다. 무엇을 배웠는지가
+           먼저 와야 다시 읽는 일이 학습이 된다. 한 번만 만들고 그대로 둔다. */
+        try {
+            const body = div.querySelector(".hi-body");
+            if (body && !body.querySelector(".hlrn")) {
+                const card = buildLearnCard(histCurrent);
+                if (card) body.insertBefore(card, body.firstChild);
+            }
+        } catch (e) {}
         histExportBtn.classList.toggle("hidden", !histCurrent);
         try { div.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) {}
     }
@@ -10088,7 +10236,7 @@
         ko: { title:"설정", name:"이름", lang:"화면 언어", voice:"호아랑 목소리", org:"소속",
               bgm:"배경음악", rec:"녹음", doc:"동의서 받기", orgNone:"아직 안 골랐어요",
               recOn:"켜져 있습니다", recOff:"꺼져 있습니다",
-              agreedAt:"{d}에 동의했습니다 (판본 {v})",
+              agreedAt:"{d}에 동의했습니다 (버전 {v})",
               offNote:"끈 뒤로는 녹음하지 않습니다.\n이미 모인 자료는 이름을 지운 상태로 연구에 쓰입니다." },
         en: { title:"Settings", name:"Name", lang:"App language", voice:"Hoarang's voice", org:"Where you study",
               bgm:"Background music", rec:"Recording", doc:"Get the consent form", orgNone:"Not chosen yet",
@@ -10165,7 +10313,7 @@
         return m[key] || SET_MSG.en[key] || "";
     }
 
-    /* ★★ v152 — 녹음 동의문 (판본 1.0).
+    /* ★★ v152 — 녹음 동의문 (버전 1.0).
        예전 문안은 두 문장뿐이었고 **연구 목적이 빠져 있었다.**
        그리고 동의 여부가 그냥 변수였다 — 새로 고칠 때마다 다시 뜨고
        「언제 동의했다」가 아무 데도 안 남았다. 연구 자료로 쓰려면 그게 있어야 한다.
@@ -10173,7 +10321,7 @@
        전체 문안은 화면에서 안 펼친다. 첫 화면에 긴 글이 붙으면 학습자는
        **안 읽고 누른다** — 그러면 「읽었다」가 거짓이 된다.
        읽을 사람이 읽을 자리(설정 → 동의서 받기)로 옮겼다. */
-    const CONSENT_VER = "1.0";
+    const CONSENT_VER = "1.1";
     const CN_MSG = {
         ko: { t:"녹음 안내", lead:"호아랑과 나눈 대화는 녹음되어 저장됩니다.",
               q:"왜 녹음합니까?",
@@ -10314,7 +10462,7 @@
         get at()  { return lsGet("consent.at"); },
         get on()  { return lsGet("consent.on") !== "0"; },      // 없으면 켜짐으로 본다
         get offAt(){ return lsGet("consent.offAt"); },
-        /* 이 판본에 동의했는가. 문안을 고쳐 판본을 올리면 **다시 받는다.** */
+        /* 이 버전에 동의했는가. 문안을 고쳐 버전을 올리면 **다시 받는다.** */
         get ok()  { return this.ver === CONSENT_VER && !!this.at; },
         agree() {
             lsPut("consent.ver", CONSENT_VER);
@@ -11030,6 +11178,7 @@
                 rpFinal = { percent: msg.percent || 0, score: msg.score || 0, stages: msg.stages || rpStagesState,
                             idc: msg.idc || [], idcTotal: msg.idcTotal || 0,
                             memory: msg.memory || null,   // ★ v152 — 자유 대화 기억
+                            phrases: msg.phrases || [],   // ★ v156 — 다음에 써 볼 한 마디
                             abc: msg.abc || "", chains: msg.chains || null,
                             review: msg.review || "" };
                 // 서버가 준 누적 횟수를 기기에 보관 — 다음 세션의 비계가 여기서 출발한다

@@ -46,16 +46,16 @@ console.log("── ① 문구가 지원 언어 전부에 ───────�
 console.log("\n── ② 동의를 기기에 남기는가 ─────────────────────");
 ok("옛 변수(consentGiven)를 안 쓴다",
    !/^\s*let consentGiven/m.test(html), "새로 고치면 사라지는 값이었다");
-ok("판본·시각·켜짐을 남긴다",
+ok("버전·시각·켜짐을 남긴다",
    /consent\.ver/.test(html) && /consent\.at/.test(html) && /consent\.on/.test(html));
-ok("판본이 다르면 다시 받는다",
+ok("버전이 다르면 다시 받는다",
    /this\.ver === CONSENT_VER/.test(html), "문안을 고쳐도 안 물어보면 뜻이 없다");
-ok("화면과 서버의 판본 이름이 둘 다 있다",
+ok("화면과 서버의 버전 이름이 둘 다 있다",
    /const CONSENT_VER = "([\d.]+)"/.test(html) && /CONSENT_DOC_VER = "([\d.]+)"/.test(py));
 const v1 = (html.match(/const CONSENT_VER = "([\d.]+)"/) || [])[1];
 const v2 = (py.match(/CONSENT_DOC_VER = "([\d.]+)"/) || [])[1];
-ok(`두 판본이 같다 (${v1} / ${v2})`, v1 === v2,
-   "어긋나면 동의서에 찍히는 판본과 실제가 다르다");
+ok(`두 버전이 같다 (${v1} / ${v2})`, v1 === v2,
+   "어긋나면 동의서에 찍히는 버전과 실제가 다르다");
 ok("자료마다 동의 기록이 함께 간다", /consent: CONSENT\.pack\(\)/.test(html));
 ok("녹음을 끄면 소리를 안 올린다",
    /const hasAudio = CONSENT\.on && blob/.test(html),

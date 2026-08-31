@@ -24,7 +24,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v155"
+APP_VERSION = "v157"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -2102,9 +2102,9 @@ _hint_dx = {"ok": 0, "fail": 0, "empty": 0, "last": ""}
 #   쪼개져 도착하면 조각마다 정규식을 걸어서는 영영 못 잡는다.
 #   그래서 표식이 될 수도 있는 꼬리(`<`, `<no`, `<nois`…)는 **붙들어 두었다가**
 #   다음 조각과 이어 붙여서 다시 본다.
-# ★ v152 — 동의서 판본. 화면(app.html 의 CONSENT_VER)과 **같아야 한다.**
+# ★ v152 — 동의서 버전. 화면(app.html 의 CONSENT_VER)과 **같아야 한다.**
 #   문안을 고치면 여기와 저기를 함께 올린다 — 그래야 학습자에게 다시 받는다.
-CONSENT_DOC_VER = "1.0"
+CONSENT_DOC_VER = "1.1"
 
 STT_UNHEARD = "(안 들림)"
 _STT_JUNK = re.compile(
@@ -3942,7 +3942,7 @@ async def consent_record(
     """★ v155 — 동의 기록 한 장을 드라이브에 남긴다.
 
     ★ 왜 필요한가
-      동의 판본·시각은 대화 자료(.json)마다 이미 실려 간다. 그러나 그것은
+      동의 버전·시각은 대화 자료(.json)마다 이미 실려 간다. 그러나 그것은
       **대화가 있어야** 남는다. 동의만 하고 대화를 안 한 학습자, 그리고
       「누가 언제 무엇에 동의했나」를 **한눈에 보는 명단**이 따로 필요하다.
 
@@ -3952,7 +3952,7 @@ async def consent_record(
 
     ★ 왜 화면이 부르나
       서버는 「지금 동의했다」를 스스로 알 수 없다. 동의와 소속이 다 갖춰진
-      그 순간에 화면이 한 번 부른다. 같은 판본·같은 소속이면 다시 안 부른다.
+      그 순간에 화면이 한 번 부른다. 같은 버전·같은 소속이면 다시 안 부른다.
     """
     if not GDRIVE_ENABLED:
         return {"ok": False, "why": "drive-off"}
@@ -3976,8 +3976,8 @@ async def consent_record(
         f"소속        : {_clean_str(orgName, 40) or '(안 고름)'}"
         + (f"  [{(org or '').strip()}]" if org else ""),
         f"동의한 때   : {at_ko}",
-        f"문안 판본   : {_clean_str(ver, 8) or '—'}",
-        f"이름표 판본 : {_clean_str(orgVer, 4) or '1'}",
+        f"동의서 버전 : {_clean_str(ver, 8) or '—'}",
+        f"이름표 버전 : {_clean_str(orgVer, 4) or '1'}",
         f"화면 언어   : {_clean_str(lang, 8) or '—'}",
         f"서버가 받은 때: {datetime.datetime.now().isoformat(timespec='seconds')}",
         "",
@@ -4053,9 +4053,10 @@ async def consent_doc(request: Request):
    .btn {{ display: none; }} }}
 </style></head><body>
 <div class="sheet">
-<h1>녹음·연구 자료 수집 동의서</h1>
-<p class="sub">호아랑(Hoarang) · 판본 {esc(q.get('ver') or CONSENT_DOC_VER)} · 이남호
- (중앙대학교 국어국문학과 한국어교육학전공)</p>
+<h1>연구 참여 및 개인정보 수집·이용 동의서</h1>
+<p class="sub">연구 과제명 · 한국어 상호작용 대화 교육 모형 개발에 관한 연구<br>
+연구 책임자 · 이남호 (중앙대학교 대학원 국어국문학과 한국어교육학전공)<br>
+자료 수집 도구 · 호아랑(Hoarang)</p>
 
 <div class="rec"><dl>
  <dt>동의한 사람</dt><dd>{esc(q.get('name')) or '—'}</dd>
@@ -4064,34 +4065,51 @@ async def consent_doc(request: Request):
  <dt>지금 상태</dt><dd>{'켜짐' if on else ('꺼짐 — ' + off_ko + ' 에 끔' if off_ko else '꺼짐')}</dd>
 </dl></div>
 
-<h2>1. 무엇을 모읍니까</h2>
-<p>대화 음성, 대화 글(전사), 대화 설정(주제·장소·역할·말투), 학습 기록.</p>
+<h2>1. 연구의 목적</h2>
+<p>본 연구는 <b>학습자를 위한 생성형 AI 활용 한국어 상호작용 대화 교육 모형을 개발하고
+그 교육적 효과를 검증</b>하는 것을 목적으로 합니다.
+수집된 자료는 <b>한국어교육학 연구</b>에 이용될 수 있습니다.</p>
 
-<h2>2. 왜 모읍니까</h2>
-<p>이 연구는 <b>학습자를 위한 생성형 AI 활용 한국어 상호작용 대화 교육 모형을 개발하고
-그 교육적 효과를 검증</b>하는 데 목적이 있습니다.
-모인 자료는 <b>중앙대학교 한국어교육학 연구</b>에 쓰일 수 있습니다.</p>
+<h2>2. 수집하는 항목</h2>
+<p>대화 음성 녹음, 음성의 전사 자료, 대화 설정 정보(주제·장소·역할·말투),
+학습 수행 기록(수행 요소·점수·개입 이력), 그리고 참여자가 입력한 이름과 소속을
+수집합니다. 그 밖의 개인정보는 수집하지 않습니다.</p>
 
-<h2>3. 이름은 지웁니다</h2>
-<p>연구에 쓸 때 이름과 소속을 지웁니다. 누구의 대화인지 알 수 없게 합니다.</p>
+<h2>3. 자료의 이용 및 익명 처리</h2>
+<p>수집된 자료는 연구 목적으로만 이용합니다.
+자료를 분석·인용·공표할 때에는 <b>이름과 소속을 삭제하고 식별할 수 없는 부호로 대체</b>합니다.
+연구 결과의 공표 과정에서 참여자 개인이 식별되는 일은 없습니다.
+연구진 외의 제3자에게 자료를 제공하지 않습니다.</p>
 
-<h2>4. 돈</h2>
-<p><b>2026년 12월 12일까지</b> 이 앱을 쓰는 데 돈을 내지 않습니다.
-동의를 하든 하지 않든 마찬가지입니다.</p>
+<h2>4. 참여의 자발성 및 동의 철회</h2>
+<p>본 연구에 대한 참여는 <b>전적으로 자발적</b>이며, 참여자는 언제든지 동의를 철회할 수 있습니다.
+철회는 앱의 설정 화면에서 녹음 기능을 해제하는 방법으로 하며,
+철회한 시점 이후로는 자료를 수집하지 않습니다.
+다만 철회 이전에 이미 수집되어 <b>익명 처리된 자료</b>는 개인을 특정할 수 없으므로
+파기하지 못할 수 있습니다.</p>
 
-<h2>5. 불이익이 없습니다</h2>
-<p>참여하지 않아도, 도중에 그만두어도 <b>어떤 불이익도 없습니다.</b>
-수업 성적과 관계가 없습니다.</p>
+<h2>5. 참여에 따르는 이익과 불이익</h2>
+<p>참여자는 자신의 학습 기록과 수행에 대한 총평을 앱에서 확인할 수 있습니다.
+본 연구의 참여 여부, 참여 도중의 중단, 동의 철회는
+<b>수업의 평가 및 성적에 어떠한 영향도 미치지 않으며</b>,
+참여자에게 어떠한 불이익도 발생하지 않습니다.
+예상되는 위험은 없습니다.</p>
 
-<h2>6. 그만두려면</h2>
-<p>설정에서 녹음을 끌 수 있습니다. 끈 뒤로는 녹음하지 않습니다.
-이미 모인 자료는 이름을 지운 상태로 연구에 쓰입니다.</p>
+<h2>6. 자료의 보관 및 파기</h2>
+<p>수집된 자료는 연구 책임자가 관리하는 접근 통제된 저장소에 보관하며,
+<b>연구 종료 후 3년</b>이 지난 때에 복구할 수 없는 방법으로 파기합니다.</p>
 
-<h2>7. 언제까지 둡니까</h2>
-<p>연구가 끝난 뒤 <b>3년</b>까지 두고, 그 뒤에 지웁니다.</p>
+<h2>7. 문의</h2>
+<p>본 연구 및 개인정보의 처리에 관하여 문의할 사항이 있으면
+아래의 연구 책임자에게 연락하시기 바랍니다.</p>
 
-<div class="foot">문의 · 이남호 · namho1210@naver.com<br>
-문안 판본 {esc(q.get('ver') or CONSENT_DOC_VER)} · 2026-08-29</div>
+<div class="foot">
+연구 책임자 · 이남호 · namho1210@naver.com<br>
+중앙대학교 대학원 국어국문학과 한국어교육학전공<br>
+2026-08-30<br><br>
+본인은 위 내용을 읽고 이해하였으며, 자발적인 의사로 연구 참여 및
+개인정보의 수집·이용에 동의하였습니다. 위 「동의한 때」는 참여자가
+앱에서 동의 의사를 표시한 시각입니다.</div>
 </div>
 <button class="btn" onclick="window.print()">인쇄 · PDF로 저장</button>
 </body></html>"""
@@ -5660,8 +5678,18 @@ why는 학습자가 읽을 한 문장(30자 이내). 실제 발화를 근거로 
   · note: 다음에 물어보면 좋을 것 한 줄(40자 이내). 예) "아르바이트 어떻게 됐는지 물어보기"
   학습자가 스스로 말한 것만 적어라. 없으면 빈 배열·빈 문자열로 둔다.
 
+★★ v156 — phrases 칸을 함께 채워라 (지난 대화를 다시 볼 때 쓴다).
+  학습자가 **다음에 그대로 입에 올려 볼 한 마디** 3개.
+  · 위에서 "lo"나 "mid"로 판정한 범주 가운데 **가장 아쉬운 것부터** 고른다.
+  · key: 그 범주의 key. say: 그때 할 말 한 마디(20자 이내, 해요체).
+    when: 어떤 자리에서 쓰는지 한 조각(15자 이내). 예) "말이 막혔을 때"
+  · 이번 대화에 **실제로 있었던 자리**를 고르라. 없던 상황을 지어내지 마라.
+  · 문법 설명을 하지 마라. 통째로 외워 쓸 수 있는 말만 적어라.
+  예) {{"key":"repair","say":"그게 뭐라고 하죠?","when":"단어가 생각 안 날 때"}}
+
 JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}],
-  "memory":{{"topics":[],"note":""}}}}"""
+  "memory":{{"topics":[],"note":""}},
+  "phrases":[{{"key":"","say":"","when":""}}]}}"""
         data = None
         try:
             data = await _gen_json(prompt, timeout_s=18.0)
@@ -5710,7 +5738,22 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}],
                 mem["note"] = _clean_str(m.get("note"), 60)
         except Exception:
             pass
-        return {"items": items, "total": total, "memory": mem}
+        # ★ v156 — 「다음에 써 볼 한 마디」. 이것도 **같은 호출**에서 함께 받았다.
+        #   따로 부르면 판마다 돈이 더 든다. 지난 대화를 다시 열 때 이 셋을 보여 준다.
+        phrases = []
+        try:
+            for pz in ((data or {}).get("phrases") or [])[:3]:
+                if not isinstance(pz, dict):
+                    continue
+                say = _clean_str(pz.get("say"), 40)
+                if not say:
+                    continue
+                k = _clean_str(pz.get("key"), 20)
+                phrases.append({"key": k if k in idc_state["counts"] else "",
+                                "say": say, "when": _clean_str(pz.get("when"), 30)})
+        except Exception:
+            pass
+        return {"items": items, "total": total, "memory": mem, "phrases": phrases}
 
     async def run_review(send_piece=None) -> str:
         """총평 — 등급표 말고 사람이 쓴 것 같은 줄글로.
@@ -5872,6 +5915,8 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}],
             "idcTotal": idc["total"],
             # ★ v152 — 자유 대화에서만. 5분 넘겼을 때만 화면이 기기에 적는다.
             "memory": (idc.get("memory") or {}) if not rp_plan else {},
+            # ★ v156 — 다음에 써 볼 한 마디 셋. 지난 대화를 다시 열 때 보여 준다.
+            "phrases": idc.get("phrases") or [],
             "abc": rp_progress["abc"],                      # 대화 유형 A/B/C
             "chains": rp_progress["chains"],                # 대화이동 연쇄 횟수
             "review": review,                              # 총평은 뒤이어 따로 온다(type:"review")

@@ -18,7 +18,10 @@ exec(re.search(r"^PHASE_BAN = \{[\s\S]*?^\}", s, re.M).group(0), globals())
 INTV_EXCLUDE = set()
 exec(re.search(r"^INTV_EXCLUDE = \{[\s\S]*?^\}", s, re.M).group(0), globals())
 body = s[s.index("    def _stage_phase() -> str:"):s.index("    def _intv_overdue() -> bool:")]
-src = ("def make(convo, idc_state, rp_progress, scaf_level, rp_plan=None):\n"
+# ★ v158 — _fit_intervention 이 「이번에 해 볼 것」(focus_els)을 앞세운다.
+#   여기서는 **안 고른 상태**를 기본으로 두고 돌린다 — 목표를 안 고른 학습자가
+#   지금까지와 같은 넛지를 받는지가 이 검사가 재려던 것이기 때문이다.
+src = ("def make(convo, idc_state, rp_progress, scaf_level, rp_plan=None, focus_els=frozenset()):\n"
        + textwrap.indent(body, "")
        + "\n    _user_turns = lambda: len([m for m in convo if m['role'] == 'user'])"
        + "\n    return _fit_intervention()\n")
@@ -149,5 +152,28 @@ ok("네 갈래 이상이 나온다", len(c) >= 4, "%d갈래" % len(c))
 print("\n── ④ 같은 것을 두 번 주지 않는가 ──")
 ok("한 번 준 것은 다시 안 나온다", len(picks) == len(set(picks)))
 
+print("\n── ⑤ 고른 목표를 앞세우는가 (v158) ──")
+# 같은 자리에서, 목표를 골랐을 때와 안 골랐을 때를 견준다.
+_case = ("아 그러셨구나. 저는 요즘 회사 일이 좀 많아서 주말에도 나가는 편인데, "
+         "그래도 저녁에는 꼭 산책을 하려고 해요.", ["네."])
+_ai, _me = _case
+def _el_of(qid):
+    q = next((x for x in QUEST_LLM if x["id"] == qid), None)
+    return q["el"] if q else ""
+_base = run(_ai, _me)
+_hits = 0
+for want in ["repair", "topic", "listen", "strategy", "turn", "move"]:
+    got = make([{"role":"ai","text":_ai},{"role":"user","text":_me[-1]}],
+               st(), rp(), 2, None, frozenset([want]))
+    if got and _el_of(got) == want:
+        _hits += 1
+ok("여섯 요소 가운데 넷 이상을 앞세운다 (%d/6)" % _hits, _hits >= 4,
+   "그 자리에 맞는 후보가 아예 없으면 못 앞세운다 — 그것이 옳다")
+ok("안 고르면 지금까지와 같다", isinstance(_base, str) and len(_base) > 0, _base)
+_none = make([{"role":"ai","text":_ai},{"role":"user","text":_me[-1]}],
+             st(), rp(), 2, None, frozenset())
+ok("빈 목표는 아무 영향이 없다", _none == _base, f"{_none} / {_base}")
+
 print("\n" + ("💥 %d건" % bad if bad else "🎉 넛지 고르기 이상 없음"))
 sys.exit(1 if bad else 0)
+

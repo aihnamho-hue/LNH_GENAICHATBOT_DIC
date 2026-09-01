@@ -935,6 +935,21 @@
         .org-opt b { flex: none; width: 18px; height: 18px; border-radius: 50%;
             border: 2px solid #CFC7B7; }
         .org-opt.on b { border-color: var(--dan-gold); background: var(--dan-gold); }
+        /* ★ v158 — 자유 대화 목표 고르기. 두 칸까지 고를 수 있어 네모 표시를 쓴다. */
+        .fg-list { display: flex; flex-direction: column; gap: 7px; margin: 4px 0 12px; }
+        .fg-opt { display: flex; align-items: center; gap: 10px; padding: 11px 13px;
+            border-radius: 11px; border: 1.5px solid #E7E0D2; background: #FBF9F3;
+            cursor: pointer; text-align: left; }
+        .fg-opt.on { border-color: var(--dan-gold); background: #FFF6E2; }
+        .fg-opt b { flex: none; width: 18px; height: 18px; border-radius: 5px;
+            border: 2px solid #CFC7B7; }
+        .fg-opt.on b { border-color: var(--dan-gold); background: var(--dan-gold); }
+        .fg-opt .fgt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+        .fg-opt .fge { font-size: 14px; font-weight: 800; color: var(--ink); }
+        .fg-opt .fga { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+        .fg-goal { display: flex; align-items: center; gap: 6px; justify-content: center;
+            margin: 2px 0 6px; font-size: 12px; font-weight: 800; color: var(--accent); }
+        .fg-goal svg { width: 14px; height: 14px; }
 
         /* ── 녹음 동의 모달 ── */
         .consent-box { max-width: 420px; }
@@ -1672,6 +1687,14 @@
             border-radius: 10px; background: var(--sand-soft); border-left: 3px solid var(--accent); }
         .hlrn-say b { font-size: 13.5px; font-weight: 900; color: var(--ink); line-height: 1.4; }
         .hlrn-say span { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+        /* ★ v159 — 되말해 준 자리. 달라진 조각에만 불이 켜진다. */
+        .hlrn-rc { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px;
+            padding: 8px 11px; margin-top: 5px; border-radius: 10px; background: var(--sand-soft); }
+        .hlrn-rc .rc-me { font-size: 12.5px; font-weight: 700; color: var(--muted);
+            text-decoration: line-through; text-decoration-color: #C9C0B0; }
+        .hlrn-rc .rc-ar { font-size: 12px; color: var(--muted); flex: none; }
+        .hlrn-rc .rc-fix { font-size: 13.5px; font-weight: 800; color: var(--ink); }
+        .hlrn-rc .rc-hit { color: #C0392B; font-weight: 900; }
         .hist-item.open .hi-preview { display: none; }
         .hist-item .hi-caret { font-size: 11px; color: var(--muted); margin-left: 6px; }
         .hist-detail { text-align: left; max-height: calc(38vh / var(--ui-zoom)); overflow-y: auto; white-space: pre-wrap;
@@ -2008,6 +2031,21 @@
         </div>
 
         <p class="set-ver" id="setVerEl"></p>
+    </div>
+</div>
+
+<!-- ★ v158 — 자유 대화의 목표. 학습자가 「이번에 해 볼 것」을 스스로 고른다.
+     목표 없는 자유 대화는 범용 생성형 AI와의 음성 대화와 다르지 않다. -->
+<div class="lang-overlay hidden" id="fgOverlay">
+    <div class="lang-box consent-box">
+        <button type="button" class="ov-x" id="fgX">✕</button>
+        <h2 id="fgTitleEl"></h2>
+        <p class="consent-text" id="fgBodyEl" style="text-align:center;"></p>
+        <div class="fg-list" id="fgList"></div>
+        <div class="consent-actions">
+            <button class="action-btn" id="fgOkBtn"></button>
+            <button class="action-btn ghost" id="fgSkipBtn"></button>
+        </div>
     </div>
 </div>
 
@@ -2717,7 +2755,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v157 (2026-08-30)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v159 (2026-09-01)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -5124,11 +5162,21 @@
     function enterFreeChat() {     // 자유 대화 → 곧장 대화 전용 화면 (말투는 시작 버튼 위에)
         if (!flowLock(1200)) return;
         wakeServer();      // 대화가 곧 시작된다 — 서버를 미리 깨워 둔다
-        setMode("free");
-        rpId = null; rpPlan = null;
-        revealFaderInPanel();
-        goChat();                     // 화면을 먼저 바꾸고
-        openDoor(t("hcFreeTitle"));   // 그 위로 문이 열린다 (순서가 바뀌면 문이 지워진다)
+        /* ★ v158 — 목표를 먼저 묻는다. 고르든 건너뛰든 그 뒤에 대화로 들어간다.
+           묻는 자리가 대화 화면 **앞**이어야 한다 — 들어간 뒤에 물으면
+           이미 시작된 대화 위에 얹히는 과제가 된다. */
+        openFreeGoal(() => {
+            setMode("free");
+            rpId = null; rpPlan = null;
+            revealFaderInPanel();
+            goChat();                     // 화면을 먼저 바꾸고
+            openDoor(t("hcFreeTitle"));   // 그 위로 문이 열린다 (순서가 바뀌면 문이 지워진다)
+            /* 고른 것을 한 번 짚어 준다 — 고르고 나서 바로 잊으면 고른 뜻이 없다.
+               대화 중에 되풀이하지는 않는다(그러면 과제가 된다). */
+            if (freeFocus.length) {
+                setTimeout(() => { try { hamPeek(fgGoalLine(), 3400); } catch (e) {} }, 1800);
+            }
+        });
     }
     /* ★ v153 — 관문은 **카드를 누르는 자리**에 둔다.
        주제 대화는 설정을 다 채우면 서버가 계획을 짓는다(호출 한 번). 그 뒤에
@@ -5523,8 +5571,10 @@
             idc: (rpFinal && rpFinal.idc) || [],
             idcTotal: (rpFinal && rpFinal.idcTotal) || 0,
             phrases: (rpFinal && rpFinal.phrases) || [],
+            recasts: (rpFinal && rpFinal.recasts) || [],   // ★ v159
             prompted: LAST_PROMPTED || null,
             intv: LAST_INTV || 0,
+            focus: (mode === "rp" ? [] : freeFocus.slice()),   // ★ v158 — 고른 목표
         };
         list.unshift({ ts: new Date().toISOString(), mode: rpSessionActive ? "rp" : "free",
                        title, preview, text, turns, quests, stats, learn });
@@ -5586,15 +5636,15 @@
          ③ 다음에 그대로 입에 올려 볼 한 마디
        셋 다 판이 끝날 때 이미 받아 둔 것이다 — 다시 여는 데 호출 0회. */
     const RVW_TXT = {
-        ko:{n:"다음에 이렇게 말해 보세요"}, en:{n:"Try saying this next time"},
-        zh:{n:"下次试着这样说"}, ja:{n:"次はこう言ってみましょう"},
-        vi:{n:"Lần sau hãy thử nói thế này"}, th:{n:"ครั้งหน้าลองพูดแบบนี้"},
-        id:{n:"Lain kali coba katakan ini"}, mn:{n:"Дараагийн удаад ингэж хэлж үзээрэй"},
-        uz:{n:"Keyingi safar shunday deb ko'ring"}, ru:{n:"В следующий раз попробуйте сказать так"},
-        es:{n:"La próxima vez prueba a decir esto"}, fr:{n:"La prochaine fois, essayez de dire ceci"},
-        ne:{n:"अर्को पटक यसो भन्ने प्रयास गर्नुहोस्"}, lo:{n:"ເທື່ອໜ້າລອງເວົ້າແບບນີ້"},
-        my:{n:"နောက်တစ်ခါ ဒီလိုပြောကြည့်ပါ"}, km:{n:"លើកក្រោយសាកនិយាយបែបនេះ"},
-        uk:{n:"Наступного разу спробуйте сказати так"}, ky:{n:"Кийинки жолу мындай айтып көрүңүз"},
+        ko:{n:"다음에 이렇게 말해 보세요",r:"호아랑이 고쳐서 다시 말해 준 것"}, en:{n:"Try saying this next time",r:"Hoarang said it back correctly"},
+        zh:{n:"下次试着这样说",r:"Hoarang 换成正确说法说了一遍"}, ja:{n:"次はこう言ってみましょう",r:"ホアランが正しい形で言い直したところ"},
+        vi:{n:"Lần sau hãy thử nói thế này",r:"Hoarang đã nói lại cho đúng"}, th:{n:"ครั้งหน้าลองพูดแบบนี้",r:"ที่ Hoarang พูดกลับให้ถูก"},
+        id:{n:"Lain kali coba katakan ini",r:"Yang Hoarang ucapkan ulang dengan benar"}, mn:{n:"Дараагийн удаад ингэж хэлж үзээрэй",r:"Хоаранг зөв хэлбэрээр давтаж хэлсэн нь"},
+        uz:{n:"Keyingi safar shunday deb ko'ring",r:"Hoarang toʻgʻri shaklda qaytarib aytgani"}, ru:{n:"В следующий раз попробуйте сказать так",r:"Что Хоаран повторил в правильной форме"},
+        es:{n:"La próxima vez prueba a decir esto",r:"Lo que Hoarang repitió correctamente"}, fr:{n:"La prochaine fois, essayez de dire ceci",r:"Ce que Hoarang a redit correctement"},
+        ne:{n:"अर्को पटक यसो भन्ने प्रयास गर्नुहोस्",r:"होआराङले सच्याएर फेरि भनेको"}, lo:{n:"ເທື່ອໜ້າລອງເວົ້າແບບນີ້",r:"ສິ່ງທີ່ Hoarang ເວົ້າຄືນໃຫ້ຖືກ"},
+        my:{n:"နောက်တစ်ခါ ဒီလိုပြောကြည့်ပါ",r:"ဟိုအာရန် မှန်အောင် ပြန်ပြောပေးခဲ့တာ"}, km:{n:"លើកក្រោយសាកនិយាយបែបនេះ",r:"អ្វីដែលហូអារ៉ាងនិយាយឡើងវិញឱ្យត្រូវ"},
+        uk:{n:"Наступного разу спробуйте сказати так",r:"Що Хоаран повторив правильно"}, ky:{n:"Кийинки жолу мындай айтып көрүңүз",r:"Хоаранг туура түрдө кайра айтканы"},
     };
     function rvwT(k) { return (RVW_TXT[uiLang] || RVW_TXT.en)[k] || RVW_TXT.ko[k]; }
 
@@ -5603,7 +5653,10 @@
         if (!L) return null;                       // v156 앞의 기록에는 없다 — 대화만 보인다
         const items = (L.idc || []).filter((x) => x && x.key);
         const says = (L.phrases || []).filter((x) => x && x.say);
-        if (!L.review && !items.length && !says.length) return null;
+        // ★ v159 — 되말한 자리만 있어도 카드를 만든다.
+        //   여기에 recasts 를 안 세었더니 「되말하기만 있는 판」이 통째로 안 떴다.
+        const rcs = (L.recasts || []).filter((x) => x && x.me && x.fix);
+        if (!L.review && !items.length && !says.length && !rcs.length) return null;
         const box = document.createElement("div");
         box.className = "hlrn";
         const head = (txt, right) => {
@@ -5656,6 +5709,37 @@
                 const when = [s.when, s.key ? t("idc_" + s.key) : ""].filter(Boolean).join(" · ");
                 if (when) { const c = document.createElement("span"); c.textContent = when; r.appendChild(c); }
                 box.appendChild(r);
+            });
+        }
+        /* ★ v159 — 호아랑이 되말해 준 자리.
+           대화 중에는 아무 표시도 안 했다 — 표시하면 그것은 첨삭이 되고
+           말하기가 멈춘다. 대화가 끝난 **뒤에** 조용히 보여 준다.
+           ★ 점수에 들어가지 않는다. 「아, 여기가 그거였구나」 하고
+             알아차리게 하는 자리일 뿐이다. */
+        if (rcs.length) {
+            head(rvwT("r"));
+            rcs.forEach((r) => {
+                const row = document.createElement("div");
+                row.className = "hlrn-rc";
+                const a1 = document.createElement("span");
+                a1.className = "rc-me"; a1.textContent = r.me;
+                const ar = document.createElement("span");
+                ar.className = "rc-ar"; ar.textContent = "→";
+                const a2 = document.createElement("span");
+                a2.className = "rc-fix";
+                // 달라진 조각에만 불을 켠다. 조각을 못 받았으면 통째로 보인다.
+                const i2 = r.part ? r.fix.indexOf(r.part) : -1;
+                if (i2 >= 0) {
+                    a2.appendChild(document.createTextNode(r.fix.slice(0, i2)));
+                    const em = document.createElement("b");
+                    em.className = "rc-hit"; em.textContent = r.part;
+                    a2.appendChild(em);
+                    a2.appendChild(document.createTextNode(r.fix.slice(i2 + r.part.length)));
+                } else {
+                    a2.textContent = r.fix;
+                }
+                row.appendChild(a1); row.appendChild(ar); row.appendChild(a2);
+                box.appendChild(row);
             });
         }
         return box;
@@ -9835,6 +9919,96 @@
         catch (e) { console.warn("동의서 열기 실패:", e); }
     }
 
+    /* ══════════ v158 — 자유 대화의 목표 ══════════
+       ★ 왜 넣나
+         4.1.2에서 기존 앱 넷을 분석하며 얻은 결론 하나 — **학습 목표와 과제를
+         걷어 낸 자유 대화는 범용 생성형 AI와의 음성 대화와 다르지 않다.**
+         주제 대화에는 기능 단계라는 목표가 있었으나 자유 대화에는 없었다.
+
+       ★ 그러나 목표를 **도구가 주지 않는다.** 학습자가 고른다.
+         고르고 나면 서버는 그 요소가 **필요해지는 자리를 만들** 뿐,
+         「오늘은 화제 관리를 연습해요」라고 말하지 않는다.
+         시키면 시킨 것을 따라 하고, 자리를 만들면 스스로 한다.
+
+       ★ 건너뛸 수 있다. 목표를 강제하면 그것은 과제이지 자유 대화가 아니다. */
+    const FG_MAX = 2;                       // 두 개까지. 셋을 고르면 아무것도 안 고른 것과 같다
+    const FG_KEYS = ["move", "topic", "turn", "repair", "strategy", "listen"];
+    const FG_TXT = {
+        ko: { t:"이번에는 무엇을 해 볼까요?", b:"한두 개만 골라 보세요. 안 골라도 괜찮아요.", ok:"이걸로 시작하기", no:"그냥 이야기할래요" },
+        en: { t:"What will you try today?", b:"Pick one or two. You can also skip.", ok:"Start with this", no:"Just chat" },
+        zh: { t:"这次想练习什么？", b:"选一两个就好，也可以跳过。", ok:"就这样开始", no:"随便聊聊" },
+        ja: { t:"今回は何をやってみますか?", b:"1つか2つ選んでください。選ばなくても大丈夫です。", ok:"これで始める", no:"ふつうに話す" },
+        vi: { t:"Hôm nay bạn muốn thử gì?", b:"Chọn một hoặc hai. Bỏ qua cũng được.", ok:"Bắt đầu với điều này", no:"Chỉ trò chuyện thôi" },
+        th: { t:"ครั้งนี้จะลองอะไรดี?", b:"เลือกหนึ่งหรือสองอย่าง ไม่เลือกก็ได้", ok:"เริ่มด้วยสิ่งนี้", no:"คุยเฉย ๆ" },
+        id: { t:"Kali ini mau coba apa?", b:"Pilih satu atau dua. Boleh juga dilewati.", ok:"Mulai dengan ini", no:"Ngobrol saja" },
+        mn: { t:"Энэ удаад юу хийж үзэх вэ?", b:"Нэг эсвэл хоёрыг сонго. Сонгохгүй ч болно.", ok:"Үүгээр эхлэх", no:"Зүгээр ярилцъя" },
+        uz: { t:"Bu safar nimani sinab koʻramiz?", b:"Bitta yoki ikkita tanlang. Tanlamasangiz ham boʻladi.", ok:"Shu bilan boshlash", no:"Shunchaki suhbat" },
+        ru: { t:"Что попробуем в этот раз?", b:"Выберите одно или два. Можно и пропустить.", ok:"Начать с этого", no:"Просто поговорить" },
+        es: { t:"¿Qué vas a practicar hoy?", b:"Elige uno o dos. También puedes saltarlo.", ok:"Empezar con esto", no:"Solo charlar" },
+        fr: { t:"Qu'allez-vous essayer cette fois ?", b:"Choisissez un ou deux. Vous pouvez aussi passer.", ok:"Commencer avec ceci", no:"Juste discuter" },
+        ne: { t:"यसपटक के गरेर हेर्ने?", b:"एक वा दुई छान्नुहोस्। नछाने पनि हुन्छ।", ok:"यसैबाट सुरु गर्ने", no:"भर्खरै कुरा गर्ने" },
+        lo: { t:"ເທື່ອນີ້ຈະລອງເຮັດຫຍັງ?", b:"ເລືອກໜຶ່ງຫຼືສອງອັນ. ບໍ່ເລືອກກໍໄດ້.", ok:"ເລີ່ມດ້ວຍອັນນີ້", no:"ລົມກັນຊື່ໆ" },
+        my: { t:"ဒီတစ်ခေါက် ဘာလုပ်ကြည့်မလဲ?", b:"တစ်ခု နှစ်ခုလောက် ရွေးပါ။ မရွေးလည်း ရပါတယ်။", ok:"ဒီနဲ့ စမယ်", no:"ဒီအတိုင်း စကားပြောမယ်" },
+        km: { t:"លើកនេះនឹងសាកអ្វី?", b:"ជ្រើសមួយ ឬពីរ។ មិនជ្រើសក៏បាន។", ok:"ចាប់ផ្តើមដោយនេះ", no:"និយាយលេងធម្មតា" },
+        uk: { t:"Що спробуємо цього разу?", b:"Оберіть одне або два. Можна й пропустити.", ok:"Почати з цього", no:"Просто поговорити" },
+        ky: { t:"Бул жолу эмне кылып көрөбүз?", b:"Бир же экөөнү тандаңыз. Тандабасаңыз да болот.", ok:"Ушуну менен баштоо", no:"Жөн эле сүйлөшүү" },
+    };
+    function fgT(k) { return (FG_TXT[uiLang] || FG_TXT.en)[k] || FG_TXT.ko[k]; }
+
+    let freeFocus = [];                     // 이번 판에 고른 요소 열쇠
+    let fgThen = null;
+    function openFreeGoal(then) {
+        fgThen = then || null;
+        freeFocus = [];
+        const g = (id) => document.getElementById(id);
+        g("fgTitleEl").textContent = fgT("t");
+        g("fgBodyEl").textContent = fgT("b");
+        g("fgOkBtn").textContent = fgT("ok");
+        g("fgSkipBtn").textContent = fgT("no");
+        const list = g("fgList");
+        list.innerHTML = "";
+        FG_KEYS.forEach((k) => {
+            const e = IDC_LES.find((x) => x.key === k) || { easy: k, acad: k };
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "fg-opt";
+            b.dataset.k = k;
+            b.innerHTML = '<b></b><span class="fgt"><span class="fge"></span><span class="fga"></span></span>';
+            // 쉬운 이름은 학습자 언어로, 학술 이름은 한국어로 나란히 — 학습 화면과 같은 꼴
+            b.querySelector(".fge").textContent = t("idc_" + k) || e.easy;
+            b.querySelector(".fga").textContent = e.acad;
+            b.addEventListener("click", () => {
+                const i = freeFocus.indexOf(k);
+                if (i >= 0) { freeFocus.splice(i, 1); }
+                else {
+                    if (freeFocus.length >= FG_MAX) return;   // 셋은 안 된다
+                    freeFocus.push(k);
+                }
+                [...list.children].forEach((c) => c.classList.toggle("on", freeFocus.indexOf(c.dataset.k) >= 0));
+            });
+            list.appendChild(b);
+        });
+        g("fgOverlay").classList.remove("hidden");
+    }
+    (function bindFreeGoal() {
+        const ov = document.getElementById("fgOverlay");
+        if (!ov) return;
+        const go = () => {
+            ov.classList.add("hidden");
+            const then = fgThen; fgThen = null;
+            if (then) { try { then(); } catch (e) {} }
+        };
+        // 닫기와 「그냥 이야기할래요」는 같다 — 목표 없이 시작한다
+        const skip = () => { freeFocus = []; go(); };
+        document.getElementById("fgX").addEventListener("click", skip);
+        document.getElementById("fgSkipBtn").addEventListener("click", skip);
+        document.getElementById("fgOkBtn").addEventListener("click", go);
+    })();
+    /* 고른 것을 대화 화면에 한 줄로 남긴다 — 무엇을 하려던 것인지 잊지 않게 */
+    function fgGoalLine() {
+        return freeFocus.map((k) => t("idc_" + k)).filter(Boolean).join(" · ");
+    }
+
     /* ══════════ v152 — 소속 ══════════
        KIIP·언어교육원·연세대 자료가 한 폴더에 섞이면 뒷날 갈라낼 수 없다.
        ★ 이름을 안 받고 **소속과 반**만 받는다 — 그것이 자료를 가르는 축이다. */
@@ -10958,7 +11132,11 @@
             + "&scaf=" + (scafSlider ? (+scafSlider.value) : 2) + rpParams
             /* ★ v152 — 자유 대화에만 지난 이야기를 얹는다.
                주제 대화는 과업이 축이라 지난 이야기가 끼면 흐트러진다. */
-            + (mode === "rp" ? "" : "&mem=" + encodeURIComponent(memBrief())));
+            + (mode === "rp" ? "" : "&mem=" + encodeURIComponent(memBrief()))
+            /* ★ v158 — 자유 대화에서 학습자가 고른 「이번에 해 볼 것」.
+               주제 대화에는 이미 기능 단계라는 목표가 있으므로 안 보낸다. */
+            + (mode === "rp" || !freeFocus.length ? ""
+               : "&focus=" + encodeURIComponent(freeFocus.join(","))));
         ws.binaryType = "arraybuffer"; // 오디오는 바이너리 프레임 (base64 오버헤드 제거)
         let sessionOpened = false;     // 한 번이라도 붙었는지 (연결 실패 판별용)
         connectStartedAt = Date.now();
@@ -11179,6 +11357,7 @@
                             idc: msg.idc || [], idcTotal: msg.idcTotal || 0,
                             memory: msg.memory || null,   // ★ v152 — 자유 대화 기억
                             phrases: msg.phrases || [],   // ★ v156 — 다음에 써 볼 한 마디
+                            recasts: msg.recasts || [],   // ★ v159 — 되말해 준 자리
                             abc: msg.abc || "", chains: msg.chains || null,
                             review: msg.review || "" };
                 // 서버가 준 누적 횟수를 기기에 보관 — 다음 세션의 비계가 여기서 출발한다
@@ -11421,6 +11600,12 @@
                    + (ORG.id ? " [" + ORG.id + " · 이름표 v" + (ORG.ver || "1") + "]" : ""));
         // v150 — 파일 이름이 바뀌어도 안쪽에서 통로를 알 수 있게 한 줄 남긴다
         lines.push(" 연습 갈래: " + (mode === "rp" ? "주제 대화" : "자유 대화"));
+        /* ★ v158 — 자유 대화에서 학습자가 고른 목표. 요소 이름은 늘 한국어로
+           (대화록은 화면이 아니라 연구 자료다 — v154와 같은 판단). */
+        if (mode !== "rp") {
+            lines.push(" 이번에 해 볼 것: "
+                       + (freeFocus.length ? freeFocus.map(koIdc).join(", ") : "(안 고름)"));
+        }
         lines.push(" 시작 시각: " + start);
         lines.push(" 친밀도(D): " + distSlider.value + " / 지위(P): " + powerSlider.value);
         lines.push(" 도와주기(비계): " + (scafSlider ? scafSlider.value : "-") + " / 교육적 개입: " + LAST_INTV + "회");
@@ -11461,6 +11646,17 @@
         }
         if (rpFinal && (rpFinal.idcTotal || 0) > 0) {
             lines.push(" 점수(상호작용 대화 능력): " + rpFinal.idcTotal + "점 / 100점");
+        }
+        /* ★ v159 — 호아랑이 되말해 준 자리. 글에는 색을 못 쓰니 대괄호로 짚는다.
+           ★ 점수 자료가 아니다 — 「이 학습자에게 무엇이 되말해졌나」를 남기는 것이다. */
+        if (rpFinal && (rpFinal.recasts || []).length) {
+            lines.push(" 되말해 준 것:");
+            rpFinal.recasts.forEach((r) => {
+                if (!r || !r.me || !r.fix) return;
+                const shown = (r.part && r.fix.indexOf(r.part) >= 0)
+                    ? r.fix.replace(r.part, "[" + r.part + "]") : r.fix;
+                lines.push("   " + r.me + " → " + shown);
+            });
         }
         if (rpFinal && (rpFinal.review || "").trim()) {
             lines.push("");

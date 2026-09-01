@@ -1,6 +1,6 @@
 ═══════════════════════════════════════════════════════════
-  호아랑 v157 — 깃헙에 올릴 파일 목록  (모두 84개)
-  2026-08-30
+  호아랑 v159 — 깃헙에 올릴 파일 목록  (모두 90개)
+  2026-09-01 · ★ 챗봇 개발 마무리 판
 ═══════════════════════════════════════════════════════════
 
   ★ 폴더째 끌지 마세요. 폴더를 열어 Ctrl+A 로 전부 골라 끌어 놓으세요.
@@ -10,8 +10,8 @@
 │ ① 서버가 도는 데 꼭 필요한 것  (8개)                     │
 └─────────────────────────────────────────────────────────┘
 
-  main.py               서버 전부 — 대화·분석·저장·동의서 쪽
-  app.html              화면 전부 — 1.16MB, 이 안에 다 들어 있음
+  main.py               서버 전부 — 대화·분석·저장·동의서
+  app.html              화면 전부 — 1.18MB, 이 안에 다 들어 있음
   app.html.gz           위 파일을 압축한 것 (서버가 이것을 먼저 읽음)
                         ★ app.html 을 고치면 반드시 함께 올려야 함
   templates/app.html    app.html 과 같은 내용 (서버가 부팅 때 덮어씀)
@@ -25,57 +25,54 @@
 │ ② 소리·그림  (9개)                                       │
 └─────────────────────────────────────────────────────────┘
 
-  static/sw.js          서비스 워커 — hoarang-v157
+  static/sw.js          서비스 워커 — hoarang-v159
                         ★ 버전을 안 올리면 폰이 옛 화면을 계속 씀
   static/outro.mp4      대화 끝 영상
   static/outro.jpg      그 포스터
-  static/ham_absurd.png    황당
-  static/ham_excited.png   신남
-  static/ham_fluster.png   당황
-  static/ham_giggle.png    큭큭
-  static/ham_greet.png     인사
-  static/ham_trouble.png   곤란
-                        ↑ 넛지가 뜰 때 호아랑 표정
+  static/ham_absurd.png    황당      static/ham_excited.png   신남
+  static/ham_fluster.png   당황      static/ham_giggle.png    큭큭
+  static/ham_greet.png     인사      static/ham_trouble.png   곤란
 
 
 ┌─────────────────────────────────────────────────────────┐
-│ ③ 학습 대화문  (8개)                                     │
+│ ③ 학습 대화문  (8개 · 모두 40편 296줄)                   │
 └─────────────────────────────────────────────────────────┘
 
   idc_corpus/stage.json      기능 단계의 조직과 흐름
-  idc_corpus/topic.json      이야깃거리 이끌기
-  idc_corpus/move.json       주고받기 조절
-  idc_corpus/turn.json       말차례 나누기
-  idc_corpus/repair.json     막혔을 때 되살리기
-  idc_corpus/strategy.json   모를 때 돌려 말하기
-  idc_corpus/listen.json     듣고 반응하기
-  idc_corpus/context.json    상황에 맞게 말하기
+  idc_corpus/topic.json      화제 관리
+  idc_corpus/move.json       대화이동 관리
+  idc_corpus/turn.json       차례 관리
+  idc_corpus/repair.json     의사소통 단절 수정
+  idc_corpus/strategy.json   의사소통 전략
+  idc_corpus/listen.json     상호작용적 듣기
+  idc_corpus/context.json    맥락·정체성 인식
 
 
 ┌─────────────────────────────────────────────────────────┐
-│ ④ 검사 — 파이썬  (8개)                                   │
+│ ④ 검사 — 파이썬  (10개)                                  │
 └─────────────────────────────────────────────────────────┘
 
-  qa_all.py           통합 점검 (버전 일치·배포 폴더·목소리 등)
+  qa_all.py           통합 점검 (버전 일치·배포 폴더·목소리·넛지)
   namecheck.py        삼킨 예외·없는 이름 찾기
   check.py            학습 대화문 자체 검사
   corpustest.py       대화문 묶음
-  fittest.py          표현 배치
-  stttest.py          「안 들림」 거르기 16가지
+  fittest.py          넛지 고르기 + 고른 목표를 앞세우는가
+  stttest.py          「안 들림」 거르기
   orgnametest.py      소속이 파일 이름까지 닿는가
-  consentrectest.py   동의 기록·정식 문서 46가지
+  consentrectest.py   동의 기록·정식 문서
   rotatetest.py       돌려 뽑기
   mklesson.py         학습 대화문 만들기 (검사가 이것을 씀)
 
 
 ┌─────────────────────────────────────────────────────────┐
-│ ⑤ 검사 — 자바스크립트  (48개)                            │
+│ ⑤ 검사 — 자바스크립트  (49개)                            │
 └─────────────────────────────────────────────────────────┘
 
   ★ 배포 전 필수
   loadtest.js         화면이 끝까지 도는가 (node --check 로는 못 잡음)
 
   ★ 최근에 만든 것
+  scopetest.js        ★ 연구 범위(IDC 한정) · 되말하기 · 자유 대화 목표
   settest.js          설정·동의·소속·기억·관문 89가지
   histlearntest.js    지난 대화 복습 카드 33가지
   promptedtest.js     「지시받고 해낸 것」 21가지
@@ -96,11 +93,14 @@
 
 
 ┌─────────────────────────────────────────────────────────┐
-│ ⑥ 문서  (2개)                                            │
+│ ⑥ 문서  (4개)                                            │
 └─────────────────────────────────────────────────────────┘
 
-  개발일지_CHANGELOG.md   박사 논문 4장 1차 자료
-  녹음동의서_v1.1.md      동의서 글 원본 (화면 문구 · 정식 문서 · 남기는 것)
+  개발일지_CHANGELOG.md    박사 논문 4장 1차 자료 (128판)
+  녹음동의서_v1.1.md       동의서 글 원본
+  4장_구현현황_정리.md      ★ 제4장 집필용 — 구현 사실 전부(16절)
+  4장_핸드오프_413과42.md   ★ 4.1.3을 세우고 4.2 구조를 짜기 위한 자료
+                          (한계→원리→구현 대응표 · 4.2 절 구조안)
 
 
 ═══════════════════════════════════════════════════════════
@@ -109,28 +109,23 @@
 
   keystore/ 폴더 · *.jks · *.keystore · signing-key-info.txt
       → 잃으면 앱을 영영 못 고치고, 새면 남이 앱을 위조합니다
-
-  .env
-      → API 키
-
-  VAPID 개인 키
-      → Render 환경변수로만
-
+  .env                → API 키
+  VAPID 개인 키        → Render 환경변수로만
   recordings/ · __pycache__/ · node_modules/
       → .gitignore 가 이미 막고 있습니다
 
 
 ═══════════════════════════════════════════════════════════
-  ★ 이번에 바뀐 파일만 보고 싶다면 (v157)
+  ★ 이번에 바뀐 파일만 (v159)
 ═══════════════════════════════════════════════════════════
 
-  main.py              「판본」→「버전」, 동의서에서 버전 번호 뺌
-  app.html             같음 + 18개 언어 동의 칸 문구
-  app.html.gz          다시 구움
-  static/sw.js         hoarang-v157
-  consentrectest.py    검사 셋 추가
+  main.py                되말하기 지시 · recasts 칸
+  app.html               복습 카드에 되말한 자리(빨간 볼드)
+  app.html.gz            다시 구움
+  static/sw.js           hoarang-v159
+  scopetest.js           검사 추가
+  4장_구현현황_정리.md     v159 로 갱신
   개발일지_CHANGELOG.md
-  녹음동의서_v1.1.md
 
   ※ 그래도 전부 올리시는 편이 안전합니다. 같은 내용은 깃헙이 알아서
     「변경 없음」으로 처리하므로 손해가 없습니다.

@@ -242,7 +242,11 @@ CHK = [
     ("감정 — 실력엔 화 안 냄", "한국어 실력**을 두고는 절대 화내지" in PY),
     ("대화문에도 감정 지시", "배역의 감정을 담아라" in PY),
     ("대화문에 지위 지시", "윗사람과 아랫사람의 말은 바뀌지 않는다" in PY),
-    ("교정 전에 '정말 틀렸나' 묻기", "이게 정말 틀렸나?" in PY),
+    # ★ v158 — 「고치기 전에 정말 틀렸나 물어라」는 v157까지의 장치였다.
+    #   이제 정확성을 **아예 안 고치므로** 물을 것이 없다. 대신 안 고치는지를 본다.
+    ("정확성을 안 고친다", "정확성은 고치지 않는다" in PY
+     and "[즉시 교정]" not in PY),
+    ("그래도 단절은 되묻는다", "되물어서 학습자가 스스로 다시 말하게" in PY),
     ("총평 진단 노출", '"review": {' in PY and "_review_dx" in PY),
     ("영상 파일 유무 노출", '"outro": {' in PY),
     ("/reviewtest 있음", "async def review_test" in PY),
@@ -310,6 +314,10 @@ def _fit(last_ai, turns, done=(), stages=0, stages_done=0, percent=0):
            "idc_state": {"intv_ids": set(done), "levels": {}},
            "rp_progress": {"quests": set(), "total": stages,
                            "done": set(range(stages_done)), "percent": percent},
+           # ★ v158 — 「이번에 해 볼 것」이 없는 상태로 돌린다.
+           #   이 검사가 재는 것은 「맥락이 넛지 자리를 좁히는가」이므로,
+           #   목표를 안 고른 학습자의 자리에서 보아야 한다.
+           "focus_els": frozenset(),
            "IDC_LEVEL_MODEL": 3, "IDC_LEVEL_SOLO": 1}
     exec(_src, _ns); return _ns["_fit_intervention"]()
 for label, ai, turns, want in [
@@ -771,6 +779,7 @@ def _fit_solo(scaf):
            "idc_state": {"intv_ids": set(), "levels": dict(_ALLSOLO)},
            "rp_progress": {"quests": set(), "total": 0, "done": set(), "percent": 0},
            "PHASE_BAN": PHASE_BAN, "INTV_EXCLUDE": INTV_EXCLUDE, "_user_turns": lambda: 1, "rp_plan": None,
+           "focus_els": frozenset(),        # ★ v158 — 목표를 안 고른 자리에서 본다
            "IDC_LEVEL_MODEL": 3, "IDC_LEVEL_SOLO": 1, "scaf_level": scaf}
     exec(_src, _ns); return _ns["_fit_intervention"]()
 ok("페이딩", "여덟 요소가 다 자율이어도 「많이」면 넛지가 나온다", bool(_fit_solo(3)), _fit_solo(3))

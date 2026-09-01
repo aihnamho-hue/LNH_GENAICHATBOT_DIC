@@ -60,7 +60,9 @@ BAN.forEach(w => ok(`'${w}' 안 나옴`, !shown.some(s => s.includes(w)),
 
 console.log("\n── 서버와 짝이 맞는가 ──");
 const srvIds = [...py.matchAll(/\{"id":\s*"(\w+)"/g)].map(m => m[1]);
-ok("서버 퀘스트 28개", srvIds.length === 28, "실제 " + srvIds.length);
+/* ★ v160 — 개수를 글자로 못 박아 두었더니 잡담용 둘(qOpinion·qDiffer)을
+   더하면서 깨졌다. 잴 성질은 「개수」가 아니라 **화면과 서버가 같은 것을 아는가**다. */
+ok(`서버 퀘스트 (${srvIds.length}개)`, srvIds.length >= 28, "실제 " + srvIds.length);
 ok("문형이 모두 서버에 있다", forms.every(k => srvIds.includes(k)),
    forms.filter(k => !srvIds.includes(k)).join(","));
 const noName = srvIds.filter(id => !forms.includes(id) && !new RegExp('\\b' + id + ':"').test(html));

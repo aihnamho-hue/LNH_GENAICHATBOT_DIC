@@ -24,7 +24,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v159"
+APP_VERSION = "v160"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -659,6 +659,13 @@ QUEST_LLM = [
     {"id": "qInitiate",  "el": "move",     "desc": "호아랑이 묻기 전에 자기 용건(부탁·제안·문의)을 먼저 꺼낸 적이 있다"},
     {"id": "qCounter",   "el": "move",     "desc": "호아랑이 먼저 물어 왔을 때 그대로 답하지 않고 자기 용건을 되받아 꺼낸 적이 있다"},
     {"id": "qShiftTopic","el": "topic",    "desc": "하던 이야기를 접고 다른 이야기로 옮겨 간 적이 있다"},
+    # ★★ v160 — 일상 대화(잡담)의 대화이동 둘.
+    #   지금까지 move 넛지 여섯은 **전부 용건·협상의 말**이었다(부탁·거절·조건·대안).
+    #   그런데 잡담에는 용건이 없다. 「무슨 과목이 어려워?」 하고 묻는 자리에
+    #   「용건을 말해 보세요!」가 뜨면 학습자는 쓸 수가 없다.
+    #   잡담에도 시작 대화이동과 반응 대화이동은 있다 — **의견**이 그 자리다.
+    {"id": "qOpinion", "el": "move",     "desc": "상대의 이야기에 자기 생각·의견을 먼저 얹어 말한 적이 있다"},
+    {"id": "qDiffer",  "el": "move",     "desc": "상대와 생각이 다를 때 '저는 좀 다르게 생각해요'처럼 달리 말한 적이 있다"},
     # ── v104: 상대의 말을 조절해 달라고 요청하기 ──
     # 화면 아래 빠른 단추(🐢 천천히 · 🔁 다시 · 💡 쉽게 · 🐇 빨리)로는 누를 수 있었으나,
     # **말로 해 보라고 권하는 자리**가 없었다. 단추는 손이 대신해 주는 것이고,
@@ -731,6 +738,20 @@ INTERVENABLE = {q["id"] for q in QUEST_LLM} - INTV_EXCLUDE
 #       · 다 끝내고 인사하는 자리에서 「이건 다른 이야기입니다만」(화제 전환)
 #     이 튀어나왔다. 자리에 맞지 않는 말은 배울 거리가 아니라 방해다.
 #   시작에서는 아직 **열리지 않은 것**을, 마무리에서는 **새로 벌이는 것**을 막는다.
+# ★★ v160 — 대화의 갈래가 넛지를 가른다.
+#   ── 무엇이 잘못돼 있었나 ──
+#   화면(app.html)의 퀘스트 목록은 이 여섯을 `mode:"rp"`(주제 대화 전용)로 알고 있었다.
+#   그런데 **서버는 그 눈금을 안 보고** 자유 대화에서도 띄웠다. 그래서
+#   「무슨 과목이 어려워?」 하고 묻는 잡담 자리에 「용건을 말해 보세요!」가 나갔다.
+#   화면은 그것을 셈에도 안 넣었다 — 엉뚱한 것을 시키고 해내도 안 세는 셈이었다.
+#
+#   ── 왜 갈리는가 ──
+#   일상 대화(잡담)와 목적 대화(요청·협상)는 **다른 활동**이다(4.1.2의 결론).
+#   잡담에는 용건이 없고, 거절할 제안도 없고, 조건을 붙일 협상도 없다.
+#   대신 잡담에는 **의견**이 있다 — 그것이 잡담의 시작·반응 대화이동이다.
+TASK_ONLY = {"qInitiate", "qCounter", "qRefuse", "qAlt", "qCond", "qHold"}
+CHAT_MOVE = {"qOpinion", "qDiffer"}      # 잡담의 대화이동 (목적 대화에서도 쓸 수는 있다)
+
 PHASE_BAN = {
     # 시작 — 협상은 아직 열리지 않았고, 접거나 돌릴 화제도 아직 없다
     "open": {"qAlt", "qCond", "qRefuse", "qCounter", "qHold",
@@ -983,6 +1004,22 @@ def build_system_prompt(d: int, p: int, ui_lang: str = "", user_name: str = "",
 - 사용자는 {LV_SHORT[mine]}로 말하도록 화면에서 안내받고 있다.
 - 처음부터 끝까지 하나만 쓴다. 중간에 바꾸지 마라.
 {"- ★ 합쇼체다. '-요'로 끝내지 마라. 「오셨어요?」가 아니라 「오셨습니까?」다." if yours == "formal" else ""}
+
+# ★★ 화계만은 명시적으로 고쳐 준다 (v160 — 다른 것은 안 고쳐도 이것은 고친다)
+- 앞의 「정확성은 지적하지 마라」는 조사·시제·어휘 이야기다. **화계는 다르다.**
+  화계는 학습자가 이 대화에서 **스스로 정한 조건**이고(친밀도·지위 페이더),
+  상대가 누구인지에 맞춰 말을 고르는 힘 — 곧 「맥락·정체성 인식」 그 자체다.
+  틀린 채로 넘어가면 이 대화가 기르려던 바로 그것을 놓친다.
+- 사용자가 **{LV_SHORT[mine]}가 아닌 말투**로 말하면 그 자리에서 짚어 준다.
+  ① 한 마디로 — "우리 지금 {LV_SHORT[mine]}로 말하기로 했죠?"
+  ② 바른 꼴을 들려주고 — 사용자가 방금 한 말을 {LV_SHORT[mine]}로 바꿔 한 번 말해 준다
+  ③ **다시 말할 기회를 준다** — "한번 다시 말해 볼래요?"
+  ④ 다시 말하면 짧게 칭찬하고 곧바로 대화로 돌아가라.
+- 한 대화에서 **두세 번까지만.** 매번 잡으면 대화가 아니라 높임말 수업이 된다.
+- 한 문장 안에서 존댓말과 반말이 **섞인 것**도 같은 자리다.
+- 다만 감탄사·혼잣말(「아…」 「음…」 「진짜?」 「헐」)은 화계 밖이다. 잡지 마라.
+- 배역이 있는 대화라면 **배역을 깨지 말고** 그 안에서 짚어라
+  (예: 점원 배역 — "손님, 편하게 말씀하셔도 되는데… 아, 저한테는 존댓말 쓰시는 거죠?").
 
 """
     sep = """
@@ -5044,6 +5081,9 @@ async def _handle_session(websocket: WebSocket):
 
         phase = _stage_phase()
 
+        # ★ v160 — 지금이 목적 대화인가 잡담인가. 계획이 있으면 목적 대화다.
+        is_task = bool(rp_plan)
+
         def ok(qid: str) -> bool:
             if qid in idc_state["intv_ids"] or qid in rp_progress["quests"]:
                 return False
@@ -5051,6 +5091,13 @@ async def _handle_session(websocket: WebSocket):
                 return False        # 이 자리에서 할 말이 아니다
             if qid in INTV_EXCLUDE:
                 return False        # 챗봇이 먼저 시킬 일이 아니다
+            # ★ 잡담에는 용건도 협상도 없다. 시켜 봐야 학습자가 쓸 수 없다.
+            if not is_task and qid in TASK_ONLY:
+                return False
+            # 목적 대화에는 이미 대화이동 넛지가 여섯이다. 잡담용 둘까지 넣으면
+            # move 만 여덟이 되어 한쪽으로 쏠린다.
+            if is_task and qid in CHAT_MOVE:
+                return False
             q = next((x for x in QUEST_LLM if x["id"] == qid), None)
             if q is None:
                 return False
@@ -5150,11 +5197,19 @@ async def _handle_session(websocket: WebSocket):
 
         # ── ㉠ 이 자리에서만 말이 되는 것 ──
         if not last_ai and turns == 0:
-            buckets.append(["qInitiate"])                        # 아직 아무 말도 안 했다
+            # 첫 자리는 두 갈래 모두 「먼저 말을 연다」이므로 qInitiate 가 맞다.
+            # 다만 잡담에서는 TASK_ONLY 로 막히므로 잡담판을 함께 둔다.
+            buckets.append(["qInitiate", "qOpinion"])            # 아직 아무 말도 안 했다
         if feel_ai:
             buckets.append(["qEmpathy", "qContinuer"])           # 감정이 실렸다
         if story_ai:
             buckets.append(["qContinuer", "qEmpathy", "qEcho"])  # 이야기를 하고 멈췄다
+        # ★ v160 — 상대가 **의견·평가**를 말했다 → 생각을 견줄 자리.
+        #   잡담의 반응 대화이동은 거절이 아니라 「저는 좀 다르게 생각해요」다.
+        _OPI = ("것 같아", "것 같습니다", "생각해", "생각합니다", "좋아하", "싫어하",
+                "재미있", "재미없", "어려운", "쉬운", "제일", "가장", "편이")
+        if any(w in last_ai for w in _OPI):
+            buckets.append(["qOpinion", "qDiffer", "qExpand"])
         if re_asked:
             # 상대가 되물었다 = 내 말이 안 통했다 → 같은 뜻을 쉬운 말로 다시(명료화 응답)
             buckets.append(["qRephrase", "qCircum", "qSelfFix"])
@@ -5191,11 +5246,14 @@ async def _handle_session(websocket: WebSocket):
         if long_ai and not very_long_ai:
             buckets.append(["qParaphrase", "qEcho", "qAskSlow"])
         if asked:
-            buckets.append(["qEndTurn", "qExpand", "qCounter"])
+            # ★ v160 — 갈래에 따라 다른 것을 준다.
+            #   목적 대화: 그대로 답하지 말고 **내 용건을 되받아** 꺼내기
+            #   잡담     : 답만 하지 말고 **내 생각도** 얹기
+            buckets.append(["qEndTurn", "qExpand", "qCounter" if is_task else "qOpinion"])
         if ai_keeps_short:
             # 상대가 **거듭** 짧게만 답한다 → 이쪽에서 판을 벌려야 한다.
             # (한 번 짧은 것으로는 안 본다. 「네.」 한마디는 그냥 대답일 뿐이다.)
-            buckets.append(["qNewTopic", "qInitiate", "qExpand"])
+            buckets.append(["qNewTopic", "qInitiate" if is_task else "qOpinion", "qExpand"])
         if last_ai and not asked:
             buckets.append(["qExpand", "qNewTopic", "qEndTurn", "qTakeTurn"])
 

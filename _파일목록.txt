@@ -1,6 +1,6 @@
 ═══════════════════════════════════════════════════════════
-  호아랑 v159 — 깃헙에 올릴 파일 목록  (모두 90개)
-  2026-09-01 · ★ 챗봇 개발 마무리 판
+  호아랑 v160 — 깃헙에 올릴 파일 목록  (모두 90개)
+  2026-09-01
 ═══════════════════════════════════════════════════════════
 
   ★ 폴더째 끌지 마세요. 폴더를 열어 Ctrl+A 로 전부 골라 끌어 놓으세요.
@@ -11,7 +11,7 @@
 └─────────────────────────────────────────────────────────┘
 
   main.py               서버 전부 — 대화·분석·저장·동의서
-  app.html              화면 전부 — 1.18MB, 이 안에 다 들어 있음
+  app.html              화면 전부 — 이 안에 다 들어 있음
   app.html.gz           위 파일을 압축한 것 (서버가 이것을 먼저 읽음)
                         ★ app.html 을 고치면 반드시 함께 올려야 함
   templates/app.html    app.html 과 같은 내용 (서버가 부팅 때 덮어씀)
@@ -25,10 +25,9 @@
 │ ② 소리·그림  (9개)                                       │
 └─────────────────────────────────────────────────────────┘
 
-  static/sw.js          서비스 워커 — hoarang-v159
+  static/sw.js          서비스 워커 — hoarang-v160
                         ★ 버전을 안 올리면 폰이 옛 화면을 계속 씀
-  static/outro.mp4      대화 끝 영상
-  static/outro.jpg      그 포스터
+  static/outro.mp4      대화 끝 영상        static/outro.jpg  그 포스터
   static/ham_absurd.png    황당      static/ham_excited.png   신남
   static/ham_fluster.png   당황      static/ham_giggle.png    큭큭
   static/ham_greet.png     인사      static/ham_trouble.png   곤란
@@ -56,7 +55,7 @@
   namecheck.py        삼킨 예외·없는 이름 찾기
   check.py            학습 대화문 자체 검사
   corpustest.py       대화문 묶음
-  fittest.py          넛지 고르기 + 고른 목표를 앞세우는가
+  fittest.py          넛지 고르기 · 고른 목표 앞세우기 · ★ 갈래가 가르는가
   stttest.py          「안 들림」 거르기
   orgnametest.py      소속이 파일 이름까지 닿는가
   consentrectest.py   동의 기록·정식 문서
@@ -72,35 +71,33 @@
   loadtest.js         화면이 끝까지 도는가 (node --check 로는 못 잡음)
 
   ★ 최근에 만든 것
-  scopetest.js        ★ 연구 범위(IDC 한정) · 되말하기 · 자유 대화 목표
-  settest.js          설정·동의·소속·기억·관문 89가지
-  histlearntest.js    지난 대화 복습 카드 33가지
-  promptedtest.js     「지시받고 해낸 것」 21가지
-  modesavetest.js     주제/자유가 맞게 저장되는가
-  timetest.js         10분 제한
-  nativetest.js       모국어 병기
-  scoretest.js        점수 하나로
+  scopetest.js        ★ 연구 범위 · 되말하기 · 자유 대화 목표 ·
+                        갈래가 넛지를 가르는가 · 화계 · 동의 승계 · 화면
+  settest.js          설정·동의·소속·기억·관문
+  histlearntest.js    지난 대화 복습 카드
+  promptedtest.js     「지시받고 해낸 것」
+  nudgetest.js        넛지 이름이 화면·서버에서 같은가
+  modesavetest.js  timetest.js  nativetest.js  scoretest.js
 
   ★ 나머지
   bgmtest.js  btntest.js  cardtest.js  classtest.js  corpusui.js
   csscheck.js  domcheck.js  gatetest.js  gatetest2.js  histtest.js
   i18nhtml.js  i18ntest.js  idcfulltest.js  idctest.js  idctest2.js
-  langtest.js  modetest.js  nametest.js  nudgetest.js  ordertest.js
-  pctest.js  phototest.js  prtest.js  ptttest.js  questtest.js
-  questtest2.js  quiztest.js  restest.js  returntest.js  scripttest.js
-  seentest.js  selftest.js  seqtest.js  sndtest.js  splashtest.js
-  ttstest.js  ttstest2.js  uxtest.js  visibletest.js  zaptest.js
+  langtest.js  modetest.js  nametest.js  ordertest.js  pctest.js
+  phototest.js  prtest.js  ptttest.js  questtest.js  questtest2.js
+  quiztest.js  restest.js  returntest.js  scripttest.js  seentest.js
+  selftest.js  seqtest.js  sndtest.js  splashtest.js  ttstest.js
+  ttstest2.js  uxtest.js  visibletest.js  zaptest.js
 
 
 ┌─────────────────────────────────────────────────────────┐
 │ ⑥ 문서  (4개)                                            │
 └─────────────────────────────────────────────────────────┘
 
-  개발일지_CHANGELOG.md    박사 논문 4장 1차 자료 (128판)
+  개발일지_CHANGELOG.md    박사 논문 4장 1차 자료 (129판)
   녹음동의서_v1.1.md       동의서 글 원본
-  4장_구현현황_정리.md      ★ 제4장 집필용 — 구현 사실 전부(16절)
+  4장_구현현황_정리.md      ★ 제4장 집필용 — 구현 사실 전부
   4장_핸드오프_413과42.md   ★ 4.1.3을 세우고 4.2 구조를 짜기 위한 자료
-                          (한계→원리→구현 대응표 · 4.2 절 구조안)
 
 
 ═══════════════════════════════════════════════════════════
@@ -116,16 +113,17 @@
 
 
 ═══════════════════════════════════════════════════════════
-  ★ 이번에 바뀐 파일만 (v159)
+  ★ 이번에 바뀐 파일만 (v160)
 ═══════════════════════════════════════════════════════════
 
-  main.py                되말하기 지시 · recasts 칸
-  app.html               복습 카드에 되말한 자리(빨간 볼드)
+  main.py                갈래로 넛지 가르기 · qOpinion·qDiffer 신설 ·
+                         화계는 명시적으로 교정
+  app.html               잡담 넛지 18개 언어·문형 · 동의 승계 ·
+                         폰에서 대화 화면이 한 화면에
   app.html.gz            다시 구움
-  static/sw.js           hoarang-v159
-  scopetest.js           검사 추가
-  4장_구현현황_정리.md     v159 로 갱신
+  static/sw.js           hoarang-v160
+  fittest.py · qa_all.py · nudgetest.js · scopetest.js   새 규칙에 맞게
+  4장_구현현황_정리.md     v160 으로 갱신
   개발일지_CHANGELOG.md
 
-  ※ 그래도 전부 올리시는 편이 안전합니다. 같은 내용은 깃헙이 알아서
-    「변경 없음」으로 처리하므로 손해가 없습니다.
+  ※ 그래도 전부 올리시는 편이 안전합니다.

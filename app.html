@@ -137,6 +137,30 @@
         .app { width: 100%; max-width: 1060px; display: grid; grid-template-columns: 340px 1fr; gap: 16px; align-items: stretch; }
         @media (max-width: 820px) { .app { grid-template-columns: 1fr; } }
 
+        /* ★ v160 — 폰에서 대화 화면이 **한 화면에 들어오게** 한다.
+           지금까지는 위(호아랑·페이더·시작단추)와 아래(채팅·마이크)가 세로로 쌓여
+           **쪽 전체가 위아래로 스크롤**됐다. 말하다가 마이크를 찾으려면 스크롤해야 했다.
+           ★ 채팅 안쪽 스크롤은 그대로 둔다 — 그것은 기기 비율 탓이고 당연한 것이다.
+           ★ 시작·종료 단추는 위 칸의 **맨 아래에 붙박이로** 둔다. 그것까지 스크롤해서
+             찾아야 하면 대화를 못 끝낸다. 접힌 페이더만 안쪽에서 밀린다. */
+        @media (max-width: 820px) {
+            body[data-screen="chat"] { height: 100vh; height: 100dvh; min-height: 0;
+                padding: 8px; align-items: stretch; overflow: hidden; }
+            body[data-screen="chat"] .app { height: 100%; min-height: 0;
+                grid-template-rows: auto minmax(0, 1fr); gap: 8px; }
+            body[data-screen="chat"] .character-panel { display: flex; flex-direction: column;
+                max-height: 40vh; max-height: 40dvh; min-height: 0; overflow: hidden;
+                padding: 12px 14px; gap: 8px; }
+            body[data-screen="chat"] .character-panel .title { display: none; }
+            body[data-screen="chat"] .character-panel .stage {
+                flex: 0 0 auto; aspect-ratio: auto; height: 17vh; height: 17dvh; }
+            /* 페이더만 안쪽에서 밀린다 */
+            body[data-screen="chat"] .character-panel .fader-section {
+                flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+            body[data-screen="chat"] .character-panel .main-controls { flex: 0 0 auto; margin-top: auto; }
+            body[data-screen="chat"] .chat-panel { min-height: 0; max-height: none; height: 100%; }
+        }
+
         /* ── 왼쪽 패널 ── */
         .character-panel { position: relative; max-height: calc(96vh / var(--ui-zoom)); overflow-y: auto; background: var(--panel); border-radius: 24px; box-shadow: var(--shadow); padding: 20px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; overflow-y: auto; max-height: calc(92vh / var(--ui-zoom)); }
         .lang-btn { position: absolute; top: 12px; right: 12px; z-index: 5; border: 1.5px solid var(--navy-soft); background: #fff; border-radius: 10px; width: 34px; height: 30px; font-size: 15px; cursor: pointer; transition: transform 0.12s; }
@@ -2755,7 +2779,7 @@
     let partialTimer = null, partialBusy = false;
 
     /* ── 지연 진단 (📶 서버왕복 · ⬆ 업로드적체 · ⏱ 응답소요) ── */
-    const APP_VERSION = "v159 (2026-09-01)"; // 버전 올릴 때 날짜도 함께 갱신
+    const APP_VERSION = "v160 (2026-09-01)"; // 버전 올릴 때 날짜도 함께 갱신
     console.log("호아랑 클라이언트 " + APP_VERSION);
     let pingTimer = null, lastRtt = null, lastTurnSec = null, userTextAt = null;
     const netStatEl = document.getElementById("netStat");
@@ -3656,51 +3680,51 @@
     /* v95 — 요소별 공백을 메운 퀘스트 여섯, 그리고 대화 중 비계 넛지 문구 */
     const I18N_QZ3 = {
         ko: { qParaphrase:"상대 말 다시 확인해 보세요!", qRephrase:"못 알아들으면 다시 설명해 보세요!", qNative:"모국어로 물어 보세요!",
-              qEcho:"방금 들은 표현을 써보세요!", qWrap:"「%s」처럼 말해 보세요", qEndTurn:"내 말을 맺고 차례 넘겨 보세요!", qExpand:"상대 이야기에 내 이야기를 함께 해보세요!", qTakeTurn:"끼어들어 보세요!", qKeepTurn:"이어서 길게 말해 보세요!", qEmpathy:"공감해 보세요!", qContinuer:"더 말하게 되물어 보세요!", qCheckUnd:"이해했는지 확인해 보세요!", qFiller:"시간을 끌어 보세요!", qCloseTopic:"화제 정리하고 넘어가 보세요!", qInitiate:"먼저 말을 걸어 보세요!", qCounter:"용건을 말해 보세요!", qShiftTopic:"다른 이야기로 옮겨 보세요!", qAskSlow:"천천히 말해달라고 해보세요!", qAskAgain:"다시 말해달라고 해보세요!", qAskEasy:"쉽게 말해달라고 해보세요!", qAskFast:"빨리 말해달라고 해보세요!",
+              qEcho:"방금 들은 표현을 써보세요!", qWrap:"「%s」처럼 말해 보세요", qEndTurn:"내 말을 맺고 차례 넘겨 보세요!", qExpand:"상대 이야기에 내 이야기를 함께 해보세요!", qTakeTurn:"끼어들어 보세요!", qKeepTurn:"이어서 길게 말해 보세요!", qEmpathy:"공감해 보세요!", qContinuer:"더 말하게 되물어 보세요!", qCheckUnd:"이해했는지 확인해 보세요!", qFiller:"시간을 끌어 보세요!", qCloseTopic:"화제 정리하고 넘어가 보세요!", qInitiate:"먼저 말을 걸어 보세요!", qCounter:"용건을 말해 보세요!", qOpinion:"내 생각도 말해 보세요!", qDiffer:"다르게 생각한다고 말해 보세요!", qShiftTopic:"다른 이야기로 옮겨 보세요!", qAskSlow:"천천히 말해달라고 해보세요!", qAskAgain:"다시 말해달라고 해보세요!", qAskEasy:"쉽게 말해달라고 해보세요!", qAskFast:"빨리 말해달라고 해보세요!",
               scafTitle:"도와주기", scafHint:"대화 중에 호아랑이 얼마나 도와줄까요?",
               scaf0:"안 도와주기", scaf1:"조금", scaf2:"보통", scaf3:"많이" },
         en: { qParaphrase:"Check what they meant", qRephrase:"If they didn't get it, explain again", qNative:"Ask in your language, say it in Korean",
-              qEcho:"Reuse a phrase they used", qWrap:"Try something like 「%s」", qEndTurn:"Finish, then ask them back", qExpand:"Add your own to their story", qTakeTurn:"Jump in and take the turn", qKeepTurn:"Keep going in one turn", qEmpathy:"Show you feel for them", qContinuer:"Ask them to go on", qCheckUnd:"Check they understood you", qFiller:"Buy time and keep going", qCloseTopic:"Wrap up and move on", qInitiate:"Bring up your business first", qCounter:"Answer back with your own ask", qShiftTopic:"Move on to another topic", qAskSlow:"Slower", qAskAgain:"Again", qAskEasy:"Simpler", qAskFast:"Faster",
+              qEcho:"Reuse a phrase they used", qWrap:"Try something like 「%s」", qEndTurn:"Finish, then ask them back", qExpand:"Add your own to their story", qTakeTurn:"Jump in and take the turn", qKeepTurn:"Keep going in one turn", qEmpathy:"Show you feel for them", qContinuer:"Ask them to go on", qCheckUnd:"Check they understood you", qFiller:"Buy time and keep going", qCloseTopic:"Wrap up and move on", qInitiate:"Bring up your business first", qCounter:"Answer back with your own ask", qOpinion:"Add what you think", qDiffer:"Say you see it differently", qShiftTopic:"Move on to another topic", qAskSlow:"Slower", qAskAgain:"Again", qAskEasy:"Simpler", qAskFast:"Faster",
               scafTitle:"Help me", scafHint:"How much should Hoarang help during the talk?",
               scaf0:"No help", scaf1:"A little", scaf2:"Normal", scaf3:"A lot" },
         zh: { qParaphrase:"确认对方的意思", qRephrase:"对方没听懂就再解释一次", qNative:"用母语问，再用韩语说",
-              qEcho:"借用对方刚说的表达", qWrap:"试着这样说：「%s」", qEndTurn:"说完后反问对方", qExpand:"接着对方的话题说", qTakeTurn:"插话抢过话轮", qKeepTurn:"一次多说几句", qEmpathy:"表达共情", qContinuer:"追问让对方继续说", qCheckUnd:"确认对方听懂了", qFiller:"用语气词拖时间接着说", qCloseTopic:"收尾后转到下一个话题", qInitiate:"主动先说明来意", qCounter:"反过来提出自己的要求", qShiftTopic:"转到别的话题", qAskSlow:"慢一点", qAskAgain:"再说一次", qAskEasy:"简单点", qAskFast:"快一点",
+              qEcho:"借用对方刚说的表达", qWrap:"试着这样说：「%s」", qEndTurn:"说完后反问对方", qExpand:"接着对方的话题说", qTakeTurn:"插话抢过话轮", qKeepTurn:"一次多说几句", qEmpathy:"表达共情", qContinuer:"追问让对方继续说", qCheckUnd:"确认对方听懂了", qFiller:"用语气词拖时间接着说", qCloseTopic:"收尾后转到下一个话题", qInitiate:"主动先说明来意", qCounter:"反过来提出自己的要求", qOpinion:"说说你的想法", qDiffer:"说说你的不同看法", qShiftTopic:"转到别的话题", qAskSlow:"慢一点", qAskAgain:"再说一次", qAskEasy:"简单点", qAskFast:"快一点",
               scafTitle:"帮帮我", scafHint:"对话中希望虎娘帮多少？",
               scaf0:"不用帮", scaf1:"一点", scaf2:"一般", scaf3:"多一点" },
         ja: { qParaphrase:"相手の言葉を確認する", qRephrase:"伝わらなかったら言い直しましょう", qNative:"母語で聞いて韓国語で言う",
-              qEcho:"相手が使った表現を使う", qWrap:"「%s」のように言ってみましょう", qEndTurn:"話し終えたら相手に聞き返しましょう", qExpand:"相手の話に自分の話を足す", qTakeTurn:"割り込んで話す番を取る", qKeepTurn:"続けて長く話す", qEmpathy:"共感を示す", qContinuer:"続きを促して聞く", qCheckUnd:"伝わったか確かめる", qFiller:"つなぎ言葉で間をもたせる", qCloseTopic:"話題をまとめて次へ", qInitiate:"自分から用件を切り出す", qCounter:"聞かれた上で自分の用件を返す", qShiftTopic:"別の話題に移る", qAskSlow:"ゆっくり", qAskAgain:"もう一度", qAskEasy:"やさしく", qAskFast:"はやく",
+              qEcho:"相手が使った表現を使う", qWrap:"「%s」のように言ってみましょう", qEndTurn:"話し終えたら相手に聞き返しましょう", qExpand:"相手の話に自分の話を足す", qTakeTurn:"割り込んで話す番を取る", qKeepTurn:"続けて長く話す", qEmpathy:"共感を示す", qContinuer:"続きを促して聞く", qCheckUnd:"伝わったか確かめる", qFiller:"つなぎ言葉で間をもたせる", qCloseTopic:"話題をまとめて次へ", qInitiate:"自分から用件を切り出す", qCounter:"聞かれた上で自分の用件を返す", qOpinion:"自分の考えも言ってみましょう", qDiffer:"考えが違うと言ってみましょう", qShiftTopic:"別の話題に移る", qAskSlow:"ゆっくり", qAskAgain:"もう一度", qAskEasy:"やさしく", qAskFast:"はやく",
               scafTitle:"手伝って", scafHint:"会話中どのくらい手伝いますか？",
               scaf0:"手伝わない", scaf1:"少し", scaf2:"ふつう", scaf3:"たくさん" },
         vi: { qParaphrase:"Xác nhận ý người kia", qRephrase:"Nếu họ không hiểu, hãy giải thích lại", qNative:"Hỏi bằng tiếng mẹ đẻ, nói bằng tiếng Hàn",
-              qEcho:"Dùng lại cách nói của họ", qWrap:"Thử nói kiểu 「%s」", qEndTurn:"Nói xong rồi hỏi lại họ", qExpand:"Kể thêm chuyện của mình", qTakeTurn:"Chen vào và giành lượt nói", qKeepTurn:"Nói tiếp cho dài hơn", qEmpathy:"Bày tỏ sự đồng cảm", qContinuer:"Hỏi để họ nói tiếp", qCheckUnd:"Kiểm tra họ có hiểu không", qFiller:"Câu giờ rồi nói tiếp", qCloseTopic:"Chốt lại rồi chuyển sang", qInitiate:"Chủ động nêu việc của mình trước", qCounter:"Đáp lại bằng yêu cầu của mình", qShiftTopic:"Chuyển sang chuyện khác", qAskSlow:"Chậm hơn", qAskAgain:"Nói lại", qAskEasy:"Đơn giản hơn", qAskFast:"Nhanh hơn",
+              qEcho:"Dùng lại cách nói của họ", qWrap:"Thử nói kiểu 「%s」", qEndTurn:"Nói xong rồi hỏi lại họ", qExpand:"Kể thêm chuyện của mình", qTakeTurn:"Chen vào và giành lượt nói", qKeepTurn:"Nói tiếp cho dài hơn", qEmpathy:"Bày tỏ sự đồng cảm", qContinuer:"Hỏi để họ nói tiếp", qCheckUnd:"Kiểm tra họ có hiểu không", qFiller:"Câu giờ rồi nói tiếp", qCloseTopic:"Chốt lại rồi chuyển sang", qInitiate:"Chủ động nêu việc của mình trước", qCounter:"Đáp lại bằng yêu cầu của mình", qOpinion:"Nói suy nghĩ của bạn", qDiffer:"Nói rằng bạn nghĩ khác", qShiftTopic:"Chuyển sang chuyện khác", qAskSlow:"Chậm hơn", qAskAgain:"Nói lại", qAskEasy:"Đơn giản hơn", qAskFast:"Nhanh hơn",
               scafTitle:"Giúp tôi", scafHint:"Hoarang giúp bao nhiêu khi trò chuyện?",
               scaf0:"Không giúp", scaf1:"Một chút", scaf2:"Vừa", scaf3:"Nhiều" },
         th: { qParaphrase:"ทวนความหมายของอีกฝ่าย", qRephrase:"ถ้าเขาไม่เข้าใจ ให้อธิบายใหม่", qNative:"ถามด้วยภาษาแม่ แล้วพูดเป็นภาษาเกาหลี",
-              qEcho:"ใช้คำที่อีกฝ่ายเพิ่งพูด", qWrap:"ลองพูดแบบ 「%s」", qEndTurn:"พูดจบแล้วถามกลับ", qExpand:"เสริมเรื่องของตัวเองเข้าไป", qTakeTurn:"แทรกและรับช่วงพูด", qKeepTurn:"พูดต่อให้ยาวขึ้น", qEmpathy:"แสดงความเห็นอกเห็นใจ", qContinuer:"ถามให้เขาพูดต่อ", qCheckUnd:"เช็คว่าเขาเข้าใจไหม", qFiller:"ถ่วงเวลาแล้วพูดต่อ", qCloseTopic:"สรุปแล้วเปลี่ยนเรื่อง", qInitiate:"เอ่ยเรื่องของตัวเองก่อน", qCounter:"ย้อนถามด้วยเรื่องของตัวเอง", qShiftTopic:"เปลี่ยนไปเรื่องอื่น", qAskSlow:"ช้าลง", qAskAgain:"อีกครั้ง", qAskEasy:"ง่ายขึ้น", qAskFast:"เร็วขึ้น",
+              qEcho:"ใช้คำที่อีกฝ่ายเพิ่งพูด", qWrap:"ลองพูดแบบ 「%s」", qEndTurn:"พูดจบแล้วถามกลับ", qExpand:"เสริมเรื่องของตัวเองเข้าไป", qTakeTurn:"แทรกและรับช่วงพูด", qKeepTurn:"พูดต่อให้ยาวขึ้น", qEmpathy:"แสดงความเห็นอกเห็นใจ", qContinuer:"ถามให้เขาพูดต่อ", qCheckUnd:"เช็คว่าเขาเข้าใจไหม", qFiller:"ถ่วงเวลาแล้วพูดต่อ", qCloseTopic:"สรุปแล้วเปลี่ยนเรื่อง", qInitiate:"เอ่ยเรื่องของตัวเองก่อน", qCounter:"ย้อนถามด้วยเรื่องของตัวเอง", qOpinion:"บอกความคิดของคุณด้วย", qDiffer:"บอกว่าคุณคิดต่างออกไป", qShiftTopic:"เปลี่ยนไปเรื่องอื่น", qAskSlow:"ช้าลง", qAskAgain:"อีกครั้ง", qAskEasy:"ง่ายขึ้น", qAskFast:"เร็วขึ้น",
               scafTitle:"ช่วยหน่อย", scafHint:"อยากให้โฮอารังช่วยแค่ไหน?",
               scaf0:"ไม่ต้องช่วย", scaf1:"นิดหน่อย", scaf2:"ปานกลาง", scaf3:"เยอะ" },
         id: { qParaphrase:"Pastikan maksud lawan bicara", qRephrase:"Kalau tidak paham, jelaskan lagi", qNative:"Tanya dalam bahasamu, ucapkan dalam bahasa Korea",
-              qEcho:"Pakai ungkapan yang dia pakai", qWrap:"Coba seperti 「%s」", qEndTurn:"Setelah selesai, tanya balik", qExpand:"Tambahkan ceritamu sendiri", qTakeTurn:"Menyela dan ambil giliran bicara", qKeepTurn:"Lanjutkan bicara lebih panjang", qEmpathy:"Tunjukkan empati", qContinuer:"Tanya agar lawan bicara lanjut", qCheckUnd:"Pastikan lawan bicara paham", qFiller:"Ulur waktu lalu lanjutkan", qCloseTopic:"Tutup topik lalu lanjut", qInitiate:"Sampaikan keperluanmu duluan", qCounter:"Balas dengan permintaanmu sendiri", qShiftTopic:"Pindah ke topik lain", qAskSlow:"Pelan-pelan", qAskAgain:"Ulangi", qAskEasy:"Lebih mudah", qAskFast:"Lebih cepat",
+              qEcho:"Pakai ungkapan yang dia pakai", qWrap:"Coba seperti 「%s」", qEndTurn:"Setelah selesai, tanya balik", qExpand:"Tambahkan ceritamu sendiri", qTakeTurn:"Menyela dan ambil giliran bicara", qKeepTurn:"Lanjutkan bicara lebih panjang", qEmpathy:"Tunjukkan empati", qContinuer:"Tanya agar lawan bicara lanjut", qCheckUnd:"Pastikan lawan bicara paham", qFiller:"Ulur waktu lalu lanjutkan", qCloseTopic:"Tutup topik lalu lanjut", qInitiate:"Sampaikan keperluanmu duluan", qCounter:"Balas dengan permintaanmu sendiri", qOpinion:"Katakan pendapatmu juga", qDiffer:"Katakan kalau kamu berbeda pendapat", qShiftTopic:"Pindah ke topik lain", qAskSlow:"Pelan-pelan", qAskAgain:"Ulangi", qAskEasy:"Lebih mudah", qAskFast:"Lebih cepat",
               scafTitle:"Bantu aku", scafHint:"Seberapa banyak Hoarang membantu saat bicara?",
               scaf0:"Tanpa bantuan", scaf1:"Sedikit", scaf2:"Sedang", scaf3:"Banyak" },
         mn: { qParaphrase:"Нөгөө хүний үгийг лавлах", qRephrase:"Ойлгоогүй бол дахин тайлбарлаарай", qNative:"Төрөлх хэлээрээ асууж солонгосоор хэлэх",
-              qEcho:"Түүний хэлсэн үгийг ашиглах", qWrap:"「%s」гэх мэтээр хэлж үзээрэй", qEndTurn:"Хэлж дуусаад эргүүлж асууна уу", qExpand:"Түүний яриан дээр өөрийн яриаг нэмэх", qTakeTurn:"Таслан оролцож ярих ээлжээ авах", qKeepTurn:"Үргэлжлүүлэн урт ярих", qEmpathy:"Өрөвдөж хүлээн авах", qContinuer:"Цааш ярихыг асуух", qCheckUnd:"Ойлгосон эсэхийг шалгах", qFiller:"Цаг хожиж үргэлжлүүлэх", qCloseTopic:"Сэдвээ дүгнээд цааш өнгөрөх", qInitiate:"Хэрэгцээгээ эхэлж хэлэх", qCounter:"Хариуд нь өөрийн хэрэгцээг тавих", qShiftTopic:"Өөр сэдэв рүү шилжих", qAskSlow:"Аажуухан", qAskAgain:"Дахин", qAskEasy:"Хялбархан", qAskFast:"Түргэн",
+              qEcho:"Түүний хэлсэн үгийг ашиглах", qWrap:"「%s」гэх мэтээр хэлж үзээрэй", qEndTurn:"Хэлж дуусаад эргүүлж асууна уу", qExpand:"Түүний яриан дээр өөрийн яриаг нэмэх", qTakeTurn:"Таслан оролцож ярих ээлжээ авах", qKeepTurn:"Үргэлжлүүлэн урт ярих", qEmpathy:"Өрөвдөж хүлээн авах", qContinuer:"Цааш ярихыг асуух", qCheckUnd:"Ойлгосон эсэхийг шалгах", qFiller:"Цаг хожиж үргэлжлүүлэх", qCloseTopic:"Сэдвээ дүгнээд цааш өнгөрөх", qInitiate:"Хэрэгцээгээ эхэлж хэлэх", qCounter:"Хариуд нь өөрийн хэрэгцээг тавих", qOpinion:"Өөрийн бодлоо хэлээрэй", qDiffer:"Өөрөөр боддогоо хэлээрэй", qShiftTopic:"Өөр сэдэв рүү шилжих", qAskSlow:"Аажуухан", qAskAgain:"Дахин", qAskEasy:"Хялбархан", qAskFast:"Түргэн",
               scafTitle:"Тусла", scafHint:"Ярианы үеэр Хоаран хэр их туслах вэ?",
               scaf0:"Туслахгүй", scaf1:"Бага", scaf2:"Дунд", scaf3:"Их" },
         uz: { qParaphrase:"Suhbatdosh fikrini aniqlash", qRephrase:"Tushunmasa, qayta tushuntiring", qNative:"Ona tilingizda so'rab, koreyscha ayting",
-              qEcho:"U aytgan iborani ishlatish", qWrap:"「%s」kabi aytib koʻring", qEndTurn:"Aytib boʻlgach, qaytarib soʻrang", qExpand:"O'z gapingizni qo'shish", qTakeTurn:"Gapga qoʻshilib navbatni olish", qKeepTurn:"Davom etib uzoqroq gapirish", qEmpathy:"Hamdardlik bildirish", qContinuer:"Davom etishini soʻrash", qCheckUnd:"Tushunganini tekshirish", qFiller:"Vaqt yutib davom etish", qCloseTopic:"Mavzuni yakunlab oʻtish", qInitiate:"Maqsadingizni birinchi aytish", qCounter:"Javoban oʻz talabingizni aytish", qShiftTopic:"Boshqa mavzuga oʻtish", qAskSlow:"Sekinroq", qAskAgain:"Yana", qAskEasy:"Soddaroq", qAskFast:"Tezroq",
+              qEcho:"U aytgan iborani ishlatish", qWrap:"「%s」kabi aytib koʻring", qEndTurn:"Aytib boʻlgach, qaytarib soʻrang", qExpand:"O'z gapingizni qo'shish", qTakeTurn:"Gapga qoʻshilib navbatni olish", qKeepTurn:"Davom etib uzoqroq gapirish", qEmpathy:"Hamdardlik bildirish", qContinuer:"Davom etishini soʻrash", qCheckUnd:"Tushunganini tekshirish", qFiller:"Vaqt yutib davom etish", qCloseTopic:"Mavzuni yakunlab oʻtish", qInitiate:"Maqsadingizni birinchi aytish", qCounter:"Javoban oʻz talabingizni aytish", qOpinion:"Oʻz fikringizni ham ayting", qDiffer:"Boshqacha oʻylashingizni ayting", qShiftTopic:"Boshqa mavzuga oʻtish", qAskSlow:"Sekinroq", qAskAgain:"Yana", qAskEasy:"Soddaroq", qAskFast:"Tezroq",
               scafTitle:"Yordam ber", scafHint:"Suhbat davomida Hoarang qancha yordam bersin?",
               scaf0:"Kerak emas", scaf1:"Ozgina", scaf2:"O'rtacha", scaf3:"Ko'p" },
         ru: { qParaphrase:"Уточнить, что он имел в виду", qRephrase:"Если не поняли — объясните ещё раз", qNative:"Спросить на родном, сказать по-корейски",
-              qEcho:"Использовать его выражение", qWrap:"Попробуйте так: 「%s」", qEndTurn:"Договорите и спросите в ответ", qExpand:"Добавить своё к его рассказу", qTakeTurn:"Вступить и взять слово", qKeepTurn:"Продолжить и сказать больше", qEmpathy:"Посочувствовать", qContinuer:"Попросить продолжить", qCheckUnd:"Проверить, поняли ли вас", qFiller:"Потянуть время и продолжить", qCloseTopic:"Подвести итог и перейти дальше", qInitiate:"Первым изложить своё дело", qCounter:"В ответ выдвинуть своё", qShiftTopic:"Перейти на другую тему", qAskSlow:"Медленнее", qAskAgain:"Ещё раз", qAskEasy:"Проще", qAskFast:"Быстрее",
+              qEcho:"Использовать его выражение", qWrap:"Попробуйте так: 「%s」", qEndTurn:"Договорите и спросите в ответ", qExpand:"Добавить своё к его рассказу", qTakeTurn:"Вступить и взять слово", qKeepTurn:"Продолжить и сказать больше", qEmpathy:"Посочувствовать", qContinuer:"Попросить продолжить", qCheckUnd:"Проверить, поняли ли вас", qFiller:"Потянуть время и продолжить", qCloseTopic:"Подвести итог и перейти дальше", qInitiate:"Первым изложить своё дело", qCounter:"В ответ выдвинуть своё", qOpinion:"Скажите, что думаете вы", qDiffer:"Скажите, что думаете иначе", qShiftTopic:"Перейти на другую тему", qAskSlow:"Медленнее", qAskAgain:"Ещё раз", qAskEasy:"Проще", qAskFast:"Быстрее",
               scafTitle:"Помощь", scafHint:"Сколько Хоаран помогает во время разговора?",
               scaf0:"Без помощи", scaf1:"Немного", scaf2:"Обычно", scaf3:"Много" },
         es: { qParaphrase:"Confirmar lo que dijo el otro", qRephrase:"Si no te entendió, explícalo otra vez", qNative:"Preguntar en tu idioma y decirlo en coreano",
-              qEcho:"Usar una expresión que él dijo", qWrap:"Prueba algo como 「%s」", qEndTurn:"Termina y pregúntale a la otra persona", qExpand:"Añadir lo tuyo a su tema", qTakeTurn:"Interrumpir y tomar el turno", qKeepTurn:"Seguir hablando más", qEmpathy:"Mostrar empatía", qContinuer:"Pedir que siga contando", qCheckUnd:"Comprobar que te entendieron", qFiller:"Ganar tiempo y continuar", qCloseTopic:"Cerrar el tema y pasar a otro", qInitiate:"Plantear tu asunto primero", qCounter:"Responder con tu propia petición", qShiftTopic:"Pasar a otro tema", qAskSlow:"Más despacio", qAskAgain:"Otra vez", qAskEasy:"Más simple", qAskFast:"Más rápido",
+              qEcho:"Usar una expresión que él dijo", qWrap:"Prueba algo como 「%s」", qEndTurn:"Termina y pregúntale a la otra persona", qExpand:"Añadir lo tuyo a su tema", qTakeTurn:"Interrumpir y tomar el turno", qKeepTurn:"Seguir hablando más", qEmpathy:"Mostrar empatía", qContinuer:"Pedir que siga contando", qCheckUnd:"Comprobar que te entendieron", qFiller:"Ganar tiempo y continuar", qCloseTopic:"Cerrar el tema y pasar a otro", qInitiate:"Plantear tu asunto primero", qCounter:"Responder con tu propia petición", qOpinion:"Di también lo que piensas", qDiffer:"Di que piensas diferente", qShiftTopic:"Pasar a otro tema", qAskSlow:"Más despacio", qAskAgain:"Otra vez", qAskEasy:"Más simple", qAskFast:"Más rápido",
               scafTitle:"Ayúdame", scafHint:"¿Cuánto debe ayudar Hoarang durante la charla?",
               scaf0:"Sin ayuda", scaf1:"Un poco", scaf2:"Normal", scaf3:"Mucha" },
         fr: { qParaphrase:"Vérifier ce qu'il voulait dire", qRephrase:"S'il n'a pas compris, réexpliquez", qNative:"Demander dans ta langue, le dire en coréen",
-              qEcho:"Réutiliser son expression", qWrap:"Essayez quelque chose comme 「%s」", qEndTurn:"Terminez puis posez-lui la question", qExpand:"Ajouter ton histoire à la sienne", qTakeTurn:"Intervenir et prendre la parole", qKeepTurn:"Enchaîner et parler plus longtemps", qEmpathy:"Montrer de l'empathie", qContinuer:"Inviter à poursuivre", qCheckUnd:"Vérifier qu'on vous a compris", qFiller:"Gagner du temps et continuer", qCloseTopic:"Conclure et passer à la suite", qInitiate:"Exposer votre demande en premier", qCounter:"Répondre par votre propre demande", qShiftTopic:"Passer à un autre sujet", qAskSlow:"Plus lentement", qAskAgain:"Encore", qAskEasy:"Plus simple", qAskFast:"Plus vite",
+              qEcho:"Réutiliser son expression", qWrap:"Essayez quelque chose comme 「%s」", qEndTurn:"Terminez puis posez-lui la question", qExpand:"Ajouter ton histoire à la sienne", qTakeTurn:"Intervenir et prendre la parole", qKeepTurn:"Enchaîner et parler plus longtemps", qEmpathy:"Montrer de l'empathie", qContinuer:"Inviter à poursuivre", qCheckUnd:"Vérifier qu'on vous a compris", qFiller:"Gagner du temps et continuer", qCloseTopic:"Conclure et passer à la suite", qInitiate:"Exposer votre demande en premier", qCounter:"Répondre par votre propre demande", qOpinion:"Dites aussi ce que vous pensez", qDiffer:"Dites que vous pensez autrement", qShiftTopic:"Passer à un autre sujet", qAskSlow:"Plus lentement", qAskAgain:"Encore", qAskEasy:"Plus simple", qAskFast:"Plus vite",
               scafTitle:"Aide-moi", scafHint:"Hoarang doit aider combien pendant la conversation ?",
               scaf0:"Sans aide", scaf1:"Un peu", scaf2:"Normal", scaf3:"Beaucoup" },
     };
@@ -4008,22 +4032,22 @@
        퀘스트 목록이 영어와 제 나라 말로 섞여 보인다. */
     const I18N_X6_QZ3 = {
         ne: { qParaphrase:"भन्न खोजेको कुरा पक्का गर्ने", qRephrase:"बुझेन भने फेरि बुझाउनुहोस्", qNative:"आफ्नो भाषामा सोधेर कोरियनमा भन्ने",
-              qEcho:"उहाँले प्रयोग गरेको शब्द चलाउने", qWrap:"「%s」जस्तै भन्नुहोस्", qEndTurn:"भनिसकेपछि उहाँलाई सोध्नुहोस्", qExpand:"आफ्नो कुरा थप्ने", qTakeTurn:"बीचमा बोलेर पालो लिने", qKeepTurn:"लगातार लामो बोल्ने", qEmpathy:"सहानुभूति देखाउने", qContinuer:"अझै भन्न प्रश्न गर्ने", qCheckUnd:"बुझ्यो कि भनेर जाँच्ने", qFiller:"समय लिँदै बोली जारी राख्ने", qCloseTopic:"विषय टुंग्याएर अर्कोमा जाने", qInitiate:"आफ्नो कुरा पहिले निकाल्ने", qCounter:"पल्टाएर आफ्नो कुरा राख्ने", qShiftTopic:"अर्को कुरामा सर्ने", qAskSlow:"बिस्तारै", qAskAgain:"फेरि", qAskEasy:"सजिलो", qAskFast:"छिटो",
+              qEcho:"उहाँले प्रयोग गरेको शब्द चलाउने", qWrap:"「%s」जस्तै भन्नुहोस्", qEndTurn:"भनिसकेपछि उहाँलाई सोध्नुहोस्", qExpand:"आफ्नो कुरा थप्ने", qTakeTurn:"बीचमा बोलेर पालो लिने", qKeepTurn:"लगातार लामो बोल्ने", qEmpathy:"सहानुभूति देखाउने", qContinuer:"अझै भन्न प्रश्न गर्ने", qCheckUnd:"बुझ्यो कि भनेर जाँच्ने", qFiller:"समय लिँदै बोली जारी राख्ने", qCloseTopic:"विषय टुंग्याएर अर्कोमा जाने", qInitiate:"आफ्नो कुरा पहिले निकाल्ने", qCounter:"पल्टाएर आफ्नो कुरा राख्ने", qOpinion:"आफ्नो विचार पनि भन्नुहोस्", qDiffer:"फरक सोच्नुहुन्छ भन्नुहोस्", qShiftTopic:"अर्को कुरामा सर्ने", qAskSlow:"बिस्तारै", qAskAgain:"फेरि", qAskEasy:"सजिलो", qAskFast:"छिटो",
               scafTitle:"मद्दत", scaf0:"मद्दत छैन", scaf1:"थोरै", scaf2:"सामान्य", scaf3:"धेरै" },
         lo: { qParaphrase:"ຢືນຢັນຄວາມໝາຍຂອງອີກຝ່າຍ", qRephrase:"ຖ້າລາວບໍ່ເຂົ້າໃຈ ໃຫ້ອະທິບາຍໃໝ່", qNative:"ຖາມເປັນພາສາຕົນ ແລ້ວເວົ້າເປັນເກົາຫຼີ",
-              qEcho:"ໃຊ້ຄຳທີ່ອີກຝ່າຍເວົ້າ", qWrap:"ລອງເວົ້າແບບ 「%s」", qEndTurn:"ເວົ້າຈົບແລ້ວຖາມກັບ", qExpand:"ເສີມເລື່ອງຂອງຕົນເອງ", qTakeTurn:"ແຊກເຂົ້າແລ້ວເອົາຜຽນເວົ້າ", qKeepTurn:"ເວົ້າຕໍ່ໃຫ້ຍາວຂຶ້ນ", qEmpathy:"ສະແດງຄວາມເຫັນອົກເຫັນໃຈ", qContinuer:"ຖາມໃຫ້ລາວເວົ້າຕໍ່", qCheckUnd:"ກວດເບິ່ງວ່າລາວເຂົ້າໃຈບໍ", qFiller:"ຖ່ວງເວລາແລ້ວເວົ້າຕໍ່", qCloseTopic:"ສະຫຼຸບແລ້ວປ່ຽນເລື່ອງ", qInitiate:"ເວົ້າເລື່ອງຂອງຕົນກ່ອນ", qCounter:"ຕອບກັບດ້ວຍເລື່ອງຂອງຕົນ", qShiftTopic:"ປ່ຽນໄປເລື່ອງອື່ນ", qAskSlow:"ຊ້າໆ", qAskAgain:"ອີກເທື່ອ", qAskEasy:"ງ່າຍໆ", qAskFast:"ໄວໆ",
+              qEcho:"ໃຊ້ຄຳທີ່ອີກຝ່າຍເວົ້າ", qWrap:"ລອງເວົ້າແບບ 「%s」", qEndTurn:"ເວົ້າຈົບແລ້ວຖາມກັບ", qExpand:"ເສີມເລື່ອງຂອງຕົນເອງ", qTakeTurn:"ແຊກເຂົ້າແລ້ວເອົາຜຽນເວົ້າ", qKeepTurn:"ເວົ້າຕໍ່ໃຫ້ຍາວຂຶ້ນ", qEmpathy:"ສະແດງຄວາມເຫັນອົກເຫັນໃຈ", qContinuer:"ຖາມໃຫ້ລາວເວົ້າຕໍ່", qCheckUnd:"ກວດເບິ່ງວ່າລາວເຂົ້າໃຈບໍ", qFiller:"ຖ່ວງເວລາແລ້ວເວົ້າຕໍ່", qCloseTopic:"ສະຫຼຸບແລ້ວປ່ຽນເລື່ອງ", qInitiate:"ເວົ້າເລື່ອງຂອງຕົນກ່ອນ", qCounter:"ຕອບກັບດ້ວຍເລື່ອງຂອງຕົນ", qOpinion:"ບອກຄວາມຄິດຂອງທ່ານແດ່", qDiffer:"ບອກວ່າທ່ານຄິດຕ່າງ", qShiftTopic:"ປ່ຽນໄປເລື່ອງອື່ນ", qAskSlow:"ຊ້າໆ", qAskAgain:"ອີກເທື່ອ", qAskEasy:"ງ່າຍໆ", qAskFast:"ໄວໆ",
               scafTitle:"ຊ່ວຍ", scaf0:"ບໍ່ຕ້ອງຊ່ວຍ", scaf1:"ໜ້ອຍ", scaf2:"ປານກາງ", scaf3:"ຫຼາຍ" },
         my: { qParaphrase:"သူပြောတဲ့အဓိပ္ပာယ်ကို အတည်ပြုပါ", qRephrase:"နားမလည်ရင် ပြန်ရှင်းပြပါ", qNative:"ကိုယ့်ဘာသာနဲ့မေးပြီး ကိုရီးယားလိုပြောပါ",
-              qEcho:"သူသုံးတဲ့စကားကို သုံးပါ", qWrap:"「%s」လိုမျိုး ပြောကြည့်ပါ", qEndTurn:"ပြောပြီးရင် ပြန်မေးပါ", qExpand:"ကိုယ့်အကြောင်း ထပ်ပြောပါ", qTakeTurn:"ကြားဖြတ်ပြီး ပြောခွင့်ယူပါ", qKeepTurn:"ဆက်ပြီး ရှည်ရှည် ပြောပါ", qEmpathy:"စာနာမှု ပြပါ", qContinuer:"ဆက်ပြောဖို့ မေးပါ", qCheckUnd:"နားလည်ရဲ့လား စစ်ပါ", qFiller:"အချိန်ဆွဲပြီး ဆက်ပြောပါ", qCloseTopic:"အကြောင်းအရာ ချုပ်ပြီး ရှေ့ဆက်ပါ", qInitiate:"ကိုယ့်ကိစ္စကို အရင်ပြောပါ", qCounter:"ပြန်လှည့်ပြီး ကိုယ့်ကိစ္စပြောပါ", qShiftTopic:"တခြားအကြောင်းအရာသို့ ပြောင်းပါ", qAskSlow:"ဖြေးဖြေး", qAskAgain:"ထပ်", qAskEasy:"ရိုးရိုး", qAskFast:"မြန်မြန်",
+              qEcho:"သူသုံးတဲ့စကားကို သုံးပါ", qWrap:"「%s」လိုမျိုး ပြောကြည့်ပါ", qEndTurn:"ပြောပြီးရင် ပြန်မေးပါ", qExpand:"ကိုယ့်အကြောင်း ထပ်ပြောပါ", qTakeTurn:"ကြားဖြတ်ပြီး ပြောခွင့်ယူပါ", qKeepTurn:"ဆက်ပြီး ရှည်ရှည် ပြောပါ", qEmpathy:"စာနာမှု ပြပါ", qContinuer:"ဆက်ပြောဖို့ မေးပါ", qCheckUnd:"နားလည်ရဲ့လား စစ်ပါ", qFiller:"အချိန်ဆွဲပြီး ဆက်ပြောပါ", qCloseTopic:"အကြောင်းအရာ ချုပ်ပြီး ရှေ့ဆက်ပါ", qInitiate:"ကိုယ့်ကိစ္စကို အရင်ပြောပါ", qCounter:"ပြန်လှည့်ပြီး ကိုယ့်ကိစ္စပြောပါ", qOpinion:"ကိုယ့်အမြင်ကိုလည်း ပြောပါ", qDiffer:"ကွဲပြားစွာ ထင်ကြောင်း ပြောပါ", qShiftTopic:"တခြားအကြောင်းအရာသို့ ပြောင်းပါ", qAskSlow:"ဖြေးဖြေး", qAskAgain:"ထပ်", qAskEasy:"ရိုးရိုး", qAskFast:"မြန်မြန်",
               scafTitle:"ကူညီပါ", scaf0:"မကူညီနဲ့", scaf1:"နည်းနည်း", scaf2:"ပုံမှန်", scaf3:"အများကြီး" },
         km: { qParaphrase:"បញ្ជាក់អត្ថន័យរបស់គេ", qRephrase:"បើគេមិនយល់ សូមពន្យល់ម្តងទៀត", qNative:"សួរជាភាសាខ្លួន រួចនិយាយជាភាសាកូរ៉េ",
-              qEcho:"ប្រើពាក្យដែលគេទើបនិយាយ", qWrap:"សាកនិយាយបែប 「%s」", qEndTurn:"និយាយចប់ រួចសួរត្រឡប់", qExpand:"បន្ថែមរឿងរបស់ខ្លួន", qTakeTurn:"និយាយកាត់ រួចយកវេន", qKeepTurn:"និយាយបន្តឱ្យវែងជាង", qEmpathy:"បង្ហាញការយល់ចិត្ត", qContinuer:"សួរឱ្យគេនិយាយបន្ត", qCheckUnd:"ពិនិត្យថាគេយល់ឬទេ", qFiller:"ទាញពេល រួចនិយាយបន្ត", qCloseTopic:"បញ្ចប់រឿង រួចបន្តទៅមុខ", qInitiate:"លើករឿងរបស់ខ្លួនមុន", qCounter:"តបមកវិញដោយរឿងរបស់ខ្លួន", qShiftTopic:"ប្ដូរទៅរឿងផ្សេង", qAskSlow:"យឺតៗ", qAskAgain:"ម្តងទៀត", qAskEasy:"ងាយៗ", qAskFast:"លឿនៗ",
+              qEcho:"ប្រើពាក្យដែលគេទើបនិយាយ", qWrap:"សាកនិយាយបែប 「%s」", qEndTurn:"និយាយចប់ រួចសួរត្រឡប់", qExpand:"បន្ថែមរឿងរបស់ខ្លួន", qTakeTurn:"និយាយកាត់ រួចយកវេន", qKeepTurn:"និយាយបន្តឱ្យវែងជាង", qEmpathy:"បង្ហាញការយល់ចិត្ត", qContinuer:"សួរឱ្យគេនិយាយបន្ត", qCheckUnd:"ពិនិត្យថាគេយល់ឬទេ", qFiller:"ទាញពេល រួចនិយាយបន្ត", qCloseTopic:"បញ្ចប់រឿង រួចបន្តទៅមុខ", qInitiate:"លើករឿងរបស់ខ្លួនមុន", qCounter:"តបមកវិញដោយរឿងរបស់ខ្លួន", qOpinion:"ប្រាប់គំនិតរបស់អ្នកផង", qDiffer:"ប្រាប់ថាអ្នកគិតខុសគ្នា", qShiftTopic:"ប្ដូរទៅរឿងផ្សេង", qAskSlow:"យឺតៗ", qAskAgain:"ម្តងទៀត", qAskEasy:"ងាយៗ", qAskFast:"លឿនៗ",
               scafTitle:"ជួយ", scaf0:"មិនជួយ", scaf1:"បន្តិច", scaf2:"ធម្មតា", scaf3:"ច្រើន" },
         uk: { qParaphrase:"Уточнити, що він мав на увазі", qRephrase:"Якщо не зрозуміли — поясніть ще раз", qNative:"Запитати рідною, сказати корейською",
-              qEcho:"Використати його вислів", qWrap:"Спробуйте щось на кшталт 「%s」", qEndTurn:"Договоріть і запитайте у відповідь", qExpand:"Додати своє до його розповіді", qTakeTurn:"Втрутитися й узяти слово", qKeepTurn:"Продовжити й сказати більше", qEmpathy:"Поспівчувати", qContinuer:"Попросити розповідати далі", qCheckUnd:"Перевірити, чи вас зрозуміли", qFiller:"Виграти час і продовжити", qCloseTopic:"Підсумувати й перейти далі", qInitiate:"Першим викласти свою справу", qCounter:"У відповідь висунути своє", qShiftTopic:"Перейти на іншу тему", qAskSlow:"Повільніше", qAskAgain:"Ще раз", qAskEasy:"Простіше", qAskFast:"Швидше",
+              qEcho:"Використати його вислів", qWrap:"Спробуйте щось на кшталт 「%s」", qEndTurn:"Договоріть і запитайте у відповідь", qExpand:"Додати своє до його розповіді", qTakeTurn:"Втрутитися й узяти слово", qKeepTurn:"Продовжити й сказати більше", qEmpathy:"Поспівчувати", qContinuer:"Попросити розповідати далі", qCheckUnd:"Перевірити, чи вас зрозуміли", qFiller:"Виграти час і продовжити", qCloseTopic:"Підсумувати й перейти далі", qInitiate:"Першим викласти свою справу", qCounter:"У відповідь висунути своє", qOpinion:"Скажіть, що думаєте ви", qDiffer:"Скажіть, що думаєте інакше", qShiftTopic:"Перейти на іншу тему", qAskSlow:"Повільніше", qAskAgain:"Ще раз", qAskEasy:"Простіше", qAskFast:"Швидше",
               scafTitle:"Допомога", scaf0:"Без допомоги", scaf1:"Трохи", scaf2:"Звичайно", scaf3:"Багато" },
         ky: { qParaphrase:"Анын айтканын тактоо", qRephrase:"Түшүнбөсө, кайра түшүндүрүңүз", qNative:"Эне тилиңде сурап, корейче айтуу",
-              qEcho:"Ал колдонгон сөздү колдонуу", qWrap:"「%s」сыяктуу айтып көрүңүз", qEndTurn:"Айтып бүтүп, кайра сураңыз", qExpand:"Өз окуяңды кошуу", qTakeTurn:"Кийлигишип сүйлөө кезегин алуу", qKeepTurn:"Улантып узун сүйлөө", qEmpathy:"Боорукердик билдирүү", qContinuer:"Улантууну суроо", qCheckUnd:"Түшүнгөнүн текшерүү", qFiller:"Убакыт утуп улантуу", qCloseTopic:"Теманы жыйынтыктап өтүү", qInitiate:"Өз ишиңди биринчи айтуу", qCounter:"Жооп катары өз талабыңды коюу", qShiftTopic:"Башка темага өтүү", qAskSlow:"Жайыраак", qAskAgain:"Кайра", qAskEasy:"Жөнөкөйүрөөк", qAskFast:"Ыкчамыраак",
+              qEcho:"Ал колдонгон сөздү колдонуу", qWrap:"「%s」сыяктуу айтып көрүңүз", qEndTurn:"Айтып бүтүп, кайра сураңыз", qExpand:"Өз окуяңды кошуу", qTakeTurn:"Кийлигишип сүйлөө кезегин алуу", qKeepTurn:"Улантып узун сүйлөө", qEmpathy:"Боорукердик билдирүү", qContinuer:"Улантууну суроо", qCheckUnd:"Түшүнгөнүн текшерүү", qFiller:"Убакыт утуп улантуу", qCloseTopic:"Теманы жыйынтыктап өтүү", qInitiate:"Өз ишиңди биринчи айтуу", qCounter:"Жооп катары өз талабыңды коюу", qOpinion:"Өз оюңузду да айтыңыз", qDiffer:"Башкача ойлойм деп айтыңыз", qShiftTopic:"Башка темага өтүү", qAskSlow:"Жайыраак", qAskAgain:"Кайра", qAskEasy:"Жөнөкөйүрөөк", qAskFast:"Ыкчамыраак",
               scafTitle:"Жардам", scaf0:"Жардамсыз", scaf1:"Азыраак", scaf2:"Орточо", scaf3:"Көп" },
     };
     for (const _l in I18N_X6_QZ3) { if (I18N[_l]) Object.assign(I18N[_l], I18N_X6_QZ3[_l]); }
@@ -4113,11 +4137,11 @@
         { id:"q200",     el:"기능 단계", ek:"stage",        lv:2, mode:"rp",   chk:(q)=>q.maxPct >= 200 },
         { id:"qTurns20", el:"차례 관리", ek:"turn",        lv:2, mode:"both", chk:(q)=>q.userTurns >= 20 },
         // ── 아래는 서버(LLM)가 대화 흐름을 읽고 판정한다. 낱말만 세서는 알 수 없는 것들. ──
-        { id:"qNewTopic",el:"화제 관리", ek:"topic",        lv:1, mode:"rp", llm:1, chk:(q)=>q.llm.has("qNewTopic") },
-        { id:"qSelfFix", el:"의사소통 단절 수정", ek:"repair", lv:1, mode:"rp", llm:1, chk:(q)=>q.llm.has("qSelfFix") },
+        { id:"qNewTopic",el:"화제 관리", ek:"topic",        lv:1, mode:"both", llm:1, chk:(q)=>q.llm.has("qNewTopic") },
+        { id:"qSelfFix", el:"의사소통 단절 수정", ek:"repair", lv:1, mode:"both", llm:1, chk:(q)=>q.llm.has("qSelfFix") },
         { id:"qRefuse",  el:"대화이동 관리", ek:"move",     lv:1, mode:"rp", llm:1, chk:(q)=>q.llm.has("qRefuse") },
         { id:"qAlt",     el:"대화이동 관리", ek:"move",     lv:1, mode:"rp", llm:1, chk:(q)=>q.llm.has("qAlt") },
-        { id:"qCircum",  el:"의사소통 전략", ek:"strategy",     lv:2, mode:"rp", llm:1, chk:(q)=>q.llm.has("qCircum") },
+        { id:"qCircum",  el:"의사소통 전략", ek:"strategy",     lv:2, mode:"both", llm:1, chk:(q)=>q.llm.has("qCircum") },
         { id:"qCond",    el:"대화이동 관리", ek:"move",     lv:2, mode:"rp", llm:1, chk:(q)=>q.llm.has("qCond") },
         { id:"qHold",    el:"대화이동 관리", ek:"move",     lv:2, mode:"rp", llm:1, chk:(q)=>q.llm.has("qHold") },
         { id:"qParaphrase", el:"상호작용적 듣기", ek:"listen", lv:1, mode:"both", llm:1, chk:(q)=>q.llm.has("qParaphrase") },
@@ -4126,16 +4150,20 @@
         { id:"qEcho",       el:"의사소통 전략", ek:"strategy", lv:1, mode:"both", llm:1, chk:(q)=>q.llm.has("qEcho") },
         { id:"qEndTurn",    el:"차례 관리", ek:"turn",       lv:1, mode:"both", llm:1, chk:(q)=>q.llm.has("qEndTurn") },
         { id:"qExpand",     el:"화제 관리", ek:"topic",      lv:1, mode:"both", llm:1, chk:(q)=>q.llm.has("qExpand") },
-        { id:"qReturn",  el:"화제 관리", ek:"topic",        lv:2, mode:"rp", llm:1, chk:(q)=>q.llm.has("qReturn") },
+        { id:"qReturn",  el:"화제 관리", ek:"topic",        lv:2, mode:"both", llm:1, chk:(q)=>q.llm.has("qReturn") },
     { id:"qTakeTurn",  el:"차례 관리", ek:"turn",       lv:2, mode:"both", llm:1, chk:(q)=>q.llm.has("qTakeTurn") },
     { id:"qKeepTurn",  el:"차례 관리", ek:"turn",       lv:1, mode:"both", llm:1, chk:(q)=>q.llm.has("qKeepTurn") },
     { id:"qEmpathy",   el:"상호작용적 듣기", ek:"listen", lv:1, mode:"both", llm:1, chk:(q)=>q.llm.has("qEmpathy") },
     { id:"qContinuer", el:"상호작용적 듣기", ek:"listen", lv:1, mode:"both", llm:1, chk:(q)=>q.llm.has("qContinuer") },
     { id:"qCheckUnd",  el:"의사소통 단절 수정", ek:"repair", lv:2, mode:"both", llm:1, chk:(q)=>q.llm.has("qCheckUnd") },
     { id:"qFiller",    el:"의사소통 전략", ek:"strategy", lv:1, mode:"both", llm:1, chk:(q)=>q.llm.has("qFiller") },
-    { id:"qCloseTopic",el:"화제 관리", ek:"topic",      lv:2, mode:"rp",   llm:1, chk:(q)=>q.llm.has("qCloseTopic") },
+    { id:"qCloseTopic",el:"화제 관리", ek:"topic",      lv:2, mode:"both",   llm:1, chk:(q)=>q.llm.has("qCloseTopic") },
     { id:"qInitiate",  el:"대화이동 관리", ek:"move",  lv:1, mode:"rp",   llm:1, chk:(q)=>q.llm.has("qInitiate") },
     { id:"qCounter",   el:"대화이동 관리", ek:"move",  lv:2, mode:"rp",   llm:1, chk:(q)=>q.llm.has("qCounter") },
+    /* ★ v160 — 잡담의 대화이동 둘. move 넛지 여섯이 전부 용건·협상이라
+       자유 대화에서는 쓸 자리가 없었다. 의견이 잡담의 시작·반응 대화이동이다. */
+    { id:"qOpinion",   el:"대화이동 관리", ek:"move",  lv:1, mode:"free", llm:1, chk:(q)=>q.llm.has("qOpinion") },
+    { id:"qDiffer",    el:"대화이동 관리", ek:"move",  lv:2, mode:"free", llm:1, chk:(q)=>q.llm.has("qDiffer") },
     { id:"qShiftTopic",el:"화제 관리", ek:"topic",     lv:1, mode:"both", llm:1, chk:(q)=>q.llm.has("qShiftTopic") },
     { id:"qAskSlow",  el:"의사소통 단절 수정", ek:"repair", lv:1, mode:"both", llm:1, chk:(q)=>q.llm.has("qAskSlow") },
     { id:"qAskAgain", el:"의사소통 단절 수정", ek:"repair", lv:1, mode:"both", llm:1, chk:(q)=>q.llm.has("qAskAgain") },
@@ -8598,7 +8626,8 @@
        아래로 내려오는 처리가 돌고, 아니면 낱말부터 듣는 상향식으로 떨어진다. */
     /* 요소마다 어떤 문형이 있는가 — QUEST_LLM 의 el 을 그대로 뒤집은 표(v129) */
     const QUEST_BY_EL = {
-        move:       ["qRefuse", "qAlt", "qCond", "qHold", "qInitiate", "qCounter"],
+        move:       ["qRefuse", "qAlt", "qCond", "qHold", "qInitiate", "qCounter",
+                     "qOpinion", "qDiffer"],
         topic:      ["qReturn", "qNewTopic", "qExpand", "qCloseTopic", "qShiftTopic"],
         turn:       ["qEndTurn", "qTakeTurn", "qKeepTurn"],
         repair:     ["qSelfFix", "qRephrase", "qCheckUnd", "qAskSlow", "qAskAgain", "qAskEasy", "qAskFast"],
@@ -10316,6 +10345,9 @@
         qTakeTurn:  ["아, 잠시만요 · 저, 잠깐만요", "아, 잠깐만요 · 잠깐만요, 그런데요", "아, 잠깐만 · 근데 있잖아"],
         qKeepTurn:  ["그리고요 · 왜냐하면요 · 제 말 좀 더 하면요", "그리고요 · 왜냐하면요 · 아직 할 말이 있어요", "그리고 · 왜냐하면 · 내 말 아직 안 끝났어"],
         qCheckUnd:  ["제 말 이해되셨습니까? · 제 말이 맞습니까?", "제 말 아시겠어요? · 이해되셨어요?", "내 말 알겠어? · 무슨 말인지 알지?"],
+        /* ★ v160 — 잡담의 대화이동. 화계 셋(합쇼체·해요체·해체) 차례로. */
+        qOpinion:   ["저는 이렇게 생각합니다 · 제 생각에는 말입니다", "저는 이렇게 생각해요 · 제 생각에는요", "나는 이렇게 생각해 · 내 생각에는"],
+        qDiffer:    ["저는 좀 다르게 생각합니다 · 저는 오히려 ~라고 봅니다", "저는 좀 다르게 생각해요 · 저는 오히려요", "나는 좀 다른데 · 나는 오히려"],
         qAskSlow:   ["천천히 말씀해 주시겠습니까?", "천천히 말해 주세요 · 조금만 천천히요", "천천히 말해 줘 · 좀 천천히"],
         qAskAgain:  ["다시 말씀해 주시겠습니까? · 뭐라고 하셨습니까?", "다시 한 번 말해 주세요 · 네? 뭐라고요?", "다시 말해 줘 · 응? 뭐라고?"],
         qAskEasy:   ["쉽게 말씀해 주시겠습니까?", "쉽게 말해 주세요 · 좀 더 쉽게요", "쉽게 말해 줘 · 쉽게 좀"],
@@ -10496,6 +10528,9 @@
        **안 읽고 누른다** — 그러면 「읽었다」가 거짓이 된다.
        읽을 사람이 읽을 자리(설정 → 동의서 받기)로 옮겼다. */
     const CONSENT_VER = "1.1";
+    /* ★ v160 — 이 버전들에 동의한 사람은 지금 버전에 동의한 것으로 본다.
+       빈 배열이면 버전이 바뀔 때마다 다시 받는다(v159까지의 동작). */
+    const CONSENT_CARRY = ["1.0"];
     const CN_MSG = {
         ko: { t:"녹음 안내", lead:"호아랑과 나눈 대화는 녹음되어 저장됩니다.",
               q:"왜 녹음합니까?",
@@ -10636,8 +10671,25 @@
         get at()  { return lsGet("consent.at"); },
         get on()  { return lsGet("consent.on") !== "0"; },      // 없으면 켜짐으로 본다
         get offAt(){ return lsGet("consent.offAt"); },
-        /* 이 버전에 동의했는가. 문안을 고쳐 버전을 올리면 **다시 받는다.** */
-        get ok()  { return this.ver === CONSENT_VER && !!this.at; },
+        /* ★ v160 — 챗봇을 고칠 때마다 학습자가 동의서를 다시 받게 하지 않는다.
+           v159까지는 문안 버전이 다르면 무조건 다시 받았다. 그런데 챗봇은 자주 고쳐지고,
+           그때마다 수업 시간에 스무 명이 동의 화면부터 다시 눌러야 했다.
+
+           ★ 그렇다고 아무 때나 승계하면 안 된다. **동의의 뜻이 넓어지는 변경**은
+             다시 받아야 한다(연구 범위 확대·수집 항목 추가 따위).
+             그래서 「이 버전에 동의한 사람은 새 버전에 동의한 것으로 본다」를
+             **손으로 적어 둔 목록**으로만 승계한다. 적지 않으면 저절로 다시 받는다.
+
+           지금 승계하는 것 — 1.0 → 1.1
+             1.1에서 바뀐 것은 ㄱ) 「4. 돈」 항목 삭제 ㄴ) 문체를 정식 동의서로
+             ㄷ) 「중앙대학교 한국어교육학 연구」 → 「한국어교육학 연구」.
+             앞의 둘은 뜻이 그대로다. ㄷ)은 범위가 넓어지는 변경이라 본래 다시 받는 것이
+             옳으나, 저자가 이미 대면 수업에서 연구 목적을 설명하고 동의를 받았으므로
+             화면에서 또 받지 않는다. **이 판단은 저자의 것이며 여기 적어 둔다.** */
+        get ok()  {
+            if (!this.at) return false;
+            return this.ver === CONSENT_VER || CONSENT_CARRY.indexOf(this.ver) >= 0;
+        },
         agree() {
             lsPut("consent.ver", CONSENT_VER);
             lsPut("consent.at", new Date().toISOString());

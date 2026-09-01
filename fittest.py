@@ -10,6 +10,7 @@ s = io.open(SRC, encoding="utf-8").read()
 QUEST_LLM = eval(re.search(r"QUEST_LLM = (\[.*?\n\])", s, re.S).group(1))
 INTV_ANYTIME = eval(re.search(r"INTV_ANYTIME = (\[[^\]]*\])", s).group(1))
 IDC_LEVEL_MODEL = int(re.search(r"IDC_LEVEL_MODEL\s*=\s*(\d+)", s).group(1))
+TASK_ONLY_IDS = eval(re.search(r"TASK_ONLY = (\{[^}]*\})", s).group(1))
 IDC_LEVEL_SOLO  = int(re.search(r"IDC_LEVEL_SOLO\s*=\s*(\d+)", s).group(1))
 
 # ★ v119부터 _fit_intervention 은 _stage_phase(대화의 자리)를 본다. 함께 떼어 온다.
@@ -25,20 +26,26 @@ src = ("def make(convo, idc_state, rp_progress, scaf_level, rp_plan=None, focus_
        + textwrap.indent(body, "")
        + "\n    _user_turns = lambda: len([m for m in convo if m['role'] == 'user'])"
        + "\n    return _fit_intervention()\n")
+CHAT_MOVE_IDS = eval(re.search(r"CHAT_MOVE = (\{[^}]*\})", s).group(1))
 g = dict(re=re, QUEST_LLM=QUEST_LLM, INTV_ANYTIME=INTV_ANYTIME, PHASE_BAN=PHASE_BAN,
-         INTV_EXCLUDE=INTV_EXCLUDE,
+         INTV_EXCLUDE=INTV_EXCLUDE, TASK_ONLY=TASK_ONLY_IDS, CHAT_MOVE=CHAT_MOVE_IDS,
          IDC_LEVEL_MODEL=IDC_LEVEL_MODEL, IDC_LEVEL_SOLO=IDC_LEVEL_SOLO)
 exec(src, g)
 make = g["make"]
 
 def st(): return {"intv_ids": set(), "levels": {}, "counts": {}}
 def rp(): return {"quests": set()}
-def run(ai, mes, scaf=2, state=None, prog=None):
+def run(ai, mes, scaf=2, state=None, prog=None, task=False):
+    """task=True 면 목적 대화(계획 있음). ★ v160 — 용건·협상 넛지는 여기서만 나온다."""
     convo = []
     for m in mes[:-1] if mes else []:
         convo.append({"role": "user", "text": m})
     if ai: convo.append({"role": "ai", "text": ai})
     if mes: convo.append({"role": "user", "text": mes[-1]})
+    if task:
+        return make(convo, state or st(),
+                    prog or {"quests": set(), "total": 4, "done": {0}, "percent": 25},
+                    scaf, {"stages": [{}] * 4})
     return make(convo, state or st(), prog or rp(), scaf)
 
 bad = 0
@@ -48,37 +55,40 @@ def ok(t, c, extra=""):
     if not c: bad += 1
 
 print("── ① 상황마다 다른 것이 나오는가 ──")
+# ★ v160 — 다섯째 칸 = 목적 대화인가. 용건·협상은 목적 대화의 것이므로
+#   그 자리는 계획이 있는 대화로 돌려야 한다. 잡담에서는 나오지 않는 것이 맞다.
 CASES = [
- ("아직 아무 말도 없다",        "",  [],                                     {"qInitiate"}),
+ ("아직 아무 말도 없다(목적)",  "",  [],                                     {"qInitiate"}, True),
+ ("아직 아무 말도 없다(잡담)",  "",  [],                                     {"qOpinion"}, False),
  # ※ 원래 여기 쓰던 예문에 「환불은 어렵습니다」가 들어 있었다. 그건 **거절**이라
  #    「그래도 한 번만 부탁드려요」가 나오는 것이 맞다. 거절이 안 섞인 긴 문장으로 바꿨다.
  ("한꺼번에 아주 길게 말했다",
   "저희 가게는 평일에는 열 시부터 아홉 시까지 열고, 주말에는 여덟 시까지만 엽니다. "
   "그리고 매달 둘째 넷째 월요일은 정기 휴무라서 그날은 문을 닫습니다. 참고해 주세요.",
-  ["네"],                                                                    {"qAskSlow","qParaphrase","qAskAgain","qCheckUnd"}),
- ("상대가 거절했다",            "죄송하지만 그건 좀 어렵습니다.", ["아…"],      {"qHold","qAlt","qCond"}),
+  ["네"],                                                                    {"qAskSlow","qParaphrase","qAskAgain","qCheckUnd"}, False),
+ ("상대가 거절했다",            "죄송하지만 그건 좀 어렵습니다.", ["아…"],      {"qHold","qAlt","qCond"}, True),
  # ※ 「환불규정을 확인해 주세요」는 어려운 말이면서 **부탁**이기도 하다.
  #    표지가 겹치면 더 또렷한 쪽(부탁)이 이긴다 — 그게 맞다. 그래서 부탁이 아닌 문장으로 본다.
- ("어려운 말이 나왔다",          "그건 환불규정에 따라 처리됩니다.", ["아"],   {"qAskEasy","qAskAgain","qParaphrase"}),
- ("어려운 말 + 부탁 → 부탁이 이긴다", "환불규정을 먼저 확인해 주세요.", ["아"], {"qRefuse","qAlt","qCond","qCounter"}),
- ("감정이 실렸다",              "요즘 일이 많아서 좀 힘들어요.", ["그래요"],  {"qEmpathy","qContinuer"}),
- ("이야기를 하고 멈췄다",        "어제 친구를 만나서 같이 밥을 먹었어요.", ["네"], {"qContinuer","qEmpathy","qEcho"}),
- ("물었는데 짧게만 답한다",      "주말에 뭐 했어요?", ["네", "응"],           {"qKeepTurn","qExpand","qFiller"}),
+ ("어려운 말이 나왔다",          "그건 환불규정에 따라 처리됩니다.", ["아"],   {"qAskEasy","qAskAgain","qParaphrase"}, False),
+ ("어려운 말 + 부탁 → 부탁이 이긴다", "환불규정을 먼저 확인해 주세요.", ["아"], {"qRefuse","qAlt","qCond","qCounter"}, True),
+ ("감정이 실렸다",              "요즘 일이 많아서 좀 힘들어요.", ["그래요"],  {"qEmpathy","qContinuer"}, False),
+ ("이야기를 하고 멈췄다",        "어제 친구를 만나서 같이 밥을 먹었어요.", ["네"], {"qContinuer","qEmpathy","qEcho"}, False),
+ ("물었는데 짧게만 답한다",      "주말에 뭐 했어요?", ["네", "응"],           {"qKeepTurn","qExpand","qFiller"}, False),
  ("내가 길게 말했다",           "그렇군요.",
-  ["저는 지난 주말에 친구들이랑 같이 한강에 가서 자전거를 타고 저녁까지 놀다 왔어요"],  {"qCheckUnd","qEndTurn"}),
+  ["저는 지난 주말에 친구들이랑 같이 한강에 가서 자전거를 타고 저녁까지 놀다 왔어요"],  {"qCheckUnd","qEndTurn"}, False),
  # ※ 예전에는 「내가 물었다」에 qHold(다시 청하기)를 붙여 놨었다. 잘못이었다 —
  #    다시 청하기는 **상대가 거절한 자리**에서만 말이 된다. 바로 위 항목이 그 자리다.
  #    내가 그냥 물은 자리는 특별할 것이 없으므로 아래층(아무 때나 되는 것)으로 간다.
- ("내가 물었다 (특별한 자리 아님)", "네, 맞아요.", ["이거 얼마예요?"],          {"qExpand","qNewTopic","qEndTurn","qTakeTurn","qEcho","qKeepTurn"}),
- ("여덟 차례를 넘겼다",          "그렇군요.", ["네"]*8,                        {"qCloseTopic","qShiftTopic","qReturn","qNewTopic","qCircum","qNative","qFiller"}),
+ ("내가 물었다 (특별한 자리 아님)", "네, 맞아요.", ["이거 얼마예요?"],          {"qExpand","qNewTopic","qEndTurn","qTakeTurn","qEcho","qKeepTurn"}, False),
+ ("여덟 차례를 넘겼다",          "그렇군요.", ["네"]*8,                        {"qCloseTopic","qShiftTopic","qReturn","qNewTopic","qCircum","qNative","qFiller"}, False),
  # v114에서 새로 연 자리 — 여기가 아니면 말이 안 되는 것들
- ("무언가를 청해 왔다",          "같이 저녁 먹으러 갈까요?", ["음"],            {"qRefuse","qAlt","qCond","qCounter"}),
- ("마침표 붙은 부탁",            "이거 좀 도와주세요.", ["아"],                {"qRefuse","qAlt","qCond","qCounter"}),
- ("상대가 되물었다",             "네?", ["제가 아까 말한 그거요"],             {"qRephrase","qCircum","qSelfFix"}),
- ("무슨 뜻이냐고 한다",          "무슨 뜻이에요?", ["그러니까요"],             {"qRephrase","qCircum","qSelfFix"}),
+ ("무언가를 청해 왔다",          "같이 저녁 먹으러 갈까요?", ["음"],            {"qRefuse","qAlt","qCond","qCounter"}, True),
+ ("마침표 붙은 부탁",            "이거 좀 도와주세요.", ["아"],                {"qRefuse","qAlt","qCond","qCounter"}, True),
+ ("상대가 되물었다",             "네?", ["제가 아까 말한 그거요"],             {"qRephrase","qCircum","qSelfFix"}, False),
+ ("무슨 뜻이냐고 한다",          "무슨 뜻이에요?", ["그러니까요"],             {"qRephrase","qCircum","qSelfFix"}, False),
 ]
-for name, ai, mes, expect in CASES:
-    got = run(ai, mes)
+for name, ai, mes, expect, _task in CASES:
+    got = run(ai, mes, task=_task)
     ok(name.ljust(22) + "→ " + (got or "(없음)"), got in expect, "" if got in expect else "기대: " + "/".join(sorted(expect)))
 
 print("\n── ② 22개가 되살아났는가 (v113에서는 6개뿐) ──")
@@ -89,27 +99,36 @@ POOL = [c[1:3] for c in CASES] + [
   ("네, 그럼 언제 오실 수 있으세요?", ["음"]),
   ("정말요? 그거 진짜 다행이네요!", ["네 다행이에요"]),
   ("예약확인서를 보여 주시겠어요?", ["네?"]),
+  # ★ v160 — 상대가 의견을 말한 자리. 잡담의 대화이동(의견·이견)이 여기서 돈다.
+  ("나는 겨울이 제일 좋은 것 같아.", ["아 그래요?"]),
 ]
 # 「상대가 거듭 짧게만 답한다」는 한 번으로는 안 걸린다 — 발화가 둘 필요하다
 SHORT2 = [{"role":"ai","text":"음."},{"role":"user","text":"네"},
           {"role":"ai","text":"네."},{"role":"user","text":"알겠어요"}]
+# ★ v160 — 갈래 둘 다 훑는다. 용건·협상은 목적 대화에서만, 의견은 잡담에서만 돈다.
 for ai, mes in POOL:
     for scaf in (2, 3):
-        state, prog = st(), rp()
+      for _task in (False, True):
+        state = st()
+        prog = ({"quests": set(), "total": 4, "done": {0}, "percent": 25} if _task else rp())
+        plan = ({"stages": [{}] * 4} if _task else None)
         for _ in range(12):                       # 같은 자리에서 계속 뽑으면 다음 것으로 넘어간다
             q = make([{"role":"user","text":m} for m in mes[:-1]]
                      + ([{"role":"ai","text":ai}] if ai else [])
                      + ([{"role":"user","text":mes[-1]}] if mes else []),
-                     state, prog, scaf)
+                     state, prog, scaf, plan)
             if not q: break
             seen.add(q); state["intv_ids"].add(q)
             el = next((x["el"] for x in QUEST_LLM if x["id"] == q), "")
             state["counts"][el] = state["counts"].get(el, 0) + 1
 # 발화가 둘 이상 쌓인 대화도 한 번 훑는다
 for scaf in (2, 3):
+  for _task in (False, True):
     state = st()
+    prog = ({"quests": set(), "total": 4, "done": {0}, "percent": 25} if _task else rp())
+    plan = ({"stages": [{}] * 4} if _task else None)
     for _ in range(14):
-        q = make(SHORT2, state, rp(), scaf)
+        q = make(SHORT2, state, prog, scaf, plan)
         if not q: break
         seen.add(q); state["intv_ids"].add(q)
         el = next((x["el"] for x in QUEST_LLM if x["id"] == q), "")
@@ -173,6 +192,38 @@ ok("안 고르면 지금까지와 같다", isinstance(_base, str) and len(_base)
 _none = make([{"role":"ai","text":_ai},{"role":"user","text":_me[-1]}],
              st(), rp(), 2, None, frozenset())
 ok("빈 목표는 아무 영향이 없다", _none == _base, f"{_none} / {_base}")
+
+
+print("\n── ⑥ 갈래가 넛지를 가르는가 (v160) ──")
+# 사용자가 겪은 그 자리 — 잡담에서 「무슨 과목이 어렵냐」 물음에 답한 뒤
+_ai = "수학이 제일 어려운 것 같아. 라흐만은?"
+_chat = make([{"role":"ai","text":_ai},{"role":"user","text":"저는 한국어요."}],
+             st(), rp(), 2, None)                     # rp_plan 없음 = 잡담
+_task = make([{"role":"ai","text":_ai},{"role":"user","text":"저는 한국어요."}],
+             st(), {"quests":set(),"total":4,"done":{0},"percent":25}, 2,
+             {"stages":[{}]*4})                        # rp_plan 있음 = 목적 대화
+ok("잡담에서 「용건」 넛지가 안 나온다 (%s)" % _chat, _chat not in TASK_ONLY_IDS,
+   "「무슨 과목이 어려워?」에 「용건을 말해 보세요!」가 뜨면 학습자가 쓸 수 없다")
+ok("목적 대화에서는 나올 수 있다 (%s)" % _task, isinstance(_task, str) and len(_task) > 0)
+
+# 잡담에서 여섯을 하나씩 강제로 골라 보려 해도 안 나와야 한다
+_bad = []
+for q in TASK_ONLY_IDS:
+    for _case in [("뭐 좀 도와주세요.", ["네?"]), ("주말에 뭐 했어요?", ["집에 있었어요"]),
+                  ("그건 좀 어렵겠는데요.", ["아 그래요?"]), ("커피 한잔 하실래요?", ["음"])]:
+        got = run(_case[0], _case[1])
+        if got == q: _bad.append((q, _case[0]))
+ok("어느 자리에서도 잡담에 용건이 안 새어 나온다", not _bad, _bad[:3])
+
+# 잡담에 대화이동 넛지가 아예 없으면 안 된다 — 의견 둘이 그 자리를 맡는다
+_moves = set()
+for _case in [("나는 겨울이 제일 좋아. 눈이 오잖아.", ["아 그래요?"]),
+              ("이 영화 진짜 재미있는 것 같아.", ["음 그렇군요"]),
+              ("한국 음식은 매운 편이야.", ["네"])]:
+    g = run(_case[0], _case[1])
+    if g in ("qOpinion", "qDiffer"): _moves.add(g)
+ok("잡담에도 대화이동 넛지가 있다 (%s)" % (sorted(_moves) or "없음"), bool(_moves),
+   "move 여섯이 다 용건·협상이면 잡담에서 이 요소를 못 기른다")
 
 print("\n" + ("💥 %d건" % bad if bad else "🎉 넛지 고르기 이상 없음"))
 sys.exit(1 if bad else 0)

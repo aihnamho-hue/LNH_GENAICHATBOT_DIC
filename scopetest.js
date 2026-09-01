@@ -111,6 +111,48 @@ ok("기록에도 남는다", /focus: \(mode === "rp" \? \[\] : freeFocus\.slice\
      codes.every((c) => has.has(c)), "빠진 언어: " + JSON.stringify(codes.filter((c) => !has.has(c))));
 }
 
+console.log("\n── ⑤ v160 — 갈래 · 화계 · 동의 승계 · 화면 ─────");
+ok("잡담에는 용건·협상을 안 낸다",
+   /TASK_ONLY = \{"qInitiate", "qCounter", "qRefuse", "qAlt", "qCond", "qHold"\}/.test(py));
+ok("서버가 갈래를 본다", /is_task = bool\(rp_plan\)/.test(py)
+   && /if not is_task and qid in TASK_ONLY:/.test(py));
+ok("목적 대화에는 잡담용을 안 낸다", /if is_task and qid in CHAT_MOVE:/.test(py));
+ok("잡담용 대화이동 둘을 만들었다",
+   /"id": "qOpinion"/.test(py) && /"id": "qDiffer"/.test(py),
+   "move 여섯이 다 용건·협상이면 잡담에서 이 요소를 못 기른다");
+ok("의견 자리 표지를 만들었다", /buckets\.append\(\["qOpinion", "qDiffer", "qExpand"\]\)/.test(py));
+ok("물어봤을 때 갈래로 갈린다",
+   /"qCounter" if is_task else "qOpinion"/.test(py),
+   "「무슨 과목이 어려워?」에 「용건을 말해 보세요!」가 뜨던 자리");
+ok("화면 목록도 갈래를 안다",
+   /id:"qOpinion",[\s\S]{0,90}mode:"free"/.test(html)
+   && /id:"qDiffer",[\s\S]{0,90}mode:"free"/.test(html));
+{
+  const codes = [...new Set([...html.matchAll(/data-lang="([a-z]{2})"/g)].map((x) => x[1]))];
+  const n = (html.match(/qOpinion:"/g) || []).length;
+  ok(`잡담 넛지 문구가 지원 언어 전부에 (${n}/${codes.length})`, n === codes.length);
+}
+ok("문형도 있다", /qOpinion:\s*\["저는 이렇게 생각합니다/.test(html));
+
+ok("화계는 명시적으로 고쳐 준다",
+   /화계만은 명시적으로 고쳐 준다/.test(py) && /다시 말할 기회를 준다/.test(py),
+   "화계는 학습자가 스스로 정한 조건이고 「맥락·정체성 인식」 그 자체다");
+ok("화계 교정도 두세 번까지만", /한 대화에서 \*\*두세 번까지만\.\*\*/.test(py));
+ok("감탄사는 안 잡는다", /감탄사·혼잣말[\s\S]{0,40}잡지 마라/.test(py));
+ok("배역을 깨지 않는다", /배역을 깨지 말고/.test(py));
+
+ok("동의를 매 판마다 다시 안 받는다", /const CONSENT_CARRY = \["1\.0"\]/.test(html));
+ok("승계는 손으로 적은 것만", /CONSENT_CARRY\.indexOf\(this\.ver\) >= 0/.test(html),
+   "적지 않으면 저절로 다시 받는다 — 뜻이 넓어지는 변경은 다시 받아야 한다");
+ok("기록에는 실제 동의한 버전이 남는다", /ver: this\.ver/.test(html),
+   "1.0 에 동의한 사람은 1.0 으로 남아야 정직하다");
+
+ok("폰에서 대화 화면이 한 화면에 든다",
+   /body\[data-screen="chat"\] \{ height: 100vh; height: 100dvh/.test(html));
+ok("채팅 안쪽 스크롤은 그대로", /body\[data-screen="chat"\] \.chat-panel \{ min-height: 0/.test(html));
+ok("시작·종료 단추는 붙박이", /\.character-panel \.main-controls \{ flex: 0 0 auto; margin-top: auto/.test(html),
+   "그것까지 스크롤해서 찾아야 하면 대화를 못 끝낸다");
+
 console.log("\n── ④ 실제로 눌러 본다 ──────────────────────────");
 const dom = new JSDOM(html, {
   runScripts: "dangerously", pretendToBeVisual: true, url: "http://localhost/",

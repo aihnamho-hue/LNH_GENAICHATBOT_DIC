@@ -288,14 +288,20 @@ for _i, _l in enumerate(_lines):
         if not _guarded(_i): _bad.append(_i + 1)
 ok("자유대화", "rp_plan 을 무방비로 꺼내는 코드 없음", not _bad, _bad)
 ok("자유대화", "진행률 payload 가 계획 없어도 안전", "rp_plan[\"stages\"] if rp_plan else []" in PY)
-ok("자유대화", "넛지 고르기 함수들이 rp_plan 을 안 본다",
-   all("rp_plan" not in grab(rf'^    (?:async )?def {f}\(.*?(?=^    (?:async )?def |\Z)')
+# ★ v160 — 넛지 고르기가 **갈래를 보게** 되었다(잡담에 용건을 안 내려고).
+#   막으려던 것은 「이름을 쓰는 것」이 아니라 **계획이 없는데 꺼내 쓰다 터지는 것**이다.
+#   `bool(rp_plan)` 은 안전하다. 자리를 꺼내 쓰는 것(rp_plan[...])만 막는다.
+ok("자유대화", "넛지 고르기가 계획을 무방비로 꺼내지 않는다",
+   all(not re.search(r'rp_plan\[', grab(rf'^    (?:async )?def {f}\(.*?(?=^    (?:async )?def |\Z)'))
        for f in ("_fit_intervention", "_intv_overdue", "pick_anytime_intervention",
                  "send_teach_intervention")))
+ok("자유대화", "넛지 고르기가 갈래를 본다", "is_task = bool(rp_plan)" in PY)
 
 print("\n════════ ⑭ 맥락 판정을 실제로 돌려 본다 ════════")
 _src = re.search(r'    def _stage_phase\(\).*?(?=\n    def _intv_overdue)', PY, re.S).group(0)
 _src = "\n".join(l[4:] if l.startswith("    ") else l for l in _src.split("\n"))
+_TASK_ONLY = eval(re.search(r"TASK_ONLY = (\{[^}]*\})", PY).group(1))
+_CHAT_MOVE = eval(re.search(r"CHAT_MOVE = (\{[^}]*\})", PY).group(1))
 _QL = [{"id": m.group(1), "el": m.group(2)}
        for m in re.finditer(r'\{"id":\s*"(\w+)",\s*"el":\s*"(\w+)"', PY)]
 exec(re.search(r"^PHASE_BAN = \{[\s\S]*?^\}", PY, re.M).group(0), globals())
@@ -318,9 +324,11 @@ def _fit(last_ai, turns, done=(), stages=0, stages_done=0, percent=0):
            #   이 검사가 재는 것은 「맥락이 넛지 자리를 좁히는가」이므로,
            #   목표를 안 고른 학습자의 자리에서 보아야 한다.
            "focus_els": frozenset(),
+           # ★ v160 — 갈래별 넛지 가르기
+           "TASK_ONLY": _TASK_ONLY, "CHAT_MOVE": _CHAT_MOVE,
            "IDC_LEVEL_MODEL": 3, "IDC_LEVEL_SOLO": 1}
     exec(_src, _ns); return _ns["_fit_intervention"]()
-for label, ai, turns, want in [
+for _row in [
     ("물어봤는데 짧게만 답한다", "주말에 뭐 했어요?", ["네", "그냥요"], ("qKeepTurn", "qExpand")),
     # ★ 이 대사는 '길기만 한 말'이 아니라 **지난 일 이야기**다(-었어요 + 묻지 않음).
     #   그러면 「천천히 말해 주세요」가 아니라 「그래서요?」·공감이 맞다.
@@ -329,10 +337,16 @@ for label, ai, turns, want in [
     # 이야기가 아니라 **설명**이 길게 쏟아진 자리 — 여기가 「천천히」의 자리다
     ("설명이 한꺼번에 길게 왔다", "환불 규정은 구입일로부터 칠 일 이내이고 영수증과 포장이 그대로 있어야 하며 온라인 주문은 절차가 조금 다릅니다", ["아 네"], ("qAskSlow", "qParaphrase", "qAskAgain", "qCheckUnd", "qAskEasy")),
     ("물어봤고 길게 답했다", "주말에 뭐 했어요?", ["저는 친구를 만나서 같이 밥을 먹고 영화를 봤어요"], ("qEndTurn", "qExpand")),
-    ("상대가 말을 맺었다", "저는 곶감을 제일 좋아해요.", ["아 네 저도요 저는 떡볶이도 좋아해요"], ("qExpand", "qNewTopic", "qEndTurn")),
-    ("대화가 아직 없다", "", [], ("qInitiate",)),   # 먼저 말을 걸 자리다
+    # ★ v160 — 「저는 곶감을 제일 좋아해요」는 **의견**이다. 여기서 「내 생각도 말해 보세요」가
+#   나오는 것도 맞다(잡담의 시작 대화이동). 기대값에 넣는다.
+("상대가 말을 맺었다", "저는 곶감을 제일 좋아해요.", ["아 네 저도요 저는 떡볶이도 좋아해요"], ("qExpand", "qNewTopic", "qEndTurn", "qOpinion")),
+    # ★ v160 — 잡담에서는 「용건」이 아니라 「내 생각」이 먼저다(TASK_ONLY).
+    ("대화가 아직 없다(잡담)", "", [], ("qOpinion",)),
+    ("대화가 아직 없다(목적)", "", [], ("qInitiate",), 4),
 ]:
-    g = _fit(ai, turns)
+    label, ai, turns, want = _row[:4]
+    _st = _row[4] if len(_row) > 4 else 0      # ★ v160 — 다섯째 칸 = 기능 단계 수(목적 대화)
+    g = _fit(ai, turns, stages=_st)
     ok("맥락", f"{label:22} → {g or '(없음)'}", g in want, g)
 
 print("\n──── ⑤ 청하는 말과 묻는 말을 가르는가 (v119) ────")
@@ -362,9 +376,14 @@ _open = [_fit("안녕하세요, 어떻게 오셨어요?", ["안녕하십니까"]
 ok("자리", f"시작에서 협상·화제 접기가 안 나온다 {_open}",
    not (set(_open) & PHASE_BAN["open"]), _open)
 ok("자리", "전개에서는 막지 않는다", PHASE_BAN["mid"] == set())
-ok("자리", "자유 대화는 단계가 없으니 막지 않는다",
-   _fit("이거 좀 도와주세요.", ["음…"]) in {"qAlt", "qCond", "qRefuse", "qCounter"},
+# ★ v160 — 자유 대화는 단계가 없어 자리(phase)로는 안 막지만, **갈래로 막는다.**
+#   잡담에 용건·협상이 나오면 학습자가 쓸 수 없다.
+ok("자리", "자유 대화에는 용건·협상이 안 나온다",
+   _fit("이거 좀 도와주세요.", ["음…"]) not in {"qAlt", "qCond", "qRefuse", "qCounter", "qInitiate", "qCounter"},
    _fit("이거 좀 도와주세요.", ["음…"]))
+ok("자리", "목적 대화에서는 그 자리가 열린다",
+   _fit("이거 좀 도와주세요.", ["음…"], stages=4, stages_done=1) in {"qAlt", "qCond", "qRefuse", "qCounter"},
+   _fit("이거 좀 도와주세요.", ["음…"], stages=4, stages_done=1))
 
 _g1 = _fit("주말에 뭐 했어요?", ["네", "그냥요"])
 _g2 = _fit("주말에 뭐 했어요?", ["네", "그냥요"], done=(_g1,))
@@ -770,6 +789,8 @@ ok("페이딩", "접속 때 자율 개수를 로그로 남긴다", "자율 도�
 # 여덟 요소가 모두 자율일 때 넛지가 나가는가 — 실제로 돌려 본다
 _src = re.search(r'    def _stage_phase\(\).*?(?=\n    def _intv_overdue)', PY, re.S).group(0)
 _src = "\n".join(l[4:] if l.startswith("    ") else l for l in _src.split("\n"))
+_TASK_ONLY = eval(re.search(r"TASK_ONLY = (\{[^}]*\})", PY).group(1))
+_CHAT_MOVE = eval(re.search(r"CHAT_MOVE = (\{[^}]*\})", PY).group(1))
 _QL = [{"id": m.group(1), "el": m.group(2)}
        for m in re.finditer(r'\{"id":\s*"(\w+)",\s*"el":\s*"(\w+)"', PY)]
 _ALLSOLO = {e: 1 for e in {q["el"] for q in _QL}}      # 1 = 자율
@@ -779,7 +800,9 @@ def _fit_solo(scaf):
            "idc_state": {"intv_ids": set(), "levels": dict(_ALLSOLO)},
            "rp_progress": {"quests": set(), "total": 0, "done": set(), "percent": 0},
            "PHASE_BAN": PHASE_BAN, "INTV_EXCLUDE": INTV_EXCLUDE, "_user_turns": lambda: 1, "rp_plan": None,
-           "focus_els": frozenset(),        # ★ v158 — 목표를 안 고른 자리에서 본다
+           "focus_els": frozenset(),
+           # ★ v160 — 갈래별 넛지 가르기
+           "TASK_ONLY": _TASK_ONLY, "CHAT_MOVE": _CHAT_MOVE,        # ★ v158 — 목표를 안 고른 자리에서 본다
            "IDC_LEVEL_MODEL": 3, "IDC_LEVEL_SOLO": 1, "scaf_level": scaf}
     exec(_src, _ns); return _ns["_fit_intervention"]()
 ok("페이딩", "여덟 요소가 다 자율이어도 「많이」면 넛지가 나온다", bool(_fit_solo(3)), _fit_solo(3))

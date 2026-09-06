@@ -1,7 +1,14 @@
-// timetest.js — 한 판 10분 · 1분 전 알림 · 넛지 눌러 닫기 (v150)
+// timetest.js — 한 판 시간 제한 · 1분 전 알림 · 넛지 눌러 닫기 (v150, v162 개정)
+//
+// ★ v162 — 「10분」을 글자로 못 박고 있어서 15분으로 늘리자 이 검사가 깨졌다.
+//   옳은 변경에 검사가 깨지면 그건 검사가 틀린 것이다.
+//   → 상한 값을 app.html 에서 **읽어** 놓고, 그 값과의 **관계**를 잰다.
+//     · 알림은 상한보다 정확히 1분 이르다
+//     · 알림이 종료보다 앞선다
+//     · 상한은 사람이 쓸 만한 범위(5~30분) 안에 있다
 //
 // ★ 왜 이 검사가 있나
-//   50명 수업에서 두 학생이 한 대를 쓰며 질질 끌다 10분을 넘겼다.
+//   50명 수업에서 두 학생이 한 대를 쓰며 질질 끌다 시간을 넘겼다.
 //   비용은 판 수가 아니라 **말한 시간**이 정하므로 여기가 가장 곧은 손잡이다.
 //
 //   ★★ 가장 조심할 곳 — **끝내는 길이 하나여야 한다.**
@@ -24,7 +31,8 @@ const lim = parseInt((html.match(/const TALK_LIMIT_MS\s*=\s*([\d\s*]+);/) || [])
   ? eval((html.match(/const TALK_LIMIT_MS\s*=\s*([\d\s*]+);/) || [])[1]) : 0, 10);
 const warn = (html.match(/const TALK_WARN_MS\s*=\s*([\d\s*]+);/) || [])[1]
   ? eval((html.match(/const TALK_WARN_MS\s*=\s*([\d\s*]+);/) || [])[1]) : 0;
-ok(`한 판 상한이 10분 (${lim / 60000}분)`, lim === 600000);
+ok(`한 판 상한을 읽었다 (${lim / 60000}분)`, lim > 0);
+ok(`상한이 쓸 만한 범위 안 (5~30분)`, lim >= 5 * 60000 && lim <= 30 * 60000);
 ok(`알림이 1분 전 (${warn / 1000}초)`, warn === 60000);
 
 const clk = (html.match(/function talkClockStart\(\)[\s\S]*?\n    \}\n/) || [""])[0];
@@ -32,7 +40,7 @@ ok("먼저 옛 시계를 푼다", /talkClockStop\(\);/.test(clk),
    "안 풀면 시계가 겹쳐 두 번 끊긴다");
 
 // ★★ 끝내는 길이 하나인가 — 이 검사가 이 판의 핵심이다
-ok("10분에 「대화 종료하기」와 같은 함수를 부른다",
+ok("시간이 닿으면 「대화 종료하기」와 같은 함수를 부른다",
    /endRoleplaySession\(\)/.test(clk) && /endFreeSession\(\)/.test(clk),
    "따로 끊으면 결과·총평·기록이 날아간다");
 ok("두 갈래를 가른다", /rpSessionActive/.test(clk));
@@ -117,13 +125,15 @@ setTimeout(() => {
   try { w.eval("talkClockStart()"); } catch (e) { ok("talkClockStart 를 부를 수 있다", false, e.message); }
   w.setTimeout = realST;
   ok("두 개를 건다 (알림 · 종료)", delays.length === 2, JSON.stringify(delays));
-  ok("알림이 9분에 (" + (delays[0] / 60000) + "분)", delays[0] === 540000);
-  ok("종료가 10분에 (" + (delays[1] / 60000) + "분)", delays[1] === 600000);
+  // ★ 숫자를 못 박지 않는다 — 읽어 온 상한과의 **관계**만 본다.
+  ok("종료가 상한에 걸린다 (" + (delays[1] / 60000) + "분)", delays[1] === lim);
+  ok("알림이 상한보다 1분 이르다 (" + (delays[0] / 60000) + "분)", delays[0] === lim - warn);
+  ok("알림이 종료보다 먼저다", delays[0] < delays[1]);
 
   console.log();
   // jsdom 이 앱의 타이머를 물고 있어 그냥 두면 프로세스가 안 끝난다
   try { w.close(); } catch (e) {}
   if (fail) { console.log(`💥 실패 ${fail}건`); process.exit(1); }
-  console.log("🎉 한 판은 10분, 끝내는 길은 하나입니다");
+  console.log(`🎉 한 판은 ${lim / 60000}분, 끝내는 길은 하나입니다`);
   process.exit(0);
 }, 700);

@@ -2989,8 +2989,12 @@
     let transcriptLog = [];
     let sessionStartedAt = null;
 
-    /* ★★ v150 — 한 판은 10분까지.
-       50명 수업에서 두 학생이 한 대를 쓰며 질질 끌다 10분을 넘겼다.
+    /* ★★ v150 — 한 판은 정해진 시간까지. (v162 — 10분 → 15분)
+       50명 수업에서 두 학생이 한 대를 쓰며 질질 끌다 시간을 넘겼다.
+
+       ★ v162 — 10분은 짧았다. 수업에서 시연하다 10분에 끊겨 애를 먹었다.
+         자유 대화는 몰라도, 주제 대화는 기능 단계를 다 밟기 전에 시간이 닿는다.
+         15분으로 늘린다. 비용은 늘지만 대화가 끝까지 가는 편이 낫다.
        비용은 판 수가 아니라 **말한 시간**이 정한다 — 여기가 가장 곧은 손잡이다.
 
        교육적으로도 이편이 낫다. 대화를 못 끝내는 학습자는 끝낼 **까닭**이 없어서
@@ -2998,7 +3002,7 @@
 
        ★ 끊을 때 **학습자가 「대화 종료하기」를 누른 것과 똑같은 길**로 간다.
          따로 끊으면 결과·총평·기록이 다 날아간다(웹소켓을 먼저 닫으면 그렇다). */
-    const TALK_LIMIT_MS = 10 * 60 * 1000;   // 한 판 10분
+    const TALK_LIMIT_MS = 15 * 60 * 1000;   // ★ v162 — 한 판 15분 (v150~161 은 10분)
     const TALK_WARN_MS = 60 * 1000;         // 1분 남았을 때 알린다
     let talkWarnTimer = null, talkEndTimer = null;
 
@@ -3015,7 +3019,7 @@
             } catch (e) { console.warn("남은 시간 알림 실패:", e); }
         }, Math.max(0, TALK_LIMIT_MS - TALK_WARN_MS));
         talkEndTimer = setTimeout(() => {
-            /* 10분 — 학습자가 단추를 누른 것과 같은 길로 끝낸다.
+            /* 시간이 닿으면 — 학습자가 단추를 누른 것과 같은 길로 끝낸다.
                rpSessionActive 로 어느 갈래인지 가른다. */
             try { hamPeek(tlT("over"), 3200); } catch (e) {}
             try {
@@ -5949,7 +5953,7 @@
     function endFreeSession() {
         if (freeEnding) return;
         freeEnding = true;
-        talkClockStop();   // ★ v150 — 끝내는 중에 10분이 닿으면 두 번 끝난다
+        talkClockStop();   // ★ v150 — 끝내는 중에 시간이 닿으면 두 번 끝난다
         rpFinal = null;
         try {
             if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "end_session" }));
@@ -7766,7 +7770,7 @@
     function endRoleplaySession() {
         if (rpEnding) return;
         rpEnding = true;
-        talkClockStop();   // ★ v150 — 끝내는 중에 10분이 닿으면 두 번 끝난다
+        talkClockStop();   // ★ v150 — 끝내는 중에 시간이 닿으면 두 번 끝난다
         actionBtn.disabled = true;
         setFooterNote(t("rpScoring"), true);
         try {
@@ -10787,7 +10791,8 @@
         } catch (e) {}
     }
 
-    /* ★ v150 — 한 판 10분. 남은 시간을 알리는 말 (18개 언어) */
+    /* ★ v150 — 한 판 시간 제한. 남은 시간을 알리는 말 (18개 언어)
+       ★ 「1분 남았어요」라서 총 시간이 바뀌어도 이 글은 안 고쳐도 된다. */
     const TL_MSG = {
         ko: { warn:"1분 남았어요!", warnSub:"이제 인사하고 마무리해 보세요.", over:"시간이 다 됐어요. 잘했어요!" },
         en: { warn:"One minute left!", warnSub:"Time to say goodbye and wrap up.", over:"Time's up. Well done!" },
@@ -11277,7 +11282,7 @@
             LAST_PROMPTED = null;
             LAST_INTV = 0;
             sessionStartedAt = new Date();
-            talkClockStart();          // ★ v150 — 한 판 10분 시계를 건다
+            talkClockStart();          // ★ v150 — 한 판 시계를 건다 (v162: 15분)
             exportBtn.disabled = true;
             setControlsEnabled(true);
             try {

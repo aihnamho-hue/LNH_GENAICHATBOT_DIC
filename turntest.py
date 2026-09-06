@@ -75,6 +75,15 @@ finally:
     else:
         _os.environ["MAX_LEVEL"] = _saved
 
+print("\n[0] main.py 가 컴파일되는가")
+#   ★ 이 검사가 없어서 v162 작업 중 f-string 안 역슬래시로 파일이 통째로
+#     안 열리는 상태가 될 뻔했다. node --check 도 부분 exec 도 이걸 못 잡는다.
+try:
+    compile(SRC, "main.py", "exec")
+    T("main.py 전체가 컴파일된다", True)
+except SyntaxError as e:
+    T("main.py 전체가 컴파일된다", False, f"{e.lineno}줄: {e.msg}")
+
 print("\n[1] 자리표가 남아 있지 않은가")
 for lv, g in B.items():
     T(f"lv={lv}: 「{{한턴길이}}」 자리표가 갈아 끼워졌다",
@@ -133,6 +142,12 @@ for label, needle in (
     T(f"{label}: 숫자 대신 [한 턴 길이]로 가리킨다", needle in SRC)
 
 T("상황극 첫 발화도 같은 눈금을 쓴다", "{LV_TURN}. 그보다 길게 말하지 마라." in SRC)
+#   예외가 있다면 **선언되어 있어야** 한다. 말없이 어기는 자리가 있으면 그것이 새 눈금이다.
+T("화계 교정만 예외로 선언돼 있다",
+  "[한 턴 길이]의 **하나뿐인 예외**다" in SRC,
+  "화계 교정 ①②③은 한 턴 길이를 넘는다 — 선언 없이 넘으면 눈금이 다시 둘이 된다")
+T("초급이면 그 예외마저 두 마디로 줄인다",
+  '①을 접고 ②③만 한 번에 붙여라' in SRC)
 
 print("\n[8] main.py 전체에 떠도는 숫자 눈금이 없는가")
 stray = []
@@ -144,6 +159,49 @@ for i, line in enumerate(SRC.split("\n"), 1):
     if NUM.search(line):
         stray.append((i, line.strip()[:70]))
 T("정의 밖 어디에도 턴 길이 숫자가 없다", not stray, f"{stray}")
+
+print("\n[9] 화계 교정 블록이 실제로 렌더되는가 (f-string 안이라 컴파일만으로는 부족하다)")
+_i = SRC.index('    coord = f"""')
+_j = SRC.index('\n    sep = """', _i)
+COORD = "\n".join(l[4:] if l.startswith("    ") else l for l in SRC[_i:_j].split("\n"))
+
+
+def render_coord(lv, mine="banmal", yours="banmal"):
+    g = {"os": _os, "d": 75, "p": 50, "d_band": "친한", "p_band": "대등",
+         "mine": mine, "yours": yours,
+         "LV_KO": {"formal": "합쇼체", "polite": "해요체", "banmal": "해체(반말)"},
+         "LV_SHORT": {"formal": "합쇼체", "polite": "해요체", "banmal": "해체(반말)"},
+         "MAX_LEVEL": lv}
+    exec(COORD, g)
+    return g["coord"]
+
+
+for lv in (2, 3, 4):
+    try:
+        txt = render_coord(lv)
+        T(f"lv={lv}: 화계 블록이 렌더된다", True)
+        T(f"lv={lv}: 예외 선언이 들어 있다", "하나뿐인 예외" in txt)
+        T(f"lv={lv}: 초급 축약 줄은 2급에만", ("①을 접고" in txt) == (lv <= 2))
+    except Exception as e:
+        T(f"lv={lv}: 화계 블록이 렌더된다", False, f"{type(e).__name__}: {e}")
+
+print("\n[10] 구어 꼬리말 — 등급 밖이면 **선언**돼 있는가")
+#   지우는 것이 답이 아니었다. 「-거든」·「-잖아」는 입말에서 너무 흔해 남긴다.
+#   다만 말없이 남기면 그것이 두 번째 눈금이다. 선언돼 있어야 예외다.
+for lv, g in B.items():
+    sp = g["SPOKEN_RULES"]
+    low = (lv is None or lv <= 2)
+    T(f"lv={lv}: 덩어리 표현 등급이 값과 맞다",
+      ("초급 수준 안에서" in sp) == low,
+      "「중급 수준 안에서」가 초급 상한에 그대로 남아 있으면 지시가 싸운다")
+    if low:
+        T(f"lv={lv}: 「-거든」·「-잖아」는 남아 있다", "-거든" in sp and "-잖아" in sp)
+        T(f"lv={lv}: 목록 밖이라고 **선언**한다", "문법 목록(1·2급) **밖**이다" in sp)
+        T(f"lv={lv}: 한 턴에 하나로 막는다", "한 턴에 하나까지만" in sp)
+        T(f"lv={lv}: 나머지 3급 문형은 여전히 금지", "다른 3급 문형은 여전히 금지" in sp)
+        T(f"lv={lv}: 「-더라고요」(4급)는 뺐다", "더라고요" not in sp)
+    else:
+        T(f"lv={lv}: 중급이면 「-더라고요」까지 쓴다", "더라고요" in sp)
 
 print(f"\n{'=' * 52}\n  turntest — 통과 {ok} / 실패 {fail}\n{'=' * 52}")
 sys.exit(1 if fail else 0)

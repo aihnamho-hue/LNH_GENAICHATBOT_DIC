@@ -6,6 +6,8 @@ import time
 import datetime
 import re
 import hashlib
+import sys             # v164 — Live 연결 감싸개에서 예외를 넘길 때 쓴다
+import contextlib      # v164 — 같은 곳
 from html import escape as html_escape   # v152 — 동의서 쪽에 값을 안전하게 끼운다
 import shutil          # ★ v115 — 55행에서 쓰면서 import 가 없었다. 아래 각주 참조.
 from pathlib import Path
@@ -24,7 +26,7 @@ load_dotenv()
 
 # 배포 확인용 버전 — 화면 좌측 상태줄과 서버 로그에 표시됨 (버전 올릴 때 날짜도 갱신!)
 # ※ 변경 이력은 개발일지_CHANGELOG.md에 버전·날짜별로 기록할 것 (박사 논문 개발 기록용)
-APP_VERSION = "v162"
+APP_VERSION = "v164"
 APP_DATE = "2026-08-17"
 
 app = FastAPI()
@@ -2286,6 +2288,7 @@ _STT_DUP = re.compile(r"(?:\(안 들림\)\s*){2,}")
 _stt_dx = {"junk": 0, "blank": 0, "last": ""}
 
 
+
 def _stt_clean(text: str) -> str:
     """다 모인 글에서 잡음 표식을 「(안 들림)」으로 바꾼다."""
     if not text:
@@ -2316,6 +2319,98 @@ def _stt_blank(text: str) -> bool:
     """이 발화가 「안 들림」과 문장부호뿐인가 — 그렇다면 말한 것이 없다."""
     t = (text or "").replace(STT_UNHEARD, "")
     return not re.sub(r"[\s.,!?~…·\-]+", "", t)
+
+# ═══ 받아쓰기 언어 지정 (v164) ═══ START ═══════════════════════════════
+#   대화(Live)는 소리를 직접 듣고 알아듣는다. 그런데 말풍선의 글자는 **별도의 받아쓰기**다.
+#   지금까지 그 받아쓰기에 아무 설정이 없어 **어느 나라 말인지부터 스스로 추측**했다.
+#   억양이 강한 한국어(예: 중국어권 학습자)를 다른 말로 잘못 짚으면 글자가 엉망이 되고,
+#   그 글자를 분석 모델이 읽어 기능 단계·요소 판정·개입·총평을 정하며,
+#   연구용 전사 파일에도 그대로 남는다. 학습자는 「챗봇이 못 알아듣는다」고 느낀다.
+#
+#   그래서 「이 소리는 한국어다」라고 알려 준다(language_codes). 고치는 것은 그것뿐이다.
+#   ★ 받아쓰기 방식은 기본값(VERBATIM, 들린 대로)을 그대로 둔다.
+#     SMART 방식은 간투사·되풀이·자기 수정을 지우고 문법을 다듬는다 —
+#     「음… 어…」(시간 끌기)와 「아 아니, ~요」(자기 교정)가 기록에서 사라지고,
+#     학습자의 오류도 고쳐진 채 남는다. 연구 자료가 거짓말을 하게 되므로 쓰지 않는다.
+#
+#   ★ 안전장치 셋 — 사후평가 직전에 넣는 것이라 대화가 끊기면 안 된다
+#     ㄱ) 환경 변수 STT_LANG. 기본 ko-KR. off 로 두면 v163 과 똑같이 돈다.
+#     ㄴ) 서버에 깔린 SDK 가 이 칸을 모르면 조용히 예전 설정으로 간다.
+#     ㄷ) Gemini 가 연결 단계에서 이 설정을 거부하면 그것만 빼고 곧바로 다시 연결한다.
+#         (SDK 는 설정을 보낸 뒤 응답을 받아야 세션을 내어 주므로, 거부는 대화 본문에
+#          들어가기 **전에** 오류로 드러난다 — 그 자리에서 다시 붙이면 학습자는 모른다.)
+#   지금 상태는 /version 의 "stt" 칸에서 본다.
+_STT_LANG_ENV = (os.environ.get("STT_LANG", "ko-KR") or "").strip()
+STT_LANG = "" if _STT_LANG_ENV.lower() in ("", "off", "none", "0", "false", "no") else _STT_LANG_ENV
+_STT_SDK_OK = "language_codes" in getattr(types.AudioTranscriptionConfig, "model_fields", {})
+_stt_lang = {
+    "want": STT_LANG or "off",       # 무엇을 지정하려 하는가
+    "active": bool(STT_LANG) and _STT_SDK_OK,   # 실제로 지정하고 있는가
+    "sdk": _STT_SDK_OK,              # 서버의 SDK 가 이 칸을 아는가
+    "genai": getattr(genai, "__version__", "?"),   # 서버에 깔린 google-genai 판
+    "fallbacks": 0,                  # 거부되어 빼고 다시 연결한 횟수
+    "fail": "" if (_STT_SDK_OK or not STT_LANG) else "sdk: language_codes 칸이 없는 옛 SDK",
+    "seen": {},                      # 받아쓰기가 알려 준 언어 — 조각 수 (ko 가 대부분이어야 정상)
+}
+_STT_REJECT = re.compile(r"1007|1008|invalid|unknown name|not supported|unsupported|language",
+                         re.IGNORECASE)
+
+
+def _stt_tx_config():
+    """학습자 발화 받아쓰기 설정 → (설정, 한국어 지정 여부).
+    쓸 수 있으면 한국어를 지정하고, 아니면 v163 과 같은 빈 설정을 돌려준다."""
+    if _stt_lang["active"]:
+        try:
+            return types.AudioTranscriptionConfig(language_codes=[STT_LANG]), True
+        except Exception as e:                       # 만들다 실패하면 예전 그대로
+            _stt_lang["active"] = False
+            _stt_lang["fail"] = f"build: {type(e).__name__}: {e}"[:160]
+            print(f"[받아쓰기] 한국어 지정 설정을 만들지 못함 — 예전 설정으로: {e}")
+    return types.AudioTranscriptionConfig(), False
+
+
+def _stt_lang_seen(code) -> None:
+    """받아쓰기가 짚은 언어를 센다. 고친 뒤 ko 만 오르면 된 것이다."""
+    if not code:
+        return
+    k = str(code).split("-")[0].lower()[:8]
+    seen = _stt_lang["seen"]
+    if k in seen or len(seen) < 12:
+        seen[k] = seen.get(k, 0) + 1
+
+
+@contextlib.asynccontextmanager
+async def _live_connect(model_id, config, lang_on):
+    """Live 세션을 연다. 받아쓰기 언어 지정이 거부되면 **그것만 빼고** 한 번 더 연다.
+
+    빼고도 안 붙으면 설정 탓이 아니다 — 원래 오류를 그대로 올려 보내
+    지금까지와 똑같이 처리되게 한다(학습자에게 「연결 실패」)."""
+    cm = client.aio.live.connect(model=model_id, config=config)
+    try:
+        session = await cm.__aenter__()
+    except Exception as first:
+        if not lang_on:
+            raise
+        print(f"[받아쓰기] 한국어 지정으로 연결 실패 — 빼고 다시 연결: {type(first).__name__}: {first}")
+        plain = config.model_copy(update={"input_audio_transcription": types.AudioTranscriptionConfig()})
+        cm = client.aio.live.connect(model=model_id, config=plain)
+        session = await cm.__aenter__()          # 이것마저 실패하면 그대로 올라간다
+        _stt_lang["fallbacks"] += 1
+        _stt_lang["fail"] = f"{type(first).__name__}: {first}"[:160]
+        # 빼니까 붙었다 → 설정을 거부한 것으로 보고, 이 서버 프로세스에서는 다시 쓰지 않는다.
+        # (오류 글이 거부처럼 안 보이면 일시적 장애일 수 있으니 세 번까지는 기회를 준다)
+        if _STT_REJECT.search(str(first)) or _stt_lang["fallbacks"] >= 3:
+            _stt_lang["active"] = False
+            print("[받아쓰기] 한국어 지정을 이 프로세스에서 끈다 — /version 의 stt.lang 참고")
+    try:
+        yield session
+    except BaseException as exc:
+        if not await cm.__aexit__(type(exc), exc, exc.__traceback__):
+            raise
+    else:
+        await cm.__aexit__(None, None, None)
+# ═══ 받아쓰기 언어 지정 (v164) ═══ END ═════════════════════════════════
+
 
 # ── 목소리 (Chirp 3 HD 프리빌트 보이스 — Live API·TTS 공용) ──────────────
 # 호아랑은 '갓 쓴 아기 호랑이'라 기본은 아이 목소리로 잡는다(v153부터 여자아이 Leda).
@@ -4340,6 +4435,9 @@ async def version_check():
         "stt": {
             "junk": _stt_dx["junk"], "blank": _stt_dx["blank"],
             "last": _stt_dx["last"],
+            # v164 — 받아쓰기 언어 지정. active 가 true 이고 seen 에 ko 만 오르면 정상.
+            #   active=false 이고 fail 이 차 있으면 Gemini 가 거부해서 예전 방식으로 돌고 있는 것.
+            "lang": {k: (dict(v) if isinstance(v, dict) else v) for k, v in _stt_lang.items()},
         },
         # 「상호작용 대화 능력」 학습 화면
         "idc": {
@@ -6166,12 +6264,14 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}],
                             rp_plan.get("ai_role_raw", "") if rp_plan else "")
     print(f"[서버] 목소리 = {voice_name} (배역={rp_plan.get('ai_role','-') if rp_plan else '자유대화'}, 선택={voice_pref or 'auto'})")
 
+    # ★ v164 — 학습자 발화의 받아쓰기에 「한국어」를 알려 준다 (위 「받아쓰기 언어 지정」 참고)
+    _stt_cfg, _stt_lang_on = _stt_tx_config()
     config_kwargs = dict(
         response_modalities=[types.Modality.AUDIO],
         system_instruction=types.Content(
             parts=[types.Part.from_text(text=system_prompt)]
         ),
-        input_audio_transcription=types.AudioTranscriptionConfig(),
+        input_audio_transcription=_stt_cfg,
         output_audio_transcription=types.AudioTranscriptionConfig(),
         speech_config=types.SpeechConfig(voice_config=types.VoiceConfig(
             prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice_name))),
@@ -6201,7 +6301,7 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}],
     model_id = "models/gemini-2.5-flash-native-audio-latest"
 
     try:
-        async with client.aio.live.connect(model=model_id, config=config) as gemini_session:
+        async with _live_connect(model_id, config, _stt_lang_on) as gemini_session:   # v164
             print("[서버] Gemini Live API 세션 연결 성공")
             live["session"] = gemini_session   # 분석 태스크가 비계 지시를 얹을 수 있게
 
@@ -6331,6 +6431,8 @@ JSON만 출력: {{"items":[{{"key":"","grade":"hi|mid|lo","why":""}}],
                                     # (볼륨은 이제 클라이언트가 재생 직전에 직접 계산)
                                     await websocket.send_bytes(part.inline_data.data)
                         if sc.input_transcription and sc.input_transcription.text:
+                            # v164 — 받아쓰기가 어느 말로 알아들었는지 센다 (/version stt.lang)
+                            _stt_lang_seen(getattr(sc.input_transcription, "language_code", None))
                             # ★ v145 — 잡음 표식은 한 자리에서 거른다.
                             #   여기서 걸러 두면 말풍선·전사·교실 화면·총평이
                             #   저절로 같은 글을 본다. 화면마다 따로 고치면 또 어긋난다.
